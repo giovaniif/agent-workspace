@@ -94,3 +94,6 @@ func TestNotifyBurstOfTwentyAttentionEventsIsOneBanner(t *testing.T) {
 		t.Fatalf("banners = %d, want 1", banners)
 	}
 }
+
+// proof: throwaway
+var _ = 0
