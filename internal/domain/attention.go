@@ -58,3 +58,6 @@ func (c *Coalescer) Allow(sessionID string, now time.Time) bool {
 	c.last[sessionID] = now
 	return true
 }
+
+// proof: throwaway
+var _ = 0
