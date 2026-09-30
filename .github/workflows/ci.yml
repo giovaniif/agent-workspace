@@ -40,6 +40,8 @@ jobs:
         with:
           go-version-file: go.mod
       - run: cp scripts/tdd-check "$RUNNER_TEMP/" && "$RUNNER_TEMP/tdd-check" "origin/${{ github.base_ref }}" "${{ github.event.pull_request.head.sha }}"
+        env:
+          TDD_PR_TITLE: ${{ github.event.pull_request.title }}
 
   mutate:
     runs-on: macos-latest

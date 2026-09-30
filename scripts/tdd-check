@@ -6,10 +6,40 @@
 # Files named fakes_test.go or *_fake_test.go are skipped: they only hold
 # in-memory fakes of ports, which change when a port gains a method.
 # Changes that are whitespace only (gofmt) are skipped too.
+# A PR titled "test:" is exempt when every changed file is a *_test.go file,
+# sits under a testdata/ dir, or sits under test/. Pass the title in
+# TDD_PR_TITLE (an env var, never interpolated into the command line).
 # Usage: scripts/tdd-check <base-ref> <head-ref>
 set -euo pipefail
 base="$1"
 head="$2"
+
+is_test_path() {
+  case "$1" in
+    (*_test.go | testdata/* | */testdata/* | test/*) return 0 ;;
+    (*) return 1 ;;
+  esac
+}
+
+non_test_paths() {
+  git diff --name-only --no-renames "$base...$head" | while IFS= read -r f; do
+    is_test_path "$f" || echo "$f"
+  done
+}
+
+title="${TDD_PR_TITLE:-}"
+case "$title" in
+  (test:*)
+    offending=$(non_test_paths)
+    if [ -z "$offending" ]; then
+      echo "tdd: ok, test-only PR titled test: is exempt"
+      exit 0
+    fi
+    echo "tdd: a test: PR is exempt only when it changes no production code; these files are not tests:"
+    echo "$offending"
+    echo "tdd: running the normal check; retitle the PR or split the production change out"
+    ;;
+esac
 
 files=$(git diff --name-only --diff-filter=AM "$base...$head" -- '*_test.go' '*/testdata/*' |
   grep -Ev '(^|/)(fakes|[^/]*_fake)_test\.go$' || true)
