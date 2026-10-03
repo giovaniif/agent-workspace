@@ -226,6 +226,25 @@ func TestAnOmpHookFileOfTheUsersIsReportedNotOverwritten(t *testing.T) {
 	}
 }
 
+func TestFromEnvReportsAnUnknownOmpHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	p := onboard.FromEnv("/h", bin, func(string) string { return "" })
+	got, err := p.Onboarding(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := got.Harnesses[domain.HarnessOmp]; s.Err == "" || s.Installed || s.File != "" {
+		t.Fatalf("omp = %+v", s)
+	}
+	if _, err := p.Install(context.Background(), domain.HarnessOmp); err == nil {
+		t.Fatal("install wrote without a home")
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".omp")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("relative .omp created: %v", err)
+	}
+}
+
 func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 	env := map[string]string{
 		"CLAUDE_CONFIG_DIR":   "/c",

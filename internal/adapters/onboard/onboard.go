@@ -31,7 +31,9 @@ type Probe struct {
 	ClaudeSettings string
 	CodexHome      string
 	OmpAgentDir    string
-	NvimConfigDir  string
+	// why: an empty HOME would otherwise install the hook under a relative .omp/agent.
+	ompDirErr     error
+	NvimConfigDir string
 	// why: the first existing dir wins, so a release install beats a source checkout.
 	PluginDirs []string
 	LookPath   func(string) (string, error)
@@ -46,7 +48,7 @@ func FromEnv(home, bin string, env func(string) string) Probe {
 		}
 		return fallback
 	}
-	ompDir, _ := omp.AgentDir(env)
+	ompDir, ompErr := omp.AgentDir(env)
 	claudeDir := or(env("CLAUDE_CONFIG_DIR"), filepath.Join(user, ".claude"))
 	data := or(env("XDG_DATA_HOME"), filepath.Join(user, ".local", "share"))
 	return Probe{
@@ -55,6 +57,7 @@ func FromEnv(home, bin string, env func(string) string) Probe {
 		ClaudeSettings: filepath.Join(claudeDir, "settings.json"),
 		CodexHome:      or(env("CODEX_HOME"), filepath.Join(user, ".codex")),
 		OmpAgentDir:    ompDir,
+		ompDirErr:      ompErr,
 		NvimConfigDir:  filepath.Join(or(env("XDG_CONFIG_HOME"), filepath.Join(user, ".config")), "nvim"),
 		PluginDirs: []string{
 			filepath.Join(data, "agentws", "nvim"),
@@ -101,6 +104,9 @@ func (p Probe) Install(_ context.Context, h domain.Harness) (domain.HarnessSetup
 		s.Backup = res.Backup
 		return s, nil
 	case domain.HarnessOmp:
+		if p.ompDirErr != nil {
+			return domain.HarnessSetup{}, p.ompDirErr
+		}
 		if _, err := omp.Setup(p.ompConfig()); err != nil {
 			return domain.HarnessSetup{}, err
 		}
@@ -152,6 +158,9 @@ func (p Probe) ompConfig() omp.SetupConfig {
 }
 
 func (p Probe) ompSetup() domain.HarnessSetup {
+	if p.ompDirErr != nil {
+		return domain.HarnessSetup{Err: p.ompDirErr.Error()}
+	}
 	s := domain.HarnessSetup{File: omp.HookFile(p.OmpAgentDir)}
 	ok, err := omp.Installed(p.ompConfig())
 	s.Installed = ok
