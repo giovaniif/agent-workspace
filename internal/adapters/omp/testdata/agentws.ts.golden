@@ -1,0 +1,46 @@
+// agentws: written by agentws setup omp; agentws setup omp --remove deletes this file.
+import { spawn } from "node:child_process";
+
+const agentws = "/opt/agent's bin/agentws";
+const events = ["agent_start", "session_shutdown", "session_start", "session_stop", "tool_approval_requested", "tool_approval_resolved", "tool_call", "tool_result"];
+
+function text(message: any): string | undefined {
+	if (!message) return undefined;
+	if (typeof message.content === "string") return message.content;
+	if (!Array.isArray(message.content)) return undefined;
+	return message.content.filter((c: any) => c?.type === "text").map((c: any) => c.text).join("\n");
+}
+
+function send(event: string, fields: Record<string, unknown>): Promise<void> {
+	return new Promise(resolve => {
+		try {
+			const child = spawn(agentws, ["hook", "--harness", "omp", "--event", event], { stdio: ["pipe", "ignore", "ignore"] });
+			child.on("error", () => resolve());
+			child.on("close", () => resolve());
+			child.stdin.on("error", () => {});
+			child.stdin.end(JSON.stringify(fields));
+		} catch {
+			resolve();
+		}
+	});
+}
+
+export default function (pi: any) {
+	for (const name of events) {
+		pi.on(name, (event: any, ctx: any) => {
+			if (name === "tool_approval_resolved" && event?.approved !== false) return;
+			const sent = send(name, {
+				session_id: ctx?.sessionManager?.getSessionId?.(),
+				cwd: ctx?.cwd,
+				model: ctx?.model?.provider && ctx?.model?.id ? ctx.model.provider + "/" + ctx.model.id : ctx?.model?.id,
+				effort: pi.getThinkingLevel?.(),
+				tool_name: event?.toolName,
+				tool_input: event?.input,
+				message: event?.reason,
+				last_assistant_message: text(event?.last_assistant_message),
+			});
+			// why: omp fails a tool closed when its tool_call handler throws or stalls.
+			if (name !== "tool_call") return sent;
+		});
+	}
+}

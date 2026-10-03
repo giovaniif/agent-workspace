@@ -2,6 +2,8 @@ package tui
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -32,27 +34,32 @@ const (
 )
 
 type onboarding struct {
-	status        domain.Onboarding
-	step          domain.OnboardStep
-	claude, codex bool
-	cursor        int
-	busy          bool
-	err           string
-	results       map[domain.OnboardStep]onboardResult
+	status  domain.Onboarding
+	step    domain.OnboardStep
+	picked  []domain.Harness
+	cursor  int
+	busy    bool
+	err     string
+	results map[domain.OnboardStep]onboardResult
 }
 
 func newOnboarding(o domain.Onboarding) *onboarding {
-	claude, codex := domain.DefaultOnboardPicks(o)
-	return &onboarding{status: o, step: domain.OnboardPick, claude: claude, codex: codex, results: map[domain.OnboardStep]onboardResult{}}
+	return &onboarding{status: o, step: domain.OnboardPick, picked: domain.DefaultOnboardPicks(o), results: map[domain.OnboardStep]onboardResult{}}
 }
 
-func (ob *onboarding) steps() []domain.OnboardStep { return domain.OnboardSteps(ob.claude, ob.codex) }
+func (ob *onboarding) steps() []domain.OnboardStep { return domain.OnboardSteps(ob.picked) }
 
 func (ob *onboarding) harness() (domain.Harness, domain.HarnessSetup) {
-	if ob.step == domain.OnboardCodex {
-		return domain.HarnessCodex, ob.status.Codex
+	h, _ := ob.step.Harness()
+	return h, ob.status.Harnesses[h]
+}
+
+func (ob *onboarding) togglePick(h domain.Harness) {
+	if i := slices.Index(ob.picked, h); i >= 0 {
+		ob.picked = slices.Delete(slices.Clone(ob.picked), i, i+1)
+		return
 	}
-	return domain.HarnessClaude, ob.status.Claude
+	ob.picked = append(slices.Clone(ob.picked), h)
 }
 
 func (ob *onboarding) advance(r onboardResult) {
@@ -164,11 +171,11 @@ func (m Model) onboardMsg(msg tea.Msg) (Model, tea.Cmd) {
 			ob.err = ""
 			ob.results = copyResults(ob.results)
 			ob.results[ob.step] = resultInstalled
-			if msg.h == domain.HarnessCodex {
-				ob.status.Codex = msg.setup
-			} else {
-				ob.status.Claude = msg.setup
+			ob.status.Harnesses = maps.Clone(ob.status.Harnesses)
+			if ob.status.Harnesses == nil {
+				ob.status.Harnesses = map[domain.Harness]domain.HarnessSetup{}
 			}
+			ob.status.Harnesses[msg.h] = msg.setup
 		}
 		m.ob = &ob
 	case onboardFinishedMsg:
@@ -213,23 +220,21 @@ func (m Model) onboardKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		ob.busy = true
 		return m, m.finishOnboarding()
 	}
-	switch ob.step {
-	case domain.OnboardPick:
+	_, harnessStep := ob.step.Harness()
+	switch {
+	case ob.step == domain.OnboardPick:
+		harnesses := domain.Harnesses()
 		switch k {
 		case "up", "k", "shift+tab":
-			ob.cursor = 0
+			ob.cursor = max(ob.cursor-1, 0)
 		case "down", "j", "tab":
-			ob.cursor = 1
+			ob.cursor = min(ob.cursor+1, len(harnesses)-1)
 		case "space", "x":
-			if ob.cursor == 0 {
-				ob.claude = !ob.claude
-			} else {
-				ob.codex = !ob.codex
-			}
+			ob.togglePick(harnesses[ob.cursor])
 		case "enter":
 			ob.advance(resultNone)
 		}
-	case domain.OnboardClaude, domain.OnboardCodex:
+	case harnessStep:
 		h, setup := ob.harness()
 		switch k {
 		case "s":
@@ -245,7 +250,7 @@ func (m Model) onboardKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			ob.advance(resultNone)
 		}
-	case domain.OnboardNvim:
+	case ob.step == domain.OnboardNvim:
 		switch k {
 		case "s":
 			if ob.results[ob.step] == resultInstalled {
@@ -260,7 +265,7 @@ func (m Model) onboardKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			ob.advance(resultNone)
 		}
-	case domain.OnboardFinish:
+	case ob.step == domain.OnboardFinish:
 		if k == "enter" {
 			ob.busy = true
 			return m, m.finishOnboarding()

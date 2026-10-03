@@ -131,6 +131,64 @@ func TestUsageAdviseWithoutTheOtherHarnessFigureCannotOfferASwitch(t *testing.T)
 	}
 }
 
+func TestUsageAdvisePicksTheReportedAlternativeWithTheMostLeft(t *testing.T) {
+	cases := []struct {
+		name   string
+		chosen Harness
+		quotas []Quota
+		other  Harness
+		left   int
+	}{
+		{"omp has more left", HarnessClaude, []Quota{
+			{Harness: HarnessClaude, Window: "five_hour", LeftPercent: 5},
+			{Harness: HarnessCodex, Window: "five_hour", LeftPercent: 30},
+			{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 60},
+		}, HarnessOmp, 60},
+		{"a tie goes to catalog order", HarnessClaude, []Quota{
+			{Harness: HarnessClaude, Window: "five_hour", LeftPercent: 5},
+			{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 50},
+			{Harness: HarnessCodex, Window: "five_hour", LeftPercent: 50},
+		}, HarnessCodex, 50},
+		{"omp chosen moves to the roomiest other", HarnessOmp, []Quota{
+			{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 5},
+			{Harness: HarnessClaude, Window: "five_hour", LeftPercent: 40},
+			{Harness: HarnessCodex, Window: "five_hour", LeftPercent: 70},
+		}, HarnessCodex, 70},
+		{"a harness with no figure loses to one with a figure", HarnessCodex, []Quota{
+			{Harness: HarnessCodex, Window: "five_hour", LeftPercent: 5},
+			{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 1},
+		}, HarnessOmp, 1},
+	}
+	for _, c := range cases {
+		got, ok := Advise(c.quotas, c.chosen)
+		if !ok || got.Other != c.other || got.OtherShortest == nil || got.OtherShortest.LeftPercent != c.left {
+			t.Errorf("%s: got %+v ok=%v", c.name, got, ok)
+		}
+	}
+}
+
+func TestUsageAdviseWithNoReportedAlternativeNamesTheFirstOtherInTheCatalog(t *testing.T) {
+	got, ok := Advise([]Quota{{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 5}}, HarnessOmp)
+	if !ok || got.Other != HarnessClaude || got.OtherShortest != nil {
+		t.Fatalf("got %+v ok=%v", got, ok)
+	}
+}
+
+func TestUsageQuotasFollowTheCatalogOrder(t *testing.T) {
+	got := Quotas([]Session{
+		limited("other", t0, RateLimit{Window: "five_hour", UsedPercent: 1}),
+		limited(HarnessOmp, t0, RateLimit{Window: "five_hour", UsedPercent: 1}),
+		limited(HarnessCodex, t0, RateLimit{Window: "five_hour", UsedPercent: 1}),
+	})
+	var order []Harness
+	for _, q := range got {
+		order = append(order, q.Harness)
+	}
+	if want := []Harness{HarnessCodex, HarnessOmp, "other"}; !reflect.DeepEqual(order, want) {
+		t.Fatalf("order %q, want %q", order, want)
+	}
+}
+
 func TestUsageAdviseWithNoDataForTheChosenHarnessStaysQuiet(t *testing.T) {
 	if got, ok := Advise([]Quota{{Harness: HarnessCodex, Window: "five_hour", LeftPercent: 1}}, HarnessClaude); ok {
 		t.Fatalf("got %+v", got)

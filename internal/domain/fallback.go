@@ -35,10 +35,12 @@ func OfferFallback(quotas []Quota, cfg FallbackConfig, req StartRequest) (Fallba
 	if threshold <= 0 {
 		threshold = WarnQuotaLeft
 	}
-	advice, ok := AdviseAt(quotas, HarnessClaude, threshold)
-	if !ok || advice.OtherShortest == nil || advice.OtherShortest.LeftPercent < threshold {
+	low, ok := ShortestQuota(quotas, HarnessClaude)
+	codex, codexOK := ShortestQuota(quotas, HarnessCodex)
+	if !ok || low.LeftPercent >= threshold || !codexOK || codex.LeftPercent < threshold {
 		return FallbackOffer{}, false
 	}
+	advice := SwitchAdvice{Low: low, Other: HarnessCodex, OtherShortest: &codex}
 	return FallbackOffer{
 		Advice: advice,
 		Request: StartRequest{

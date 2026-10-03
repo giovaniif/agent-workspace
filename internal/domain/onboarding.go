@@ -1,6 +1,10 @@
 package domain
 
-import "strings"
+import (
+	"encoding/json"
+	"slices"
+	"strings"
+)
 
 type HarnessSetup struct {
 	Installed bool   `json:"installed"`
@@ -23,7 +27,7 @@ func OnboardingNeeded(o Onboarding) bool {
 	if o.Done {
 		return false
 	}
-	harness := o.Claude.Installed || o.Codex.Installed
+	harness := len(installedHarnesses(o)) > 0
 	nvimDone := !o.Nvim.OnPath || o.Nvim.Configured
 	return !harness || !nvimDone
 }
@@ -47,32 +51,61 @@ func IsNvimSetupFile(content string) bool { return strings.HasPrefix(content, nv
 func luaQuote(s string) string { return strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(s) }
 
 type Onboarding struct {
-	Done   bool         `json:"done"`
-	Claude HarnessSetup `json:"claude"`
-	Codex  HarnessSetup `json:"codex"`
-	Nvim   NvimSetup    `json:"nvim"`
+	Done      bool                     `json:"done"`
+	Harnesses map[Harness]HarnessSetup `json:"harnesses"`
+	Nvim      NvimSetup                `json:"nvim"`
+}
+
+// why: a daemon from before omp sends claude and codex as their own keys.
+func (o *Onboarding) UnmarshalJSON(b []byte) error {
+	type plain Onboarding
+	var wire struct {
+		plain
+		Claude *HarnessSetup `json:"claude"`
+		Codex  *HarnessSetup `json:"codex"`
+	}
+	if err := json.Unmarshal(b, &wire); err != nil {
+		return err
+	}
+	*o = Onboarding(wire.plain)
+	for h, setup := range map[Harness]*HarnessSetup{HarnessClaude: wire.Claude, HarnessCodex: wire.Codex} {
+		if _, ok := o.Harnesses[h]; setup == nil || ok {
+			continue
+		}
+		if o.Harnesses == nil {
+			o.Harnesses = map[Harness]HarnessSetup{}
+		}
+		o.Harnesses[h] = *setup
+	}
+	return nil
 }
 
 type OnboardStep string
 
 const (
 	OnboardPick   OnboardStep = "pick"
-	OnboardClaude OnboardStep = "claude"
-	OnboardCodex  OnboardStep = "codex"
 	OnboardNvim   OnboardStep = "nvim"
 	OnboardFinish OnboardStep = "finish"
 )
 
+func HarnessStep(h Harness) OnboardStep { return OnboardStep(h) }
+
+func (s OnboardStep) Harness() (Harness, bool) {
+	if h := Harness(s); slices.Contains(Harnesses(), h) {
+		return h, true
+	}
+	return "", false
+}
+
 // why: Codex keeps a hash of every hook it was told to trust, so new hooks stay off until the user trusts them.
 const CodexTrustStep = "Codex runs a hook only after you trust it. Start codex and accept the review prompt for the new agentws hooks, or open /hooks and trust them there."
 
-func OnboardSteps(claude, codex bool) []OnboardStep {
+func OnboardSteps(picked []Harness) []OnboardStep {
 	steps := []OnboardStep{OnboardPick}
-	if claude {
-		steps = append(steps, OnboardClaude)
-	}
-	if codex {
-		steps = append(steps, OnboardCodex)
+	for _, h := range Harnesses() {
+		if slices.Contains(picked, h) {
+			steps = append(steps, HarnessStep(h))
+		}
 	}
 	return append(steps, OnboardNvim, OnboardFinish)
 }
@@ -87,12 +120,21 @@ func NextOnboardStep(steps []OnboardStep, cur OnboardStep) OnboardStep {
 	return OnboardFinish
 }
 
-func DefaultOnboardPicks(o Onboarding) (claude, codex bool) {
-	claude, codex = o.Claude.Installed, o.Codex.Installed
-	if !claude && !codex {
-		claude = true
+func DefaultOnboardPicks(o Onboarding) []Harness {
+	if picks := installedHarnesses(o); len(picks) > 0 {
+		return picks
 	}
-	return claude, codex
+	return []Harness{HarnessClaude}
+}
+
+func installedHarnesses(o Onboarding) []Harness {
+	var out []Harness
+	for _, h := range Harnesses() {
+		if o.Harnesses[h].Installed {
+			out = append(out, h)
+		}
+	}
+	return out
 }
 
 type SetupOffer int

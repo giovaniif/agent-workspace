@@ -1,41 +1,62 @@
 package domain
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestOnboardStepsFollowThePickedHarnesses(t *testing.T) {
+func TestOnboardStepsFollowThePickedHarnessesInCatalogOrder(t *testing.T) {
 	cases := []struct {
-		name          string
-		claude, codex bool
-		want          []OnboardStep
+		name   string
+		picked []Harness
+		want   []OnboardStep
 	}{
-		{"both", true, true, []OnboardStep{OnboardPick, OnboardClaude, OnboardCodex, OnboardNvim, OnboardFinish}},
-		{"claude only", true, false, []OnboardStep{OnboardPick, OnboardClaude, OnboardNvim, OnboardFinish}},
-		{"codex only", false, true, []OnboardStep{OnboardPick, OnboardCodex, OnboardNvim, OnboardFinish}},
-		{"neither", false, false, []OnboardStep{OnboardPick, OnboardNvim, OnboardFinish}},
+		{"all three", []Harness{HarnessOmp, HarnessCodex, HarnessClaude}, []OnboardStep{OnboardPick, "claude", "codex", "omp", OnboardNvim, OnboardFinish}},
+		{"claude only", []Harness{HarnessClaude}, []OnboardStep{OnboardPick, "claude", OnboardNvim, OnboardFinish}},
+		{"omp only", []Harness{HarnessOmp}, []OnboardStep{OnboardPick, "omp", OnboardNvim, OnboardFinish}},
+		{"none", nil, []OnboardStep{OnboardPick, OnboardNvim, OnboardFinish}},
+		{"unknown harness", []Harness{"other"}, []OnboardStep{OnboardPick, OnboardNvim, OnboardFinish}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := OnboardSteps(c.claude, c.codex); !reflect.DeepEqual(got, c.want) {
+			if got := OnboardSteps(c.picked); !reflect.DeepEqual(got, c.want) {
 				t.Errorf("steps = %v, want %v", got, c.want)
 			}
 		})
 	}
 }
 
+func TestOnboardStepNamesItsHarness(t *testing.T) {
+	cases := []struct {
+		step OnboardStep
+		want Harness
+		ok   bool
+	}{
+		{HarnessStep(HarnessOmp), HarnessOmp, true},
+		{HarnessStep(HarnessCodex), HarnessCodex, true},
+		{OnboardNvim, "", false},
+		{OnboardPick, "", false},
+		{"other", "", false},
+	}
+	for _, c := range cases {
+		if got, ok := c.step.Harness(); got != c.want || ok != c.ok {
+			t.Errorf("%s.Harness() = %q, %v; want %q, %v", c.step, got, ok, c.want, c.ok)
+		}
+	}
+}
+
 func TestNextOnboardStepWalksForwardAndStopsAtFinish(t *testing.T) {
-	steps := OnboardSteps(false, true)
+	steps := OnboardSteps([]Harness{HarnessOmp})
 	cases := []struct {
 		cur, want OnboardStep
 	}{
-		{OnboardPick, OnboardCodex},
-		{OnboardCodex, OnboardNvim},
+		{OnboardPick, "omp"},
+		{"omp", OnboardNvim},
 		{OnboardNvim, OnboardFinish},
 		{OnboardFinish, OnboardFinish},
-		{OnboardClaude, OnboardFinish},
+		{"claude", OnboardFinish},
 	}
 	for _, c := range cases {
 		if got := NextOnboardStep(steps, c.cur); got != c.want {
@@ -45,23 +66,58 @@ func TestNextOnboardStepWalksForwardAndStopsAtFinish(t *testing.T) {
 }
 
 func TestDefaultOnboardPicksPreferWhatIsAlreadyInstalled(t *testing.T) {
+	on := HarnessSetup{Installed: true}
 	cases := []struct {
-		name          string
-		o             Onboarding
-		claude, codex bool
+		name string
+		o    Onboarding
+		want []Harness
 	}{
-		{"nothing installed picks claude", Onboarding{}, true, false},
-		{"codex installed", Onboarding{Codex: HarnessSetup{Installed: true}}, false, true},
-		{"both installed", Onboarding{Claude: HarnessSetup{Installed: true}, Codex: HarnessSetup{Installed: true}}, true, true},
-		{"claude installed", Onboarding{Claude: HarnessSetup{Installed: true}}, true, false},
+		{"nothing installed picks claude", Onboarding{}, []Harness{HarnessClaude}},
+		{"codex installed", Onboarding{Harnesses: map[Harness]HarnessSetup{HarnessCodex: on, HarnessClaude: {}}}, []Harness{HarnessCodex}},
+		{"omp and claude installed", Onboarding{Harnesses: map[Harness]HarnessSetup{HarnessOmp: on, HarnessClaude: on}}, []Harness{HarnessClaude, HarnessOmp}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			claude, codex := DefaultOnboardPicks(c.o)
-			if claude != c.claude || codex != c.codex {
-				t.Errorf("picks = %v, %v, want %v, %v", claude, codex, c.claude, c.codex)
+			if got := DefaultOnboardPicks(c.o); !reflect.DeepEqual(got, c.want) {
+				t.Errorf("picks = %v, want %v", got, c.want)
 			}
 		})
+	}
+}
+
+func TestOnboardingReadsTheOldClaudeAndCodexKeys(t *testing.T) {
+	var o Onboarding
+	old := `{"done":false,"claude":{"installed":true,"file":"/c/settings.json"},"codex":{"installed":false,"file":"/x/hooks.json"},"nvim":{"on_path":false}}`
+	if err := json.Unmarshal([]byte(old), &o); err != nil {
+		t.Fatal(err)
+	}
+	want := map[Harness]HarnessSetup{
+		HarnessClaude: {Installed: true, File: "/c/settings.json"},
+		HarnessCodex:  {File: "/x/hooks.json"},
+	}
+	if !reflect.DeepEqual(o.Harnesses, want) {
+		t.Fatalf("harnesses = %+v, want %+v", o.Harnesses, want)
+	}
+	if OnboardingNeeded(o) {
+		t.Fatal("an onboarded file with the old keys reopens the walkthrough")
+	}
+}
+
+func TestOnboardingRoundTripsEveryHarness(t *testing.T) {
+	in := Onboarding{Done: true, Harnesses: map[Harness]HarnessSetup{
+		HarnessClaude: {Installed: true, File: "/c"},
+		HarnessOmp:    {Err: "boom", File: "/o/agentws.ts"},
+	}}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out Onboarding
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(out, in) {
+		t.Fatalf("%s decoded to %+v", b, out)
 	}
 }
 

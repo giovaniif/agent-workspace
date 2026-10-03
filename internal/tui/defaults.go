@@ -30,7 +30,7 @@ func LoadDefaults(path string) (map[domain.Harness]Defaults, error) {
 		return nil, fmt.Errorf("tui: %s: %w", path, err)
 	}
 	out := map[domain.Harness]Defaults{}
-	for _, h := range []domain.Harness{domain.HarnessClaude, domain.HarnessCodex} {
+	for _, h := range domain.Harnesses() {
 		if d, ok := cfg.Defaults[string(h)]; ok {
 			out[h] = d
 		}

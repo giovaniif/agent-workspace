@@ -14,9 +14,10 @@ func TestOnboardingNeededOnlyWhenSomethingIsLeft(t *testing.T) {
 	}{
 		{"fresh machine", Onboarding{Nvim: NvimSetup{OnPath: true}}, true},
 		{"done", Onboarding{Done: true}, false},
-		{"claude set up, no nvim", Onboarding{Claude: on}, false},
-		{"codex set up, nvim configured", Onboarding{Codex: on, Nvim: NvimSetup{OnPath: true, Configured: true}}, false},
-		{"claude set up, nvim not configured", Onboarding{Claude: on, Nvim: NvimSetup{OnPath: true}}, true},
+		{"claude set up, no nvim", Onboarding{Harnesses: map[Harness]HarnessSetup{HarnessClaude: on}}, false},
+		{"omp set up, no nvim", Onboarding{Harnesses: map[Harness]HarnessSetup{HarnessOmp: on, HarnessClaude: {}}}, false},
+		{"codex set up, nvim configured", Onboarding{Harnesses: map[Harness]HarnessSetup{HarnessCodex: on}, Nvim: NvimSetup{OnPath: true, Configured: true}}, false},
+		{"claude set up, nvim not configured", Onboarding{Harnesses: map[Harness]HarnessSetup{HarnessClaude: on}, Nvim: NvimSetup{OnPath: true}}, true},
 		{"no harness, nvim configured", Onboarding{Nvim: NvimSetup{OnPath: true, Configured: true}}, true},
 	}
 	for _, c := range cases {

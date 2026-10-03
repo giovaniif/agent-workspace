@@ -33,7 +33,7 @@ func TestOnboardingReportsInstallsAndFinishes(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err = c.Onboarding(ctx)
-	if err != nil || !got.Done || !got.Codex.Installed {
+	if err != nil || !got.Done || !got.Harnesses[domain.HarnessCodex].Installed {
 		t.Errorf("after finish = %+v, %v", got, err)
 	}
 	if !reflect.DeepEqual(f.installed, []domain.Harness{domain.HarnessCodex}) {

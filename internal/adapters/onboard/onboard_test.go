@@ -33,6 +33,7 @@ func newWorld(t *testing.T, nvimOnPath bool) world {
 		Bin:            bin,
 		ClaudeSettings: filepath.Join(root, "claude", "settings.json"),
 		CodexHome:      filepath.Join(root, "codex"),
+		OmpAgentDir:    filepath.Join(root, "omp", "agent"),
 		NvimConfigDir:  filepath.Join(root, "config", "nvim"),
 		PluginDirs:     []string{filepath.Join(root, "share", "agentws", "nvim"), filepath.Join(root, "repo", "nvim")},
 		LookPath:       look,
@@ -55,14 +56,14 @@ func TestAFreshMachineHasNothingSetUp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Done || got.Claude.Installed || got.Codex.Installed || got.Nvim.OnPath || got.Nvim.Configured {
+	if got.Done || got.Harnesses[domain.HarnessClaude].Installed || got.Harnesses[domain.HarnessCodex].Installed || got.Nvim.OnPath || got.Nvim.Configured {
 		t.Errorf("fresh machine = %+v", got)
 	}
-	if got.Claude.File != w.probe.ClaudeSettings || got.Codex.File != filepath.Join(w.probe.CodexHome, "hooks.json") {
-		t.Errorf("files = %q, %q", got.Claude.File, got.Codex.File)
+	if got.Harnesses[domain.HarnessClaude].File != w.probe.ClaudeSettings || got.Harnesses[domain.HarnessCodex].File != filepath.Join(w.probe.CodexHome, "hooks.json") {
+		t.Errorf("files = %q, %q", got.Harnesses[domain.HarnessClaude].File, got.Harnesses[domain.HarnessCodex].File)
 	}
-	if got.Claude.Backup != "" || got.Codex.Backup != "" {
-		t.Errorf("backups named for files that do not exist: %q, %q", got.Claude.Backup, got.Codex.Backup)
+	if got.Harnesses[domain.HarnessClaude].Backup != "" || got.Harnesses[domain.HarnessCodex].Backup != "" {
+		t.Errorf("backups named for files that do not exist: %q, %q", got.Harnesses[domain.HarnessClaude].Backup, got.Harnesses[domain.HarnessCodex].Backup)
 	}
 	if got.Nvim.ConfigFile != filepath.Join(w.probe.NvimConfigDir, "plugin", "agentws.lua") {
 		t.Errorf("nvim setup file = %q, want plugin/agentws.lua under the config dir", got.Nvim.ConfigFile)
@@ -97,7 +98,7 @@ func TestInstallSetsUpEachHarnessAndOnboardingSeesIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.Claude.Installed || !got.Codex.Installed {
+	if !got.Harnesses[domain.HarnessClaude].Installed || !got.Harnesses[domain.HarnessCodex].Installed {
 		t.Errorf("after install = %+v", got)
 	}
 	again, err := w.probe.Install(ctx, domain.HarnessClaude)
@@ -113,8 +114,8 @@ func TestABrokenConfigIsReportedNotOverwritten(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Claude.Err == "" || got.Claude.Installed {
-		t.Errorf("broken settings = %+v", got.Claude)
+	if got.Harnesses[domain.HarnessClaude].Err == "" || got.Harnesses[domain.HarnessClaude].Installed {
+		t.Errorf("broken settings = %+v", got.Harnesses[domain.HarnessClaude])
 	}
 	if _, err := w.probe.Install(context.Background(), domain.HarnessClaude); err == nil {
 		t.Error("install over broken JSON succeeded")
@@ -182,16 +183,79 @@ func TestFinishRecordsCompletionInHome(t *testing.T) {
 	}
 }
 
+func TestOmpIsDetectedAndInstalledThroughItsHookFile(t *testing.T) {
+	w := newWorld(t, false)
+	ctx := context.Background()
+	file := filepath.Join(w.root, "omp", "agent", "hooks", "post", "agentws.ts")
+	fresh, err := w.probe.Onboarding(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fresh.Harnesses[domain.HarnessOmp]; got != (domain.HarnessSetup{File: file}) {
+		t.Errorf("fresh omp = %+v", got)
+	}
+	installed, err := w.probe.Install(ctx, domain.HarnessOmp)
+	if err != nil || installed != (domain.HarnessSetup{Installed: true, File: file}) {
+		t.Fatalf("install omp = %+v, %v", installed, err)
+	}
+	b, err := os.ReadFile(file)
+	if err != nil || !strings.Contains(string(b), `const agentws = "`+bin+`";`) {
+		t.Errorf("hook file = %s, %v", b, err)
+	}
+	if got, _ := w.probe.Onboarding(ctx); !got.Harnesses[domain.HarnessOmp].Installed {
+		t.Errorf("after install = %+v", got.Harnesses[domain.HarnessOmp])
+	}
+}
+
+func TestAnOmpHookFileOfTheUsersIsReportedNotOverwritten(t *testing.T) {
+	w := newWorld(t, false)
+	file := filepath.Join(w.root, "omp", "agent", "hooks", "post", "agentws.ts")
+	write(t, file, "export default function () {}\n")
+	got, err := w.probe.Onboarding(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := got.Harnesses[domain.HarnessOmp]; s.Err == "" || s.Installed {
+		t.Errorf("omp = %+v", s)
+	}
+	if _, err := w.probe.Install(context.Background(), domain.HarnessOmp); err == nil {
+		t.Error("install over the user's file succeeded")
+	}
+	if b, _ := os.ReadFile(file); string(b) != "export default function () {}\n" {
+		t.Errorf("the user's file became %q", b)
+	}
+}
+
+func TestFromEnvReportsAnUnknownOmpHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	p := onboard.FromEnv("/h", bin, func(string) string { return "" })
+	got, err := p.Onboarding(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := got.Harnesses[domain.HarnessOmp]; s.Err == "" || s.Installed || s.File != "" {
+		t.Fatalf("omp = %+v", s)
+	}
+	if _, err := p.Install(context.Background(), domain.HarnessOmp); err == nil {
+		t.Fatal("install wrote without a home")
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".omp")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("relative .omp created: %v", err)
+	}
+}
+
 func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 	env := map[string]string{
-		"CLAUDE_CONFIG_DIR": "/c",
-		"CODEX_HOME":        "/x",
-		"XDG_CONFIG_HOME":   "/cfg",
-		"XDG_DATA_HOME":     "/data",
-		"HOME":              "/home/me",
+		"CLAUDE_CONFIG_DIR":   "/c",
+		"CODEX_HOME":          "/x",
+		"PI_CODING_AGENT_DIR": "/pi",
+		"XDG_CONFIG_HOME":     "/cfg",
+		"XDG_DATA_HOME":       "/data",
+		"HOME":                "/home/me",
 	}
 	p := onboard.FromEnv("/h", "/repo/bin/agentws", func(k string) string { return env[k] })
-	if p.ClaudeSettings != "/c/settings.json" || p.CodexHome != "/x" || p.NvimConfigDir != "/cfg/nvim" || p.Home != "/h" {
+	if p.ClaudeSettings != "/c/settings.json" || p.CodexHome != "/x" || p.OmpAgentDir != "/pi" || p.NvimConfigDir != "/cfg/nvim" || p.Home != "/h" {
 		t.Errorf("probe = %+v", p)
 	}
 	if len(p.PluginDirs) < 2 || p.PluginDirs[0] != "/data/agentws/nvim" || p.PluginDirs[len(p.PluginDirs)-1] != "/repo/nvim" {
@@ -204,7 +268,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 		}
 		return ""
 	})
-	if bare.ClaudeSettings != "/home/me/.claude/settings.json" || bare.CodexHome != "/home/me/.codex" || bare.NvimConfigDir != "/home/me/.config/nvim" || bare.PluginDirs[0] != "/home/me/.local/share/agentws/nvim" {
+	if bare.ClaudeSettings != "/home/me/.claude/settings.json" || bare.CodexHome != "/home/me/.codex" || bare.OmpAgentDir != "/home/me/.omp/agent" || bare.NvimConfigDir != "/home/me/.config/nvim" || bare.PluginDirs[0] != "/home/me/.local/share/agentws/nvim" {
 		t.Errorf("defaults = %+v", bare)
 	}
 }

@@ -2,6 +2,7 @@ package tui_test
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/giovaniif/agent-workspace/internal/domain"
@@ -29,12 +30,11 @@ func (f *fakeOnboarder) OnboardInstall(_ context.Context, h domain.Harness) (dom
 		return domain.HarnessSetup{}, f.err
 	}
 	f.installed = append(f.installed, h)
-	s := &f.state.Claude
-	if h == domain.HarnessCodex {
-		s = &f.state.Codex
-	}
+	s := f.state.Harnesses[h]
 	s.Installed = true
-	return *s, nil
+	f.state.Harnesses = maps.Clone(f.state.Harnesses)
+	f.state.Harnesses[h] = s
+	return s, nil
 }
 
 func (f *fakeOnboarder) OnboardFinish(context.Context) error {

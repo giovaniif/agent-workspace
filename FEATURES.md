@@ -2,13 +2,13 @@
 
 Status: approved 2026-09-30. `agentws` is a placeholder name.
 
-One terminal tool for running Claude Code and Codex sessions in parallel, each in its own worktree, with a PR-style review pane. It replaces the current tmux setup.
+One terminal tool for running Claude Code, Codex, and Oh My Pi (`omp`) sessions in parallel, each in its own worktree, with a PR-style review pane. It replaces the current tmux setup.
 
 ## Decisions
 
 - **Client:** a TUI first. A native macOS client can come later on the same daemon.
 - **Terminals:** tmux runs in the background on its own server socket. Our TUI draws the sidebar and review pane, and swaps agent panes into the main area. We don't use the tmux status line or copy a sidebar pane into each window.
-- **Harnesses:** Claude Code and Codex have full parity in v1.
+- **Harnesses:** Claude Code, Codex, and Oh My Pi (`omp`). Claude and Codex report usage limits. omp reports model and effort only.
 - **Worktree cleanup:** a worktree is removed automatically when its PR is merged, it has no uncommitted changes, and no session uses it. If it has uncommitted changes, they are backed up and you are asked first.
 
 ## Evidence (last 57 days, as of 2026-09-29)
@@ -25,13 +25,13 @@ One terminal tool for running Claude Code and Codex sessions in parallel, each i
 
 - **Workspace:** a folder the tool manages. It is either a single repo, or an orchestration root that holds several service repos. Repos are discovered automatically: any child folder with its own `.git` directory, symlinks included. A child whose `.git` is a file is a worktree, not a repo.
 - **Task:** a work item such as a Linear issue, a PR or free text. Sessions are grouped under it.
-- **Session:** one agent (Claude or Codex) running in one terminal. Its working directory is the workspace root, so the root `AGENTS.md`/`CLAUDE.md`, skills and memory apply. A session can have any number of worktrees.
+- **Session:** one agent (Claude, Codex, or omp) running in one terminal. Its working directory is the workspace root, so the root `AGENTS.md`/`CLAUDE.md`, skills and memory apply. A session can have any number of worktrees.
 - **Worktree:** one repo at one branch, with its own PR, checks, port, and cleanup. A session can hold several worktrees in the same repo, one per subtask.
 
 ## Architecture
 
 - **Daemon:** owns sessions, worktrees, harness adapters, PR polling, usage data and notifications, and persists state to disk.
-- **Harness adapters:** Claude Code and Codex. Their hook events map to one state model: `running`, `waiting`, `permission`, `done`, `idle`. The adapters also report model, effort, context left and usage limits.
+- **Harness adapters:** Claude Code, Codex, and omp. Their hook events map to one state model: `running`, `waiting`, `permission`, `done`, `idle`. Claude and Codex also report context left and usage limits. omp reports model and effort from its hook.
 - **Terminal host:** a separate tmux server (`tmux -L agentws`) with one pane per agent and one per shell. Only the adapter talks to tmux, so it can be replaced later.
 - **TUI:** connects to the daemon over a local socket. Closing it leaves the sessions running.
 

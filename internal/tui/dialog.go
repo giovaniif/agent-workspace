@@ -30,10 +30,19 @@ const (
 	fieldCount
 )
 
-var (
-	harnessChoices = []string{string(domain.HarnessClaude), string(domain.HarnessCodex)}
-	effortChoices  = []string{"", "low", "medium", "high"}
-)
+var harnessChoices = catalogNames()
+
+func effortsFor(h domain.Harness) []string {
+	return append([]string{""}, domain.SwitchChoices(h, domain.SwitchEffort)...)
+}
+
+func catalogNames() []string {
+	var out []string
+	for _, h := range domain.Harnesses() {
+		out = append(out, string(h))
+	}
+	return out
+}
 
 type dialog struct {
 	field    field
@@ -52,14 +61,22 @@ type dialog struct {
 	busy     bool
 	started  bool
 	// why: tells this dialog's start reply from one sent by a dialog closed earlier.
-	seq      int
-	defaults map[domain.Harness]Defaults
+	seq        int
+	defaults   map[domain.Harness]Defaults
+	modelLists map[domain.Harness][]string
+	// why: ←/→ keep cycling, so a typed omp query remembers the cycled value and ctrl-e can undo a match.
+	typing  bool
+	menu    bool
+	query   string
+	saved   string
+	suggest int
+	// why: the menu is painted on the finished screen, after the form has been scrolled and centered.
+	menuAt, menuCol int
 }
 
 type fallbackTrace struct {
-	fromModel, model string
-	fromEffort       int
-	effort           int
+	fromModel, model   string
+	fromEffort, effort string
 }
 
 type sessionStartedMsg struct {
@@ -74,7 +91,7 @@ type startFailedMsg struct {
 
 func (m Model) openDialog() Model {
 	m.dialogs++
-	d := &dialog{seq: m.dialogs, defaults: m.opts.Defaults, efforts: slices.Clone(effortChoices)}
+	d := &dialog{seq: m.dialogs, defaults: m.opts.Defaults, modelLists: m.opts.ModelChoices, efforts: effortsFor(domain.Harness(harnessChoices[0]))}
 	start := m.opts.Defaults[domain.HarnessClaude]
 	d.model, d.effort = start.Model, effortIndex(d.efforts, start.Effort)
 	all := sorted(m.workspaces)
@@ -109,6 +126,10 @@ func effortIndex(choices []string, effort string) int {
 // harness's defaults.
 func (d *dialog) cycleHarness(delta int) {
 	prev := d.defaults[domain.Harness(harnessChoices[d.harness])]
+	keep := ""
+	if d.effort >= 0 && d.effort < len(d.efforts) {
+		keep = d.efforts[d.effort]
+	}
 	d.harness = cycle(d.harness, delta, len(harnessChoices))
 	next := d.defaults[domain.Harness(harnessChoices[d.harness])]
 	restoredModel, restoredEffort := false, false
@@ -117,31 +138,45 @@ func (d *dialog) cycleHarness(delta int) {
 		if d.model == f.model {
 			d.model, restoredModel = f.fromModel, true
 		}
-		if d.effort == f.effort {
-			d.effort, restoredEffort = f.fromEffort, true
+		if keep == f.effort {
+			keep, restoredEffort = f.fromEffort, true
 		}
 	}
 	if !restoredModel && d.model == prev.Model {
 		d.model = next.Model
 	}
-	if !restoredEffort && d.efforts[d.effort] == prev.Effort {
-		d.effort = effortIndex(d.efforts, next.Effort)
+	if !restoredEffort && keep == prev.Effort {
+		keep = next.Effort
 	}
+	d.efforts = effortsFor(d.picked())
+	if keep != "" && !slices.Contains(d.efforts, keep) {
+		d.efforts = append(d.efforts, keep)
+	}
+	d.effort = effortIndex(d.efforts, keep)
+	d.endTyping()
 }
 
 // why: an effort the picker does not list is added to it so it survives to
 // submission.
 func (d *dialog) takeFallback(req domain.StartRequest) {
-	trace := &fallbackTrace{fromModel: d.model, fromEffort: d.effort}
+	from := ""
+	if d.effort >= 0 && d.effort < len(d.efforts) {
+		from = d.efforts[d.effort]
+	}
+	trace := &fallbackTrace{fromModel: d.model, fromEffort: from}
 	d.harness = slices.Index(harnessChoices, string(req.Harness))
 	defaults := d.defaults[req.Harness]
 	d.model = cmp.Or(req.Model, defaults.Model)
+	d.efforts = effortsFor(req.Harness)
 	effort := cmp.Or(req.Effort, defaults.Effort)
-	if !slices.Contains(d.efforts, effort) {
-		d.efforts = append(slices.Clone(d.efforts), effort)
+	if effort != "" && !slices.Contains(d.efforts, effort) {
+		d.efforts = append(d.efforts, effort)
 	}
 	d.effort = effortIndex(d.efforts, effort)
-	trace.model, trace.effort = d.model, d.effort
+	trace.model = d.model
+	if d.effort >= 0 && d.effort < len(d.efforts) {
+		trace.effort = d.efforts[d.effort]
+	}
 	d.fallback = trace
 }
 
@@ -153,18 +188,173 @@ func cycle(i, delta, n int) int {
 }
 
 func (d *dialog) text() *string {
-	if d.field == fieldWorkItem {
+	switch {
+	case d.field == fieldWorkItem:
 		return &d.workItem
+	case d.field == fieldModel && d.typing:
+		return &d.model
 	}
 	return nil
 }
 
-func (d *dialog) models() []string {
-	out := append([]string{""}, domain.SwitchChoices(domain.Harness(harnessChoices[d.harness]), domain.SwitchModel)...)
-	if !slices.Contains(out, d.model) {
+func (d *dialog) picked() domain.Harness {
+	return domain.Harness(harnessChoices[d.harness])
+}
+
+// why: omp has no fixed alias list, so the same model control takes typed text there only.
+func (d *dialog) modelTypes() bool {
+	return domain.Spec(d.picked()).Models == nil
+}
+
+func (d *dialog) modelChoices() []string {
+	base := domain.SwitchChoices(d.picked(), domain.SwitchModel)
+	if len(base) == 0 {
+		base = d.modelLists[d.picked()]
+	}
+	out := append([]string{""}, base...)
+	if d.model != "" && !slices.Contains(out, d.model) {
 		out = append(out, d.model)
 	}
 	return out
+}
+
+const completionLimit = 6
+
+func matchingModels(ids []string, query string) []string {
+	if strings.TrimSpace(query) == "" || len(ids) == 0 {
+		return nil
+	}
+	q := strings.ToLower(query)
+	var prefix, rest []string
+	for _, id := range ids {
+		l := strings.ToLower(id)
+		switch {
+		case strings.HasPrefix(l, q):
+			prefix = append(prefix, id)
+		case strings.Contains(l, q):
+			rest = append(rest, id)
+		}
+	}
+	return append(prefix, rest...)
+}
+
+func completionWindow(all []string, i, limit int) ([]string, int) {
+	if i < 0 || i >= len(all) {
+		i = 0
+	}
+	if len(all) <= limit {
+		return all, i
+	}
+	start := min(max(i-1, 0), len(all)-limit)
+	return all[start : start+limit], i - start
+}
+
+func (d *dialog) menuMatches() []string {
+	if !d.menu {
+		return nil
+	}
+	return matchingModels(d.modelLists[d.picked()], d.query)
+}
+
+func (d *dialog) menuRows() ([]string, int) {
+	all := d.menuMatches()
+	if len(all) == 0 {
+		return nil, 0
+	}
+	selected := d.suggest
+	if selected < 0 || selected >= len(all) {
+		selected = 0
+	}
+	return completionWindow(all, selected, completionLimit)
+}
+
+func (d *dialog) endTyping() {
+	d.typing = false
+	d.menu = false
+	d.query = ""
+	d.suggest = 0
+}
+
+func (d *dialog) cancelTyping() {
+	if !d.typing {
+		return
+	}
+	d.model = d.saved
+	d.endTyping()
+}
+
+func (d *dialog) typeModel(s string) {
+	if !d.typing {
+		d.saved = d.model
+		d.model = ""
+		d.typing = true
+	}
+	if d.model != d.query {
+		d.model = d.query
+	}
+	d.model += s
+	d.query = d.model
+	d.suggest = -1
+	d.menu = true
+}
+
+func (d *dialog) modelBackspace() {
+	if !d.typing {
+		return
+	}
+	if d.model != d.query {
+		d.model = d.query
+	}
+	r := []rune(d.query)
+	if len(r) == 0 {
+		d.cancelTyping()
+		return
+	}
+	d.query = string(r[:len(r)-1])
+	d.model = d.query
+	d.suggest = 0
+	if d.query == "" {
+		d.cancelTyping()
+		return
+	}
+	d.menu = true
+}
+
+func (d *dialog) moveMenu(delta int) bool {
+	if !d.typing {
+		return false
+	}
+	d.menu = true
+	all := matchingModels(d.modelLists[d.picked()], d.query)
+	if len(all) == 0 {
+		d.menu = false
+		return false
+	}
+	i := d.suggest
+	if i < 0 {
+		if delta > 0 {
+			i = 0
+		} else {
+			i = len(all) - 1
+		}
+	} else {
+		i = (i + delta + len(all)) % len(all)
+	}
+	d.suggest = i
+	return true
+}
+
+func (d *dialog) acceptMenu() bool {
+	if !d.menu {
+		return false
+	}
+	shown, selected := d.menuRows()
+	if len(shown) > 0 {
+		d.model = shown[selected]
+	}
+	d.saved = d.model
+	d.endTyping()
+	return true
 }
 
 func (d *dialog) change(delta int) {
@@ -174,8 +364,14 @@ func (d *dialog) change(delta int) {
 	case fieldHarness:
 		d.cycleHarness(delta)
 	case fieldModel:
-		models := d.models()
-		d.model = models[cycle(slices.Index(models, d.model), delta, len(models))]
+		d.cancelTyping()
+		models := d.modelChoices()
+		idx := slices.Index(models, d.model)
+		if idx < 0 {
+			idx = 0
+		}
+		d.model = models[cycle(idx, delta, len(models))]
+		d.saved = d.model
 	case fieldEffort:
 		d.effort = cycle(d.effort, delta, len(d.efforts))
 	}
@@ -189,9 +385,17 @@ func (m *Model) own() *dialog {
 }
 
 func (m Model) dialogPaste(s string) Model {
-	m.own()
-	if t := m.dialog.text(); t != nil && !m.dialog.busy {
-		*t += strings.ReplaceAll(s, "\n", " ")
+	d := m.own()
+	if d.busy {
+		return m
+	}
+	s = strings.ReplaceAll(s, "\n", " ")
+	if d.field == fieldModel && d.modelTypes() {
+		d.typeModel(s)
+		return m
+	}
+	if t := d.text(); t != nil {
+		*t += s
 	}
 	return m
 }
@@ -213,9 +417,19 @@ func (m Model) dialogKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch msg.String() {
+	case "ctrl+n":
+		d.moveMenu(1)
+	case "ctrl+p":
+		d.moveMenu(-1)
+	case "ctrl+y":
+		d.acceptMenu()
+	case "ctrl+e":
+		d.cancelTyping()
 	case "tab", "down":
+		d.endTyping()
 		d.field = field(cycle(int(d.field), 1, int(fieldCount)))
 	case "shift+tab", "up":
+		d.endTyping()
 		d.field = field(cycle(int(d.field), -1, int(fieldCount)))
 	case "left":
 		d.change(-1)
@@ -225,11 +439,15 @@ func (m Model) dialogKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if offer, ok := m.fallbackOffer(); ok {
 			d.takeFallback(offer.Request)
 		} else if advice, ok := m.advice(); ok && advice.OtherShortest != nil && advice.Other != domain.HarnessCodex {
-			d.cycleHarness(1)
+			d.cycleHarness(slices.Index(harnessChoices, string(advice.Other)) - d.harness)
 		}
 	case "enter":
 		return m, m.submit()
 	case "backspace":
+		if d.field == fieldModel && d.typing {
+			d.modelBackspace()
+			break
+		}
 		if t := d.text(); t != nil && *t != "" {
 			r := []rune(*t)
 			*t = string(r[:len(r)-1])
@@ -244,6 +462,9 @@ func (m Model) dialogKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) submit() tea.Cmd {
 	d := m.dialog
+	if d.menu {
+		d.acceptMenu()
+	}
 	switch {
 	case strings.TrimSpace(d.workItem) == "":
 		d.err = "work item is empty"

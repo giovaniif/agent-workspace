@@ -17,6 +17,7 @@ import (
 
 var (
 	keyDown  = tea.KeyPressMsg{Code: tea.KeyDown}
+	keyUp    = tea.KeyPressMsg{Code: tea.KeyUp}
 	keySpace = tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 )
 
@@ -24,8 +25,11 @@ var setupCommand = []string{"/bin/agentws", "tui", "--setup"}
 
 func freshMachine() domain.Onboarding {
 	return domain.Onboarding{
-		Claude: domain.HarnessSetup{File: "/Users/me/.claude/settings.json", Backup: "/Users/me/.claude/settings.json.agentws-backup"},
-		Codex:  domain.HarnessSetup{File: "/Users/me/.codex/hooks.json", Backup: "/Users/me/.codex/hooks.json.agentws-<time>.bak"},
+		Harnesses: map[domain.Harness]domain.HarnessSetup{
+			domain.HarnessClaude: {File: "/Users/me/.claude/settings.json", Backup: "/Users/me/.claude/settings.json.agentws-backup"},
+			domain.HarnessCodex:  {File: "/Users/me/.codex/hooks.json", Backup: "/Users/me/.codex/hooks.json.agentws-<time>.bak"},
+			domain.HarnessOmp:    {File: "/Users/me/.omp/agent/hooks/post/agentws.ts"},
+		},
 		Nvim: domain.NvimSetup{
 			OnPath: true, ConfigFile: "/Users/me/.config/nvim/plugin/agentws.lua",
 			PluginDir: "/Users/me/.local/share/agentws/nvim", PluginFound: true,
@@ -73,7 +77,7 @@ func TestGoldenSetup(t *testing.T) {
 
 func TestSetupPickStepShowsEachHarnessState(t *testing.T) {
 	o := freshMachine()
-	o.Codex.Installed = true
+	o.Harnesses[domain.HarnessCodex] = domain.HarnessSetup{Installed: true, File: "/Users/me/.codex/hooks.json"}
 	m, _ := setupModel(t, o)
 	out := screen(m)
 	mustShow(t, out, "Set up agentws", "esc skip", "Which agents do you use?", "Claude Code", "not set up", "Codex", "set up", "⏎ next")
@@ -83,6 +87,21 @@ func TestSetupPickStepShowsEachHarnessState(t *testing.T) {
 	if !strings.Contains(out, "[x] Codex") || !strings.Contains(out, "[ ] Claude Code") {
 		t.Errorf("the installed harness is not the one picked:\n%s", out)
 	}
+}
+
+func TestSetupPickStepHasARowPerCatalogHarness(t *testing.T) {
+	m, f := setupModel(t, freshMachine())
+	mustShow(t, screen(m), "[x] Claude Code", "[ ] Codex", "[ ] Oh My Pi")
+	m = pressCmd(pressCmd(pressCmd(m, keyDown), keyDown), keySpace)
+	m = pressCmd(pressCmd(pressCmd(m, keyUp), keyUp), keySpace)
+	mustShow(t, screen(m), "[ ] Claude Code", "[x] Oh My Pi")
+	m = pressCmd(m, keyEnter)
+	mustShow(t, screen(m), "Oh My Pi", "/Users/me/.omp/agent/hooks/post/agentws.ts", "agentws setup omp --remove", "⏎ install")
+	m = pressCmd(m, keyEnter)
+	if !slices.Equal(f.installed, []domain.Harness{domain.HarnessOmp}) {
+		t.Fatalf("installed = %v", f.installed)
+	}
+	mustShow(t, screen(pressCmd(m, keyEnter)), "Neovim")
 }
 
 func TestSetupInstallsOnlyThePickedHarnessesOnConfirmation(t *testing.T) {
@@ -263,7 +282,7 @@ func TestSetupNvimStepAddsTheBlockOnlyOnConfirmation(t *testing.T) {
 func TestAlreadySetUpMachinesSkipTheWalkthroughAndRecordIt(t *testing.T) {
 	c := &fakeCaller{}
 	o := freshMachine()
-	o.Codex.Installed = true
+	o.Harnesses[domain.HarnessCodex] = domain.HarnessSetup{Installed: true, File: "/Users/me/.codex/hooks.json"}
 	o.Nvim.Configured = true
 	m, f := sidebarWithSetup(t, o, c)
 	if len(c.methods()) != 0 || f.finished != 1 {

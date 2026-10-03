@@ -32,13 +32,13 @@ func runHook(args []string, stdin io.Reader, stdout io.Writer, home, pane string
 func hook1(args []string, stdin io.Reader, stdout io.Writer, home, pane string) error {
 	fs := flag.NewFlagSet("hook", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	harness := fs.String("harness", "", "claude or codex")
+	harness := fs.String("harness", "", "claude, codex or omp")
 	event := fs.String("event", "", "the harness hook name")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *harness == "" || *event == "" {
-		return errors.New("usage: agentws hook --harness claude|codex --event <name>")
+		return errors.New("usage: agentws hook --harness claude|codex|omp --event <name>")
 	}
 	payload, err := io.ReadAll(stdin)
 	if err != nil {

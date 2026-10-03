@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -26,7 +27,11 @@ var errNoCodexPicker = errors.New("the Codex /model picker did not open")
 func SendSwitches(ctx context.Context, host TerminalHost, s domain.Session, sws []domain.Switch, settle time.Duration) error {
 	pane := PaneID(s.Pane)
 	for _, sw := range sws {
-		if err := host.SendText(ctx, pane, domain.SwitchCommand(s.Harness, sw), true); err != nil {
+		text, ok := s.SwitchCommand(sw)
+		if !ok {
+			return fmt.Errorf("no %s switch text for %s", sw.Kind, s.Harness)
+		}
+		if err := host.SendText(ctx, pane, text, true); err != nil {
 			return err
 		}
 		if err := wait(ctx, settle); err != nil {

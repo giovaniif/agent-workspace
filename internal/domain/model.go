@@ -82,6 +82,7 @@ type Harness string
 const (
 	HarnessClaude Harness = "claude"
 	HarnessCodex  Harness = "codex"
+	HarnessOmp    Harness = "omp"
 )
 
 type Worktree struct {

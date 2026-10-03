@@ -21,25 +21,45 @@ type Switch struct {
 
 func (sw Switch) sent() bool { return !sw.SentAt.IsZero() }
 
-func SwitchSupported(h Harness) bool { return h == HarnessClaude || h == HarnessCodex }
+func SwitchSupported(h Harness) bool { return Spec(h).Switch != SwitchNone }
 
 func SwitchChoices(h Harness, kind SwitchKind) []string {
+	spec := Spec(h)
 	switch {
-	case !SwitchSupported(h):
+	case spec.Switch == SwitchNone:
 		return nil
 	case kind == SwitchEffort:
-		return []string{"low", "medium", "high", "xhigh", "max"}
-	case h == HarnessCodex:
-		return []string{"gpt-6.1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5.5"}
+		return slices.Clone(spec.Efforts)
 	}
-	return []string{"opus", "sonnet", "haiku"}
+	return slices.Clone(spec.Models)
 }
 
-func SwitchCommand(h Harness, sw Switch) string {
-	if h == HarnessCodex {
-		return "/model"
+// why: ok is false when the text cannot be formed yet, as for an omp effort
+// before any model is known; the switch then stays queued.
+func (s Session) SwitchCommand(sw Switch) (string, bool) {
+	switch Spec(s.Harness).Switch {
+	case SwitchSlash:
+		return "/" + string(sw.Kind) + " " + sw.Value, true
+	case SwitchPicker:
+		return "/model", true
+	case SwitchOmpSwitch:
+		if sw.Kind == SwitchModel {
+			return "/switch " + sw.Value, true
+		}
+		if model := s.targetModel(); model != "" {
+			return "/switch " + model + ":" + sw.Value, true
+		}
 	}
-	return "/" + string(sw.Kind) + " " + sw.Value
+	return "", false
+}
+
+func (s Session) targetModel() string {
+	for _, sw := range s.Switches {
+		if sw.Kind == SwitchModel {
+			return sw.Value
+		}
+	}
+	return s.Model
 }
 
 func (s Session) RequestSwitch(kind SwitchKind, value string) Session {
@@ -63,7 +83,7 @@ func (s Session) Dispatch(now time.Time) (Session, []Switch) {
 	var out []Switch
 	next := slices.Clone(s.Switches)
 	for i, sw := range next {
-		if !sw.sent() {
+		if _, ok := s.SwitchCommand(sw); ok && !sw.sent() {
 			next[i].SentAt = now
 			out = append(out, next[i])
 		}

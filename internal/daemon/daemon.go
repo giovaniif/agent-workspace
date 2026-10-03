@@ -339,12 +339,15 @@ func (s *state) hook(h rpc.Hook, now time.Time) {
 	if id := domain.ResumeIDFromHook(h.Payload); id != "" {
 		next.ResumeID = id
 	}
-	if domain.Harness(h.Harness) == domain.HarnessCodex {
-		next = s.codexObservation(h, kind, session, next)
-	}
 	at := h.At
 	if at.IsZero() {
 		at = time.Now()
+	}
+	switch domain.Harness(h.Harness) {
+	case domain.HarnessCodex:
+		next = s.codexObservation(h, kind, session, next)
+	case domain.HarnessOmp:
+		next = next.Report(ompReport(h.Payload, at))
 	}
 	next, toSend := next.Dispatch(time.Now())
 	ev := domain.SessionEventFromHook(kind, at, h.Payload)
@@ -611,6 +614,17 @@ func (c *conn) write() {
 			return
 		}
 	}
+}
+
+// why: omp's hook file sends the live model and thinking level, the only
+// report that can confirm a switch; its session file is never read.
+func ompReport(payload []byte, at time.Time) domain.StatusReport {
+	var p struct {
+		Model  string `json:"model"`
+		Effort string `json:"effort"`
+	}
+	_ = json.Unmarshal(payload, &p)
+	return domain.StatusReport{Model: p.Model, Effort: p.Effort, At: at}
 }
 
 // why: the rollout has the effort and usage the hook lacks.

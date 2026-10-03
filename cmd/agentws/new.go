@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const newUsage = "usage: agentws new [--workspace path] [--harness claude|codex] [--model m] [--effort e] <work item>"
+const newUsage = "usage: agentws new [--workspace path] [--harness claude|codex|omp] [--model m] [--effort e] <work item>"
 
 var errNoWorkItem = errors.New("no work item")
 
@@ -23,7 +23,7 @@ func parseNewArgs(args []string, stderr io.Writer) (rpc.NewSessionParams, error)
 	fs.SetOutput(stderr)
 	var p rpc.NewSessionParams
 	fs.StringVar(&p.Workspace, "workspace", "", "workspace root (default: last used)")
-	fs.StringVar(&p.Harness, "harness", string(domain.HarnessClaude), "claude or codex")
+	fs.StringVar(&p.Harness, "harness", string(domain.HarnessClaude), "claude, codex or omp")
 	fs.StringVar(&p.Model, "model", "", "model (default: the harness default)")
 	fs.StringVar(&p.Effort, "effort", "", "effort (default: the harness default)")
 	if err := fs.Parse(args); err != nil {

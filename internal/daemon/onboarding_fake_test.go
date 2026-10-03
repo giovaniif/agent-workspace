@@ -3,6 +3,7 @@ package daemon_test
 import (
 	"context"
 	"errors"
+	"maps"
 	"sync"
 
 	"github.com/giovaniif/agent-workspace/internal/domain"
@@ -30,11 +31,11 @@ func (f *fakeOnboarder) Install(_ context.Context, h domain.Harness) (domain.Har
 	}
 	f.installed = append(f.installed, h)
 	setup := domain.HarnessSetup{Installed: true, File: "/c/" + string(h)}
-	if h == domain.HarnessClaude {
-		f.state.Claude = setup
-	} else {
-		f.state.Codex = setup
+	f.state.Harnesses = maps.Clone(f.state.Harnesses)
+	if f.state.Harnesses == nil {
+		f.state.Harnesses = map[domain.Harness]domain.HarnessSetup{}
 	}
+	f.state.Harnesses[h] = setup
 	return setup, nil
 }
 

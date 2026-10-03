@@ -105,3 +105,14 @@ func TestFallbackOffersForAQueueAnswerPerRequest(t *testing.T) {
 		t.Fatal("offered a fallback for a codex request")
 	}
 }
+
+func TestFallbackOfferStaysOnCodexWhenOmpHasMoreLeft(t *testing.T) {
+	quotas := append(lowClaudeQuotas(10, 50), Quota{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 90})
+	got, ok := OfferFallback(quotas, FallbackConfig{}, StartRequest{Harness: HarnessClaude})
+	if !ok || got.Request.Harness != HarnessCodex || got.Advice.Other != HarnessCodex || got.Advice.OtherShortest.LeftPercent != 50 {
+		t.Fatalf("got %+v ok=%v", got, ok)
+	}
+	if _, ok := OfferFallback(append(lowClaudeQuotas(10, 5), quotas[2]), FallbackConfig{}, StartRequest{Harness: HarnessClaude}); ok {
+		t.Fatal("offered a low Codex because omp has room")
+	}
+}

@@ -25,7 +25,7 @@ func runDebug(args []string, stdout, stderr io.Writer) int {
 		fs := flag.NewFlagSet("debug launch", flag.ContinueOnError)
 		fs.SetOutput(stderr)
 		var p rpc.LaunchParams
-		fs.StringVar(&p.Harness, "harness", "claude", "claude or codex")
+		fs.StringVar(&p.Harness, "harness", "claude", "claude, codex or omp")
 		fs.StringVar(&p.Dir, "dir", ".", "the session's working directory")
 		fs.StringVar(&p.Model, "model", "", "model")
 		fs.StringVar(&p.Effort, "effort", "", "effort")

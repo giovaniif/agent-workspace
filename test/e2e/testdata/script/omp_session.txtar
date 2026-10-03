@@ -1,0 +1,25 @@
+# why: omp names its own hooks; turn_end ends one model round, not the turn,
+# so only session_stop finishes it. Each gate holds the fake until the state shows.
+repo api
+exec agentws workspace add api
+exec agentws new --workspace api --harness omp --model sonnet 'add a thing'
+capture SID '^session (\S+) on pane %\d+$'
+
+mkdir $AGENTWS_E2E/gates/prompt
+eventually '^seq=\d+ state=running harness=omp .* model=opus effort=high ' agentws debug session --once $SID
+mkdir $AGENTWS_E2E/gates/round
+eventually ' state=permission ' agentws debug session --once $SID
+mkdir $AGENTWS_E2E/gates/finish
+eventually ' state=done harness=omp ' agentws debug session --once $SID
+
+-- omp.steps --
+gate prompt
+hook session_start {}
+hook agent_start {"model":"opus","effort":"high"}
+gate round
+hook tool_call {"tool_name":"bash","tool_input":{"command":"ls"}}
+hook turn_end {}
+hook agent_end {}
+hook tool_approval_requested {"tool_name":"bash"}
+gate finish
+hook session_stop {"last_assistant_message":"Added it."}

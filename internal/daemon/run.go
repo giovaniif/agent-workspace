@@ -17,6 +17,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/adapters/linear"
 	"github.com/giovaniif/agent-workspace/internal/adapters/notify"
 	"github.com/giovaniif/agent-workspace/internal/adapters/nvim"
+	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
 	"github.com/giovaniif/agent-workspace/internal/adapters/onboard"
 	"github.com/giovaniif/agent-workspace/internal/adapters/procs"
 	"github.com/giovaniif/agent-workspace/internal/adapters/setup"
@@ -88,7 +89,7 @@ func Run(ctx context.Context, home string) (err error) {
 	sizes := app.NewDiskSizes(wsfs.Du{}, diskWorkers, diskSizeTTL, time.Now)
 	opts := []Option{
 		WithWorkspaces(wsfs.FS{}, gitadapter.Inspector{}),
-		WithHarnesses(host, claude.Adapter{}, codex.Adapter{}),
+		WithHarnesses(host, claude.Adapter{}, codex.Adapter{}, omp.Adapter{}),
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithLauncher(maxParallel),
 		WithNotifier(banners, notify.New(), sounds),

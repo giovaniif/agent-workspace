@@ -10,7 +10,7 @@ var switchT0 = time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 
 func TestModelSwitchIsSentAtOnceWhenTheAgentIsBetweenTools(t *testing.T) {
 	for _, state := range []AgentState{StateIdle, StateDone, StateWaiting} {
-		s := Session{State: state}.RequestSwitch(SwitchModel, "opus")
+		s := Session{Harness: HarnessClaude, State: state}.RequestSwitch(SwitchModel, "opus")
 		s, sent := s.Dispatch(switchT0)
 		want := []Switch{{Kind: SwitchModel, Value: "opus", SentAt: switchT0}}
 		if !reflect.DeepEqual(sent, want) {
@@ -24,7 +24,7 @@ func TestModelSwitchIsSentAtOnceWhenTheAgentIsBetweenTools(t *testing.T) {
 
 func TestModelSwitchWaitsWhileTheAgentRunsATool(t *testing.T) {
 	for _, state := range []AgentState{StateRunning, StatePermission} {
-		s := Session{State: state}.RequestSwitch(SwitchModel, "opus")
+		s := Session{Harness: HarnessClaude, State: state}.RequestSwitch(SwitchModel, "opus")
 		s, sent := s.Dispatch(switchT0)
 		if len(sent) != 0 || len(s.Switches) != 1 || !s.Switches[0].SentAt.IsZero() {
 			t.Fatalf("%s: sent %+v, session %+v", state, sent, s.Switches)
@@ -33,7 +33,7 @@ func TestModelSwitchWaitsWhileTheAgentRunsATool(t *testing.T) {
 }
 
 func TestModelSwitchQueuedWhileRunningIsSentAtTheNextDone(t *testing.T) {
-	s := Session{State: StateRunning}.RequestSwitch(SwitchEffort, "high")
+	s := Session{Harness: HarnessClaude, State: StateRunning}.RequestSwitch(SwitchEffort, "high")
 	s, _ = s.Dispatch(switchT0)
 	s, _ = s.Apply(HarnessEvent{Kind: EventStop})
 	_, sent := s.Dispatch(switchT0.Add(time.Minute))
@@ -43,7 +43,7 @@ func TestModelSwitchQueuedWhileRunningIsSentAtTheNextDone(t *testing.T) {
 }
 
 func TestModelSwitchQueuedWhileRunningIsSentWhenTheAgentWaits(t *testing.T) {
-	s := Session{State: StateRunning}.RequestSwitch(SwitchModel, "opus")
+	s := Session{Harness: HarnessClaude, State: StateRunning}.RequestSwitch(SwitchModel, "opus")
 	s, _ = s.Apply(HarnessEvent{Kind: EventWaitingForInput})
 	if _, sent := s.Dispatch(switchT0); len(sent) != 1 {
 		t.Fatalf("sent %+v", sent)
@@ -51,7 +51,7 @@ func TestModelSwitchQueuedWhileRunningIsSentWhenTheAgentWaits(t *testing.T) {
 }
 
 func TestModelSwitchIsNeverSentTwice(t *testing.T) {
-	s := Session{State: StateIdle}.RequestSwitch(SwitchModel, "opus")
+	s := Session{Harness: HarnessClaude, State: StateIdle}.RequestSwitch(SwitchModel, "opus")
 	s, _ = s.Dispatch(switchT0)
 	if _, sent := s.Dispatch(switchT0.Add(time.Second)); len(sent) != 0 {
 		t.Fatalf("resent %+v", sent)
@@ -59,7 +59,7 @@ func TestModelSwitchIsNeverSentTwice(t *testing.T) {
 }
 
 func TestModelSwitchNewerRequestReplacesAnUnsentOneOfTheSameKind(t *testing.T) {
-	s := Session{State: StateRunning}.
+	s := Session{Harness: HarnessClaude, State: StateRunning}.
 		RequestSwitch(SwitchModel, "opus").
 		RequestSwitch(SwitchEffort, "low").
 		RequestSwitch(SwitchModel, "sonnet")
@@ -100,7 +100,7 @@ func TestModelSwitchModelNamesMatchExactlyByFirstWordOrWithoutVersion(t *testing
 }
 
 func TestModelSwitchDoesNotMutateTheCallersSession(t *testing.T) {
-	before := Session{State: StateIdle}.RequestSwitch(SwitchModel, "opus")
+	before := Session{Harness: HarnessClaude, State: StateIdle}.RequestSwitch(SwitchModel, "opus")
 	_, _ = before.Dispatch(switchT0)
 	if !before.Switches[0].SentAt.IsZero() {
 		t.Fatal("Dispatch changed the original session")
@@ -108,7 +108,7 @@ func TestModelSwitchDoesNotMutateTheCallersSession(t *testing.T) {
 }
 
 func sentSession(kind SwitchKind, value string) Session {
-	s, _ := Session{State: StateIdle, Model: "Sonnet 4.6", Effort: "medium"}.RequestSwitch(kind, value).Dispatch(switchT0)
+	s, _ := Session{Harness: HarnessClaude, State: StateIdle, Model: "Sonnet 4.6", Effort: "medium"}.RequestSwitch(kind, value).Dispatch(switchT0)
 	return s
 }
 
@@ -149,7 +149,7 @@ func TestModelSwitchIgnoresReportsThatSayNothingAboutItsKind(t *testing.T) {
 }
 
 func TestModelSwitchNotYetSentIsNotJudgedByReports(t *testing.T) {
-	s := Session{State: StateRunning, Model: "Sonnet 4.6"}.RequestSwitch(SwitchModel, "opus")
+	s := Session{Harness: HarnessClaude, State: StateRunning, Model: "Sonnet 4.6"}.RequestSwitch(SwitchModel, "opus")
 	s = s.Report(StatusReport{Model: "Sonnet 4.6"})
 	if s.SwitchWarning || len(s.Switches) != 1 {
 		t.Fatalf("switches %+v warning %v", s.Switches, s.SwitchWarning)
@@ -174,38 +174,67 @@ func TestModelSwitchFailedToSendDropsItAndWarns(t *testing.T) {
 
 func TestModelSwitchCommandIsTheHarnessesOwnSlashCommand(t *testing.T) {
 	cases := []struct {
-		h    Harness
+		s    Session
 		sw   Switch
 		want string
+		ok   bool
 	}{
-		{HarnessClaude, Switch{Kind: SwitchModel, Value: "opus"}, "/model opus"},
-		{HarnessClaude, Switch{Kind: SwitchEffort, Value: "high"}, "/effort high"},
-		{HarnessCodex, Switch{Kind: SwitchModel, Value: "gpt-6-luna"}, "/model"},
-		{HarnessCodex, Switch{Kind: SwitchEffort, Value: "high"}, "/model"},
+		{Session{Harness: HarnessClaude}, Switch{Kind: SwitchModel, Value: "opus"}, "/model opus", true},
+		{Session{Harness: HarnessClaude}, Switch{Kind: SwitchEffort, Value: "high"}, "/effort high", true},
+		{Session{Harness: HarnessCodex}, Switch{Kind: SwitchModel, Value: "gpt-6-luna"}, "/model", true},
+		{Session{Harness: HarnessCodex}, Switch{Kind: SwitchEffort, Value: "high"}, "/model", true},
+		{Session{Harness: HarnessOmp, Model: "sonnet"}, Switch{Kind: SwitchModel, Value: "anthropic/opus"}, "/switch anthropic/opus", true},
+		{Session{Harness: HarnessOmp, Model: "sonnet"}, Switch{Kind: SwitchEffort, Value: "xhigh"}, "/switch sonnet:xhigh", true},
+		{Session{Harness: HarnessOmp}, Switch{Kind: SwitchEffort, Value: "high"}, "", false},
+		{Session{Harness: HarnessOmp, Model: "sonnet"}.RequestSwitch(SwitchModel, "opus"), Switch{Kind: SwitchEffort, Value: "low"}, "/switch opus:low", true},
+		{Session{Harness: "other"}, Switch{Kind: SwitchModel, Value: "opus"}, "", false},
 	}
 	for _, c := range cases {
-		if got := SwitchCommand(c.h, c.sw); got != c.want {
-			t.Errorf("%s %+v: %q, want %q", c.h, c.sw, got, c.want)
+		got, ok := c.s.SwitchCommand(c.sw)
+		if got != c.want || ok != c.ok {
+			t.Errorf("%s %+v: %q, %v; want %q, %v", c.s.Harness, c.sw, got, ok, c.want, c.ok)
 		}
 	}
 }
 
-func TestModelSwitchBothHarnessesAreSupported(t *testing.T) {
+func TestModelSwitchOmpEffortWithNoModelStaysQueued(t *testing.T) {
+	s := Session{Harness: HarnessOmp, State: StateIdle}.RequestSwitch(SwitchEffort, "high")
+	s, sent := s.Dispatch(switchT0)
+	if len(sent) != 0 || !reflect.DeepEqual(s.Switches, []Switch{{Kind: SwitchEffort, Value: "high"}}) {
+		t.Fatalf("sent %+v, session keeps %+v", sent, s.Switches)
+	}
+	s.Model = "sonnet"
+	if _, sent := s.Dispatch(switchT0); !reflect.DeepEqual(sent, []Switch{{Kind: SwitchEffort, Value: "high", SentAt: switchT0}}) {
+		t.Fatalf("once a model is known, sent %+v", sent)
+	}
+}
+
+func TestModelSwitchEveryCatalogHarnessIsSupported(t *testing.T) {
+	efforts := []string{"low", "medium", "high", "xhigh", "max"}
 	for _, h := range []Harness{HarnessClaude, HarnessCodex} {
-		for _, kind := range []SwitchKind{SwitchModel, SwitchEffort} {
-			if len(SwitchChoices(h, kind)) == 0 {
-				t.Errorf("%s %s: no choices", h, kind)
-			}
+		if !reflect.DeepEqual(SwitchChoices(h, SwitchEffort), efforts) {
+			t.Errorf("%s efforts %q", h, SwitchChoices(h, SwitchEffort))
 		}
+	}
+	if got, want := SwitchChoices(HarnessOmp, SwitchEffort), []string{"off", "minimal", "low", "medium", "high", "xhigh"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("omp efforts %q", got)
+	}
+	for _, h := range []Harness{HarnessClaude, HarnessCodex, HarnessOmp} {
 		if !SwitchSupported(h) {
 			t.Errorf("%s not supported", h)
 		}
 	}
-	if SwitchSupported("other") || SwitchChoices("other", SwitchModel) != nil {
+	if SwitchSupported("other") || SwitchChoices("other", SwitchModel) != nil || SwitchChoices("other", SwitchEffort) != nil {
 		t.Fatal("unknown harness supported")
 	}
-	if got := SwitchChoices(HarnessCodex, SwitchModel); got[0] == "opus" {
-		t.Fatalf("codex offers claude models %q", got)
+	if got := SwitchChoices(HarnessCodex, SwitchModel); got[0] != "gpt-6.1-sol" {
+		t.Fatalf("codex models %q", got)
+	}
+	if got := SwitchChoices(HarnessClaude, SwitchModel); !reflect.DeepEqual(got, []string{"opus", "sonnet", "haiku"}) {
+		t.Fatalf("claude models %q", got)
+	}
+	if got := SwitchChoices(HarnessOmp, SwitchModel); got != nil {
+		t.Fatalf("omp models are typed, got a list %q", got)
 	}
 }
 

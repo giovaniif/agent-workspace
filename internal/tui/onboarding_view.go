@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -13,10 +14,23 @@ const setupMaxWidth = 80
 
 var stepNames = map[domain.OnboardStep]string{
 	domain.OnboardPick:   "Agents",
-	domain.OnboardClaude: "Claude Code",
-	domain.OnboardCodex:  "Codex",
 	domain.OnboardNvim:   "Neovim",
 	domain.OnboardFinish: "Done",
+}
+
+func stepName(step domain.OnboardStep) string {
+	if h, ok := step.Harness(); ok {
+		return domain.Spec(h).Name
+	}
+	return stepNames[step]
+}
+
+type harnessCopy struct{ change, undo string }
+
+var harnessCopies = map[domain.Harness]harnessCopy{
+	domain.HarnessClaude: {"Adds the agentws hooks and wraps your status line. Your own hooks and status line keep running.", "agentws setup claude --remove"},
+	domain.HarnessCodex:  {"Adds the agentws hooks. Your other hooks stay as they are.", "agentws setup codex --remove"},
+	domain.HarnessOmp:    {"Writes an agentws hook file of its own. A file at that path that agentws did not write is left alone.", "agentws setup omp --remove"},
 }
 
 // why: it is laid out like the new-session popup (ADR 0037) so both read as one app.
@@ -38,14 +52,15 @@ func (m Model) setupLines() []string {
 	s := m.styles
 	ob := m.ob
 	out := []string{m.titleBar(" Set up agentws", "esc skip "), "", m.stepTrail(), ""}
-	switch ob.step {
-	case domain.OnboardPick:
+	_, harnessStep := ob.step.Harness()
+	switch {
+	case ob.step == domain.OnboardPick:
 		out = append(out, m.pickLines()...)
-	case domain.OnboardClaude, domain.OnboardCodex:
+	case harnessStep:
 		out = append(out, m.harnessLines()...)
-	case domain.OnboardNvim:
+	case ob.step == domain.OnboardNvim:
 		out = append(out, m.nvimLines()...)
-	case domain.OnboardFinish:
+	case ob.step == domain.OnboardFinish:
 		out = append(out, m.finishLines()...)
 	}
 	out = append(out, "")
@@ -62,16 +77,17 @@ func (m Model) setupLines() []string {
 
 func (m Model) setupActions() (hint, action string) {
 	ob := m.ob
-	switch ob.step {
-	case domain.OnboardPick:
+	_, harnessStep := ob.step.Harness()
+	switch {
+	case ob.step == domain.OnboardPick:
 		return " ↑/↓ move · space pick", "next"
-	case domain.OnboardClaude, domain.OnboardCodex:
+	case harnessStep:
 		_, setup := ob.harness()
 		if domain.HarnessOffer(setup) == domain.OfferInstall && ob.results[ob.step] != resultInstalled {
 			return " s skip", "install"
 		}
 		return "", "next"
-	case domain.OnboardNvim:
+	case ob.step == domain.OnboardNvim:
 		if domain.NvimOfferFor(ob.status.Nvim) == domain.NvimShowSnippet && ob.results[ob.step] != resultInstalled {
 			return " s skip", "write it"
 		}
@@ -96,7 +112,7 @@ func (m Model) stepTrail() string {
 		case passed:
 			st = s.sub
 		}
-		ps = append(ps, piece{st, stepNames[step]})
+		ps = append(ps, piece{st, stepName(step)})
 	}
 	return m.line(false, append([]piece{{s.text, " "}}, ps...), nil)
 }
@@ -105,23 +121,19 @@ func (m Model) pickLines() []string {
 	s := m.styles
 	ob := m.ob
 	rows := [][]piece{}
-	for i, h := range []struct {
-		name   string
-		picked bool
-		setup  domain.HarnessSetup
-	}{{"Claude Code", ob.claude, ob.status.Claude}, {"Codex", ob.codex, ob.status.Codex}} {
+	for i, h := range domain.Harnesses() {
 		cursor, check, name := "  ", "[ ] ", s.text
 		if i == ob.cursor {
 			cursor, name = "▸ ", s.brand
 		}
-		if h.picked {
+		if slices.Contains(ob.picked, h) {
 			check = "[x] "
 		}
-		rows = append(rows, []piece{{s.bar, cursor}, {name, check + padRight(h.name, 14)}, setupState(s, h.setup)})
+		rows = append(rows, []piece{{s.bar, cursor}, {name, check + padRight(domain.Spec(h).Name, 14)}, setupState(s, ob.status.Harnesses[h])})
 	}
 	out := []string{m.line(false, []piece{{s.bold, " Which agents do you use?"}}, nil)}
 	out = append(out, m.framed(rows, true)...)
-	return append(out, m.para(piece{s.text, " "}, s.sub, "agentws reads their hooks to show what each session is doing. Pick one or both; you set up each one next.")...)
+	return append(out, m.para(piece{s.text, " "}, s.sub, "agentws reads their hooks to show what each session is doing. Pick any of them; you set up each one next.")...)
 }
 
 func setupState(s styles, h domain.HarnessSetup) piece {
@@ -138,10 +150,7 @@ func (m Model) harnessLines() []string {
 	s := m.styles
 	ob := m.ob
 	h, setup := ob.harness()
-	name, change, undo := "Claude Code", "Adds the agentws hooks and wraps your status line. Your own hooks and status line keep running.", "agentws setup claude --remove"
-	if h == domain.HarnessCodex {
-		name, change, undo = "Codex", "Adds the agentws hooks. Your other hooks stay as they are.", "agentws setup codex --remove"
-	}
+	name, text := domain.Spec(h).Name, harnessCopies[h]
 	bar := piece{s.dim, " ▌ "}
 	out := []string{m.line(false, []piece{{s.bold, " " + name}}, []piece{setupState(s, setup), {s.text, " "}}), ""}
 	if domain.HarnessOffer(setup) == domain.OfferBroken {
@@ -149,13 +158,13 @@ func (m Model) harnessLines() []string {
 		return append(out, m.para(piece{s.peach, " ▌ "}, s.sub, "Fix or move the file, then open this again with S.")...)
 	}
 	out = append(out, m.line(false, []piece{bar, {s.sub, "Changes "}, {s.bold, setup.File}}, nil))
-	out = append(out, m.para(bar, s.text, change)...)
+	out = append(out, m.para(bar, s.text, text.change)...)
 	backup := setup.Backup
 	if backup == "" {
 		backup = "none needed: the file does not exist yet"
 	}
 	out = append(out, m.line(false, []piece{bar, {s.sub, "Backup  "}, {s.text, backup}}, nil))
-	out = append(out, m.line(false, []piece{bar, {s.sub, "Undo    "}, {s.text, undo}}, nil))
+	out = append(out, m.line(false, []piece{bar, {s.sub, "Undo    "}, {s.text, text.undo}}, nil))
 	if h == domain.HarnessCodex {
 		trust := piece{s.peach, " ▌ "}
 		out = append(out, "", m.line(false, []piece{trust, {s.need, "! One more step in Codex"}}, nil))
@@ -220,8 +229,9 @@ func (m Model) finishLines() []string {
 		}
 		out = append(out, m.line(false, []piece{mark, {s.text, padRight(name, 14)}, {s.sub, detail}}, nil))
 	}
-	row(domain.OnboardClaude, "Claude Code", ob.claude, ob.status.Claude)
-	row(domain.OnboardCodex, "Codex", ob.codex, ob.status.Codex)
+	for _, h := range domain.Harnesses() {
+		row(domain.HarnessStep(h), domain.Spec(h).Name, slices.Contains(ob.picked, h), ob.status.Harnesses[h])
+	}
 	mark, detail := piece{s.dim, "  – "}, ""
 	switch {
 	case ob.results[domain.OnboardNvim] == resultSkipped:

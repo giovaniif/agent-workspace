@@ -10,7 +10,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
 )
 
-const setupUsage = "usage: agentws setup [codex|claude|nvim [--remove]] | agentws setup bridge [--remote-bin path] [--remove] <ssh host>"
+const setupUsage = "usage: agentws setup [codex|claude|omp|nvim [--remove]] | agentws setup bridge [--remote-bin path] [--remove] <ssh host>"
 
 func runSetup(args []string, stdout, stderr io.Writer, env func(string) string, self string) int {
 	if len(args) > 0 && args[0] == "nvim" {
@@ -18,6 +18,9 @@ func runSetup(args []string, stdout, stderr io.Writer, env func(string) string, 
 	}
 	if len(args) > 0 && args[0] == "bridge" {
 		return runSetupBridge(args[1:], stdout, stderr, env, self)
+	}
+	if len(args) > 0 && args[0] == "omp" {
+		return runSetupOmp(args[1:], stdout, stderr, env, self)
 	}
 	if len(args) > 0 && args[0] == "claude" {
 		return runSetupClaude(args[1:], stdout, stderr, env, self)

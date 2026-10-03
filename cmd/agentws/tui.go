@@ -11,9 +11,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
 	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
+	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
 	"github.com/giovaniif/agent-workspace/internal/domain"
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 	"github.com/giovaniif/agent-workspace/internal/tui"
@@ -113,6 +117,8 @@ func tuiIn(home string, newSession, setup bool) error {
 	defer func() { _ = caller.Close() }()
 	opts := tui.Options{Theme: theme, Defaults: defaults, Fallback: fallback, NewSessionOnly: newSession, SetupOnly: setup, NoMouse: !mouse}
 	opts.HarnessDefaults = harnessDefaults()
+	opts.ModelChoices = ompModelChoices(home, false)
+	opts.RefreshModels = refreshOmpModels(home)
 	if newSession {
 		// why: the daemon opens the popup where agentws was launched, so this is the folder to start in.
 		opts.LaunchDir = launchDir()
@@ -177,6 +183,20 @@ func harnessDefaults() map[domain.Harness]tui.Defaults {
 		}
 	}
 	return out
+}
+
+func refreshOmpModels(home string) tea.Cmd {
+	return func() tea.Msg {
+		return tui.ModelsMsg{Choices: ompModelChoices(home, true)}
+	}
+}
+
+func ompModelChoices(home string, block bool) map[domain.Harness][]string {
+	ids := omp.LoadCached(context.Background(), filepath.Join(home, "cache", "omp-models.json"), "", 24*time.Hour, block)
+	if len(ids) == 0 {
+		return nil
+	}
+	return map[domain.Harness][]string{domain.HarnessOmp: ids}
 }
 
 func launchDir() string {

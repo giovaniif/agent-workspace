@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"encoding/json"
+	"slices"
 
 	"github.com/giovaniif/agent-workspace/internal/app"
 	"github.com/giovaniif/agent-workspace/internal/domain"
@@ -21,8 +22,8 @@ func (d *Daemon) onboarding(req rpc.Request) *rpc.Response {
 	switch req.Method {
 	case rpc.MethodOnboardingInstall:
 		var p rpc.OnboardInstallParams
-		if err := json.Unmarshal(req.Params, &p); err != nil || (p.Harness != domain.HarnessClaude && p.Harness != domain.HarnessCodex) {
-			return errorResponse(req.ID, rpc.CodeBadRequest, "onboarding.install needs harness claude or codex")
+		if err := json.Unmarshal(req.Params, &p); err != nil || !slices.Contains(domain.Harnesses(), p.Harness) {
+			return errorResponse(req.ID, rpc.CodeBadRequest, "onboarding.install needs a harness: claude, codex or omp")
 		}
 		s, err := d.onboard.Install(ctx, p.Harness)
 		if err != nil {

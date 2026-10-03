@@ -14,7 +14,7 @@ func (m Model) limitLines() []string {
 	quotas := m.quotas()
 	now := m.opts.Now()
 	var lines []string
-	for _, h := range []domain.Harness{domain.HarnessClaude, domain.HarnessCodex} {
+	for _, h := range domain.Harnesses() {
 		if line, ok := m.limitLine(h, quotas, now); ok {
 			lines = append(lines, line)
 		}
@@ -24,10 +24,7 @@ func (m Model) limitLines() []string {
 
 func (m Model) limitLine(h domain.Harness, quotas []domain.Quota, now time.Time) (string, bool) {
 	s := m.styles
-	tag := piece{s.blue.Bold(true), " CC "}
-	if h == domain.HarnessCodex {
-		tag = piece{s.teal.Bold(true), " CX "}
-	}
+	tag := m.harnessTag(h, " ")
 	red := lipgloss.NewStyle().Foreground(lipgloss.Color(m.opts.Theme.Red)).Bold(true)
 	left := []piece{tag}
 	var oldest time.Duration

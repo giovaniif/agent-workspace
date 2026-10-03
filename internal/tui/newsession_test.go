@@ -186,7 +186,13 @@ func lowClaudeState() rpc.State {
 	return st
 }
 
-var keyCtrlS = tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl}
+var (
+	keyCtrlS = tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl}
+	keyCtrlN = tea.KeyPressMsg{Code: 'n', Mod: tea.ModCtrl}
+	keyCtrlP = tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl}
+	keyCtrlY = tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
+	keyCtrlE = tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl}
+)
 
 func TestNewSessionDialogWarnsOnLowQuotaAndSwitchesHarness(t *testing.T) {
 	m, c := dialogModel(t, lowClaudeState())

@@ -32,6 +32,18 @@ func TestHookEventNamesMapToHarnessEvents(t *testing.T) {
 		{HarnessCodex, "SubagentStop", "", false},
 		{HarnessCodex, "PreCompact", "", false},
 		{HarnessCodex, "Notification", "", false},
+		{HarnessOmp, "session_start", EventSessionStart, true},
+		{HarnessOmp, "agent_start", EventUserPromptSubmit, true},
+		{HarnessOmp, "tool_call", EventPreToolUse, true},
+		{HarnessOmp, "tool_result", EventPostToolUse, true},
+		{HarnessOmp, "tool_approval_requested", EventPermissionRequest, true},
+		{HarnessOmp, "tool_approval_resolved", EventWaitingForInput, true},
+		{HarnessOmp, "session_stop", EventStop, true},
+		{HarnessOmp, "session_shutdown", EventSessionEnd, true},
+		{HarnessOmp, "turn_end", "", false},
+		{HarnessOmp, "agent_end", "", false},
+		{HarnessOmp, "session_switch", "", false},
+		{HarnessOmp, "Stop", "", false},
 		{"other", "Stop", "", false},
 	}
 	for _, c := range cases {

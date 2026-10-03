@@ -81,10 +81,12 @@ func Current(quotas []Quota, now time.Time) []Quota {
 }
 
 func harnessRank(h Harness) int {
-	if h == HarnessClaude {
-		return 0
+	for i, spec := range harnessTable {
+		if spec.Harness == h {
+			return i
+		}
 	}
-	return 1
+	return len(harnessTable)
 }
 
 const (
@@ -154,13 +156,18 @@ func AdviseAt(quotas []Quota, chosen Harness, threshold int) (SwitchAdvice, bool
 	if !ok || low.LeftPercent >= threshold {
 		return SwitchAdvice{}, false
 	}
-	other := HarnessClaude
-	if chosen == HarnessClaude {
-		other = HarnessCodex
-	}
-	advice := SwitchAdvice{Low: low, Other: other}
-	if q, ok := ShortestQuota(quotas, other); ok {
-		advice.OtherShortest = &q
+	advice := SwitchAdvice{Low: low}
+	for _, h := range Harnesses() {
+		if h == chosen {
+			continue
+		}
+		if advice.Other == "" {
+			advice.Other = h
+		}
+		q, ok := ShortestQuota(quotas, h)
+		if ok && (advice.OtherShortest == nil || q.LeftPercent > advice.OtherShortest.LeftPercent) {
+			advice.Other, advice.OtherShortest = h, &q
+		}
 	}
 	return advice, true
 }

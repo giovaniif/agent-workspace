@@ -1,0 +1,3 @@
+#!/bin/sh
+# why: usage: the fake Claude script, replaying $AGENTWS_E2E/omp.steps.
+AGENTWS_E2E_HARNESS=omp exec "$(dirname "$0")/claude" "$@"
