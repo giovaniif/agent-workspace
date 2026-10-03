@@ -46,6 +46,7 @@ func FromEnv(home, bin string, env func(string) string) Probe {
 		}
 		return fallback
 	}
+	ompDir, _ := omp.AgentDir(env)
 	claudeDir := or(env("CLAUDE_CONFIG_DIR"), filepath.Join(user, ".claude"))
 	data := or(env("XDG_DATA_HOME"), filepath.Join(user, ".local", "share"))
 	return Probe{
@@ -53,7 +54,7 @@ func FromEnv(home, bin string, env func(string) string) Probe {
 		Bin:            bin,
 		ClaudeSettings: filepath.Join(claudeDir, "settings.json"),
 		CodexHome:      or(env("CODEX_HOME"), filepath.Join(user, ".codex")),
-		OmpAgentDir:    omp.AgentDir(env),
+		OmpAgentDir:    ompDir,
 		NvimConfigDir:  filepath.Join(or(env("XDG_CONFIG_HOME"), filepath.Join(user, ".config")), "nvim"),
 		PluginDirs: []string{
 			filepath.Join(data, "agentws", "nvim"),

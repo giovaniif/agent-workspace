@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
 	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
 	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
@@ -115,8 +117,8 @@ func tuiIn(home string, newSession, setup bool) error {
 	defer func() { _ = caller.Close() }()
 	opts := tui.Options{Theme: theme, Defaults: defaults, Fallback: fallback, NewSessionOnly: newSession, SetupOnly: setup, NoMouse: !mouse}
 	opts.HarnessDefaults = harnessDefaults()
-	// why: the popup is the process that shows the list, so it waits; the sidebar uses the cache and refreshes aside.
-	opts.ModelChoices = ompModelChoices(home, newSession)
+	opts.ModelChoices = ompModelChoices(home, false)
+	opts.RefreshModels = refreshOmpModels(home)
 	if newSession {
 		// why: the daemon opens the popup where agentws was launched, so this is the folder to start in.
 		opts.LaunchDir = launchDir()
@@ -181,6 +183,12 @@ func harnessDefaults() map[domain.Harness]tui.Defaults {
 		}
 	}
 	return out
+}
+
+func refreshOmpModels(home string) tea.Cmd {
+	return func() tea.Msg {
+		return tui.ModelsMsg{Choices: ompModelChoices(home, true)}
+	}
 }
 
 func ompModelChoices(home string, block bool) map[domain.Harness][]string {

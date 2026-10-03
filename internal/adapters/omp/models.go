@@ -10,14 +10,10 @@ import (
 	"time"
 )
 
-// why: providers change while a file is still young, so a caller that waits always asks omp again. A caller that does not wait returns the file, and refreshes a stale one aside, because `omp models` is slow.
+// why: `omp models` is slow, so a caller that does not wait returns the file. A caller that waits always asks again, because providers change while the file is still young.
 func LoadCached(ctx context.Context, path, binary string, maxAge time.Duration, block bool) []string {
-	ids, fresh := readCatalogFile(path, maxAge)
-	if fresh && !block {
-		return ids
-	}
+	ids, _ := readCatalogFile(path, maxAge)
 	if !block {
-		go func() { _, _ = refreshCatalog(context.Background(), path, binary) }()
 		return ids
 	}
 	next, err := refreshCatalog(ctx, path, binary)

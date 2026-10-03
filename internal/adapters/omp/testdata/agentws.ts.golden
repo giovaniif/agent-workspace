@@ -32,7 +32,7 @@ export default function (pi: any) {
 			const sent = send(name, {
 				session_id: ctx?.sessionManager?.getSessionId?.(),
 				cwd: ctx?.cwd,
-				model: ctx?.model?.id,
+				model: ctx?.model?.provider && ctx?.model?.id ? ctx.model.provider + "/" + ctx.model.id : ctx?.model?.id,
 				effort: pi.getThinkingLevel?.(),
 				tool_name: event?.toolName,
 				tool_input: event?.input,

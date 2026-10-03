@@ -211,10 +211,15 @@ func TestModelSwitchOmpEffortWithNoModelStaysQueued(t *testing.T) {
 
 func TestModelSwitchEveryCatalogHarnessIsSupported(t *testing.T) {
 	efforts := []string{"low", "medium", "high", "xhigh", "max"}
-	for _, h := range []Harness{HarnessClaude, HarnessCodex, HarnessOmp} {
+	for _, h := range []Harness{HarnessClaude, HarnessCodex} {
 		if !reflect.DeepEqual(SwitchChoices(h, SwitchEffort), efforts) {
 			t.Errorf("%s efforts %q", h, SwitchChoices(h, SwitchEffort))
 		}
+	}
+	if got, want := SwitchChoices(HarnessOmp, SwitchEffort), []string{"off", "minimal", "low", "medium", "high", "xhigh"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("omp efforts %q", got)
+	}
+	for _, h := range []Harness{HarnessClaude, HarnessCodex, HarnessOmp} {
 		if !SwitchSupported(h) {
 			t.Errorf("%s not supported", h)
 		}

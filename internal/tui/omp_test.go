@@ -335,6 +335,63 @@ func TestModelSwitchMOnOmpListsModels(t *testing.T) {
 	}
 }
 
+func TestNewSessionDialogEnterAcceptsTheHighlightedModel(t *testing.T) {
+	m, c := ompModelDialog(t, []string{"alpha/one", "beta/two", "beta/three"})
+	m = typeText(m, "beta")
+	m = pressCmd(pressCmd(m, keyCtrlN), keyCtrlN)
+	if got := startedParams(t, m, c).Model; got != "beta/three" {
+		t.Fatalf("model %q", got)
+	}
+}
+
+func TestNewSessionDialogCtrlPMovesBackInTheMenu(t *testing.T) {
+	m, _ := ompModelDialog(t, []string{"alpha/one", "beta/two", "beta/three"})
+	m = typeText(m, "beta")
+	m = pressCmd(pressCmd(pressCmd(m, keyCtrlN), keyCtrlN), keyCtrlP)
+	line := ""
+	for _, row := range strings.Split(screen(m), "\n") {
+		if strings.Contains(row, "▸") {
+			line = row
+		}
+	}
+	if !strings.Contains(line, "beta/two") || strings.Contains(line, "beta/three") {
+		t.Fatalf("ctrl-p mark %q", line)
+	}
+}
+
+func TestOmpCatalogArrivesAfterTheDialogOpens(t *testing.T) {
+	c := &fakeCaller{}
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c})
+	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 40})
+	m = update(m, tui.StateMsg(withWorkspaces(fixture(1, 0))))
+	m = press(m, "n")
+	m = typeText(m, "add search")
+	m = pressCmd(pressCmd(m, keyTab), keyTab)
+	m = pressCmd(pressCmd(m, keyLeft), keyTab)
+	m = typeText(m, "beta")
+	if strings.Contains(screen(m), "beta/two") {
+		t.Fatal("menu appeared before the catalog")
+	}
+	m = update(m, tui.ModelsMsg{Choices: map[domain.Harness][]string{domain.HarnessOmp: {"beta/two", "beta/three"}}})
+	if out := screen(m); !strings.Contains(out, "beta/two") {
+		t.Fatalf("catalog:\n%s", out)
+	}
+}
+
+func TestHarnessRowKeepsOmpVisibleAtEightyColumns(t *testing.T) {
+	c := &fakeCaller{}
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c})
+	m = update(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	m = update(m, tui.StateMsg(withWorkspaces(fixture(1, 0))))
+	m = press(m, "n")
+	m = pressCmd(pressCmd(m, keyTab), keyTab)
+	m = pressCmd(pressCmd(m, keyRight), keyRight)
+	out := screen(m)
+	if !strings.Contains(out, "● omp") || strings.Contains(out, "○ o…") {
+		t.Fatalf("harness row:\n%s", out)
+	}
+}
+
 func TestModelSwitchMOnOmpFiltersAsYouType(t *testing.T) {
 	st := ompState()
 	sw := &fakeSwitcher{}
@@ -354,6 +411,28 @@ func TestModelSwitchMOnOmpFiltersAsYouType(t *testing.T) {
 	}
 	cmd()
 	if len(sw.calls) != 1 || sw.calls[0] != "s01 model beta/two" {
+		t.Fatalf("calls %q", sw.calls)
+	}
+	if out := screen(next.(tui.Model)); strings.Contains(out, "MODEL") {
+		t.Fatalf("picker still open:\n%s", out)
+	}
+}
+
+func TestModelSwitchMOnOmpAppliesAnUnlistedModel(t *testing.T) {
+	st := ompState()
+	sw := &fakeSwitcher{}
+	m := tui.New(tui.Options{
+		Theme: tui.Latte(), Now: clock, Switch: sw,
+		ModelChoices: map[domain.Harness][]string{domain.HarnessOmp: {"alpha/one"}},
+	})
+	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 40})
+	m = update(m, tui.StateMsg(st))
+	next, cmd := press(m, "M", "z", "z", "z").Update(keyEnter)
+	if cmd == nil {
+		t.Fatal("enter returned no command")
+	}
+	cmd()
+	if len(sw.calls) != 1 || sw.calls[0] != "s01 model zzz" {
 		t.Fatalf("calls %q", sw.calls)
 	}
 	if out := screen(next.(tui.Model)); strings.Contains(out, "MODEL") {

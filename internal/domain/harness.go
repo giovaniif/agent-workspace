@@ -20,6 +20,8 @@ type HarnessSpec struct {
 	Switch  SwitchForm
 	// why: nil means the harness takes any model id, typed rather than picked.
 	Models []string
+	// why: each harness confirms a different set, so one shared list would send omp a level it rejects.
+	Efforts []string
 }
 
 var harnessTable = []HarnessSpec{
@@ -29,6 +31,7 @@ var harnessTable = []HarnessSpec{
 		Tag:     "CC",
 		Switch:  SwitchSlash,
 		Models:  []string{"opus", "sonnet", "haiku"},
+		Efforts: []string{"low", "medium", "high", "xhigh", "max"},
 		Hooks: map[string]HarnessEventKind{
 			"SessionStart":      EventSessionStart,
 			"UserPromptSubmit":  EventUserPromptSubmit,
@@ -48,6 +51,7 @@ var harnessTable = []HarnessSpec{
 		Tag:     "CX",
 		Switch:  SwitchPicker,
 		Models:  []string{"gpt-6.1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5.5"},
+		Efforts: []string{"low", "medium", "high", "xhigh", "max"},
 		Hooks: map[string]HarnessEventKind{
 			"SessionStart":     EventSessionStart,
 			"UserPromptSubmit": EventUserPromptSubmit,
@@ -65,6 +69,7 @@ var harnessTable = []HarnessSpec{
 		Name:    "Oh My Pi",
 		Tag:     "OM",
 		Switch:  SwitchOmpSwitch,
+		Efforts: []string{"off", "minimal", "low", "medium", "high", "xhigh"},
 		// why: agent_end carries willContinue and turn_end is one model round, so
 		// neither means done; session_switch would idle the pane on a fork. An
 		// approval is not an event: the tool_call after it sets running.

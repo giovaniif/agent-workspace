@@ -15,7 +15,12 @@ func runSetupOmp(args []string, stdout, stderr io.Writer, env func(string) strin
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	cfg := omp.SetupConfig{Dir: omp.AgentDir(env), Command: self}
+	dir, err := omp.AgentDir(env)
+	if err != nil {
+		fmt.Fprintf(stderr, "agentws setup omp: %v\n", err)
+		return 1
+	}
+	cfg := omp.SetupConfig{Dir: dir, Command: self}
 	file := omp.HookFile(cfg.Dir)
 	if *remove {
 		res, err := omp.Remove(cfg)

@@ -164,7 +164,7 @@ func (m Model) dialogLines() ([]string, int, []string) {
 	pick := m.pickers(&keep, len(out))
 	out = append(out, pick...)
 	owners = append(owners, m.pickerOwners(len(pick))...)
-	menuRow, menuCol := modelMenuOrigin(m.width)
+	menuRow, menuCol := m.modelMenuOrigin()
 	d.menuAt = origin + menuRow + 1
 	d.menuCol = menuCol
 	out = append(out, "")
@@ -276,7 +276,8 @@ func (m Model) pickers(keep *int, at int) []string {
 		{fieldModel, "Model", modelValue},
 		{fieldEffort, "Effort", []piece{{s.bold, "‹ " + effort + " ›"}}},
 	}
-	if m.width < dialogColumnsFrom {
+	hw, mw, wide := m.pickerWidths()
+	if !wide {
 		var out []string
 		for _, c := range cols {
 			if d.field == c.f {
@@ -286,17 +287,36 @@ func (m Model) pickers(keep *int, at int) []string {
 		}
 		return out
 	}
-	colWidth := (m.width - 1) / len(cols)
+	widths := []int{hw, mw, m.width - 1 - hw - mw}
 	var labels, values []piece
-	for _, c := range cols {
+	for i, c := range cols {
 		st := s.bold
 		if d.field == c.f {
 			st, *keep = s.brand, at
 		}
-		labels = append(labels, padTo(colWidth, piece{st, " " + c.name})...)
-		values = append(values, padTo(colWidth, append([]piece{{s.text, " "}}, c.value...)...)...)
+		labels = append(labels, padTo(widths[i], piece{st, " " + c.name})...)
+		values = append(values, padTo(widths[i], append([]piece{{s.text, " "}}, c.value...)...)...)
 	}
 	return []string{m.line(false, labels, nil), m.line(false, values, nil)}
+}
+
+func (m Model) pickerWidths() (harnessW, modelW int, wide bool) {
+	if m.width < dialogColumnsFrom || m.dialog == nil {
+		return 0, 0, false
+	}
+	hw := 1
+	for i, h := range harnessChoices {
+		label := "○ " + h + "  "
+		if i == m.dialog.harness {
+			label = "● " + h + "  "
+		}
+		hw += ansi.StringWidth(label)
+	}
+	rest := m.width - 1 - hw
+	if rest < 16 {
+		return 0, 0, false
+	}
+	return hw, rest / 2, true
 }
 
 func padTo(width int, ps ...piece) []piece {
@@ -339,11 +359,12 @@ func (m Model) modelPieces() []piece {
 	return []piece{{s.bold, "‹ " + label + " ›"}}
 }
 
-func modelMenuOrigin(width int) (row, col int) {
-	if width < dialogColumnsFrom {
+func (m Model) modelMenuOrigin() (row, col int) {
+	hw, _, wide := m.pickerWidths()
+	if !wide {
 		return 3, 1
 	}
-	return 1, (width-1)/3 + 1
+	return 1, hw + 1
 }
 
 // why: nvim opens the completion menu above the cursor when the rows below the field would run off the screen.

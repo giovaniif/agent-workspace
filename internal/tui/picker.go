@@ -73,10 +73,15 @@ func (m Model) pickerKey(k string) (tea.Model, tea.Cmd) {
 		p.cursor = max(p.cursor-1, 0)
 		m.picker = &p
 	case "enter":
-		if p.cursor < 0 || p.cursor >= len(vis) {
-			return m, nil
+		if p.cursor >= 0 && p.cursor < len(vis) {
+			return m.applyChoice(p, vis[p.cursor])
 		}
-		return m.applyChoice(p, vis[p.cursor])
+		if p.kind == domain.SwitchModel && domain.Spec(p.harness).Models == nil {
+			if v := strings.TrimSpace(p.query); v != "" {
+				return m.applyChoice(p, v)
+			}
+		}
+		return m, nil
 	case "backspace":
 		if p.kind == domain.SwitchModel && p.query != "" {
 			r := []rune(p.query)

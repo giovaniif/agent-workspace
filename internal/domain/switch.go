@@ -21,8 +21,6 @@ type Switch struct {
 
 func (sw Switch) sent() bool { return !sw.SentAt.IsZero() }
 
-var switchEfforts = []string{"low", "medium", "high", "xhigh", "max"}
-
 func SwitchSupported(h Harness) bool { return Spec(h).Switch != SwitchNone }
 
 func SwitchChoices(h Harness, kind SwitchKind) []string {
@@ -31,7 +29,7 @@ func SwitchChoices(h Harness, kind SwitchKind) []string {
 	case spec.Switch == SwitchNone:
 		return nil
 	case kind == SwitchEffort:
-		return slices.Clone(switchEfforts)
+		return slices.Clone(spec.Efforts)
 	}
 	return slices.Clone(spec.Models)
 }

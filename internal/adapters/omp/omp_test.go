@@ -27,7 +27,7 @@ func TestLaunchArgv(t *testing.T) {
 			[]string{"omp", "--resume", "s-1", "--model", "sonnet", "--thinking", "high", "--", "--fix the build"}},
 		{"nothing chosen", app.LaunchRequest{}, []string{"omp"}},
 		{"prompt only", app.LaunchRequest{Prompt: "hi"}, []string{"omp", "--", "hi"}},
-		{"effort without a model", app.LaunchRequest{Effort: "max"}, []string{"omp", "--thinking", "max"}},
+		{"effort without a model", app.LaunchRequest{Effort: "xhigh"}, []string{"omp", "--thinking", "xhigh"}},
 		{"resume only", app.LaunchRequest{Resume: "s-2"}, []string{"omp", "--resume", "s-2"}},
 	}
 	for _, c := range cases {
@@ -48,12 +48,15 @@ func TestLaunchArgv(t *testing.T) {
 func TestAgentDirIsTheEnvOverrideElseHomeOmpAgent(t *testing.T) {
 	env := map[string]string{"HOME": "/home/me"}
 	get := func(k string) string { return env[k] }
-	if got := AgentDir(get); got != "/home/me/.omp/agent" {
-		t.Errorf("default = %q", got)
+	if got, err := AgentDir(get); err != nil || got != "/home/me/.omp/agent" {
+		t.Errorf("default = %q, %v", got, err)
 	}
 	env["PI_CODING_AGENT_DIR"] = "/tmp/agent"
-	if got := AgentDir(get); got != "/tmp/agent" {
-		t.Errorf("override = %q", got)
+	if got, err := AgentDir(get); err != nil || got != "/tmp/agent" {
+		t.Errorf("override = %q, %v", got, err)
+	}
+	if _, err := AgentDir(func(string) string { return "" }); err == nil {
+		t.Fatal("empty HOME was accepted")
 	}
 }
 
@@ -215,7 +218,7 @@ const pi = {
 };
 const mod = await import(process.argv[2]);
 mod.default(pi);
-const ctx = { cwd: "/work/api", model: { id: "sonnet" }, sessionManager: { getSessionId: () => "s-1" } };
+const ctx = { cwd: "/work/api", model: { provider: "anthropic", id: "sonnet" }, sessionManager: { getSessionId: () => "s-1" } };
 const run = (name, event) => calls.find(c => c[0] === name)[1](event, ctx);
 const fromToolCall = run("tool_call", { toolName: "bash", input: { command: "ls" } });
 console.log("tool_call returned " + typeof fromToolCall);
@@ -255,9 +258,9 @@ func TestHookFileSendsTheEventsUnderBun(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(read(t, log)), "\n")
 	slices.Sort(lines)
 	want := []string{
-		`omp session_stop {"session_id":"s-1","cwd":"/work/api","model":"sonnet","effort":"high","last_assistant_message":"all done"}`,
-		`omp tool_approval_resolved {"session_id":"s-1","cwd":"/work/api","model":"sonnet","effort":"high","message":"no"}`,
-		`omp tool_call {"session_id":"s-1","cwd":"/work/api","model":"sonnet","effort":"high","tool_name":"bash","tool_input":{"command":"ls"}}`,
+		`omp session_stop {"session_id":"s-1","cwd":"/work/api","model":"anthropic/sonnet","effort":"high","last_assistant_message":"all done"}`,
+		`omp tool_approval_resolved {"session_id":"s-1","cwd":"/work/api","model":"anthropic/sonnet","effort":"high","message":"no"}`,
+		`omp tool_call {"session_id":"s-1","cwd":"/work/api","model":"anthropic/sonnet","effort":"high","tool_name":"bash","tool_input":{"command":"ls"}}`,
 	}
 	if !slices.Equal(lines, want) {
 		t.Errorf("sent:\n%s\nwant:\n%s", strings.Join(lines, "\n"), strings.Join(want, "\n"))

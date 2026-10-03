@@ -30,10 +30,11 @@ const (
 	fieldCount
 )
 
-var (
-	harnessChoices = catalogNames()
-	effortChoices  = []string{"", "low", "medium", "high"}
-)
+var harnessChoices = catalogNames()
+
+func effortsFor(h domain.Harness) []string {
+	return append([]string{""}, domain.SwitchChoices(h, domain.SwitchEffort)...)
+}
 
 func catalogNames() []string {
 	var out []string
@@ -74,9 +75,8 @@ type dialog struct {
 }
 
 type fallbackTrace struct {
-	fromModel, model string
-	fromEffort       int
-	effort           int
+	fromModel, model   string
+	fromEffort, effort string
 }
 
 type sessionStartedMsg struct {
@@ -91,7 +91,7 @@ type startFailedMsg struct {
 
 func (m Model) openDialog() Model {
 	m.dialogs++
-	d := &dialog{seq: m.dialogs, defaults: m.opts.Defaults, modelLists: m.opts.ModelChoices, efforts: slices.Clone(effortChoices)}
+	d := &dialog{seq: m.dialogs, defaults: m.opts.Defaults, modelLists: m.opts.ModelChoices, efforts: effortsFor(domain.Harness(harnessChoices[0]))}
 	start := m.opts.Defaults[domain.HarnessClaude]
 	d.model, d.effort = start.Model, effortIndex(d.efforts, start.Effort)
 	all := sorted(m.workspaces)
@@ -126,6 +126,10 @@ func effortIndex(choices []string, effort string) int {
 // harness's defaults.
 func (d *dialog) cycleHarness(delta int) {
 	prev := d.defaults[domain.Harness(harnessChoices[d.harness])]
+	keep := ""
+	if d.effort >= 0 && d.effort < len(d.efforts) {
+		keep = d.efforts[d.effort]
+	}
 	d.harness = cycle(d.harness, delta, len(harnessChoices))
 	next := d.defaults[domain.Harness(harnessChoices[d.harness])]
 	restoredModel, restoredEffort := false, false
@@ -134,32 +138,45 @@ func (d *dialog) cycleHarness(delta int) {
 		if d.model == f.model {
 			d.model, restoredModel = f.fromModel, true
 		}
-		if d.effort == f.effort {
-			d.effort, restoredEffort = f.fromEffort, true
+		if keep == f.effort {
+			keep, restoredEffort = f.fromEffort, true
 		}
 	}
 	if !restoredModel && d.model == prev.Model {
 		d.model = next.Model
 	}
-	if !restoredEffort && d.efforts[d.effort] == prev.Effort {
-		d.effort = effortIndex(d.efforts, next.Effort)
+	if !restoredEffort && keep == prev.Effort {
+		keep = next.Effort
 	}
+	d.efforts = effortsFor(d.picked())
+	if keep != "" && !slices.Contains(d.efforts, keep) {
+		d.efforts = append(d.efforts, keep)
+	}
+	d.effort = effortIndex(d.efforts, keep)
 	d.endTyping()
 }
 
 // why: an effort the picker does not list is added to it so it survives to
 // submission.
 func (d *dialog) takeFallback(req domain.StartRequest) {
-	trace := &fallbackTrace{fromModel: d.model, fromEffort: d.effort}
+	from := ""
+	if d.effort >= 0 && d.effort < len(d.efforts) {
+		from = d.efforts[d.effort]
+	}
+	trace := &fallbackTrace{fromModel: d.model, fromEffort: from}
 	d.harness = slices.Index(harnessChoices, string(req.Harness))
 	defaults := d.defaults[req.Harness]
 	d.model = cmp.Or(req.Model, defaults.Model)
+	d.efforts = effortsFor(req.Harness)
 	effort := cmp.Or(req.Effort, defaults.Effort)
-	if !slices.Contains(d.efforts, effort) {
-		d.efforts = append(slices.Clone(d.efforts), effort)
+	if effort != "" && !slices.Contains(d.efforts, effort) {
+		d.efforts = append(d.efforts, effort)
 	}
 	d.effort = effortIndex(d.efforts, effort)
-	trace.model, trace.effort = d.model, d.effort
+	trace.model = d.model
+	if d.effort >= 0 && d.effort < len(d.efforts) {
+		trace.effort = d.efforts[d.effort]
+	}
 	d.fallback = trace
 }
 
@@ -445,6 +462,9 @@ func (m Model) dialogKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) submit() tea.Cmd {
 	d := m.dialog
+	if d.menu {
+		d.acceptMenu()
+	}
 	switch {
 	case strings.TrimSpace(d.workItem) == "":
 		d.err = "work item is empty"

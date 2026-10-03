@@ -27,11 +27,15 @@ type SetupResult struct {
 	File    string
 }
 
-func AgentDir(env func(string) string) string {
+func AgentDir(env func(string) string) (string, error) {
 	if dir := env("PI_CODING_AGENT_DIR"); dir != "" {
-		return dir
+		return dir, nil
 	}
-	return filepath.Join(env("HOME"), ".omp", "agent")
+	home := env("HOME")
+	if home == "" {
+		return "", errors.New("home directory is unknown")
+	}
+	return filepath.Join(home, ".omp", "agent"), nil
 }
 
 func HookFile(dir string) string { return filepath.Join(dir, "hooks", "post", "agentws.ts") }
@@ -182,7 +186,7 @@ export default function (pi: any) {
 			const sent = send(name, {
 				session_id: ctx?.sessionManager?.getSessionId?.(),
 				cwd: ctx?.cwd,
-				model: ctx?.model?.id,
+				model: ctx?.model?.provider && ctx?.model?.id ? ctx.model.provider + "/" + ctx.model.id : ctx?.model?.id,
 				effort: pi.getThinkingLevel?.(),
 				tool_name: event?.toolName,
 				tool_input: event?.input,
