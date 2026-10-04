@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.8
 	github.com/charmbracelet/x/exp/golden v0.0.0-20251109135125-8916d276318f
 	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20260927004216-9c77d672503d
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/rogpeppe/go-internal v1.16.0
 	modernc.org/sqlite v1.60.1
 	rsc.io/qr v0.2.0

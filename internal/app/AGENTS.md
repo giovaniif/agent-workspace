@@ -2,8 +2,8 @@
 
 Use cases and the ports they need. Depends only on `domain`. Tests use in-memory fakes of the ports in `fakes_test.go` / `*_fake_test.go`; `gremlins` runs here in CI (≥ 80%).
 
-- **Use cases:** `Sessions` (start and end), `ScanWorktrees`, `RefreshPRs`, `Cleanup` (plan and execute), `Reviewer`, `SnapshotTurn`/`DropTurns`, `ApplyHunk`, `SendPrompt`, `SendSwitches`, `DiscoverWorkspace`, `RefreshRepoFacts`, `ReconcilePanes`, `WorktreeSetup`, `DiskSizes`.
-- **Ports:** `TerminalHost`, `HarnessAdapter`, `Store`, `Notifier`, `Foreground`, `ProcessTable`, `WorkspaceFS`, `RepoInspector`, `WorktreeAdder`, `WorktreeLister`, `PRFinder`, `TitleResolver`, `ReviewGit`, `HunkGit`, `CleanupGit`, `WorktreeHolders`, `Trash`, `CleanupAudit`, `Sizer`, `Editor`, `Onboarder`, and for setup recipes `RecipeSource`, `MainCheckouts`, `SetupFS`, `CommandRunner`. When a port changes, update the `-tags integration` fakes too.
+- **Use cases:** `Sessions` (start and end), `ScanWorktrees`, `RefreshPRs`, `Cleanup` (plan and execute), `Reviewer`, `SnapshotTurn`/`DropTurns`, `ApplyHunk`, `SendPrompt`, `SendSwitches`, `DiscoverWorkspace`, `RefreshRepoFacts`, `ReconcilePanes`, `WorktreeSetup`, `DiskSizes`, `Transcripts` (`Page`, `Tail`, `TranscriptTail.Read`/`Since`).
+- **Ports:** `TerminalHost`, `HarnessAdapter`, `Store`, `Notifier`, `Foreground`, `ProcessTable`, `WorkspaceFS`, `RepoInspector`, `WorktreeAdder`, `WorktreeLister`, `PRFinder`, `TitleResolver`, `ReviewGit`, `HunkGit`, `CleanupGit`, `WorktreeHolders`, `Trash`, `CleanupAudit`, `Sizer`, `Editor`, `Onboarder`, `TranscriptFiles`, `TranscriptWatcher`, `TranscriptParser`, and for setup recipes `RecipeSource`, `MainCheckouts`, `SetupFS`, `CommandRunner`. When a port changes, update the `-tags integration` fakes too.
 - **Harnesses.** `HarnessAdapter` turns a `LaunchRequest` into the `PaneSpec` that runs the harness. The pane's `$TMUX_PANE` is how hooks find the session again.
 
 ## Cleanup execution

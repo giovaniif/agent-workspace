@@ -95,6 +95,14 @@ Tests are named `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `g
 
 `go test ./internal/daemon ./internal/app ./internal/domain -run 'Disk|Reclaimable|TotalSize|RemoveWorktree|CleanupWorktree|ShellToggle'`. `disk.view` returns `Cleanup.Plan` with a size per worktree (one status check per worktree, 4 at a time); `cleanup.worktree` runs `app.Cleanup.RemoveWorktree`. `AGENTWS_DEPS_STORE` names the shared deps store whose size the header shows (default: pnpm's store if present). See [ADR 0030](../../docs/adr/0030-worktrees-disk-view.md) and [internal/tui/](../tui/AGENTS.md).
 
+## Transcripts
+
+`go test ./internal/daemon/ ./internal/rpc/ ./internal/app/ ./internal/domain/ -run 'Transcript|ToolCalls|NewestPage'` and `go test -tags integration ./test/integration/ -run Transcript`. `WithTranscripts(app.Transcripts, app.TranscriptWatcher)` turns on `transcript.page`, `transcript.watch` and `transcript.unwatch` (otherwise `unknown_method`); `Run` passes `daemon.Transcripts(fs.Transcripts{})`, which picks the Claude or Codex parser by harness. The protocol is in [internal/rpc/](../rpc/AGENTS.md); see [ADR 0046](../../docs/adr/0046-remote-app.md).
+
+- **Page.** The loop only looks the session up; `app.Transcripts.Page` reads on the connection goroutine, backwards from `before` in windows that double from 256 KiB until they hold `limit` messages, and reads up to 1 MiB past the page to finish its running tool calls.
+- **Watch.** One tailer goroutine per watched session, created by the first `transcript.watch` and cancelled when its last watcher leaves (unwatch or a closed connection). The loop only records the watch and queues it to the tailer, under a mutex and without blocking; the tailer opens the file, answers, and pushes events itself, so the result and the events of one watch stay in order. It reads on each fsnotify change (`fs.Transcripts.Watch` watches the file, or its directory until the file exists), or every second if the watch cannot start. A later watcher gets the catch-up read broadcast first, then its own backlog from `after` (`TranscriptTail.Since`). A tail started at a cursor first parses up to 1 MiB before it, so a call whose result comes later is finished, not dropped.
+- **Moves.** When an emitted session's `Transcript` changes, the loop queues the new path to its tailer, which switches files and sends `reset`; when the session is forgotten, `closed`. Nothing reads a transcript while no client watches it.
+
 ## Pairing and devices
 
 `go test ./internal/domain/ ./internal/daemon/ ./cmd/agentws/ -run 'Pair|Device|Remote'`. The rules are in `domain` (`Pairing`, `NewPairCode`, `CheckDeviceToken`, `RevokeDevice`, `Device.Seen`); see [ADR 0046](../../docs/adr/0046-remote-app.md).

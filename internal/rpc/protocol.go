@@ -366,13 +366,14 @@ type Request struct {
 }
 
 type Response struct {
-	V      int             `json:"v"`
-	ID     uint64          `json:"id"`
-	Result json.RawMessage `json:"result,omitempty"`
-	Diff   *Diff           `json:"diff,omitempty"`
-	Notice *Notice         `json:"notice,omitempty"`
-	Error  *Error          `json:"error,omitempty"`
-	Build  string          `json:"build,omitempty"`
+	V          int              `json:"v"`
+	ID         uint64           `json:"id"`
+	Result     json.RawMessage  `json:"result,omitempty"`
+	Diff       *Diff            `json:"diff,omitempty"`
+	Notice     *Notice          `json:"notice,omitempty"`
+	Transcript *TranscriptEvent `json:"transcript,omitempty"`
+	Error      *Error           `json:"error,omitempty"`
+	Build      string           `json:"build,omitempty"`
 }
 
 type Notice struct {
