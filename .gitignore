@@ -1,4 +1,7 @@
 /bin/
 /.claude/worktrees/
 /.claude/settings.local.json
-dist/
+/dist/
+/internal/serve/dist/*
+!/internal/serve/dist/index.html
+node_modules/

@@ -101,7 +101,7 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 - `serve` is remote control of the machine's agents. Device tokens are the only gate besides the network path, so the docs say not to expose it to the internet without a tunnel or proxy that adds its own authentication.
 - Permission answers depend on each harness's dialog layout until the hook-based path exists; an adapter test fails when a captured dialog no longer parses.
 - Transcript formats are not public APIs. A harness update can drop messages from the chat view until the parser catches up; the pane itself is unaffected.
-- `web/` brings Node into the build. The `tdd` job covers Go packages only; the web tests' place in it is still open.
+- `web/` brings Node into the build. Web tests have parity with Go tests in the `tdd` job (ADR 0048).
 
 ## Phases
 

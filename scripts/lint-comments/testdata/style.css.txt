@@ -1,0 +1,9 @@
+:root {
+  --base: #eff1f5;
+}
+/* a comment */
+body {
+  background: url(https://example.com/x.png);
+  font-family: "a /* b */ c";
+}
+.x { color: red; } /* trailing */

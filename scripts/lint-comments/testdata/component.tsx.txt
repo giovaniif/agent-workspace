@@ -1,0 +1,13 @@
+import { useState } from "react";
+
+export function App() {
+  const [n] = useState(0);
+  return (
+    <main className="app">
+      {/* a jsx comment */}
+      <a href="https://example.com/a">{"https://example.com/b"}</a>
+      <p>{n / 2}</p>
+    </main>
+  );
+}
+// end

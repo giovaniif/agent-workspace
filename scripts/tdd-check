@@ -6,6 +6,7 @@ head="$2"
 is_test_path() {
   case "$1" in
     (*_test.go | testdata/* | */testdata/* | test/*) return 0 ;;
+    (web/*.test.ts | web/*.test.tsx | web/src/test/*) return 0 ;;
     (*) return 1 ;;
   esac
 }
@@ -110,7 +111,7 @@ changed_tests() {
     fi
     changed+=("$to")
     [ "$from" = "$to" ] || removed+=("$from")
-  done < <(git diff --name-status -z -M --diff-filter=AMRD "$old" "$new" -- '*_test.go' '*/testdata/*')
+  done < <(git diff --name-status -z -M --diff-filter=AMRD "$old" "$new" -- '*_test.go' '*/testdata/*' 'web/*.test.ts' 'web/*.test.tsx')
 }
 
 mixed=0
@@ -148,8 +149,16 @@ done
 
 pkgs=$(for f in "${changed[@]}"; do
   case "$f" in
+    (web/*) ;;
     (*/testdata/*) echo "./${f%%/testdata/*}" ;;
     (*) echo "./$(dirname "$f")" ;;
+  esac
+done | sort -u)
+web_units=$(for f in "${changed[@]}"; do
+  case "$f" in
+    (web/testdata/*) echo "." ;;
+    (web/*/testdata/*) f="${f#web/}"; echo "${f%%/testdata/*}" ;;
+    (web/*) echo "${f#web/}" ;;
   esac
 done | sort -u)
 passed=()
@@ -159,6 +168,25 @@ for pkg in $pkgs; do
     passed+=("$pkg")
   fi
 done
+
+if [ -n "$web_units" ]; then
+  if [ ! -f web/package.json ]; then
+    echo "tdd: no web/package.json on base, so these web tests cannot pass there:" $web_units
+  else
+    read -r -a web_install <<<"${TDD_WEB_INSTALL:-npm ci --no-audit --no-fund --ignore-scripts}"
+    read -r -a web_test <<<"${TDD_WEB_TEST:-npx vitest run}"
+    if ! (cd web && "${web_install[@]}"); then
+      echo "tdd: FAIL. ${web_install[*]} failed in web on base"
+      exit 1
+    fi
+    for unit in $web_units; do
+      echo "tdd: vitest $unit on base"
+      if (cd web && "${web_test[@]}" "$unit"); then
+        passed+=("web/$unit")
+      fi
+    done
+  fi
+fi
 
 if [ ${#passed[@]} -gt 0 ]; then
   echo "tdd: FAIL. These tests pass on the base branch, so they don't cover new behavior: ${passed[*]}"

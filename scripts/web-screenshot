@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+web="$root/web"
+port="${WEB_SHOT_PORT:-5199}"
+[ -d "$web/node_modules" ] || (cd "$web" && npm ci --no-audit --no-fund --ignore-scripts)
+log=$(mktemp)
+(cd "$web" && AGENTWS_FAKE_API=1 exec node node_modules/vite/bin/vite.js --host 127.0.0.1 --port "$port" --strictPort) >"$log" 2>&1 &
+server=$!
+trap 'kill "$server" 2>/dev/null || true; rm -f "$log"' EXIT
+up=0
+for _ in $(seq 150); do
+  if curl -fsS "http://127.0.0.1:$port/api/v1/hello" >/dev/null 2>&1; then
+    up=1
+    break
+  fi
+  sleep 0.2
+done
+if [ "$up" -ne 1 ]; then
+  echo "web-screenshot: the dev server did not start:" >&2
+  cat "$log" >&2
+  exit 1
+fi
+WEB_SHOT_BASE="http://127.0.0.1:$port" WEB_SHOT_CWD="$PWD" node "$web/scripts/screenshot.ts"

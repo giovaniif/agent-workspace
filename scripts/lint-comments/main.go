@@ -83,7 +83,7 @@ func skipDir(rel, name string) bool {
 	if name == "vendor" || name == "node_modules" || strings.HasPrefix(name, "_") {
 		return true
 	}
-	return rel == "bin" || rel == "dist"
+	return rel == "bin" || name == "dist"
 }
 
 func inTestdata(rel string) bool {
@@ -101,6 +101,8 @@ const (
 	txtar
 	lua
 	sql
+	script
+	css
 )
 
 func languageOf(name string, src []byte) language {
@@ -120,6 +122,10 @@ func languageOf(name string, src []byte) language {
 		return sql
 	case ".mk":
 		return makefile
+	case ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs":
+		return script
+	case ".css":
+		return css
 	case "":
 		if base == "Makefile" {
 			return makefile
@@ -148,6 +154,10 @@ func checkFile(name string, src []byte) ([]finding, error) {
 		return checkLines(name, src, luaComment, nil, nil), nil
 	case sql:
 		return checkSQL(name, src), nil
+	case script:
+		return checkScript(name, src, true), nil
+	case css:
+		return checkScript(name, src, false), nil
 	}
 	return nil, nil
 }
@@ -158,6 +168,7 @@ var (
 	shellDirective   = regexp.MustCompile(`^(#!|\s*# shellcheck )`)
 	yamlDirective    = regexp.MustCompile(`^\s*# yaml-language-server:`)
 	txtarFileHeader  = regexp.MustCompile(`^-- \S.* --$`)
+	scriptDirective  = regexp.MustCompile(`^/// <reference \S`)
 )
 
 func checkGo(name string, src []byte) ([]finding, error) {

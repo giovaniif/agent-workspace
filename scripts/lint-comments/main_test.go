@@ -26,6 +26,11 @@ func TestCheckFile(t *testing.T) {
 		{"tool", "shell.sh.txt", []int{3, 5, 8, 10, 11}},
 		{"Makefile", "makefile.mk.txt", []int{1, 2, 6}},
 		{"x.mk", "makefile.mk.txt", []int{1, 2, 6}},
+		{"x.ts", "script.ts.txt", []int{2, 7, 9, 10}},
+		{"x.mts", "script.ts.txt", []int{2, 7, 9, 10}},
+		{"x.js", "script.ts.txt", []int{2, 7, 9, 10}},
+		{"x.tsx", "component.tsx.txt", []int{7, 13}},
+		{"x.css", "style.css.txt", []int{4, 9}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name+"/"+tt.fixture, func(t *testing.T) {
@@ -70,6 +75,9 @@ func TestRunExitCode(t *testing.T) {
 		{"recipe comment in a Makefile", map[string]string{"Makefile": "build:\n\t# compile\n\tgo build\n"}, 1},
 		{"fake binary in testdata", map[string]string{"test/testdata/bin/gh": "#!/bin/sh\n# fake gh\n"}, 1},
 		{"e2e script in testdata", map[string]string{"testdata/script/a.txtar": "# checks a\nexec true\n"}, 1},
+		{"comment in web source", map[string]string{"web/src/app.tsx": "// the app\nexport const a = 1;\n"}, 1},
+		{"web dependencies", map[string]string{"web/node_modules/x/index.js": "/* vendored */\n"}, 0},
+		{"built web app", map[string]string{"internal/serve/dist/assets/app.js": "/*! license */\nexport{};\n"}, 0},
 		{"go fixture in testdata", map[string]string{"testdata/fixture.go": "// fixture input\npackage f\n"}, 0},
 	}
 	for _, tt := range tests {

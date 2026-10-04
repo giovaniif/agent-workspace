@@ -1,0 +1,13 @@
+/// <reference types="vite/client" />
+// a line comment
+const url = "https://example.com";
+const re = /\/\/ not a comment/g;
+const ratio = a / b / c;
+const tpl = `// inside ${cond ? `/* nested */` : "x"} still text`;
+/* block */
+const s = 'it\'s // fine';
+export const x = 1; // trailing
+/**
+ * doc
+ */
+const y = [/[/]/, 2];

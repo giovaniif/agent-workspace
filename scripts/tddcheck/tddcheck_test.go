@@ -62,7 +62,7 @@ func (r *repo) move(from, to string) {
 	r.git("mv", from, to)
 }
 
-func (r *repo) check() (int, string) {
+func (r *repo) check(env ...string) (int, string) {
 	r.t.Helper()
 	script, err := filepath.Abs(filepath.Join("..", "tdd-check"))
 	if err != nil {
@@ -71,7 +71,7 @@ func (r *repo) check() (int, string) {
 	head := r.git("rev-parse", "HEAD")
 	cmd := exec.Command("bash", script, r.base, head)
 	cmd.Dir = r.dir
-	cmd.Env = append(os.Environ(), "TDD_PR_TITLE=feat: x")
+	cmd.Env = append(append(os.Environ(), "TDD_PR_TITLE=feat: x"), env...)
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if ee, ok := err.(*exec.ExitError); ok {
