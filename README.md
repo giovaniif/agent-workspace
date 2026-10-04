@@ -130,6 +130,62 @@ Click a session card to select it, and click it again to jump to its agent pane.
 mouse = false
 ```
 
+## Remote app
+
+`agentws serve` serves a phone app (a PWA) for the sessions on this machine: which one needs you, the chat view over each, and new sessions ([ADR 0046](docs/adr/0046-remote-app.md)). `agentws remote pair` prints a QR code that pairs a phone. How the phone reaches the machine is up to you; `agentws` only exposes HTTPS. A PWA needs a certificate the phone trusts, so plain HTTP is served on loopback only and `serve` refuses it on any other address.
+
+Keep it running with `agentws setup serve`, which takes the same flags as `serve`:
+
+```sh
+agentws setup serve --addr 0.0.0.0:7420 --cert ~/machine.crt --key ~/machine.key
+agentws setup serve --remove
+```
+
+On Linux it writes the systemd user unit `~/.config/systemd/user/agentws-serve.service`, on macOS the launchd agent `~/Library/LaunchAgents/dev.agentws.serve.plist`. Either starts at login with the `PATH` and `AGENTWS_HOME` of the shell that ran it, restarts if `serve` exits, and logs to `$AGENTWS_HOME/serve.log`. The same arguments again change nothing; different ones back up the old file as `.bak` and rewrite it; `--remove` stops the service and deletes the file. Re-run it after `agentws` moves, since the unit holds the binary's path. On a Linux box without a desktop session, `loginctl enable-linger $USER` keeps the user service running when nobody is logged in.
+
+**Do not expose `serve` to the internet unless a layer in front of it adds its own authentication.** Pairing protects the app from strangers on a network you already trust, not from the open internet: anyone who can reach the port can try pairing codes and probe the API. Use one of the setups below.
+
+### Tailscale
+
+Both machines on one tailnet; nothing is open to the internet. Get a certificate for the machine's name and let `serve` use it:
+
+```sh
+sudo tailscale cert machine.tailnet-name.ts.net
+agentws setup serve --addr 0.0.0.0:7420 --cert machine.tailnet-name.ts.net.crt --key machine.tailnet-name.ts.net.key
+agentws remote pair --url https://machine.tailnet-name.ts.net:7420
+```
+
+Make the certificate and key readable by your user, and run `tailscale cert` again before they expire (about every 90 days), then restart with `systemctl --user restart agentws-serve`. To use port 443 and renew without touching `serve`, run a reverse proxy on the machine instead (see below) and let it use the same certificate.
+
+### LAN or VPN, behind Caddy or nginx
+
+Keep `serve` on loopback and let a proxy on the same machine terminate TLS with a Let's Encrypt certificate. The proxy only needs to be reachable from your LAN or VPN; a DNS-01 challenge issues the certificate for a name that points at a private address, so no port has to be open to the internet.
+
+```sh
+agentws setup serve
+```
+
+```caddyfile
+agent.example.com {
+    reverse_proxy 127.0.0.1:7420
+}
+```
+
+With nginx, proxy to `http://127.0.0.1:7420` and forward the WebSocket upgrade for `/api/v1/stream` (`proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"`). A proxy that cannot reach the host's loopback (one in a container) connects over TLS instead: start `serve` with `--self-signed --addr 0.0.0.0:7420` and set the proxy to trust that certificate. Pair with `agentws remote pair --url https://agent.example.com`.
+
+### Cloudflare Tunnel
+
+A tunnel needs no open port. Point `cloudflared` at the loopback `serve` and put a Cloudflare Access application in front of the hostname, so a login happens at Cloudflare before a request reaches the machine:
+
+```yaml
+ingress:
+  - hostname: agent.example.com
+    service: http://127.0.0.1:7420
+  - service: http_status:404
+```
+
+Create the Access application for `agent.example.com` with a policy that allows only you. The installed app has to get through Access too: Access sessions end, so use a long session duration, or add a service token policy for the app's `/api/v1/*` path and keep the interactive login for the rest. Without Access (or another layer that authenticates), the tunnel is a public endpoint and the warning above applies.
+
 ## Codex setup
 
 `agentws setup codex` adds the hooks Codex needs to report state, and prints the one-time trust step Codex requires. `agentws setup codex --remove` takes them out. It backs up an existing `hooks.json` first and leaves your other hooks alone.

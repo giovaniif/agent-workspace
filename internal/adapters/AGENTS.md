@@ -15,7 +15,8 @@ Implementations of the `app` ports. This is where exec, disk and network live. g
 ## Others
 
 - **notify**: `terminal-notifier` when it is on `PATH` at daemon start (grouped per session, click runs `agentws focus <id>`, and a session's banner is withdrawn once it resumes or is focused), else `osascript`; with both, `Fallback` posts through `osascript` when `terminal-notifier` fails (macOS often has its notifications off after install), and with neither, `Silent`. `Relay` posts a remote daemon's banners for `agentws notify bridge`. Both implement `app.Notifier`; `osascript` also implements `app.Foreground`. See [ADR 0016](../../docs/adr/0016-notifications-and-attention.md).
-- **launchd**: writes and loads (or unloads and deletes) the launchd agent behind `agentws setup bridge`; tests use a temp dir and a fake runner.
+- **launchd**: writes and loads (or unloads and deletes) the launchd agent behind `agentws setup bridge` and `agentws setup serve`; tests use a temp dir and a fake runner.
+- **systemd**: writes and starts (or stops and deletes) the systemd user unit behind `agentws setup serve` on Linux, same idempotency and `.bak` backup as launchd; tests use a temp dir and a fake runner, never `~/.config/systemd`.
 - **procs** (`app.ProcessTable`): `netstat -anv -p tcp` for listening sockets, then one `lsof -a -d cwd -p <pids>` for their group, command and cwd. A refresh (both commands) must cost under 50 ms; `BenchmarkPortsRefresh` fails above that (measured 19 ms). Also one `lsof -d cwd` for cleanup's holders check.
 - **fs**: `WorkspaceFS` (stat and readdir only, no git), `Du` (`du -sk -P`; `go test -tags integration -run Disk ./internal/adapters/fs/`), the trash, and `AuditLog`.
 - **github**: one read-only `gh api graphql` request per poll for all repos; tests use a fake `gh`, nothing reaches GitHub. GraphQL POSTs cannot use ETags ([ADR 0024](../../docs/adr/0024-pr-board.md)). Also `gh pr view` titles for naming.
