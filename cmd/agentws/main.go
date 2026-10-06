@@ -67,6 +67,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runRemote(args[1:], stdout, stderr)
 	case cmd == "serve":
 		return runServe(args[1:], stdout, stderr)
+	case cmd == "rpc":
+		return runRPC(args[1:], os.Stdin, stdout, stderr)
 	case slices.Contains(stubs, cmd):
 		fmt.Fprintf(stderr, "agentws %s: not implemented yet\n", cmd)
 		return 1
@@ -92,5 +94,5 @@ func buildCommit() string {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|review|focus|notify|remote|serve|cleanup|version]")
+	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|review|focus|notify|remote|serve|rpc|cleanup|version]")
 }
