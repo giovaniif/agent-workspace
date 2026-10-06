@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -35,6 +36,8 @@ type Config struct {
 	URL         string
 	Dial        func(ctx context.Context) (Daemon, error)
 	AuthTimeout time.Duration
+	Log         io.Writer
+	Now         func() time.Time
 }
 
 type Server struct {
@@ -42,6 +45,7 @@ type Server struct {
 	origin  string
 	base    context.Context
 	streams *registry
+	log     *limitedLog
 }
 
 type Hello struct {
@@ -62,7 +66,7 @@ func New(cfg Config) (*Server, error) {
 	if cfg.AuthTimeout <= 0 {
 		cfg.AuthTimeout = DefaultAuthTimeout
 	}
-	s := &Server{cfg: cfg, base: context.Background(), streams: newRegistry()}
+	s := &Server{cfg: cfg, base: context.Background(), streams: newRegistry(), log: newLimitedLog(cfg.Log, cfg.Now)}
 	if strings.TrimSpace(cfg.URL) != "" {
 		origin, err := publicOrigin(cfg.URL)
 		if err != nil {
@@ -121,19 +125,19 @@ func (s *Server) pair(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := decodeBody(r, &p); err != nil {
-		writeError(w, err)
+		s.fail(w, r, err)
 		return
 	}
 	d, err := s.dial(r.Context())
 	if err != nil {
-		writeError(w, err)
+		s.fail(w, r, err)
 		return
 	}
 	defer func() { _ = d.Close() }()
 	var out rpc.PairRedeemed
 	params := rpc.PairRedeemParams{Code: p.Code, Name: p.Name, Addr: clientAddr(r)}
 	if err := d.Call(r.Context(), rpc.MethodPairRedeem, params, &out); err != nil {
-		writeError(w, err)
+		s.fail(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -143,23 +147,23 @@ func (s *Server) authed(h func(r *http.Request, d Daemon) (any, error)) http.Han
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, ok := bearer(r)
 		if !ok {
-			writeError(w, &rpc.Error{Code: rpc.CodeUnauthorized, Message: "send Authorization: Bearer <device token>"})
+			s.fail(w, r, &rpc.Error{Code: rpc.CodeUnauthorized, Message: "send Authorization: Bearer <device token>"})
 			return
 		}
 		d, err := s.dial(r.Context())
 		if err != nil {
-			writeError(w, err)
+			s.fail(w, r, err)
 			return
 		}
 		defer func() { _ = d.Close() }()
 		dev, err := s.check(r.Context(), d, token)
 		if err != nil {
-			writeError(w, err)
+			s.fail(w, r, err)
 			return
 		}
 		out, err := h(r.WithContext(context.WithValue(r.Context(), deviceKey{}, dev)), d)
 		if err != nil {
-			writeError(w, err)
+			s.fail(w, r, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, out)
@@ -403,6 +407,15 @@ func apiError(err error) *rpc.Error {
 		return rerr
 	}
 	return &rpc.Error{Code: rpc.CodeUnavailable, Message: "the agentws daemon is not reachable: " + err.Error()}
+}
+
+func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
+	e := apiError(err)
+	status := statusOf(e.Code)
+	if status == http.StatusUnauthorized {
+		s.log.printf("%s %s %d %s from %s: %s", r.Method, r.URL.Path, status, e.Code, clientAddr(r), e.Message)
+	}
+	writeJSON(w, status, ErrorBody{Error: *e})
 }
 
 func writeError(w http.ResponseWriter, err error) {

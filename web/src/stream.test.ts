@@ -107,12 +107,44 @@ describe("StreamClient", () => {
     expect(delays).toEqual([0, 1, 0]);
   });
 
-  it("stops for good on 4401, the token was refused or revoked", async () => {
-    const { sockets, client } = started();
+  it("stops for good on 4401 once the server confirms it refuses the token", async () => {
+    const sockets = new FakeSockets();
+    const confirmRefused = vi.fn(async () => true);
+    const client = new StreamClient({ open: sockets.open, token: "t0k", retryDelay: () => 5, confirmRefused });
+    client.start();
     sockets.last.open();
     sockets.last.drop(4401, "device revoked");
-    expect(client.snapshot().status).toBe("unauthorized");
+    await vi.waitFor(() => expect(client.snapshot().status).toBe("unauthorized"));
+    expect(confirmRefused).toHaveBeenCalledOnce();
     await new Promise((r) => setTimeout(r, 30));
+    expect(sockets.opened).toHaveLength(1);
+  });
+
+  it("keeps retrying with its token when a 4401 is not confirmed", async () => {
+    const sockets = new FakeSockets();
+    const client = new StreamClient({ open: sockets.open, token: "t0k", retryDelay: () => 5, confirmRefused: async () => false });
+    client.start();
+    sockets.last.open();
+    sockets.last.drop(4401, "no token in time");
+    expect(client.snapshot().status).not.toBe("unauthorized");
+    await vi.waitFor(() => expect(sockets.opened).toHaveLength(2));
+    sockets.last.open();
+    expect(sockets.last.sent).toEqual([{ token: "t0k" }]);
+    expect(client.snapshot().status).toBe("connecting");
+  });
+
+  it("does nothing with a confirmation that arrives after it was stopped", async () => {
+    const sockets = new FakeSockets();
+    let answer: (refused: boolean) => void = () => undefined;
+    const confirmRefused = () => new Promise<boolean>((resolve) => (answer = resolve));
+    const client = new StreamClient({ open: sockets.open, token: "t0k", retryDelay: () => 5, confirmRefused });
+    client.start();
+    sockets.last.drop(4401);
+    client.stop();
+    answer(true);
+    answer(false);
+    await new Promise((r) => setTimeout(r, 30));
+    expect(client.snapshot().status).not.toBe("unauthorized");
     expect(sockets.opened).toHaveLength(1);
   });
 
