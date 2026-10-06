@@ -146,5 +146,4 @@ The phases in ADR 0049, tracked as issues in the `macOS app` milestone.
 ## Open questions
 
 - One window per server, or several servers in one sidebar?
-
 - Product name, still a placeholder.
