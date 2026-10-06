@@ -15,6 +15,10 @@ Tests: `go test ./internal/serve/ ./cmd/agentws/ -run Serve` (an in-memory daemo
 - `--self-signed` keeps `cert.pem` and `key.pem` (600) in `$AGENTWS_HOME/serve`, valid 5 years, for `localhost`, `127.0.0.1`, `::1`, `host.docker.internal`, the hostname and the `--addr` host. It is reused while it has 30 days left and covers the address, so a proxy that trusts it keeps working across restarts. When serve replaces it (a new `--addr` host, or near expiry), the proxy must be set to trust the new one.
 - `Server.Start(ctx)` opens the revocation `subscribe` connection; call it before serving. It fails when the daemon cannot be reached, and resubscribes every second after the daemon restarts. Cancelling `ctx` closes every open stream with 1001.
 
+## Log
+
+`Config.Log` (stdout under `agentws serve`) gets one line per stream closed with a code other than 1000 or 1001 (`stream closed <code> from <addr>: <reason>`) and per 401 response (`<method> <path> 401 unauthorized from <addr>: <message>`, the path without its query). Never a token. At most `LogBurst` (20) lines per `LogWindow` (1 min); the first line of the next window says how many were dropped. `Config.Now` sets the clock for tests.
+
 ## HTTP API (`/api/v1`)
 
 Every response is JSON with `Cache-Control: no-store`. An error is `{"error":{"code","message"}}` with the daemon's `rpc` code and an HTTP status: `bad_request` 400, `unauthorized` 401, `forbidden` 403, `not_found` 404, `stale` 409, `rate_limited` 429, `failed`/`launch_failed` 500, `unknown_method` 501, `version_mismatch` 502, `unavailable` 503 (also when the daemon cannot be reached). Unknown paths under `/api/` answer `not_found`.
@@ -64,12 +68,21 @@ The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`; `Handler(nil)` s
 ## Stream (`GET /api/v1/stream`, WebSocket)
 
 - The `Origin` header must equal the public URL's origin (`--url`, else `[serve] url`; a URL without a scheme means `https`; default ports are ignored). Another or a missing `Origin`, or no public URL, is refused with 403 before the upgrade.
-- The first client frame must be `{"token":"<device token>"}` within 5 s. A wrong, missing or late token closes the socket with code 4401.
+- The first client frame must be `{"token":"<device token>"}` within 5 s (`Config.AuthTimeout`). A first frame that is late, not JSON, or has no token closes the socket with 4400 (`CloseBadHandshake`), which the client retries: a phone waking up or a slow link must not cost it its pairing. Only a token `device.check` refuses, or a revoked device, closes with 4401.
 - Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","queue","sends"}}` and one `{"diff":{...}}` per change that touches those: a diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `queue` (whole list), `sends` (whole list), `removed_workspace`, `removed_worktree`, `removed_session`. Events, subagents, review drafts and comments are dropped, so `seq` has gaps. Worktrees come without `Ports`.
 - Each stream keeps a `view` (`view.go`) of tasks, worktrees, sessions and their last `domain.SessionEventsKept` events, so a session is sent as a `StreamSession`: the Go fields plus `name` (`domain.NameFor` with its worktrees' PRs), `where` (`domain.WorktreeLabel`, `repo@branch +N`), `banner` (the body of `domain.BannerFor` for its state, also for a muted session; empty while running or idle) and `since` (`domain.StateSince`, when the replayed events last changed its state; `null` when they do not explain it). The phone renders these and never re-derives them. A task or worktree diff that changes another session's derived fields is followed by a `session` diff with the same `seq`.
 - `limits` is `domain.Quotas` of the sessions as `StreamQuota`: the Go fields plus `label` (`domain.WindowLabel`), `low` and `stale_at` (`ReportedAt` + `domain.StaleQuotaAfter`). It comes in a diff only when a session change or removal changes it. The client hides windows whose `ResetsAt` (Unix seconds, 0 unknown) has passed and dims those past `stale_at`, like the TUI's limits bar.
 - `{"watch":"<session>","after":<cursor>}` adds a session's messages (`after` is the largest `cursor` the client holds, 0 for all) through `transcript.watch` on the stream's connection. Frames: `{"transcript":{"session","messages":[...]}}` first with the messages after the cursor, then one per change; `"reset":true` means the session moved to another transcript file (drop its cursor; the messages that follow start the new file), and `"closed":true` means the session is gone and the watch ended. Watching a session again replaces its watch; at most 32 per stream.
 - `{"unwatch":"<session>"}` ends it; closing the stream ends all of them. A failed watch gets `{"error":{"code","message"},"watch":"<session>"}`.
 - An unknown client frame gets `{"error":{"code":"bad_request","message"}}` and the stream stays open.
-- Close codes: 4401 unauthorized or revoked, 1013 the daemon went away (reconnect), 1001 serve is stopping (also while a stream waits for its token), 1011 a write failed.
+- Close codes:
+
+  | Code | Meaning | Client |
+  |---|---|---|
+  | 4401 `CloseUnauthorized` | the daemon refused the token, or the device was revoked | confirms with an authed GET before it forgets the login (see [web/](../../web/AGENTS.md)) |
+  | 4400 `CloseBadHandshake` | the first frame was late, not JSON, or had no token | retries |
+  | 1013 | the daemon went away, or could not be reached to check the token | retries |
+  | 1001 | serve is stopping (also while a stream waits for its token) | retries |
+  | 1011 | a write failed | retries |
+  | 1000 | the client left | none |
 - Revocation: a stream subscribes before it runs `device.check` on the same connection, so the daemon's loop orders them: a revoke before the check fails it, a revoke after reaches the stream's own subscription as a `revoked_device` diff. Either that diff or the one on the `Start` connection cancels every open stream of that device (4401 at once) and records the ID, so REST checks that answered just before it still fail. The stream does not depend on the `Start` connection, which may be reconnecting after a daemon restart. The stream reads its subscription in its own goroutine and queues the diffs for the writer, so a phone that stops reading (a write blocked up to 10 s) still sees its revocation at once; the canceled write closes the socket, with 4401 when the transport is still open.
