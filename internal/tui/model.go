@@ -128,6 +128,8 @@ type Model struct {
 
 	ob             *onboarding
 	onboardChecked bool
+
+	disconnected bool
 }
 
 func New(opts Options) Model {
@@ -227,6 +229,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case TopBarMsg:
 		m.top = msg
 	case DisconnectedMsg:
+		m.disconnected = true
 		m.status = "daemon disconnected"
 	case errMsg:
 		m.status = msg.err.Error()
@@ -235,6 +238,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case draftMsg:
 		return m.gotDraft(msg)
 	case tea.KeyPressMsg:
+		if m.disconnected && m.quitKey(msg.String()) {
+			return m, tea.Quit
+		}
 		if m.ob != nil {
 			return m.onboardKey(msg)
 		}
