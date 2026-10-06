@@ -25,9 +25,10 @@ type nativeResponse struct {
 }
 
 type views struct {
-	mu   sync.Mutex
-	byID map[uint64]*view.View
-	open map[uint64]bool
+	mu     sync.Mutex
+	byID   map[uint64]*view.View
+	open   map[uint64]bool
+	tokens map[uint64]bool
 }
 
 func Run(socket string, in io.Reader, out io.Writer) error {
@@ -38,7 +39,7 @@ func Run(socket string, in io.Reader, out io.Writer) error {
 		return ErrUnavailable
 	}
 	defer func() { _ = conn.Close() }()
-	vs := &views{byID: map[uint64]*view.View{}, open: map[uint64]bool{}}
+	vs := &views{byID: map[uint64]*view.View{}, open: map[uint64]bool{}, tokens: map[uint64]bool{}}
 	upErr := make(chan error, 1)
 	go func() {
 		err := copyLines(conn, in, vs.request)
@@ -67,7 +68,21 @@ func Run(socket string, in io.Reader, out io.Writer) error {
 
 func (vs *views) request(line []byte) [][]byte {
 	var req rpc.Request
-	if json.Unmarshal(line, &req) != nil || req.Method != MethodViewSubscribe {
+	if json.Unmarshal(line, &req) != nil {
+		return [][]byte{line}
+	}
+	wants := wantsTokens(req)
+	vs.mu.Lock()
+	if wants {
+		vs.tokens[req.ID] = true
+	} else {
+		delete(vs.tokens, req.ID)
+	}
+	vs.mu.Unlock()
+	if wants {
+		return [][]byte{line}
+	}
+	if req.Method != MethodViewSubscribe {
 		return [][]byte{line}
 	}
 	req.Method = rpc.MethodSubscribe
@@ -86,11 +101,18 @@ func (vs *views) request(line []byte) [][]byte {
 func (vs *views) response(line []byte) [][]byte {
 	vs.mu.Lock()
 	defer vs.mu.Unlock()
-	if len(vs.open) == 0 {
+	if len(vs.open) == 0 && len(vs.tokens) == 0 {
 		return [][]byte{line}
 	}
 	var resp rpc.Response
-	if json.Unmarshal(line, &resp) != nil || !vs.open[resp.ID] {
+	if json.Unmarshal(line, &resp) != nil {
+		return [][]byte{line}
+	}
+	if vs.tokens[resp.ID] {
+		delete(vs.tokens, resp.ID)
+		return tokenised(line, resp)
+	}
+	if !vs.open[resp.ID] {
 		return [][]byte{line}
 	}
 	if resp.Error != nil {
@@ -116,6 +138,22 @@ func (vs *views) response(line []byte) [][]byte {
 		return lines
 	}
 	return [][]byte{line}
+}
+
+func tokenised(line []byte, resp rpc.Response) [][]byte {
+	if resp.Error != nil || resp.Result == nil {
+		return [][]byte{line}
+	}
+	result, err := withSpans(resp.Result)
+	if err != nil {
+		return [][]byte{line}
+	}
+	resp.Result = result
+	out, err := json.Marshal(resp)
+	if err != nil {
+		return [][]byte{line}
+	}
+	return [][]byte{out}
 }
 
 func encode(r nativeResponse) [][]byte {

@@ -37,7 +37,7 @@ ADR 0046 rejected a native phone app because of APNs and 7-day re-signing. Neith
 
 ### Review highlighting in Go
 
-- `review.open` returns plain diff lines; the TUI highlights them in-process with the curated chroma lexers in `internal/tui/syntax`. The bridge adds a `tokens` option to `review.open`: each line comes with `[start, end, class]` spans from the same lexers, and the app maps classes to its theme. The lexers move to a package the bridge and the TUI share.
+- `review.open` returns plain diff lines; the TUI highlights them in-process with the curated chroma lexers in `internal/syntax`. The bridge adds a `tokens` option to `review.open`: each line comes with `[start, end, class]` spans from the same lexers, and the app maps classes to its theme. The lexers move to a package the bridge and the TUI share.
 - So both clients highlight the same way, and the app needs no tree-sitter grammars.
 
 ### Terminals: tmux control mode

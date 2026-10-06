@@ -1,0 +1,335 @@
+{
+  "v": 1,
+  "id": 3,
+  "result": {
+    "draft": {},
+    "scope": "branch",
+    "viewed": [],
+    "worktrees": [
+      {
+        "Err": "",
+        "Files": [
+          {
+            "Hunks": [
+              {
+                "Header": "@@ -0,0 +1 @@",
+                "Lines": [
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        7,
+                        "keyword"
+                      ]
+                    ],
+                    "Text": "package main"
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [],
+                    "Text": ""
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        4,
+                        "keyword"
+                      ],
+                      [
+                        5,
+                        9,
+                        "function"
+                      ],
+                      [
+                        9,
+                        11,
+                        "punctuation"
+                      ],
+                      [
+                        12,
+                        13,
+                        "punctuation"
+                      ]
+                    ],
+                    "Text": "func main() {"
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        4,
+                        5,
+                        "punctuation"
+                      ],
+                      [
+                        5,
+                        12,
+                        "function"
+                      ],
+                      [
+                        12,
+                        13,
+                        "punctuation"
+                      ],
+                      [
+                        13,
+                        17,
+                        "string"
+                      ],
+                      [
+                        17,
+                        18,
+                        "punctuation"
+                      ],
+                      [
+                        19,
+                        21,
+                        "number"
+                      ],
+                      [
+                        21,
+                        22,
+                        "punctuation"
+                      ],
+                      [
+                        23,
+                        31,
+                        "comment"
+                      ]
+                    ],
+                    "Text": "\tfmt.Println(\"hi\", 42) // greet"
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        1,
+                        "punctuation"
+                      ]
+                    ],
+                    "Text": "}"
+                  }
+                ]
+              }
+            ],
+            "Path": "main.go",
+            "Status": "modified"
+          },
+          {
+            "Hunks": [
+              {
+                "Header": "@@ -0,0 +1 @@",
+                "Lines": [
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        6,
+                        "keyword"
+                      ],
+                      [
+                        7,
+                        12,
+                        "keyword"
+                      ],
+                      [
+                        19,
+                        20,
+                        "operator"
+                      ],
+                      [
+                        21,
+                        22,
+                        "punctuation"
+                      ],
+                      [
+                        25,
+                        31,
+                        "type"
+                      ],
+                      [
+                        31,
+                        32,
+                        "punctuation"
+                      ],
+                      [
+                        32,
+                        33,
+                        "operator"
+                      ],
+                      [
+                        34,
+                        40,
+                        "type"
+                      ],
+                      [
+                        41,
+                        43,
+                        "operator"
+                      ],
+                      [
+                        44,
+                        47,
+                        "string"
+                      ],
+                      [
+                        48,
+                        50,
+                        "string"
+                      ],
+                      [
+                        50,
+                        51,
+                        "punctuation"
+                      ]
+                    ],
+                    "Text": "export const total = (n: number): string =\u003e `${n}`;"
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        9,
+                        "comment"
+                      ],
+                      [
+                        10,
+                        13,
+                        "keyword"
+                      ],
+                      [
+                        16,
+                        17,
+                        "operator"
+                      ],
+                      [
+                        18,
+                        19,
+                        "number"
+                      ],
+                      [
+                        20,
+                        21,
+                        "operator"
+                      ],
+                      [
+                        22,
+                        23,
+                        "number"
+                      ],
+                      [
+                        23,
+                        24,
+                        "punctuation"
+                      ]
+                    ],
+                    "Text": "/* sum */ let x = 1 + 2;"
+                  }
+                ]
+              }
+            ],
+            "Path": "web/app.ts",
+            "Status": "modified"
+          },
+          {
+            "Hunks": [
+              {
+                "Header": "@@ -0,0 +1 @@",
+                "Lines": [
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        9,
+                        "keyword"
+                      ]
+                    ],
+                    "Text": "# agentws"
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        1,
+                        "keyword"
+                      ],
+                      [
+                        6,
+                        18,
+                        "string"
+                      ]
+                    ],
+                    "Text": "- run `make build`"
+                  },
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Spans": [
+                      [
+                        0,
+                        13,
+                        "comment"
+                      ]
+                    ],
+                    "Text": "\u003c!-- note --\u003e"
+                  }
+                ]
+              }
+            ],
+            "Path": "README.md",
+            "Status": "modified"
+          },
+          {
+            "Hunks": [
+              {
+                "Header": "@@ -0,0 +1 @@",
+                "Lines": [
+                  {
+                    "Kind": "add",
+                    "New": 1,
+                    "Old": 0,
+                    "Text": "just some text"
+                  }
+                ]
+              }
+            ],
+            "Path": "notes.unknownext",
+            "Status": "modified"
+          }
+        ],
+        "From": "main",
+        "Worktree": {
+          "ID": "w1",
+          "Repo": "api"
+        }
+      }
+    ]
+  }
+}
