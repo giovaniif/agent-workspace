@@ -164,17 +164,28 @@ func (h *Host) parkedWindow(ctx context.Context, pane app.PaneID) (string, error
 }
 
 func (h *Host) popupClient(ctx context.Context) (string, error) {
-	out, err := h.run(ctx, "", "list-clients", "-F", "#{client_name} #{session_name}")
+	out, err := h.run(ctx, "", "list-clients", "-F", "#{client_name} #{session_name} #{client_activity}")
 	if err != nil && !isServerGone(err) {
 		return "", err
 	}
-	for _, line := range strings.Split(out, "\n") {
-		fields := strings.Fields(line)
-		if len(fields) == 2 && !strings.HasPrefix(fields[1], popupSessionPrefix) {
-			return fields[0], nil
-		}
+	if client, ok := activeClient(out); ok {
+		return client, nil
 	}
 	return "", errors.New("no terminal is attached to the agentws tmux server")
+}
+
+func activeClient(out string) (string, bool) {
+	client, newest := "", int64(-1)
+	for _, line := range strings.Split(out, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 3 || strings.HasPrefix(fields[1], popupSessionPrefix) {
+			continue
+		}
+		if n, err := strconv.ParseInt(fields[2], 10, 64); err == nil && n > newest {
+			client, newest = fields[0], n
+		}
+	}
+	return client, client != ""
 }
 
 func shellQuote(s string) string {
