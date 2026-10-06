@@ -164,6 +164,41 @@ func TestSetupDaemonCheckPrintsJSON(t *testing.T) {
 	}
 }
 
+func TestSetupDaemonCheckFailsWhenLingerCannotBeRead(t *testing.T) {
+	f := newDaemonSetupFixture(t, "linux", "yes")
+	fakeTool(t, f.bin, "loginctl", "exit 1")
+	if code, out, _ := f.run(t, "linux", t.TempDir(), "--check"); code != 1 || out != "" {
+		t.Fatalf("code %d out %q", code, out)
+	}
+}
+
+func TestSetupDaemonUnknownLingerIsNotReportedAsOff(t *testing.T) {
+	f := newDaemonSetupFixture(t, "linux", "yes")
+	fakeTool(t, f.bin, "loginctl", "exit 1")
+	code, out, errOut := f.run(t, "linux", t.TempDir())
+	if code != 0 || strings.Contains(out, "enable-linger") || !strings.Contains(errOut, "could not check linger") {
+		t.Fatalf("code %d out %q err %q", code, out, errOut)
+	}
+}
+
+func TestSetupDaemonCheckFailsWhenTheServiceFileCannotBeInspected(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root reads any directory")
+	}
+	f := newDaemonSetupFixture(t, "linux", "yes")
+	dir := filepath.Dir(f.path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+	if code, out, _ := f.run(t, "linux", t.TempDir(), "--check"); code != 1 || out != "" {
+		t.Fatalf("code %d out %q", code, out)
+	}
+}
+
 func TestSetupDaemonRefusesArguments(t *testing.T) {
 	f := newDaemonSetupFixture(t, "linux", "yes")
 	for _, args := range [][]string{{"extra"}, {"--bogus"}, {"--check", "--remove"}} {
