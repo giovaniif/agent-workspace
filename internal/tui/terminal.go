@@ -140,5 +140,5 @@ func (m Model) quitKey(k string) bool {
 	if k == "ctrl+c" {
 		return true
 	}
-	return k == "q" && !m.typing() && m.ob == nil
+	return k == "q" && !m.typing()
 }
