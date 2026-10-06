@@ -184,7 +184,7 @@ func TestClientViewingSuppressesTheBannerOfTheSessionInViewOnly(t *testing.T) {
 	clientViewing(t, app, "a", true)
 	r.hook(t, "claude", "PermissionRequest", "%1", "")
 	r.hook(t, "claude", "PermissionRequest", "%2", "")
-	if got := r.banner(t); got.State != domain.StatePermission {
+	if got := r.banner(t); got.Group != "b" || got.State != domain.StatePermission {
 		t.Fatalf("banner %+v", got)
 	}
 	r.expectOnlySentinel(t)
