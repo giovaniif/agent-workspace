@@ -22,6 +22,28 @@ func TestParsePanesKeepsOnlyManagedPanes(t *testing.T) {
 	}
 }
 
+func TestNewestActivityIsTheLatestClientsInput(t *testing.T) {
+	tests := map[string]int64{
+		"1791301222\n1791301300\n1791301250\n": 1791301300,
+		"1791301222\n":                         1791301222,
+		"":                                     0,
+		"\n\nnot-a-time\n1791301222\n":         1791301222,
+		"0\n":                                  0,
+	}
+	for in, want := range tests {
+		got := newestActivity(in)
+		if want == 0 {
+			if !got.IsZero() {
+				t.Errorf("newestActivity(%q) = %v, want zero", in, got)
+			}
+			continue
+		}
+		if got.Unix() != want {
+			t.Errorf("newestActivity(%q) = %d, want %d", in, got.Unix(), want)
+		}
+	}
+}
+
 func TestTrimCaptureDropsTrailingBlankLines(t *testing.T) {
 	tests := map[string]string{
 		"a\nb\n\n\n":   "a\nb",
