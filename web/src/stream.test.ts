@@ -140,4 +140,69 @@ describe("StreamClient", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(sockets.opened).toHaveLength(2);
   });
+
+  describe("page visibility", () => {
+    function watched(heartbeat = 1000) {
+      const page = { visible: true };
+      const sockets = new FakeSockets();
+      const client = new StreamClient({ open: sockets.open, token: "t0k", retryDelay: () => 5, visible: () => page.visible, heartbeat });
+      client.start();
+      return { page, sockets, client };
+    }
+
+    it("reports whether the page is visible once live, and again when it changes", () => {
+      const { page, sockets, client } = watched();
+      sockets.last.open();
+      expect(sockets.last.sent).toEqual([{ token: "t0k" }]);
+      sockets.last.push({ state: goldenState() });
+      expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }]);
+      page.visible = false;
+      client.visibilityChanged();
+      expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }, { visible: false }]);
+      client.stop();
+    });
+
+    it("reports again on a new connection", () => {
+      const { sockets, client } = watched();
+      sockets.last.open();
+      sockets.last.push({ state: goldenState() });
+      sockets.last.drop(1006);
+      client.retryNow();
+      sockets.last.open();
+      sockets.last.push({ state: goldenState() });
+      expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }]);
+      client.stop();
+    });
+
+    it("repeats a visible report while live, and stops once hidden or closed", () => {
+      vi.useFakeTimers();
+      try {
+        const { page, sockets, client } = watched(1000);
+        sockets.last.open();
+        sockets.last.push({ state: goldenState() });
+        vi.advanceTimersByTime(1000);
+        expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }, { visible: true }]);
+        page.visible = false;
+        client.visibilityChanged();
+        vi.advanceTimersByTime(3000);
+        expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }, { visible: true }, { visible: false }]);
+        page.visible = true;
+        client.visibilityChanged();
+        const socket = sockets.last;
+        client.stop();
+        vi.advanceTimersByTime(3000);
+        expect(socket.sent).toHaveLength(5);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("sends nothing about visibility while not live", () => {
+      const { sockets, client } = watched();
+      sockets.last.open();
+      client.visibilityChanged();
+      expect(sockets.last.sent).toEqual([{ token: "t0k" }]);
+      client.stop();
+    });
+  });
 });

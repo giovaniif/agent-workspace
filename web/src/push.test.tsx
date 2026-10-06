@@ -72,6 +72,15 @@ function setup(over: Partial<AppEnv> = {}) {
 }
 
 describe("Enable notifications", () => {
+  it("says notifications wait while the owner is at the terminal or has the app open", () => {
+    const { env } = setup();
+    render(<App env={env} />);
+    const card = screen.getByRole("region", { name: "Notifications" });
+    expect(card).toHaveTextContent("Held while you're typing at the terminal");
+    expect(card).toHaveTextContent("sent once if you step away with a session still waiting");
+    expect(card).toHaveTextContent("Not sent while this app is open on screen");
+  });
+
   it("never asks for permission on load", () => {
     const { server, push, env } = setup();
     render(<App env={env} />);
