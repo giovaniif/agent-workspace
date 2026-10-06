@@ -52,6 +52,17 @@ linters:
               desc: serve talks to the daemon only through rpc and may import domain types
             - pkg: os/exec
               desc: serve runs nothing; cmd/agentws starts the daemon
+        rpcpipe:
+          files:
+            - "**/internal/rpcpipe/**"
+          list-mode: lax
+          allow:
+            - github.com/giovaniif/agent-workspace/internal/rpc
+          deny:
+            - pkg: github.com/giovaniif/agent-workspace/internal
+              desc: the stdio bridge reaches the daemon only through rpc
+            - pkg: os/exec
+              desc: the stdio bridge never starts a daemon
         no-exec-outside-adapters:
           files:
             - "**/internal/domain/**"
