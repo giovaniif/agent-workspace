@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	CloseBadHandshake  websocket.StatusCode = 4400
 	CloseUnauthorized  websocket.StatusCode = 4401
 	streamReadLimit                         = 64 << 10
 	streamWriteTimeout                      = 10 * time.Second
@@ -106,6 +107,9 @@ func (s *Server) stream(w http.ResponseWriter, r *http.Request) {
 	st := &stream{conn: conn, readCtx: readCtx}
 	code, reason := s.runStream(ctx, cancel, st)
 	_ = conn.Close(code, reason)
+	if code != websocket.StatusNormalClosure && code != websocket.StatusGoingAway {
+		s.log.printf("stream closed %d from %s: %s", code, clientAddr(r), reason)
+	}
 }
 
 func (s *Server) checkOrigin(r *http.Request) error {
@@ -198,13 +202,14 @@ func (s *Server) authenticate(ctx context.Context, st *stream) (Daemon, rpc.Subs
 	stopping := context.AfterFunc(ctx, func() {
 		_ = st.conn.Close(closeFor(context.Cause(ctx)))
 	})
+	lateReason := "no token within " + s.cfg.AuthTimeout.String()
 	late := time.AfterFunc(s.cfg.AuthTimeout, func() {
-		_ = st.conn.Close(CloseUnauthorized, "no token within "+s.cfg.AuthTimeout.String())
+		_ = st.conn.Close(CloseBadHandshake, lateReason)
 	})
 	_, data, err := st.conn.Read(st.readCtx)
 	serving := stopping()
 	if !late.Stop() {
-		return nil, none, rpc.Device{}, CloseUnauthorized, "no token in time"
+		return nil, none, rpc.Device{}, CloseBadHandshake, lateReason
 	}
 	if !serving {
 		code, reason := closeFor(context.Cause(ctx))
@@ -215,7 +220,7 @@ func (s *Server) authenticate(ctx context.Context, st *stream) (Daemon, rpc.Subs
 	}
 	var first clientFrame
 	if json.Unmarshal(data, &first) != nil || first.Token == "" {
-		return nil, none, rpc.Device{}, CloseUnauthorized, `the first frame must be {"token": "<device token>"}`
+		return nil, none, rpc.Device{}, CloseBadHandshake, `the first frame must be {"token": "<device token>"}`
 	}
 	d, err := s.dial(ctx)
 	if err != nil {

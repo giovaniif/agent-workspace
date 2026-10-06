@@ -137,6 +137,12 @@ function wsClose(code: number): Buffer {
 }
 
 let offlineServed = false;
+let refusedServed = false;
+
+function refusing(): boolean {
+  const mode = process.env.AGENTWS_FAKE_STREAM;
+  return mode === "revoked" || mode === "late";
+}
 
 type FakeSend = { id: string; session: string; text: string; queued_at: string };
 
@@ -174,6 +180,10 @@ function fakeStream(req: IncomingMessage, socket: Duplex) {
     if (offline) {
       offlineServed = true;
       setTimeout(() => socket.end(wsClose(1013)), 300);
+    }
+    if (refusing() && !refusedServed) {
+      refusedServed = true;
+      setTimeout(() => socket.end(wsClose(4401)), 300);
     }
   });
   socket.on("close", () => liveSockets.delete(socket));
@@ -265,6 +275,10 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
         }
         if (session && req.method === "POST" && session[2] === "interrupt") {
           send(res, 200, {});
+          return;
+        }
+        if (req.method === "GET" && path === "/api/v1/workspaces" && process.env.AGENTWS_FAKE_STREAM === "revoked") {
+          send(res, 401, { error: { code: "unauthorized", message: "unknown or revoked device token" } });
           return;
         }
         if (req.method === "GET" && path === "/api/v1/workspaces") {

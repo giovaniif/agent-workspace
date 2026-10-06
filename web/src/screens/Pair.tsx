@@ -7,7 +7,9 @@ import { Brand } from "./Brand";
 
 type ServerInfo = { state: "loading" } | { state: "ready"; hello: Hello } | { state: "failed" };
 
-export function Pair({ env, code, onPaired }: { env: AppEnv; code: string; onPaired: (paired: Paired) => void }) {
+type PairProps = { env: AppEnv; code: string; notice?: string; onPaired: (paired: Paired) => void };
+
+export function Pair({ env, code, notice = "", onPaired }: PairProps) {
   const [server, setServer] = useState<ServerInfo>({ state: "loading" });
   const [value, setValue] = useState(code);
   const [name, setName] = useState(() => defaultDeviceName(env.userAgent));
@@ -43,6 +45,11 @@ export function Pair({ env, code, onPaired }: { env: AppEnv; code: string; onPai
     <main className="screen">
       <Brand host={env.host} />
       <h1>Pair this device</h1>
+      {notice && (
+        <section className="card" role="status" aria-label="Signed out">
+          <p>{notice}</p>
+        </section>
+      )}
       <p className="lead">
         Enter the code from <code>agentws remote pair</code> on your computer.
       </p>

@@ -152,19 +152,30 @@ func TestServeStreamClosesWithoutATokenInTime(t *testing.T) {
 	}
 	start := time.Now()
 	code, _ := closedWith(t, c, 2*time.Second)
-	if code != serve.CloseUnauthorized {
-		t.Fatalf("closed with %d", code)
+	if code != serve.CloseBadHandshake {
+		t.Fatalf("closed with %d, want the retryable %d", code, serve.CloseBadHandshake)
 	}
 	if waited := time.Since(start); waited < 80*time.Millisecond {
 		t.Fatalf("closed after %v, before the timeout", waited)
 	}
 }
 
-func TestServeStreamClosesOnAWrongFirstFrame(t *testing.T) {
-	for name, first := range map[string]any{
-		"unknown token": map[string]string{"token": "wrong-token"},
-		"no token":      map[string]string{"watch": "s1"},
-		"not an object": []int{1},
+func TestServeStreamClosesOnATokenTheDaemonRefusesAsUnauthorized(t *testing.T) {
+	f := newFakeDaemon()
+	f.devices[goodToken] = phone
+	_, ts := startServer(t, f, serve.Config{URL: publicURL})
+	c := openStream(t, ts, "wrong-token")
+	if code, reason := closedWith(t, c, 2*time.Second); code != serve.CloseUnauthorized {
+		t.Fatalf("closed with %d %q", code, reason)
+	}
+}
+
+func TestServeStreamClosesOnAMalformedFirstFrameWithTheRetryableCode(t *testing.T) {
+	for name, first := range map[string]string{
+		"no token":      `{"watch":"s1"}`,
+		"empty token":   `{"token":""}`,
+		"not an object": `[1]`,
+		"not JSON":      `hello`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := newFakeDaemon()
@@ -174,9 +185,13 @@ func TestServeStreamClosesOnAWrongFirstFrame(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			send(t, c, first)
-			if code, reason := closedWith(t, c, 2*time.Second); code != serve.CloseUnauthorized {
-				t.Fatalf("closed with %d %q", code, reason)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if err := c.Write(ctx, websocket.MessageText, []byte(first)); err != nil {
+				t.Fatal(err)
+			}
+			if code, reason := closedWith(t, c, 2*time.Second); code != serve.CloseBadHandshake {
+				t.Fatalf("closed with %d %q, want %d", code, reason, serve.CloseBadHandshake)
 			}
 			if f.subscribers() != 1 {
 				t.Fatalf("an unauthenticated stream subscribed (%d subscribers)", f.subscribers())

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App, type AppEnv } from "../App";
 import type { Frame, StreamState } from "../stream";
-import { FakeServer, MemoryStorage } from "../test/fake-server";
+import { FakeServer, MemoryStorage, type FakeRoute } from "../test/fake-server";
 import { FakeSockets } from "../test/fake-socket";
 
 const golden = (name: string) => JSON.parse(readFileSync(new URL("../../../internal/serve/testdata/" + name, import.meta.url), "utf8"));
@@ -13,12 +13,14 @@ const goldenDiffs = (): Frame[] => golden("stream-diffs.json") as Frame[];
 const device = { id: "k3m9p2qx", name: "iPhone", created_at: "2026-10-03T10:00:00Z", last_seen: "2026-10-03T10:00:00Z" };
 const halfPastNoon = new Date("2026-10-03T12:30:00Z").getTime();
 
-function setup(hash = "") {
+function setup(hash = "", workspaces: FakeRoute | Error = { status: 200, body: { workspaces: [], last_used: "" } }) {
   window.location.hash = hash;
   const sockets = new FakeSockets();
   const storage = new MemoryStorage();
   storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
-  const server = new FakeServer().on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } });
+  const server = new FakeServer()
+    .on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } })
+    .on("GET", "/api/v1/workspaces", workspaces);
   const env: AppEnv = {
     fetch: server.fetch,
     storage,
@@ -36,7 +38,7 @@ function setup(hash = "") {
     },
   };
   render(<App env={env} />);
-  return { sockets, storage };
+  return { sockets, storage, server };
 }
 
 function live(sockets: FakeSockets, state: StreamState = goldenState()) {
@@ -112,12 +114,34 @@ describe("the session list", () => {
     expect(sockets.opened.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("goes back to pairing when the stream refuses the token", async () => {
-    const { sockets, storage } = setup();
+  it("goes back to pairing and says why once an authed request confirms the token is refused", async () => {
+    const refused = { status: 401, body: { error: { code: "unauthorized", message: "unknown or revoked device token" } } };
+    const { sockets, storage, server } = setup("", refused);
     sockets.last.open();
     sockets.last.drop(4401, "device revoked");
     expect(await screen.findByRole("heading", { name: "Pair this device" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/removed from agentws, or the server rejected its login/);
     expect(storage.getItem("agentws.auth")).toBeNull();
+    const check = server.calls.findIndex((c) => c.path === "/api/v1/workspaces");
+    expect(check).toBeGreaterThanOrEqual(0);
+    expect(server.headers[check].authorization).toBe("Bearer t0k");
+  });
+
+  it.each<[string, FakeRoute | Error]>([
+    ["the check succeeds", { status: 200, body: { workspaces: [], last_used: "" } }],
+    ["the daemon is down", { status: 503, body: { error: { code: "unavailable", message: "the agentws daemon is not reachable" } } }],
+    ["a proxy answers 502", { status: 502, raw: "Bad Gateway" }],
+    ["the network fails", new TypeError("Load failed")],
+  ])("keeps its login and reconnects when the stream says 4401 but %s", async (_, workspaces) => {
+    const { sockets, storage, server } = setup("", workspaces);
+    live(sockets);
+    sockets.last.drop(4401, "no token in time");
+    await waitFor(() => expect(server.calls.some((c) => c.path === "/api/v1/workspaces")).toBe(true));
+    await waitFor(() => expect(sockets.opened).toHaveLength(2));
+    expect(storage.getItem("agentws.auth")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
+    sockets.last.open();
+    expect(sockets.last.sent).toEqual([{ token: "t0k" }]);
   });
 });
 

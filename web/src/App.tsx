@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import type { Fetch } from "./api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { tokenRefused, type Fetch } from "./api";
 import { clearAuth, loadAuth, saveAuth, type Auth, type KeyValue } from "./auth";
 import { pairCodeFromHash } from "./display";
 import { disablePush, noPush, type PushEnv } from "./push";
@@ -58,18 +58,19 @@ function useNow(now: () => number, every: number): number {
 type ConnectedProps = { env: AppEnv; auth: Auth; onUnauthorized: () => void; onSignOut: () => Promise<void> };
 
 function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
-  const visibility = env.visibility;
+  const { onHashChange, fetch, visibility } = env;
+  const confirmRefused = useCallback(() => tokenRefused(fetch, auth.token), [fetch, auth.token]);
   const client = useStreamClient({
     open: env.openStream,
     token: auth.token,
     retryDelay: env.retryDelay,
     now: env.now,
     visible: visibility?.visible,
+    confirmRefused,
   });
   const snapshot = useStream(client);
   const [hash, setHash] = useState(env.hash);
   const now = useNow(env.now, snapshot.status === "offline" ? 1000 : 30000);
-  const { onHashChange, fetch } = env;
   const api = useMemo(() => ({ fetch, token: auth.token }), [fetch, auth.token]);
 
   useEffect(() => onHashChange(setHash), [onHashChange]);
@@ -113,26 +114,42 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
   );
 }
 
+const refusedNotice =
+  "This device was removed from agentws, or the server rejected its login. Pair it again with a new code from agentws remote pair.";
+
 export function App({ env }: { env: AppEnv }) {
   const [auth, setAuth] = useState<Auth | null>(() => loadAuth(env.storage));
+  const [notice, setNotice] = useState("");
   const code = useMemo(() => pairCodeFromHash(env.hash), [env.hash]);
   const { storage } = env;
-  const unpair = useMemo(
-    () => () => {
-      clearAuth(storage);
-      setAuth(null);
-    },
-    [storage],
-  );
+  const unpair = useCallback(() => {
+    clearAuth(storage);
+    setAuth(null);
+  }, [storage]);
+  const refused = useCallback(() => {
+    unpair();
+    setNotice(refusedNotice);
+  }, [unpair]);
   if (auth) {
     const signOut = async () => {
       await disablePush(env.push ?? noPush, env.fetch, auth.token);
+      setNotice("");
       unpair();
     };
-    return <Connected env={env} auth={auth} onUnauthorized={unpair} onSignOut={signOut} />;
+    return <Connected env={env} auth={auth} onUnauthorized={refused} onSignOut={signOut} />;
   }
   if (!env.installed) {
     return <Install code={code} host={env.host} />;
   }
-  return <Pair env={env} code={code} onPaired={(paired) => setAuth(saveAuth(env.storage, paired))} />;
+  return (
+    <Pair
+      env={env}
+      code={code}
+      notice={notice}
+      onPaired={(paired) => {
+        setNotice("");
+        setAuth(saveAuth(env.storage, paired));
+      }}
+    />
+  );
 }

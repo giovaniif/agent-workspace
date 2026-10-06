@@ -81,6 +81,7 @@ func serveIn(ctx context.Context, home string, f serveFlags, stdout, stderr io.W
 	srv, err := serve.New(serve.Config{
 		Build: version.String(),
 		URL:   f.url,
+		Log:   stdout,
 		Dial: func(ctx context.Context) (serve.Daemon, error) {
 			return connect(ctx, home)
 		},

@@ -248,6 +248,7 @@ export type StreamOptions = {
   now?: () => number;
   visible?: () => boolean;
   heartbeat?: number;
+  confirmRefused?: () => Promise<boolean>;
 };
 
 export class StreamClient {
@@ -257,6 +258,7 @@ export class StreamClient {
   private beat: ReturnType<typeof setInterval> | null = null;
   private attempt = 0;
   private running = false;
+  private generation = 0;
   private current: StreamSnapshot = { status: "connecting", state: null, retryAt: null, reason: "" };
   private readonly listeners = new Set<() => void>();
   private readonly frameListeners = new Set<(frame: Frame) => void>();
@@ -275,6 +277,7 @@ export class StreamClient {
 
   stop(): void {
     this.running = false;
+    this.generation++;
     this.clearTimer();
     this.stopBeat();
     const socket = this.socket;
@@ -357,10 +360,39 @@ export class StreamClient {
     this.socket = null;
     this.stopBeat();
     if (code === closeUnauthorized) {
-      this.running = false;
-      this.update({ status: "unauthorized", retryAt: null, reason });
+      this.confirmUnauthorized(reason);
       return;
     }
+    this.retryLater(reason);
+  }
+
+  private confirmUnauthorized(reason: string): void {
+    const confirm = this.opts.confirmRefused;
+    if (!confirm) {
+      this.refused(reason);
+      return;
+    }
+    this.update({ status: "connecting", retryAt: null, reason });
+    const generation = this.generation;
+    const settle = (refused: boolean) => {
+      if (generation !== this.generation || !this.running) {
+        return;
+      }
+      if (refused) {
+        this.refused(reason);
+      } else {
+        this.retryLater(reason);
+      }
+    };
+    confirm().then(settle, () => settle(false));
+  }
+
+  private refused(reason: string): void {
+    this.running = false;
+    this.update({ status: "unauthorized", retryAt: null, reason });
+  }
+
+  private retryLater(reason: string): void {
     if (!this.running) {
       return;
     }
@@ -420,10 +452,10 @@ export class StreamClient {
 }
 
 export function useStreamClient(opts: StreamOptions): StreamClient {
-  const { open, token, retryDelay, now, visible, heartbeat } = opts;
+  const { open, token, retryDelay, now, visible, heartbeat, confirmRefused } = opts;
   const client = useMemo(
-    () => new StreamClient({ open, token, retryDelay, now, visible, heartbeat }),
-    [open, token, retryDelay, now, visible, heartbeat],
+    () => new StreamClient({ open, token, retryDelay, now, visible, heartbeat, confirmRefused }),
+    [open, token, retryDelay, now, visible, heartbeat, confirmRefused],
   );
   useEffect(() => {
     client.start();
