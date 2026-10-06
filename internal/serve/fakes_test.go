@@ -13,6 +13,7 @@ import (
 type call struct {
 	Method string
 	Params json.RawMessage
+	conn   *fakeConn
 }
 
 type fakeDaemon struct {
@@ -79,6 +80,18 @@ func (f *fakeDaemon) paramsOf(method string) []json.RawMessage {
 	return out
 }
 
+func (f *fakeDaemon) connOf(method string) []*fakeConn {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []*fakeConn
+	for _, c := range f.calls {
+		if c.Method == method {
+			out = append(out, c.conn)
+		}
+	}
+	return out
+}
+
 func (f *fakeDaemon) subscribers() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -108,7 +121,7 @@ func (c *fakeConn) Call(_ context.Context, method string, params, out any) error
 	f := c.f
 	raw, _ := json.Marshal(params)
 	f.mu.Lock()
-	f.calls = append(f.calls, call{Method: method, Params: raw})
+	f.calls = append(f.calls, call{Method: method, Params: raw, conn: c})
 	var result any
 	var rerr *rpc.Error
 	if method == rpc.MethodDeviceCheck {
