@@ -21,6 +21,7 @@ func TestPresenceAtTerminalWhileTheLastInputIsInsideTheWindow(t *testing.T) {
 		{"just past the window", Presence{AwayAfter: 2 * time.Minute, LastInput: presenceNow.Add(-2*time.Minute - time.Second)}, false},
 		{"no client attached", Presence{AwayAfter: 2 * time.Minute}, false},
 		{"suppression off", Presence{AwayAfter: 0, LastInput: presenceNow}, false},
+		{"suppression off with a clock behind tmux", Presence{AwayAfter: 0, LastInput: presenceNow.Add(time.Second)}, false},
 		{"a negative window", Presence{AwayAfter: -time.Minute, LastInput: presenceNow}, false},
 		{"a clock a second behind tmux", Presence{AwayAfter: 2 * time.Minute, LastInput: presenceNow.Add(time.Second)}, true},
 	}
