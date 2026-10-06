@@ -49,6 +49,8 @@ type Options struct {
 	SetupOnly       bool
 	SetupPopup      rpc.ClientPopupParams
 	NoMouse         bool
+	Redial          func(context.Context) (Connection, error)
+	CanRestart      bool
 }
 
 type Caller interface {
@@ -130,6 +132,9 @@ type Model struct {
 	onboardChecked bool
 
 	disconnected bool
+	rc           reconnect
+	restart      bool
+	startup      tea.Cmd
 }
 
 func New(opts Options) Model {
@@ -156,10 +161,7 @@ func New(opts Options) Model {
 func (m Model) Selected() string { return m.selected }
 
 func (m Model) Init() tea.Cmd {
-	if m.opts.RefreshModels == nil {
-		return m.tick()
-	}
-	return tea.Batch(m.tick(), m.opts.RefreshModels)
+	return tea.Batch(m.tick(), m.opts.RefreshModels, m.startup)
 }
 
 func (m Model) applyModels(choices map[domain.Harness][]string) Model {
@@ -229,8 +231,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case TopBarMsg:
 		m.top = msg
 	case DisconnectedMsg:
-		m.disconnected = true
-		m.status = "daemon disconnected"
+		return m.disconnect()
+	case RedialMsg:
+		return m.redial()
+	case redialedMsg:
+		return m.redialed(msg)
+	case streamDiffMsg:
+		m.apply(msg.diff)
+		return m, listen(msg.diffs)
 	case errMsg:
 		m.status = msg.err.Error()
 	case reviewMsg:
@@ -239,6 +247,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.gotDraft(msg)
 	case tea.KeyPressMsg:
 		if m.disconnected && m.quitKey(msg.String()) {
+			return m, tea.Quit
+		}
+		if m.rc.upgraded && m.opts.CanRestart && msg.String() == "r" && !m.typing() {
+			m.restart = true
 			return m, tea.Quit
 		}
 		if m.ob != nil {

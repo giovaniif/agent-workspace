@@ -126,12 +126,25 @@ func tuiIn(home string, newSession, setup bool) error {
 	if self, err := os.Executable(); err == nil && !newSession && !setup {
 		opts.SetupPopup = rpc.ClientPopupParams{Command: []string{self, "tui", "--setup"}, Env: map[string]string{"AGENTWS_HOME": home}}
 		opts.DialogPopup = rpc.ClientPopupParams{Command: []string{self, "tui", "--new-session"}, Env: map[string]string{"AGENTWS_HOME": home}}
+		opts.Redial = tui.Redialer(rpc.SocketPath(home))
+		opts.CanRestart = true
 	}
 	err = tui.Run(ctx, subscriber, caller, opts)
-	if errors.Is(err, context.Canceled) {
+	switch {
+	case errors.Is(err, context.Canceled):
 		return nil
+	case errors.Is(err, tui.ErrRestart):
+		return restartTUI()
 	}
 	return err
+}
+
+func restartTUI() error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(self, []string{self, "tui"}, os.Environ())
 }
 
 func runDebugSeed(args []string, stdout, stderr io.Writer) int {

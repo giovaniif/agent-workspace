@@ -133,6 +133,7 @@ func (m Model) mainScreen() (lines, owners []string) {
 	s := m.styles
 	lines = append(lines, m.topBar())
 	lines = append(lines, m.limitLines()...)
+	lines = append(lines, m.banner()...)
 	lines = append(lines, "")
 
 	need := 0
@@ -187,7 +188,7 @@ func (m Model) listOffset(selRow, rows, room int) int {
 }
 
 func (m Model) listGeometry() (owners []string, off int) {
-	top := 1 + len(m.limitLines()) + 2
+	top := 1 + len(m.limitLines()) + len(m.banner()) + 2
 	body, selRow, owners := m.body()
 	room := max(m.height-top-len(m.footer()), 0)
 	return owners, m.listOffset(selRow, len(body), room)

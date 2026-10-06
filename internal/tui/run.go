@@ -24,20 +24,12 @@ func Run(ctx context.Context, subscriber, caller *rpc.Client, opts Options) erro
 	opts.Onboard = caller
 	m := New(opts)
 	next, first := m.Update(StateMsg(sub.State))
-	p := tea.NewProgram(next, tea.WithContext(ctx), tea.WithFPS(FPS))
-	if first != nil {
-		go func() {
-			if msg := first(); msg != nil {
-				p.Send(msg)
-			}
-		}()
+	start := next.(Model)
+	start.startup = tea.Batch(first, listen(sub.Diffs))
+	p := tea.NewProgram(start, tea.WithContext(ctx), tea.WithFPS(FPS))
+	final, err := p.Run()
+	if f, ok := final.(Model); ok && err == nil && f.restart {
+		return ErrRestart
 	}
-	go func() {
-		for d := range sub.Diffs {
-			p.Send(DiffMsg(d))
-		}
-		p.Send(DisconnectedMsg{})
-	}()
-	_, err = p.Run()
 	return err
 }
