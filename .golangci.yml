@@ -60,6 +60,7 @@ linters:
           allow:
             - github.com/giovaniif/agent-workspace/internal/rpc
             - github.com/giovaniif/agent-workspace/internal/domain
+            - github.com/giovaniif/agent-workspace/internal/view
           deny:
             - pkg: github.com/giovaniif/agent-workspace/internal
               desc: the derived view reads rpc state and applies domain rules, nothing else
