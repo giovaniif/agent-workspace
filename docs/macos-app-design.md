@@ -11,7 +11,7 @@ Not goals for v1: replacing tmux as the terminal host, a built-in editor, iOS.
 ## Principles
 
 1. **Attention first.** The sidebar, menu bar, Dock badge and banners all answer one question: which session needs me, and for what. Same ordering as `domain.Sidebar`: needs you (permission, then waiting), working, done and unread, idle.
-2. **The terminal is the session.** The agent's real pane is the centre of the window. Native chrome surrounds it; it never replaces it with a chat view.
+2. **The terminal is the session.** The agent's real pane is the centre of the window. Native chrome surrounds it. There is no chat view: transcripts stay a phone feature.
 3. **Keyboard parity with the TUI.** Every TUI key has a Mac shortcut (table below). Mouse is a full second path, not an afterthought.
 4. **The daemon decides, the app draws.** Names, banners, quotas, cleanup decisions, card contents come from `domain` via the daemon, as the phone app does. The app never re-derives them.
 5. **Native, quiet, Latte.** Standard macOS window, sidebar, toolbar, sheets and settings. Catppuccin Latte colours for continuity with the TUI and the phone app; system font for UI, a mono font for code and terminals. Dark mode uses Mocha.
@@ -146,5 +146,5 @@ The phases in ADR 0049, tracked as issues in the `macOS app` milestone.
 ## Open questions
 
 - One window per server, or several servers in one sidebar?
-- Should the Mac app also read transcripts (a "Reply…" chat drawer), or stay terminal-only?
+
 - Product name, still a placeholder.
