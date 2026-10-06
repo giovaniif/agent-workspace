@@ -104,6 +104,7 @@ type state struct {
 	gate            *domain.PushGate
 	presence        domain.Presence
 	views           map[*conn]domain.ViewReport
+	clients         map[*conn]domain.ClientView
 	requestUsage    func(sessionID, path string, force bool)
 	sendSwitches    func(session domain.Session, sws []domain.Switch)
 	hints           worktreeHints
@@ -181,6 +182,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		co:         domain.NewCoalescer(),
 		gate:       domain.NewPushGate(),
 		views:      map[*conn]domain.ViewReport{},
+		clients:    map[*conn]domain.ClientView{},
 	}
 	for _, dev := range snap.Devices {
 		st.devices[dev.ID] = dev
@@ -442,6 +444,7 @@ func (d *Daemon) handle(c *conn) {
 			delete(s.subs, c)
 			delete(s.noticeSubs, c)
 			delete(s.views, c)
+			s.dropClientView(c, time.Now())
 		})
 		if d.tx != nil {
 			d.tx.dropConn(c)
@@ -583,6 +586,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.pushMethod(req)
 	case rpc.MethodDeviceViewing:
 		return d.deviceViewing(c, req)
+	case rpc.MethodClientViewing:
+		return d.clientViewing(c, req)
 	default:
 		return errorResponse(req.ID, rpc.CodeUnknownMethod, "unknown method "+req.Method), true
 	}
