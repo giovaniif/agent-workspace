@@ -1,0 +1,319 @@
+[
+  {
+    "seq": 11,
+    "worktree": {
+      "ID": "w1",
+      "Repo": "api",
+      "Path": "/w/api-feat",
+      "Branch": "feat",
+      "PR": {
+        "Number": 12,
+        "Title": "Add login",
+        "URL": "https://github.com/o/api/pull/12",
+        "Head": "feat",
+        "State": "OPEN",
+        "Checks": "failing",
+        "ReviewDecision": "",
+        "Mergeable": "",
+        "UnresolvedThreads": 0,
+        "BotComments": 0,
+        "Failing": [
+          {
+            "Name": "test",
+            "URL": "https://ci/1"
+          }
+        ]
+      },
+      "SubtaskSlug": "",
+      "SessionID": "s1",
+      "Ports": [
+        {
+          "Port": 3000,
+          "PID": 7,
+          "PGID": 7,
+          "Command": "node"
+        }
+      ]
+    }
+  },
+  {
+    "seq": 11,
+    "session": {
+      "ID": "s1",
+      "TaskID": "t1",
+      "Harness": "claude",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "running",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": [
+        "w1"
+      ],
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "Add login",
+      "where": "api@feat",
+      "banner": "",
+      "since": null,
+      "order": 1,
+      "board": [
+        {
+          "number": 12,
+          "title": "Add login",
+          "url": "https://github.com/o/api/pull/12",
+          "branch": "feat",
+          "state": "OPEN",
+          "checks": "failing",
+          "failing_checks": [
+            {
+              "name": "test",
+              "url": "https://ci/1"
+            }
+          ],
+          "review_decision": "",
+          "unresolved_threads": 0,
+          "bot_comments_since_push": 0,
+          "mergeable": "",
+          "ready_to_merge": false,
+          "blockers": [
+            "checks failing"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "seq": 12,
+    "event": {
+      "SessionID": "s2",
+      "At": "2026-10-01T12:01:00Z",
+      "Kind": "stop",
+      "Tool": "",
+      "Detail": "",
+      "Text": "Retry added."
+    }
+  },
+  {
+    "seq": 13,
+    "session": {
+      "ID": "s2",
+      "TaskID": "t2",
+      "Harness": "codex",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "waiting",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": [
+        "w2"
+      ],
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "fix retry",
+      "where": "web@fix",
+      "banner": "waiting",
+      "since": null,
+      "order": 0,
+      "board": []
+    }
+  },
+  {
+    "seq": 13,
+    "session": {
+      "ID": "s1",
+      "TaskID": "t1",
+      "Harness": "claude",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "running",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": [
+        "w1"
+      ],
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "Add login",
+      "where": "api@feat",
+      "banner": "",
+      "since": null,
+      "order": 2,
+      "board": [
+        {
+          "number": 12,
+          "title": "Add login",
+          "url": "https://github.com/o/api/pull/12",
+          "branch": "feat",
+          "state": "OPEN",
+          "checks": "failing",
+          "failing_checks": [
+            {
+              "name": "test",
+              "url": "https://ci/1"
+            }
+          ],
+          "review_decision": "",
+          "unresolved_threads": 0,
+          "bot_comments_since_push": 0,
+          "mergeable": "",
+          "ready_to_merge": false,
+          "blockers": [
+            "checks failing"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "seq": 13,
+    "session": {
+      "ID": "s3",
+      "TaskID": "t1",
+      "Harness": "claude",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "permission",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": null,
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "add login",
+      "where": "",
+      "banner": "needs permission",
+      "since": null,
+      "order": 1,
+      "board": []
+    }
+  },
+  {
+    "seq": 14,
+    "subagent": {
+      "SessionID": "s1",
+      "ID": "a1",
+      "ParentID": "",
+      "Type": "Explore",
+      "State": "stopped",
+      "StartedAt": "2026-10-01T12:00:00Z",
+      "StoppedAt": "2026-10-01T12:01:00Z",
+      "Summary": ""
+    }
+  },
+  {
+    "seq": 15,
+    "removed_session": "s3"
+  },
+  {
+    "seq": 15,
+    "session": {
+      "ID": "s1",
+      "TaskID": "t1",
+      "Harness": "claude",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "running",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": [
+        "w1"
+      ],
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "Add login",
+      "where": "api@feat",
+      "banner": "",
+      "since": null,
+      "order": 1,
+      "board": [
+        {
+          "number": 12,
+          "title": "Add login",
+          "url": "https://github.com/o/api/pull/12",
+          "branch": "feat",
+          "state": "OPEN",
+          "checks": "failing",
+          "failing_checks": [
+            {
+              "name": "test",
+              "url": "https://ci/1"
+            }
+          ],
+          "review_decision": "",
+          "unresolved_threads": 0,
+          "bot_comments_since_push": 0,
+          "mergeable": "",
+          "ready_to_merge": false,
+          "blockers": [
+            "checks failing"
+          ]
+        }
+      ]
+    }
+  }
+]

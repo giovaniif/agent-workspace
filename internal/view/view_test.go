@@ -44,7 +44,7 @@ var t0 = time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 func nativeFixture() rpc.State {
 	return rpc.State{
 		Seq:        10,
-		Workspaces: []domain.Workspace{{Path: "/w/api"}},
+		Workspaces: []domain.Workspace{{Root: "/w/api"}},
 		Tasks: []domain.Task{
 			{ID: "t1", Source: domain.TaskText, Text: "add login"},
 			{ID: "t2", Source: domain.TaskText, Text: "fix retry"},
