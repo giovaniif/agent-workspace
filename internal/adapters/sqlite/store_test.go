@@ -71,6 +71,40 @@ func TestRoundTripsEveryDomainType(t *testing.T) {
 	}
 }
 
+func TestSessionCreationChoicesSurviveARestartAndOlderRowsHaveNone(t *testing.T) {
+	s, path := openTemp(t)
+	created := domain.Session{ID: "s1", Harness: domain.HarnessOmp, Model: "live", StartedAt: time.Date(2026, 9, 20, 0, 0, 0, 0, time.UTC), StartModel: "anthropic/opus", StartEffort: "off", StartWorkspace: "/src/api"}
+	s.PutSession(created)
+	snap, err := reopen(t, s, path).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(snap.Sessions, []domain.Session{created}) {
+		t.Errorf("sessions = %+v", snap.Sessions)
+	}
+
+	src, err := os.ReadFile("testdata/v1.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := filepath.Join(t.TempDir(), "state.db")
+	if err := os.WriteFile(old, src, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	o, err := Open(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = o.Close() }()
+	osnap, err := o.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(osnap.Sessions) != 1 || !osnap.Sessions[0].StartedAt.IsZero() || osnap.Sessions[0].StartModel != "" || osnap.Sessions[0].StartWorkspace != "" {
+		t.Errorf("older session = %+v, want no creation choices", osnap.Sessions)
+	}
+}
+
 func TestLaterPutReplacesEarlier(t *testing.T) {
 	s, _ := openTemp(t)
 	s.PutSession(domain.Session{ID: "s1", State: domain.StateRunning})

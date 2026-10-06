@@ -111,15 +111,18 @@ func (m Model) openDialog() Model {
 	start := m.opts.Defaults[domain.HarnessClaude]
 	d.model, d.effort = start.Model, effortIndex(d.efforts, start.Effort)
 	all := sorted(m.workspaces)
-	last, found := domain.LastUsedWorkspace(all)
 	d.spaces = all
-	for i, w := range all {
-		if found && w.Root == last.Root {
-			d.ws, d.last = i, w.Root
+	if last, found := domain.LastCreatedSession(sessionsOf(m.sessions)); found {
+		d.seedCreated(last)
+		if d.last == "" {
+			if used, found := domain.LastUsedWorkspace(all); found {
+				d.selectWorkspace(used.Root)
+			}
 		}
-	}
-	if dir := m.opts.LaunchDir; dir != "" {
+	} else if dir := m.opts.LaunchDir; dir != "" {
 		d.startIn(dir)
+	} else if used, found := domain.LastUsedWorkspace(all); found {
+		d.selectWorkspace(used.Root)
 	}
 	d.home = m.opts.Home
 	d.base = cmp.Or(m.opts.LaunchDir, d.root(), d.home, "/")
@@ -138,6 +141,35 @@ func sorted(ws map[string]domain.Workspace) []domain.Workspace {
 
 func effortIndex(choices []string, effort string) int {
 	return max(slices.Index(choices, effort), 0)
+}
+
+func (d *dialog) selectWorkspace(root string) {
+	for i, w := range d.spaces {
+		if w.Root == root {
+			d.ws, d.last = i, w.Root
+		}
+	}
+}
+
+func sessionsOf(all map[string]domain.Session) []domain.Session {
+	out := make([]domain.Session, 0, len(all))
+	for _, s := range all {
+		out = append(out, s)
+	}
+	return out
+}
+
+func (d *dialog) seedCreated(s domain.Session) {
+	if i := slices.Index(harnessChoices, string(s.Harness)); i >= 0 {
+		d.harness = i
+		d.efforts = effortsFor(s.Harness)
+	}
+	d.model = s.StartModel
+	d.selectWorkspace(s.StartWorkspace)
+	if !slices.Contains(d.efforts, s.StartEffort) {
+		d.efforts = append(d.efforts, s.StartEffort)
+	}
+	d.effort = effortIndex(d.efforts, s.StartEffort)
 }
 
 func (d *dialog) cycleHarness(delta int) {

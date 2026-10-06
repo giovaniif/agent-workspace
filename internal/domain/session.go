@@ -44,26 +44,30 @@ type Effect struct {
 }
 
 type Session struct {
-	ID            string
-	TaskID        string
-	Harness       Harness
-	Pane          string
-	Model         string
-	Effort        string
-	State         AgentState
-	Ended         bool
-	Unread        bool
-	Focused       bool
-	Muted         bool
-	WorktreeIDs   []string
-	ResumeID      string
-	Transcript    string
-	Dir           string
-	Usage         Usage
-	Limits        []RateLimit
-	LimitsAt      time.Time
-	Switches      []Switch
-	SwitchWarning bool
+	ID             string
+	TaskID         string
+	Harness        Harness
+	Pane           string
+	Model          string
+	Effort         string
+	StartedAt      time.Time `json:",omitzero"`
+	StartModel     string    `json:",omitempty"`
+	StartEffort    string    `json:",omitempty"`
+	StartWorkspace string    `json:",omitempty"`
+	State          AgentState
+	Ended          bool
+	Unread         bool
+	Focused        bool
+	Muted          bool
+	WorktreeIDs    []string
+	ResumeID       string
+	Transcript     string
+	Dir            string
+	Usage          Usage
+	Limits         []RateLimit
+	LimitsAt       time.Time
+	Switches       []Switch
+	SwitchWarning  bool
 }
 
 func (s Session) Apply(ev HarnessEvent) (Session, []Effect) {
@@ -144,4 +148,18 @@ func (s Session) DetachWorktree(id string) Session {
 		s.Dir = ""
 	}
 	return s
+}
+
+func LastCreatedSession(all []Session) (Session, bool) {
+	var best Session
+	found := false
+	for _, s := range all {
+		if s.StartedAt.IsZero() {
+			continue
+		}
+		if !found || s.StartedAt.After(best.StartedAt) {
+			best, found = s, true
+		}
+	}
+	return best, found
 }
