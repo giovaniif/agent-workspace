@@ -107,6 +107,13 @@ func Run(ctx context.Context, home string) (err error) {
 		WithTranscripts(Transcripts(wsfs.Transcripts{}), wsfs.Transcripts{}),
 		WithPush(webpush.New(filepath.Join(home, "vapid"), nil)),
 	}
+	awayAfter, err := LoadAwayAfter(filepath.Join(home, "config.toml"))
+	if err != nil {
+		log.Printf("[push] away_after ignored: %v", err)
+	}
+	if awayAfter > 0 {
+		opts = append(opts, WithPresence(host, awayAfter, PresenceEvery))
+	}
 	if hooks.prPoll > 0 {
 		opts = append(opts, WithWorktreePoll(DefaultWorktreePoll, hooks.prPoll))
 	}
