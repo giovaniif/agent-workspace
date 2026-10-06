@@ -11,7 +11,7 @@ case $(uname -m) in
   *) echo "agentws: unsupported CPU $(uname -m)" >&2; exit 1 ;;
 esac
 case "$os/$arch" in
-  darwin/arm64|darwin/amd64|linux/amd64) ;;
+  darwin/arm64|darwin/amd64|linux/amd64|linux/arm64) ;;
   *) echo "agentws: no build for $os/$arch" >&2; exit 1 ;;
 esac
 

@@ -13,9 +13,6 @@ builds:
       - CGO_ENABLED=0
     goos: [darwin, linux]
     goarch: [arm64, amd64]
-    ignore:
-      - goos: linux
-        goarch: arm64
     ldflags:
       - -s -w -X github.com/giovaniif/agent-workspace/internal/version.Version={{ .Tag }} -X github.com/giovaniif/agent-workspace/internal/version.Commit={{ .ShortCommit }}
 
