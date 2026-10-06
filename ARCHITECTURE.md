@@ -6,7 +6,7 @@ This covers how `agentws` is built, at the top level. What it does is in [FEATUR
 
 - **Language:** Go (current stable). It builds one static binary that is the daemon, the TUI, the CLI and the hook handler. The reasons are in [docs/adr/0001-go.md](docs/adr/0001-go.md).
 - **TUI:** Bubble Tea v2, Lip Gloss and Bubbles (charmbracelet).
-- **Syntax highlighting:** chroma's lexer engine with a curated set of its lexers in `internal/tui/syntax/`, not its `lexers`/`styles` packages, whose init would slow every hook.
+- **Syntax highlighting:** chroma's lexer engine with a curated set of its lexers in `internal/syntax/lexers/`, not its `lexers`/`styles` packages, whose init would slow every hook.
 - **Git:** the `git` CLI via exec, never a Go git library.
 - **GitHub:** the `gh` CLI (`gh api graphql`), which reuses the user's `gh` auth. One GraphQL request per poll, with backoff.
 - **Terminals:** the `tmux` CLI against a dedicated server (`tmux -L agentws`) with its own config, driven only by `internal/adapters/tmux`. See [docs/adr/0003-tmux-terminal-host.md](docs/adr/0003-tmux-terminal-host.md).

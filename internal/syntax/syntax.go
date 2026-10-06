@@ -1,4 +1,4 @@
-package tui
+package syntax
 
 import (
 	"embed"
@@ -8,7 +8,7 @@ import (
 	. "github.com/alecthomas/chroma/v2" //nolint:staticcheck
 )
 
-//go:embed syntax/*.xml
+//go:embed lexers/*.xml
 var lexerFiles embed.FS
 
 var (
@@ -16,10 +16,10 @@ var (
 	lexerRegistry *LexerRegistry
 )
 
-func matchLexer(filename string) Lexer {
+func Match(filename string) Lexer {
 	lexerOnce.Do(func() {
 		reg := NewLexerRegistry()
-		paths, _ := fs.Glob(lexerFiles, "syntax/*.xml")
+		paths, _ := fs.Glob(lexerFiles, "lexers/*.xml")
 		for _, p := range paths {
 			if l, err := NewXMLLexer(lexerFiles, p); err == nil {
 				reg.Register(l)

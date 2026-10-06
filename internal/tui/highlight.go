@@ -7,6 +7,7 @@ import (
 	"github.com/alecthomas/chroma/v2"
 
 	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/agent-workspace/internal/syntax"
 )
 
 type tok struct {
@@ -40,7 +41,7 @@ func (c syntaxColors) color(tt chroma.TokenType) string {
 	return ""
 }
 
-func highlight(syntax syntaxColors, filename string, lines []domain.DiffLine) (out [][]tok) {
+func highlight(colors syntaxColors, filename string, lines []domain.DiffLine) (out [][]tok) {
 	texts := make([]string, len(lines))
 	for i, l := range lines {
 		texts[i] = cleanText(l.Text)
@@ -57,7 +58,7 @@ func highlight(syntax syntaxColors, filename string, lines []domain.DiffLine) (o
 			out = plain()
 		}
 	}()
-	lexer := matchLexer(path.Base(filename))
+	lexer := syntax.Match(path.Base(filename))
 	if lexer == nil {
 		return plain()
 	}
@@ -68,7 +69,7 @@ func highlight(syntax syntaxColors, filename string, lines []domain.DiffLine) (o
 	out = make([][]tok, len(lines))
 	row := 0
 	for t := it(); t != chroma.EOF && row < len(out); t = it() {
-		color := syntax.color(t.Type)
+		color := colors.color(t.Type)
 		parts := strings.Split(t.Value, "\n")
 		for j, p := range parts {
 			if j > 0 {

@@ -42,7 +42,7 @@ See [ADR 0023](../../docs/adr/0023-review-pane.md). `r` opens the review of the 
 
 - File tree grouped by worktree with its PR, unified or split diff, hunk headers, a `✓` per viewed file, a line cursor.
 - Keys: `[`/`]` scope, `w` worktree (all, then each), `n`/`p` file, `j`/`k` line, `u` split, `v` viewed, `c` comment, `V` range, `S` send, `s` stage hunk, `x` revert hunk (after `y`), `o` open the diff's top visible line in nvim and close the review, `r` or `esc` close.
-- **Syntax.** chroma's lexer engine with a curated set of its lexers: new lexers go in `syntax/` as chroma XML files. depguard bans chroma's `lexers` and `styles` packages (their init costs every hook).
+- **Syntax.** chroma's lexer engine with a curated set of its lexers: new lexers go in [internal/syntax/lexers/](../syntax/lexers) as chroma XML files. depguard bans chroma's `lexers` and `styles` packages (their init costs every hook).
 
 ## Disk view
 
