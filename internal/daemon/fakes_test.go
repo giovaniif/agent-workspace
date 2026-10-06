@@ -234,6 +234,16 @@ type fakeClientHost struct {
 	commandPopups []app.PaneSpec
 	focusedBelow  int
 	detached      []app.Slot
+
+	native      app.NativeClient
+	nativeSizes [][2]int
+}
+
+func (h *fakeClientHost) OpenNative(_ context.Context, cols, rows int) (app.NativeClient, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.nativeSizes = append(h.nativeSizes, [2]int{cols, rows})
+	return h.native, nil
 }
 
 func (h *fakeClientHost) SlotHasPane(context.Context, app.Slot) bool {
