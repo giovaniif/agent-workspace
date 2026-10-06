@@ -32,7 +32,7 @@ ADR 0046 rejected a native phone app because of APNs and 7-day re-signing. Neith
 ### A derived view, shared with serve
 
 - Move the view in `internal/serve/view.go` into a package both use (`internal/view`, importing only `rpc` and `domain`). `serve` keeps its JSON exactly; its goldens prove it.
-- `agentws rpc` answers one method of its own, `view.subscribe`: the derived state and diffs, a superset of the phone's stream. Sessions also carry `order` (`domain.Sidebar`), `board` (the PR board of ADR 0024) and their worktrees' ports. Events, subagents and review drafts are included, since the Mac app shows them.
+- `agentws rpc` answers one method of its own, `view.subscribe`: the derived state and diffs, a superset of the phone's stream. Sessions also carry `order`: `domain.Sidebar`'s rule over one flat list, since the app shows no task headers (sessions that need you first, then the rest in the daemon's order), `board` (the PR board of ADR 0024) and their worktrees' ports. Events, subagents and review drafts are included, since the Mac app shows them.
 - Every other method passes through to the daemon unchanged.
 
 ### Review highlighting in Go

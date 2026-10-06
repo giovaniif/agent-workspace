@@ -10,7 +10,7 @@ Not goals for v1: replacing tmux as the terminal host, a built-in editor, iOS.
 
 ## Principles
 
-1. **Attention first.** The sidebar, menu bar, Dock badge and banners all answer one question: which session needs me, and for what. Same ordering as `domain.Sidebar`: needs you (permission, then waiting), working, done and unread, idle.
+1. **Attention first.** The sidebar, menu bar, Dock badge and banners all answer one question: which session needs me, and for what. Same rule as `domain.Sidebar`: sessions that need you (permission or waiting) first, then the rest in the daemon's order.
 2. **The terminal is the session.** The agent's real pane is the centre of the window. Native chrome surrounds it. There is no chat view: transcripts stay a phone feature.
 3. **Keyboard parity with the TUI.** Every TUI key has a Mac shortcut (table below). Mouse is a full second path, not an afterthought.
 4. **The daemon decides, the app draws.** Names, banners, quotas, cleanup decisions, card contents come from `domain` via the daemon, as the phone app does. The app never re-derives them.
@@ -28,7 +28,7 @@ Three columns in one `NavigationSplitView`-style window:
 
 **Toolbar:** sidebar toggle; session name and `repo@branch +N`; view switcher (Terminal · Review · Shell · nvim); quota meters (Claude 5h, 7d, Codex: % used, reset time, orange under 20% left, dimmed when stale); server chip; New; inspector toggle.
 
-**Sidebar order:** needs you first (permission, then waiting), then done and unread, working, idle. ⌘1–9 follow that order.
+**Sidebar order:** `domain.Sidebar`'s rule over one flat list: sessions that need you first, then the rest in the daemon's order. ⌘1–9 follow that order.
 
 **Sidebar row:** state glyph, name (bold when unread), harness badge (CC/CX), then `repo@branch +N`, then `model · effort · ctx %`, ⌘N shortcut. Expands to worktree rows: `repo:subtask #PR ✓ :port`. Muted sessions show a bell-slash. Context menu: Rename, Unpin name, Mute, Switch model, Switch effort, End, Show worktrees, Copy branch.
 
