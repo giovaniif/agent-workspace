@@ -1,0 +1,190 @@
+{
+  "seq": 10,
+  "workspaces": [
+    {
+      "Root": "/w/api",
+      "Kind": "",
+      "Repos": null,
+      "LastUsed": "0001-01-01T00:00:00Z"
+    }
+  ],
+  "tasks": [
+    {
+      "ID": "t1",
+      "Source": "text",
+      "Ref": "",
+      "Text": "add login",
+      "IssueTitle": "",
+      "PRTitle": "",
+      "PinnedName": "",
+      "URL": ""
+    },
+    {
+      "ID": "t2",
+      "Source": "text",
+      "Ref": "",
+      "Text": "fix retry",
+      "IssueTitle": "",
+      "PRTitle": "",
+      "PinnedName": "",
+      "URL": ""
+    }
+  ],
+  "worktrees": [
+    {
+      "ID": "w1",
+      "Repo": "api",
+      "Path": "/w/api-feat",
+      "Branch": "feat",
+      "PR": null,
+      "SubtaskSlug": "",
+      "SessionID": "s1",
+      "Ports": [
+        {
+          "Port": 3000,
+          "PID": 7,
+          "PGID": 7,
+          "Command": "node"
+        }
+      ]
+    },
+    {
+      "ID": "w2",
+      "Repo": "web",
+      "Path": "/w/web-fix",
+      "Branch": "fix",
+      "PR": null,
+      "SubtaskSlug": "",
+      "SessionID": "s2",
+      "Ports": null
+    }
+  ],
+  "sessions": [
+    {
+      "ID": "s1",
+      "TaskID": "t1",
+      "Harness": "claude",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "running",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": [
+        "w1"
+      ],
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "add login",
+      "where": "api@feat",
+      "banner": "",
+      "since": null,
+      "order": 1,
+      "board": []
+    },
+    {
+      "ID": "s2",
+      "TaskID": "t2",
+      "Harness": "codex",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "idle",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": [
+        "w2"
+      ],
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "fix retry",
+      "where": "web@fix",
+      "banner": "",
+      "since": null,
+      "order": 2,
+      "board": []
+    },
+    {
+      "ID": "s3",
+      "TaskID": "t1",
+      "Harness": "claude",
+      "Pane": "",
+      "Model": "",
+      "Effort": "",
+      "State": "permission",
+      "Ended": false,
+      "Unread": false,
+      "Focused": false,
+      "Muted": false,
+      "WorktreeIDs": null,
+      "ResumeID": "",
+      "Transcript": "",
+      "Dir": "",
+      "Usage": {
+        "ContextLeftPercent": 0,
+        "HasContext": false,
+        "LimitUsedPercent": 0
+      },
+      "Limits": null,
+      "LimitsAt": "0001-01-01T00:00:00Z",
+      "Switches": null,
+      "SwitchWarning": false,
+      "name": "add login",
+      "where": "",
+      "banner": "needs permission",
+      "since": null,
+      "order": 0,
+      "board": []
+    }
+  ],
+  "limits": [],
+  "queue": [],
+  "sends": [],
+  "events": [
+    {
+      "SessionID": "s3",
+      "At": "2026-10-01T12:00:00Z",
+      "Kind": "pre_tool_use",
+      "Tool": "Bash",
+      "Detail": "make test",
+      "Text": ""
+    }
+  ],
+  "subagents": [
+    {
+      "SessionID": "s1",
+      "ID": "a1",
+      "ParentID": "",
+      "Type": "Explore",
+      "State": "running",
+      "StartedAt": "2026-10-01T12:00:00Z",
+      "StoppedAt": "0001-01-01T00:00:00Z",
+      "Summary": ""
+    }
+  ],
+  "drafts": []
+}

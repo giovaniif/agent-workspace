@@ -19,6 +19,7 @@ Claude Code and Codex load an `AGENTS.md` (here also `CLAUDE.md`, a symlink to i
 | [internal/daemon/](internal/daemon/AGENTS.md) | process files, event loop, sessions, attention and banners, launcher, naming, fallback, worktree scan and PRs, ports, cleanup schedule, shell and nvim methods |
 | [internal/rpc/](internal/rpc/AGENTS.md) | the socket protocol, methods, errors, build handshake, client |
 | [internal/serve/](internal/serve/AGENTS.md) | `agentws serve`: the HTTP and WebSocket API for the phone app, its routes, auth, stream frames, TLS |
+| [internal/view/](internal/view/AGENTS.md) | the derived view shared by `serve` and `view.subscribe`: names, banners, order, PR board, goldens |
 | [internal/tui/](internal/tui/AGENTS.md) | sidebar, limits bar, theme and defaults, review viewer, disk view, goldens |
 | [internal/adapters/](internal/adapters/AGENTS.md) | Claude and Codex adapters and their `setup`, notify, procs, fs, github, linear, sqlite |
 | [internal/adapters/git/](internal/adapters/git/AGENTS.md) | git CLI use, repo facts, worktree listing, review diffs, turn snapshots, hunks |
