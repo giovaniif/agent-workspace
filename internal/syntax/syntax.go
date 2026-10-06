@@ -26,7 +26,7 @@ func Match(filename string) Lexer {
 			}
 		}
 		reg.Register(MustNewLexer(&Config{Name: "Go", Aliases: []string{"go"}, Filenames: []string{"*.go"}}, goRules))
-		reg.Register(MustNewLexer(&Config{Name: "markdown", Aliases: []string{"md", "mkd"}, Filenames: []string{"*.md", "*.mkd", "*.markdown"}}, markdownRules))
+		reg.Register(MustNewLexer(&Config{Name: "markdown", Aliases: []string{"md", "mkd"}, Filenames: []string{"*.md", "*.mkd", "*.markdown"}, EnsureNL: true}, markdownRules))
 		lexerRegistry = reg
 	})
 	return lexerRegistry.Match(filename)

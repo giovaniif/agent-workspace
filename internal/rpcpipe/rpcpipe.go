@@ -71,10 +71,15 @@ func (vs *views) request(line []byte) [][]byte {
 	if json.Unmarshal(line, &req) != nil {
 		return [][]byte{line}
 	}
-	if wantsTokens(req) {
-		vs.mu.Lock()
+	wants := wantsTokens(req)
+	vs.mu.Lock()
+	if wants {
 		vs.tokens[req.ID] = true
-		vs.mu.Unlock()
+	} else {
+		delete(vs.tokens, req.ID)
+	}
+	vs.mu.Unlock()
+	if wants {
 		return [][]byte{line}
 	}
 	if req.Method != MethodViewSubscribe {
