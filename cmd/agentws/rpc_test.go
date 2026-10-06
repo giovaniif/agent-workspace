@@ -140,3 +140,77 @@ func TestRpcTakesNoArguments(t *testing.T) {
 		t.Fatalf("exit %d", code)
 	}
 }
+
+func TestRpcAnswersViewSubscribeWithDerivedStateAndDiffs(t *testing.T) {
+	home := shortHome(t)
+	t.Setenv("AGENTWS_HOME", home)
+	ln := fakeSocket(t, home)
+	got := make(chan string, 2)
+	go func() {
+		c, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		r := bufio.NewReader(c)
+		first, _ := r.ReadString('\n')
+		got <- first
+		state := `{"seq":1,"tasks":[{"ID":"t1","Source":"text","Text":"add login"}],"worktrees":[{"ID":"w1","Repo":"api","Branch":"feat","Ports":[{"Port":3000}]}],"sessions":[{"ID":"s1","TaskID":"t1","State":"running","WorktreeIDs":["w1"]}]}`
+		diff := `{"seq":2,"worktree":{"ID":"w1","Repo":"api","Branch":"feat","PR":{"Number":12,"Title":"Add login form","State":"OPEN"}}}`
+		_, _ = io.WriteString(c, `{"v":1,"id":7,"result":`+state+"}\n"+`{"v":1,"id":7,"diff":`+diff+"}\n")
+		second, _ := r.ReadString('\n')
+		got <- second
+		_, _ = io.WriteString(c, "{\"v\":1,\"id\":8,\"result\":{\"ok\":true}}\n")
+		_ = c.Close()
+	}()
+	inR, inW := io.Pipe()
+	defer func() { _ = inW.Close() }()
+	go func() {
+		_, _ = io.WriteString(inW, "{\"v\":1,\"id\":7,\"method\":\"view.subscribe\",\"build\":\"b1\"}\n{\"v\":1,\"id\":8,\"method\":\"status\"}\n")
+	}()
+	var stdout, stderr bytes.Buffer
+	if code := runRPC(nil, inR, &stdout, &stderr); code != 0 {
+		t.Fatalf("exit %d, stderr %q", code, stderr.String())
+	}
+	var sub rpc.Request
+	if err := json.Unmarshal([]byte(<-got), &sub); err != nil || sub.Method != rpc.MethodSubscribe || sub.ID != 7 || sub.Build != "b1" {
+		t.Fatalf("daemon got %+v", sub)
+	}
+	if line := <-got; line != "{\"v\":1,\"id\":8,\"method\":\"status\"}\n" {
+		t.Fatalf("status was not passed through: %q", line)
+	}
+	type frame struct {
+		ID     uint64          `json:"id"`
+		Result json.RawMessage `json:"result"`
+		Diff   *struct {
+			Session *struct {
+				Name  string `json:"name"`
+				Board []any  `json:"board"`
+			} `json:"session"`
+		} `json:"diff"`
+	}
+	var frames []frame
+	for _, l := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
+		var f frame
+		if err := json.Unmarshal([]byte(l), &f); err != nil {
+			t.Fatalf("line %q: %v", l, err)
+		}
+		frames = append(frames, f)
+	}
+	if len(frames) != 4 || frames[3].ID != 8 || string(frames[3].Result) != `{"ok":true}` {
+		t.Fatalf("stdout %q", stdout.String())
+	}
+	var state struct {
+		Worktrees []struct{ Ports []any } `json:"worktrees"`
+		Sessions  []struct {
+			Name  string `json:"name"`
+			Order int    `json:"order"`
+		} `json:"sessions"`
+	}
+	if err := json.Unmarshal(frames[0].Result, &state); err != nil || len(state.Sessions) != 1 || state.Sessions[0].Name != "add login" || len(state.Worktrees) != 1 || len(state.Worktrees[0].Ports) != 1 {
+		t.Fatalf("state %s", frames[0].Result)
+	}
+	renamed := frames[2].Diff
+	if renamed == nil || renamed.Session == nil || renamed.Session.Name == "add login" || len(renamed.Session.Board) != 1 {
+		t.Fatalf("no renamed session diff: %q", stdout.String())
+	}
+}
