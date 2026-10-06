@@ -79,6 +79,7 @@ type Host struct {
 	titlesMu   sync.Mutex
 	titlesOn   bool
 	bufferSeq  atomic.Uint64
+	nativeMu   sync.Mutex
 }
 
 func New(cfg Config) *Host {

@@ -29,6 +29,7 @@ func (h *Host) Create(ctx context.Context, spec app.PaneSpec) (app.PaneID, error
 		_ = h.Kill(ctx, pane)
 		return "", err
 	}
+	_ = h.linkParked(ctx)
 	return pane, nil
 }
 

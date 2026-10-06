@@ -18,6 +18,26 @@ type PaneInfo struct {
 	Alive bool
 }
 
+type NativePane struct {
+	Pane          PaneID
+	Window        string
+	Cols          int
+	Rows          int
+	MouseAny      bool
+	MouseButton   bool
+	MouseStandard bool
+	MouseSGR      bool
+	Alternate     bool
+	CursorVisible bool
+	CursorKeys    bool
+}
+
+type NativeClient struct {
+	Session string
+	Argv    []string
+	Panes   []NativePane
+}
+
 type TerminalHost interface {
 	Create(ctx context.Context, spec PaneSpec) (PaneID, error)
 	Kill(ctx context.Context, pane PaneID) error

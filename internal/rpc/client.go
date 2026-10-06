@@ -177,6 +177,12 @@ func (c *Client) OpenClient(ctx context.Context, p OpenClientParams) (OpenClient
 	return out, err
 }
 
+func (c *Client) NativeClient(ctx context.Context, p NativeClientParams) (NativeClient, error) {
+	var out NativeClient
+	err := c.Call(ctx, MethodClientNative, p, &out)
+	return out, err
+}
+
 func (c *Client) FocusMain(ctx context.Context) error {
 	return c.Call(ctx, MethodFocusMain, nil, nil)
 }

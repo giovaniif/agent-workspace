@@ -26,6 +26,7 @@ type ClientHost interface {
 	Popup(ctx context.Context, pane app.PaneID) error
 	PopupCommand(ctx context.Context, spec app.PaneSpec) error
 	Detach(ctx context.Context, slot app.Slot) error
+	OpenNative(ctx context.Context, cols, rows int) (app.NativeClient, error)
 }
 
 const clientName = "main"
