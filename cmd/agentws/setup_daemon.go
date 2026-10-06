@@ -95,7 +95,12 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 	} else {
 		fmt.Fprintf(stdout, "already set up in %s\n", path)
 	}
-	if !svc.launchd && !lingerOn(ctx, env) {
+	if svc.launchd {
+		return 0
+	}
+	if on, err := lingerOn(ctx, env); err != nil {
+		fmt.Fprintf(stderr, "agentws setup daemon: could not check linger: %v\n", err)
+	} else if !on {
 		fmt.Fprintf(stdout, "linger is off for %s: the daemon and every session stop at logout. Fix it with:\n  sudo loginctl enable-linger %s\n", env("USER"), env("USER"))
 	}
 	return 0
@@ -134,15 +139,24 @@ func daemonService(env func(string) string, self, userHome string, uid int, goos
 
 func printDaemonCheck(ctx context.Context, svc serveService, env func(string) string, stdout, stderr io.Writer) int {
 	var c daemonCheck
-	if _, err := os.Stat(svc.path()); err == nil {
+	switch _, err := os.Stat(svc.path()); {
+	case err == nil:
 		c.Installed = true
+	case !errors.Is(err, os.ErrNotExist):
+		fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
+		return 1
 	}
 	if svc.launchd {
 		c.Running = launchd.Exec(ctx, "launchctl", "print", fmt.Sprintf("gui/%d/%s", svc.agent.UID, svc.agent.Label)) == nil
 		c.Linger = true
 	} else {
 		c.Running = systemd.Exec(ctx, "systemctl", "--user", "is-active", svc.unit.Name+".service") == nil
-		c.Linger = lingerOn(ctx, env)
+		on, err := lingerOn(ctx, env)
+		if err != nil {
+			fmt.Fprintf(stderr, "agentws setup daemon: could not check linger: %v\n", err)
+			return 1
+		}
+		c.Linger = on
 	}
 	if err := json.NewEncoder(stdout).Encode(c); err != nil {
 		fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
@@ -151,7 +165,10 @@ func printDaemonCheck(ctx context.Context, svc serveService, env func(string) st
 	return 0
 }
 
-func lingerOn(ctx context.Context, env func(string) string) bool {
+func lingerOn(ctx context.Context, env func(string) string) (bool, error) {
 	out, err := exec.CommandContext(ctx, "loginctl", "show-user", env("USER"), "-p", "Linger").Output()
-	return err == nil && bytes.Equal(bytes.TrimSpace(out), []byte("Linger=yes"))
+	if err != nil {
+		return false, fmt.Errorf("loginctl: %w", err)
+	}
+	return bytes.Equal(bytes.TrimSpace(out), []byte("Linger=yes")), nil
 }
