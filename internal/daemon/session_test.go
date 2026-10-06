@@ -82,6 +82,9 @@ func TestNewSessionInASingleRepoStartsInAFreshWorktree(t *testing.T) {
 	if got.Pane != "%7" || got.State != domain.StateIdle || got.Harness != domain.HarnessClaude || len(got.WorktreeIDs) != 1 || got.TaskID == "" {
 		t.Fatalf("session %+v", got)
 	}
+	if !got.StartedAt.Equal(r.now) || got.StartModel != "opus" || got.StartEffort != "high" || got.StartWorkspace != "/src/api" {
+		t.Fatalf("creation choices %+v", got)
+	}
 
 	st := r.state(t)
 	if len(st.Tasks) != 1 || st.Tasks[0].ID != got.TaskID || st.Tasks[0].Source != domain.TaskLinear || st.Tasks[0].Ref != "ENG-1" {
