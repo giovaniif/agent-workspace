@@ -19,6 +19,13 @@ const apiFetch = (input: string, init?: RequestInit) => fetch(input, init);
 const streamURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/api/v1/stream";
 const openStream = () => new WebSocket(streamURL);
 const now = () => Date.now();
+const visibility = {
+  visible: () => document.visibilityState === "visible",
+  onChange: (listener: () => void) => {
+    document.addEventListener("visibilitychange", listener);
+    return () => document.removeEventListener("visibilitychange", listener);
+  },
+};
 const onHashChange = (listener: (hash: string) => void) => {
   const changed = () => listener(window.location.hash);
   window.addEventListener("hashchange", changed);
@@ -109,6 +116,7 @@ if (root) {
           now,
           onHashChange,
           push: browserPush(window),
+          visibility,
         }}
       />
     </StrictMode>,
