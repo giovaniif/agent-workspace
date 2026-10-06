@@ -161,3 +161,52 @@ func TestViewingIsTheDevicesWithAFreshVisibleReport(t *testing.T) {
 		t.Fatalf("no reports gave %v", got)
 	}
 }
+
+func TestPresenceCountsAFrontAppAndTheWindowAfterItLeaves(t *testing.T) {
+	cases := []struct {
+		name string
+		p    Presence
+		want bool
+	}{
+		{"app in front, no typing", Presence{AwayAfter: 2 * time.Minute, AppFront: true}, true},
+		{"app left a minute ago", Presence{AwayAfter: 2 * time.Minute, AppLeft: presenceNow.Add(-time.Minute)}, true},
+		{"app left exactly the window ago", Presence{AwayAfter: 2 * time.Minute, AppLeft: presenceNow.Add(-2 * time.Minute)}, false},
+		{"app left long ago, typed long ago", Presence{AwayAfter: 2 * time.Minute, AppLeft: presenceNow.Add(-3 * time.Minute), LastInput: presenceNow.Add(-3 * time.Minute)}, false},
+		{"app left long ago, typed just now", Presence{AwayAfter: 2 * time.Minute, AppLeft: presenceNow.Add(-3 * time.Minute), LastInput: presenceNow}, true},
+		{"app in front with suppression off", Presence{AppFront: true}, false},
+	}
+	for _, c := range cases {
+		if got := c.p.AtTerminal(presenceNow); got != c.want {
+			t.Errorf("%s: AtTerminal = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestInViewIsOnlyASessionShownByAFrontClient(t *testing.T) {
+	views := []ClientView{{Session: "a", Front: true}, {Session: "b", Front: false}, {Session: "", Front: true}}
+	cases := []struct {
+		id   string
+		want bool
+	}{{"a", true}, {"b", false}, {"c", false}, {"", false}}
+	for _, c := range cases {
+		if got := InView(views, c.id); got != c.want {
+			t.Errorf("InView(%q) = %v, want %v", c.id, got, c.want)
+		}
+	}
+}
+
+func TestAppFrontIsAnyClientInFront(t *testing.T) {
+	cases := []struct {
+		views []ClientView
+		want  bool
+	}{
+		{nil, false},
+		{[]ClientView{{Session: "a"}}, false},
+		{[]ClientView{{Session: "a"}, {Front: true}}, true},
+	}
+	for _, c := range cases {
+		if got := AppFront(c.views); got != c.want {
+			t.Errorf("AppFront(%+v) = %v, want %v", c.views, got, c.want)
+		}
+	}
+}
