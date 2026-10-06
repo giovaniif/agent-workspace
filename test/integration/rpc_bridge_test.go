@@ -77,10 +77,10 @@ func TestRpcBridgeAnswersStatusWithTheBuildHandshake(t *testing.T) {
 	b.send(t, rpc.Request{V: rpc.Version, ID: 1, Method: rpc.MethodStatus, Build: version.String()})
 	resp := b.next(t)
 	var st rpc.Status
-	if resp.ID != 1 || resp.Error != nil || json.Unmarshal(resp.Result, &st) != nil || st.PID == 0 {
+	if resp.ID != 1 || resp.Error != nil || json.Unmarshal(resp.Result, &st) != nil || st.PID == 0 || resp.Build != version.String() {
 		t.Fatalf("status reply %+v", resp)
 	}
-	b.send(t, rpc.Request{V: rpc.Version, ID: 2, Method: rpc.MethodStatus, Build: "someone-else"})
+	b.send(t, rpc.Request{V: rpc.Version, ID: 2, Method: rpc.MethodWorkspaceList, Build: "someone-else"})
 	if resp := b.next(t); resp.ID != 2 || resp.Error == nil || resp.Error.Code != rpc.CodeVersionMismatch {
 		t.Fatalf("mismatched build got %+v", resp)
 	}
@@ -95,7 +95,7 @@ func TestRpcBridgeStreamsASubscriptionUntilStdinCloses(t *testing.T) {
 		t.Fatalf("snapshot %+v", resp)
 	}
 	dir := t.TempDir()
-	var ws rpc.Workspace
+	var ws json.RawMessage
 	if err := c.Call(t.Context(), rpc.MethodWorkspaceAdd, rpc.WorkspaceAddParams{Path: dir}, &ws); err != nil {
 		t.Fatal(err)
 	}
