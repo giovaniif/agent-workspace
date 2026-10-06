@@ -96,10 +96,10 @@ func UnsubscribePush(devices []Device, id string) ([]Device, bool) {
 	return nil, false
 }
 
-func PushTargets(devices []Device) []PushSubscription {
+func PushTargets(devices []Device, skip map[string]bool) []PushSubscription {
 	var out []PushSubscription
 	for _, d := range devices {
-		if d.Push != nil {
+		if d.Push != nil && !skip[d.ID] {
 			out = append(out, *d.Push)
 		}
 	}

@@ -47,7 +47,7 @@ func (d *Daemon) runPush(ctx context.Context) {
 
 func (d *Daemon) deliverPush(ctx context.Context, msg domain.PushMessage) {
 	var subs []domain.PushSubscription
-	if !d.query(func(s *state) { subs = domain.PushTargets(sorted(s.devices)) }) || len(subs) == 0 {
+	if !d.query(func(s *state) { subs = domain.PushTargets(sorted(s.devices), nil) }) || len(subs) == 0 {
 		return
 	}
 	sctx, cancel := context.WithTimeout(ctx, pushTimeout)
