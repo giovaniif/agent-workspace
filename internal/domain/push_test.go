@@ -132,12 +132,20 @@ func TestUnsubscribePushClearsTheDevicesSubscription(t *testing.T) {
 
 func TestPushTargetsAreTheSubscribedDevicesInOrder(t *testing.T) {
 	one, two := goodSub("https://p.example/1"), goodSub("https://p.example/2")
-	got := PushTargets([]Device{{ID: "a", Push: &one}, {ID: "b"}, {ID: "c", Push: &two}})
+	got := PushTargets([]Device{{ID: "a", Push: &one}, {ID: "b"}, {ID: "c", Push: &two}}, nil)
 	if !reflect.DeepEqual(got, []PushSubscription{one, two}) {
 		t.Fatalf("targets %+v", got)
 	}
-	if got := PushTargets(nil); len(got) != 0 {
+	if got := PushTargets(nil, nil); len(got) != 0 {
 		t.Fatalf("no devices gave %+v", got)
+	}
+}
+
+func TestPushTargetsSkipADeviceThatIsViewingTheApp(t *testing.T) {
+	one, two := goodSub("https://p.example/1"), goodSub("https://p.example/2")
+	got := PushTargets([]Device{{ID: "a", Push: &one}, {ID: "c", Push: &two}}, map[string]bool{"a": true})
+	if !reflect.DeepEqual(got, []PushSubscription{two}) {
+		t.Fatalf("targets %+v", got)
 	}
 }
 

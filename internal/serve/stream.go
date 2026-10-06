@@ -72,12 +72,14 @@ type clientFrame struct {
 	Watch   *string `json:"watch"`
 	After   int64   `json:"after"`
 	Unwatch *string `json:"unwatch"`
+	Visible *bool   `json:"visible"`
 }
 
 type stream struct {
 	conn    *websocket.Conn
 	readCtx context.Context
 	d       Daemon
+	device  string
 	writeMu sync.Mutex
 	watchMu sync.Mutex
 	watches map[string]*watch
@@ -128,6 +130,7 @@ func (s *Server) runStream(ctx context.Context, cancel context.CancelCauseFunc, 
 	}
 	defer func() { _ = d.Close() }()
 	st.d = d
+	st.device = device.ID
 	defer st.unwatchAll()
 	unregister, ok := s.streams.add(device.ID, cancel)
 	if !ok {
@@ -263,8 +266,16 @@ func (st *stream) handle(ctx context.Context, data []byte) error {
 	case f.Unwatch != nil && *f.Unwatch != "":
 		st.unwatch(*f.Unwatch, nil)
 		return nil
+	case f.Visible != nil:
+		st.viewing(ctx, *f.Visible)
+		return nil
 	}
-	return st.write(ctx, Frame{Error: &rpc.Error{Code: rpc.CodeBadRequest, Message: `send {"watch": "<session>", "after": <cursor>} or {"unwatch": "<session>"}`}})
+	return st.write(ctx, Frame{Error: &rpc.Error{Code: rpc.CodeBadRequest, Message: `send {"watch": "<session>", "after": <cursor>}, {"unwatch": "<session>"} or {"visible": <bool>}`}})
+}
+
+func (st *stream) viewing(ctx context.Context, visible bool) {
+	params := rpc.DeviceViewingParams{Device: st.device, Visible: visible}
+	_ = st.d.Call(ctx, rpc.MethodDeviceViewing, params, nil)
 }
 
 func (st *stream) watch(ctx context.Context, session string, after int64) error {

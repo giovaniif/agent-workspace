@@ -24,9 +24,13 @@ func WithPush(p app.PushProvider) Option {
 }
 
 func (s *state) queuePush(b domain.Banner) {
-	if s.pushes == nil {
+	if s.pushes == nil || !s.gate.Admit(b, s.presence, time.Now()) {
 		return
 	}
+	s.enqueuePush(b)
+}
+
+func (s *state) enqueuePush(b domain.Banner) {
 	select {
 	case s.pushes <- domain.PushFor(b):
 	default:
@@ -47,7 +51,7 @@ func (d *Daemon) runPush(ctx context.Context) {
 
 func (d *Daemon) deliverPush(ctx context.Context, msg domain.PushMessage) {
 	var subs []domain.PushSubscription
-	if !d.query(func(s *state) { subs = domain.PushTargets(sorted(s.devices)) }) || len(subs) == 0 {
+	if !d.query(func(s *state) { subs = domain.PushTargets(sorted(s.devices), s.viewing(time.Now())) }) || len(subs) == 0 {
 		return
 	}
 	sctx, cancel := context.WithTimeout(ctx, pushTimeout)

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { App, type AppEnv } from "./App";
@@ -115,6 +115,30 @@ describe("in the installed app", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Connecting");
     sockets.last.open();
     expect(sockets.last.sent).toEqual([{ token: "t0k" }]);
+  });
+
+  it("tells the stream when the page is shown or hidden", () => {
+    const page = { visible: true };
+    let changed: (() => void) | null = null;
+    const { storage, env, sockets } = setup({
+      visibility: {
+        visible: () => page.visible,
+        onChange: (listener) => {
+          changed = listener;
+          return () => {
+            changed = null;
+          };
+        },
+      },
+    });
+    storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+    render(<App env={env} />);
+    sockets.last.open();
+    sockets.last.push({ state: { seq: 1, workspaces: [], tasks: [], worktrees: [], sessions: [], limits: [], queue: [], sends: [] } });
+    expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }]);
+    page.visible = false;
+    act(() => changed?.());
+    expect(sockets.last.sent).toEqual([{ token: "t0k" }, { visible: true }, { visible: false }]);
   });
 
   it("asks to pair again when the stored token is unreadable", () => {

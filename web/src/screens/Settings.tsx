@@ -93,6 +93,10 @@ export function Settings({ auth, host, installed, fetch, push, onSignOut }: Sett
         ) : (
           <>
             <p className="muted">Get a notification when a session needs you, waits for an answer or finishes.</p>
+            <p className="muted">
+              Held while you're typing at the terminal, and sent once if you step away with a session still waiting. Not
+              sent while this app is open on screen.
+            </p>
             {notify.state === "on" && <p>Notifications are on for this device.</p>}
             {notify.state === "denied" && (
               <p className="error">Notifications are blocked. Allow them for agentws in your device's settings, then try again.</p>

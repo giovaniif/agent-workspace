@@ -95,7 +95,7 @@ One terminal tool for running Claude Code, Codex, and Oh My Pi (`omp`) sessions 
 ## P2
 
 - Native macOS client.
-- A phone app: a PWA served by `agentws serve` that lists sessions, chats with them, starts new ones and gets push notifications, over whatever network path the user picks (see ADR 0046).
+- A phone app: a PWA served by `agentws serve` that lists sessions, chats with them, starts new ones and gets push notifications, over whatever network path the user picks (see ADR 0046). Pushes are held while you type in an attached `agentws` tmux client (`[push] away_after`, default 2 minutes, `"0"` turns it off) and sent once if you step away with a session still needing you; a device whose app is open on screen gets none.
 - Comparing two agents' attempts at the same task side by side.
 - Attaching to a remote daemon over SSH.
 

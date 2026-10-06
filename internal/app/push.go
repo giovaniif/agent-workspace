@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/giovaniif/agent-workspace/internal/domain"
 )
@@ -13,6 +14,10 @@ var ErrPushGone = errors.New("the push service no longer has this subscription")
 type PushProvider interface {
 	PublicKey() (string, error)
 	Send(ctx context.Context, sub domain.PushSubscription, msg domain.PushMessage) error
+}
+
+type TerminalActivity interface {
+	LastInput(ctx context.Context) (time.Time, error)
 }
 
 func SendPush(ctx context.Context, p PushProvider, subs []domain.PushSubscription, msg domain.PushMessage) ([]domain.PushSubscription, error) {

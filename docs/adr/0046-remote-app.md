@@ -121,3 +121,32 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 - The payload is `{"title","body","url","tag"}`: the banner's title and body (falling back to `agentws` and the state word, never empty), `url` `/#/sessions/<id>` and `tag` the session ID, so a session's newer notification replaces its older one. The terminal-in-front check of the Mac banner does not apply to push.
 
 Rejected: `serve` subscribing to `notify.stream` and sending through an adapter injected from `cmd/agentws`. It keeps sending out of the daemon, but subscriptions would still have to be stored and dropped through new daemon methods, revocation and a gone subscription would cross the socket twice, and a push would be lost whenever `serve` is not running even though the daemon saw the banner.
+
+## Amendment, 2026-10-06 (#206): don't push while the owner is at the terminal or on the app
+
+The owner asked for no phone notifications while working at the terminal, and for the phone to be told when that stops. The common setup is a headless host reached over ssh with the TUI inside the `agentws` tmux server, so presence has to come from tmux and from the app, not from a screen.
+
+- **At the terminal** means at least one client attached to the `agentws` tmux server whose last input (`#{client_activity}`, tmux's per-client time of the last key or mouse event, in seconds) is less than `away_after` ago. `away_after` is `[push] away_after` in `config.toml`, a Go duration (`"2m"` by default, `"90s"`, `"10m"`); `"0"` turns presence suppression off, and a value that does not parse logs and keeps the default. No attached client, no tmux server, or a failed sample counts as away, so a push is never lost on a guess.
+- tmux is read only by `internal/adapters/tmux` (`Host.LastInput`, the port `app.TerminalActivity`). A daemon goroutine samples it every 5 s with a 2 s cap and hands the time to the loop, which only stores it (`domain.Presence`). Nothing on the loop runs tmux, as in ADR 0016.
+- `domain.PushGate` decides on the loop, after mute and the coalescer: while present, a push is held (the newest per session); while away, it goes, and any held push for that session is dropped. After each sample, a held push is sent once if the owner is now away and the session still needs them (`domain.NeedsYou`: permission or waiting, or done and still unread; not muted, not ended). One that was answered, read (focusing clears unread) or muted meanwhile is forgotten. So stepping away with a session waiting buzzes the phone within about 5 s of the window running out; nothing is sent twice.
+- Urgent states are not exempt: a permission prompt is held too. The owner asked for no phone notifications at all while working at the terminal, and the TUI already shows it.
+- **On the app** means a device whose app is open and on screen. The page sends `{"visible":bool}` on the stream when it goes live, on every `visibilitychange`, and `{"visible":true}` every 30 s while shown. serve passes it to a new daemon method, `device.viewing` (`{"device","visible"}`), on the stream's own connection; the daemon keeps one report per connection and drops it when the connection closes. The push worker skips a device with a visible report under 90 s old (`domain.Viewing`); other devices still get the push, and it is not held for the skipped one, since the app shows the state live. The 90 s limit covers iOS keeping a backgrounded app's socket open and a link that died without a close.
+- Mute, revocation and coalescing are unchanged; every push still carries a title and body.
+
+Why:
+
+- Presence from tmux client activity works the same over ssh, mosh or locally, and needs nothing from the owner's Mac. Holding instead of dropping is what lets the phone know when to buzz: the owner walking away is the moment the push matters.
+- A report tied to the stream's connection ends with it, so serve needs no state of its own and a crashed serve leaves nothing behind.
+
+Rejected:
+
+- **Exempting permission prompts:** the owner wanted silence while working; the TUI shows the prompt.
+- **A per-device presence heartbeat over HTTP:** a second channel that can disagree with the stream; the stream already exists while the app is open.
+- **Counting an open stream as viewing without a visibility report:** iOS keeps a backgrounded PWA's socket for a while, which would swallow pushes. An app without the report (an older build) is never counted as viewing.
+
+Limits:
+
+- Activity in another tmux server, or in a terminal that is not attached to `agentws`, does not count. Reading the TUI without touching a key for longer than `away_after` counts as away.
+- An idle attached client left open on a desk counts as away once its window runs out, which is the intent; one that keeps receiving input (a key repeat, a mouse jiggle into the terminal) counts as present.
+- Held pushes are in memory: a daemon restart forgets them; the session list still shows the state.
+- Up to 5 s pass between the window running out and the held push.

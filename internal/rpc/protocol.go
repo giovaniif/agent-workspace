@@ -61,6 +61,7 @@ const (
 	MethodPushKey          = "push.key"
 	MethodPushSubscribe    = "push.subscribe"
 	MethodPushUnsubscribe  = "push.unsubscribe"
+	MethodDeviceViewing    = "device.viewing"
 )
 
 type PairCodeParams struct {
@@ -117,6 +118,11 @@ type PushKey struct {
 type PushKeys struct {
 	P256dh string `json:"p256dh"`
 	Auth   string `json:"auth"`
+}
+
+type DeviceViewingParams struct {
+	Device  string `json:"device"`
+	Visible bool   `json:"visible"`
 }
 
 type PushUnsubscribeParams struct {

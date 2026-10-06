@@ -69,3 +69,8 @@ Limits:
 - The agent runs the binary that ran setup, by path; moving or deleting it breaks the agent until setup runs again.
 - The bridge needs key-based ssh with no prompt, and `agentws` on the remote's non-interactive `PATH` (else `--remote-bin`).
 - Banners posted while the bridge is disconnected are lost; the sidebar still shows the state.
+
+## Amendment, 2026-10-06 (#206): presence for Web Push
+
+- The terminal-in-front check above reads the Mac's screen, which a daemon on a headless host reached over ssh cannot see. Web Push (ADR 0046) gets its own presence rule instead: the owner is at the terminal while someone typed in a client attached to the `agentws` tmux server less than `[push] away_after` ago (default 2 minutes). While present, pushes are held, not dropped, and one is sent per session when the owner goes away with that session still needing them. Details are in ADR 0046's amendment of the same date.
+- The Mac banner path is unchanged: it keeps the frontmost check, and it does not use tmux presence.

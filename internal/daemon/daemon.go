@@ -101,6 +101,9 @@ type state struct {
 	attn            *attention
 	co              *domain.Coalescer
 	pushes          chan domain.PushMessage
+	gate            *domain.PushGate
+	presence        domain.Presence
+	views           map[*conn]domain.ViewReport
 	requestUsage    func(sessionID, path string, force bool)
 	sendSwitches    func(session domain.Session, sws []domain.Switch)
 	hints           worktreeHints
@@ -147,6 +150,7 @@ type Daemon struct {
 	term     terminals
 	tx       *transcripts
 	push     app.PushProvider
+	presence presenceCfg
 }
 
 func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
@@ -175,6 +179,8 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		booting:    map[string]bool{},
 		devices:    map[string]domain.Device{},
 		co:         domain.NewCoalescer(),
+		gate:       domain.NewPushGate(),
+		views:      map[*conn]domain.ViewReport{},
 	}
 	for _, dev := range snap.Devices {
 		st.devices[dev.ID] = dev
@@ -259,6 +265,9 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	}
 	if d.push != nil {
 		go d.runPush(ctx)
+	}
+	if d.presence.activity != nil {
+		go d.samplePresence(ctx)
 	}
 	go d.watchWorktrees(ctx)
 	go d.watchPorts(ctx)
@@ -432,6 +441,7 @@ func (d *Daemon) handle(c *conn) {
 		d.query(func(s *state) {
 			delete(s.subs, c)
 			delete(s.noticeSubs, c)
+			delete(s.views, c)
 		})
 		if d.tx != nil {
 			d.tx.dropConn(c)
@@ -569,6 +579,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.pairMethod(req)
 	case rpc.MethodPushKey, rpc.MethodPushSubscribe, rpc.MethodPushUnsubscribe:
 		return d.pushMethod(req)
+	case rpc.MethodDeviceViewing:
+		return d.deviceViewing(c, req)
 	default:
 		return errorResponse(req.ID, rpc.CodeUnknownMethod, "unknown method "+req.Method), true
 	}

@@ -168,7 +168,7 @@ export type Frame = {
   watch?: string;
 };
 
-export type ClientFrame = { watch: string; after: number } | { unwatch: string };
+export type ClientFrame = { watch: string; after: number } | { unwatch: string } | { visible: boolean };
 
 export type SocketLike = {
   send(data: string): void;
@@ -191,6 +191,7 @@ export type StreamSnapshot = {
 };
 
 export const closeUnauthorized = 4401;
+export const defaultHeartbeat = 30000;
 
 export function defaultRetryDelay(attempt: number): number {
   return Math.min(30000, 1000 * 2 ** attempt);
@@ -245,6 +246,8 @@ export type StreamOptions = {
   token: string;
   retryDelay?: (attempt: number) => number;
   now?: () => number;
+  visible?: () => boolean;
+  heartbeat?: number;
   confirmRefused?: () => Promise<boolean>;
 };
 
@@ -252,6 +255,7 @@ export class StreamClient {
   private readonly opts: StreamOptions;
   private socket: SocketLike | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private beat: ReturnType<typeof setInterval> | null = null;
   private attempt = 0;
   private running = false;
   private generation = 0;
@@ -275,6 +279,7 @@ export class StreamClient {
     this.running = false;
     this.generation++;
     this.clearTimer();
+    this.stopBeat();
     const socket = this.socket;
     this.socket = null;
     if (socket) {
@@ -301,6 +306,13 @@ export class StreamClient {
   onFrame(listener: (frame: Frame) => void): () => void {
     this.frameListeners.add(listener);
     return () => this.frameListeners.delete(listener);
+  }
+
+  visibilityChanged(): void {
+    const visible = this.opts.visible;
+    if (visible) {
+      this.send({ visible: visible() });
+    }
   }
 
   send(frame: ClientFrame): boolean {
@@ -331,6 +343,7 @@ export class StreamClient {
     if (frame.state) {
       this.attempt = 0;
       this.update({ status: "live", state: frame.state, reason: "" });
+      this.startBeat();
     } else if (frame.diff && this.current.state) {
       this.update({ state: applyDiff(this.current.state, frame.diff) });
     }
@@ -345,6 +358,7 @@ export class StreamClient {
     }
     this.detach(socket);
     this.socket = null;
+    this.stopBeat();
     if (code === closeUnauthorized) {
       this.confirmUnauthorized(reason);
       return;
@@ -401,6 +415,27 @@ export class StreamClient {
     socket.onerror = null;
   }
 
+  private startBeat(): void {
+    const visible = this.opts.visible;
+    if (!visible) {
+      return;
+    }
+    this.stopBeat();
+    this.send({ visible: visible() });
+    this.beat = setInterval(() => {
+      if (visible()) {
+        this.send({ visible: true });
+      }
+    }, this.opts.heartbeat ?? defaultHeartbeat);
+  }
+
+  private stopBeat(): void {
+    if (this.beat !== null) {
+      clearInterval(this.beat);
+      this.beat = null;
+    }
+  }
+
   private clearTimer(): void {
     if (this.timer !== null) {
       clearTimeout(this.timer);
@@ -417,10 +452,10 @@ export class StreamClient {
 }
 
 export function useStreamClient(opts: StreamOptions): StreamClient {
-  const { open, token, retryDelay, now, confirmRefused } = opts;
+  const { open, token, retryDelay, now, visible, heartbeat, confirmRefused } = opts;
   const client = useMemo(
-    () => new StreamClient({ open, token, retryDelay, now, confirmRefused }),
-    [open, token, retryDelay, now, confirmRefused],
+    () => new StreamClient({ open, token, retryDelay, now, visible, heartbeat, confirmRefused }),
+    [open, token, retryDelay, now, visible, heartbeat, confirmRefused],
   );
   useEffect(() => {
     client.start();
