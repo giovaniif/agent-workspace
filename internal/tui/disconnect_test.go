@@ -93,6 +93,14 @@ func TestQuitWhenTheDaemonIsAnotherBuild(t *testing.T) {
 	}
 }
 
+func TestQQuitsTheSetupWalkthroughWhileDisconnected(t *testing.T) {
+	m, _ := setupModel(t, freshMachine())
+	m = update(m, tui.DisconnectedMsg{})
+	if !quitsOn(t, m, key("q")) {
+		t.Fatal("q in the setup walkthrough does not quit while the daemon is disconnected")
+	}
+}
+
 func TestQKeepsTheSidebarOnADaemonFailureThatIsNotALostConnection(t *testing.T) {
 	c := &fakeCaller{err: &rpc.Error{Code: rpc.CodeFailed, Message: "tmux: server exited"}}
 	if quitsOn(t, connectedModel(c), key("q")) {
