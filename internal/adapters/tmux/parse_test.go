@@ -57,3 +57,20 @@ func TestTrimCaptureDropsTrailingBlankLines(t *testing.T) {
 		}
 	}
 }
+
+func TestPopupClientIsTheOneThatTypedLast(t *testing.T) {
+	tests := map[string]string{
+		"/dev/pts/5 agentws 1791320586\n/dev/pts/20 agentws 1791320589\n":          "/dev/pts/20",
+		"/dev/pts/20 agentws 1791320589\n/dev/pts/5 agentws 1791320586\n":          "/dev/pts/20",
+		"/dev/pts/5 agentws 1791320586\n/dev/pts/9 agentws-popup-1-2 1791320599\n": "/dev/pts/5",
+		"/dev/pts/5 agentws 1791320586\n":                                          "/dev/pts/5",
+		"/dev/pts/9 agentws-popup-1-2 1791320599\n":                                "",
+		"": "",
+	}
+	for in, want := range tests {
+		got, ok := activeClient(in)
+		if got != want || ok != (want != "") {
+			t.Errorf("activeClient(%q) = %q, %v, want %q", in, got, ok, want)
+		}
+	}
+}
