@@ -1,4 +1,4 @@
-package serve
+package view
 
 import (
 	"slices"
@@ -9,7 +9,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-type StreamSession struct {
+type Session struct {
 	domain.Session
 	Name   string     `json:"name"`
 	Where  string     `json:"where"`
@@ -17,11 +17,36 @@ type StreamSession struct {
 	Since  *time.Time `json:"since"`
 }
 
-type StreamQuota struct {
+type Quota struct {
 	domain.Quota
 	Label   string    `json:"label"`
 	Low     bool      `json:"low"`
 	StaleAt time.Time `json:"stale_at"`
+}
+
+type State struct {
+	Seq        uint64              `json:"seq"`
+	Workspaces []domain.Workspace  `json:"workspaces"`
+	Tasks      []domain.Task       `json:"tasks"`
+	Worktrees  []domain.Worktree   `json:"worktrees"`
+	Sessions   []Session           `json:"sessions"`
+	Limits     []Quota             `json:"limits"`
+	Queue      []domain.LaunchItem `json:"queue"`
+	Sends      []domain.QueuedSend `json:"sends"`
+}
+
+type Diff struct {
+	Seq              uint64               `json:"seq"`
+	RemovedWorkspace string               `json:"removed_workspace,omitempty"`
+	RemovedWorktree  string               `json:"removed_worktree,omitempty"`
+	RemovedSession   string               `json:"removed_session,omitempty"`
+	Workspace        *domain.Workspace    `json:"workspace,omitempty"`
+	Task             *domain.Task         `json:"task,omitempty"`
+	Worktree         *domain.Worktree     `json:"worktree,omitempty"`
+	Session          *Session             `json:"session,omitempty"`
+	Limits           *[]Quota             `json:"limits,omitempty"`
+	Queue            *[]domain.LaunchItem `json:"queue,omitempty"`
+	Sends            *[]domain.QueuedSend `json:"sends,omitempty"`
 }
 
 type derived struct {
@@ -31,17 +56,17 @@ type derived struct {
 	since  time.Time
 }
 
-type view struct {
+type View struct {
 	tasks     map[string]domain.Task
 	worktrees map[string]domain.Worktree
 	sessions  map[string]domain.Session
 	events    map[string][]domain.SessionEvent
 	shown     map[string]derived
-	limits    []StreamQuota
+	limits    []Quota
 }
 
-func newView(st rpc.State) (*view, *StreamState) {
-	v := &view{
+func New(st rpc.State) (*View, *State) {
+	v := &View{
 		tasks:     map[string]domain.Task{},
 		worktrees: map[string]domain.Worktree{},
 		sessions:  map[string]domain.Session{},
@@ -62,12 +87,12 @@ func newView(st rpc.State) (*view, *StreamState) {
 	for _, s := range st.Sessions {
 		v.sessions[s.ID] = s
 	}
-	sessions := make([]StreamSession, 0, len(st.Sessions))
+	sessions := make([]Session, 0, len(st.Sessions))
 	for _, s := range st.Sessions {
 		sessions = append(sessions, v.show(s))
 	}
 	v.limits = v.quotas()
-	return v, &StreamState{
+	return v, &State{
 		Seq:        st.Seq,
 		Workspaces: orEmpty(st.Workspaces),
 		Tasks:      orEmpty(st.Tasks),
@@ -79,9 +104,9 @@ func newView(st rpc.State) (*view, *StreamState) {
 	}
 }
 
-func (v *view) apply(d rpc.Diff) []*StreamDiff {
+func (v *View) Apply(d rpc.Diff) []*Diff {
 	v.remember(d)
-	out := &StreamDiff{
+	out := &Diff{
 		Seq:              d.Seq,
 		RemovedWorkspace: d.RemovedWorkspace,
 		RemovedWorktree:  d.RemovedWorktree,
@@ -105,14 +130,14 @@ func (v *view) apply(d rpc.Diff) []*StreamDiff {
 			out.Limits = &limits
 		}
 	}
-	var diffs []*StreamDiff
+	var diffs []*Diff
 	if out.keep() {
 		diffs = append(diffs, out)
 	}
 	return append(diffs, v.changedSessions(d)...)
 }
 
-func (v *view) remember(d rpc.Diff) {
+func (v *View) remember(d rpc.Diff) {
 	if d.Task != nil {
 		v.tasks[d.Task.ID] = *d.Task
 	}
@@ -135,7 +160,7 @@ func (v *view) remember(d rpc.Diff) {
 	}
 }
 
-func (v *view) changedSessions(d rpc.Diff) []*StreamDiff {
+func (v *View) changedSessions(d rpc.Diff) []*Diff {
 	ids := make([]string, 0, len(v.sessions))
 	for id := range v.sessions {
 		if d.Session == nil || d.Session.ID != id {
@@ -143,19 +168,19 @@ func (v *view) changedSessions(d rpc.Diff) []*StreamDiff {
 		}
 	}
 	sort.Strings(ids)
-	var out []*StreamDiff
+	var out []*Diff
 	for _, id := range ids {
 		s := v.sessions[id]
 		if v.derive(s) == v.shown[id] {
 			continue
 		}
 		shown := v.show(s)
-		out = append(out, &StreamDiff{Seq: d.Seq, Session: &shown})
+		out = append(out, &Diff{Seq: d.Seq, Session: &shown})
 	}
 	return out
 }
 
-func (v *view) addEvent(ev domain.SessionEvent) {
+func (v *View) addEvent(ev domain.SessionEvent) {
 	kept := append(v.events[ev.SessionID], ev)
 	if len(kept) > domain.SessionEventsKept {
 		kept = kept[len(kept)-domain.SessionEventsKept:]
@@ -163,10 +188,10 @@ func (v *view) addEvent(ev domain.SessionEvent) {
 	v.events[ev.SessionID] = kept
 }
 
-func (v *view) show(s domain.Session) StreamSession {
+func (v *View) show(s domain.Session) Session {
 	d := v.derive(s)
 	v.shown[s.ID] = d
-	out := StreamSession{Session: s, Name: d.name, Where: d.where, Banner: d.banner}
+	out := Session{Session: s, Name: d.name, Where: d.where, Banner: d.banner}
 	if !d.since.IsZero() {
 		since := d.since
 		out.Since = &since
@@ -174,7 +199,7 @@ func (v *view) show(s domain.Session) StreamSession {
 	return out
 }
 
-func (v *view) derive(s domain.Session) derived {
+func (v *View) derive(s domain.Session) derived {
 	var worktrees []domain.Worktree
 	var prs []domain.PullRequest
 	for _, id := range s.WorktreeIDs {
@@ -204,7 +229,7 @@ func (v *view) derive(s domain.Session) derived {
 	}
 }
 
-func (v *view) quotas() []StreamQuota {
+func (v *View) quotas() []Quota {
 	ids := make([]string, 0, len(v.sessions))
 	for id := range v.sessions {
 		ids = append(ids, id)
@@ -215,14 +240,26 @@ func (v *view) quotas() []StreamQuota {
 		sessions = append(sessions, v.sessions[id])
 	}
 	quotas := domain.Quotas(sessions)
-	out := make([]StreamQuota, 0, len(quotas))
+	out := make([]Quota, 0, len(quotas))
 	for _, q := range quotas {
-		out = append(out, StreamQuota{Quota: q, Label: domain.WindowLabel(q.Window), Low: q.Low(), StaleAt: q.ReportedAt.Add(domain.StaleQuotaAfter)})
+		out = append(out, Quota{Quota: q, Label: domain.WindowLabel(q.Window), Low: q.Low(), StaleAt: q.ReportedAt.Add(domain.StaleQuotaAfter)})
 	}
 	return out
 }
 
-func (d *StreamDiff) keep() bool {
+func (d *Diff) keep() bool {
 	return d.RemovedWorkspace != "" || d.RemovedWorktree != "" || d.RemovedSession != "" ||
 		d.Workspace != nil || d.Task != nil || d.Worktree != nil || d.Session != nil || d.Queue != nil || d.Sends != nil || d.Limits != nil
+}
+
+func withoutPorts(wt domain.Worktree) domain.Worktree {
+	wt.Ports = nil
+	return wt
+}
+
+func orEmpty[T any](xs []T) []T {
+	if xs == nil {
+		return []T{}
+	}
+	return xs
 }

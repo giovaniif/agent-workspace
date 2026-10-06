@@ -47,17 +47,31 @@ linters:
             - github.com/giovaniif/agent-workspace/internal/rpc
             - github.com/giovaniif/agent-workspace/internal/domain
             - github.com/giovaniif/agent-workspace/internal/serve
+            - github.com/giovaniif/agent-workspace/internal/view
           deny:
             - pkg: github.com/giovaniif/agent-workspace/internal
               desc: serve talks to the daemon only through rpc and may import domain types
             - pkg: os/exec
               desc: serve runs nothing; cmd/agentws starts the daemon
+        view:
+          files:
+            - "**/internal/view/**"
+          list-mode: lax
+          allow:
+            - github.com/giovaniif/agent-workspace/internal/rpc
+            - github.com/giovaniif/agent-workspace/internal/domain
+          deny:
+            - pkg: github.com/giovaniif/agent-workspace/internal
+              desc: the derived view reads rpc state and applies domain rules, nothing else
+            - pkg: os/exec
+              desc: the derived view runs nothing
         rpcpipe:
           files:
             - "**/internal/rpcpipe/**"
           list-mode: lax
           allow:
             - github.com/giovaniif/agent-workspace/internal/rpc
+            - github.com/giovaniif/agent-workspace/internal/view
           deny:
             - pkg: github.com/giovaniif/agent-workspace/internal
               desc: the stdio bridge reaches the daemon only through rpc

@@ -10,8 +10,8 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
 	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/agent-workspace/internal/view"
 )
 
 const (
@@ -27,30 +27,12 @@ var (
 	errDaemonGone = errors.New("the agentws daemon went away")
 )
 
-type StreamState struct {
-	Seq        uint64              `json:"seq"`
-	Workspaces []domain.Workspace  `json:"workspaces"`
-	Tasks      []domain.Task       `json:"tasks"`
-	Worktrees  []domain.Worktree   `json:"worktrees"`
-	Sessions   []StreamSession     `json:"sessions"`
-	Limits     []StreamQuota       `json:"limits"`
-	Queue      []domain.LaunchItem `json:"queue"`
-	Sends      []domain.QueuedSend `json:"sends"`
-}
-
-type StreamDiff struct {
-	Seq              uint64               `json:"seq"`
-	RemovedWorkspace string               `json:"removed_workspace,omitempty"`
-	RemovedWorktree  string               `json:"removed_worktree,omitempty"`
-	RemovedSession   string               `json:"removed_session,omitempty"`
-	Workspace        *domain.Workspace    `json:"workspace,omitempty"`
-	Task             *domain.Task         `json:"task,omitempty"`
-	Worktree         *domain.Worktree     `json:"worktree,omitempty"`
-	Session          *StreamSession       `json:"session,omitempty"`
-	Limits           *[]StreamQuota       `json:"limits,omitempty"`
-	Queue            *[]domain.LaunchItem `json:"queue,omitempty"`
-	Sends            *[]domain.QueuedSend `json:"sends,omitempty"`
-}
+type (
+	StreamState   = view.State
+	StreamDiff    = view.Diff
+	StreamSession = view.Session
+	StreamQuota   = view.Quota
+)
 
 type Frame struct {
 	State      *StreamState     `json:"state,omitempty"`
@@ -137,7 +119,7 @@ func (s *Server) runStream(ctx context.Context, cancel context.CancelCauseFunc, 
 		return CloseUnauthorized, errRevoked.Error()
 	}
 	defer unregister()
-	v, state := newView(sub.State)
+	v, state := view.New(sub.State)
 	diffs := s.relay(ctx, v, sub.Diffs)
 	if err := st.write(ctx, Frame{State: state}); err != nil {
 		return writeFailed(ctx)
@@ -167,7 +149,7 @@ func writeFailed(ctx context.Context) (websocket.StatusCode, string) {
 	return websocket.StatusInternalError, "write failed"
 }
 
-func (s *Server) relay(ctx context.Context, v *view, in <-chan rpc.Diff) <-chan *StreamDiff {
+func (s *Server) relay(ctx context.Context, v *view.View, in <-chan rpc.Diff) <-chan *StreamDiff {
 	out := make(chan *StreamDiff)
 	go func() {
 		defer close(out)
@@ -188,7 +170,7 @@ func (s *Server) relay(ctx context.Context, v *view, in <-chan rpc.Diff) <-chan 
 				if diff.RevokedDevice != "" {
 					s.streams.revoke(diff.RevokedDevice)
 				}
-				queue = append(queue, v.apply(diff)...)
+				queue = append(queue, v.Apply(diff)...)
 			case send <- head:
 				queue = queue[1:]
 			}
@@ -368,11 +350,6 @@ func closeFor(cause error) (websocket.StatusCode, string) {
 	default:
 		return websocket.StatusInternalError, cause.Error()
 	}
-}
-
-func withoutPorts(wt domain.Worktree) domain.Worktree {
-	wt.Ports = nil
-	return wt
 }
 
 func orEmpty[T any](xs []T) []T {
