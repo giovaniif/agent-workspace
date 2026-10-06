@@ -46,6 +46,7 @@ const (
 	MethodClientReview     = "client.review"
 	MethodClientPopup      = "client.popup"
 	MethodClientDetach     = "client.detach"
+	MethodClientNative     = "client.native"
 	MethodCleanupPlan      = "cleanup.plan"
 	MethodCleanupRun       = "cleanup.run"
 	MethodDiskView         = "disk.view"
@@ -386,6 +387,32 @@ type OpenClientParams struct {
 type OpenClient struct {
 	Slot   string   `json:"slot"`
 	Attach []string `json:"attach"`
+}
+
+type NativeClientParams struct {
+	Cols int `json:"cols"`
+	Rows int `json:"rows"`
+}
+
+type NativePane struct {
+	Pane          string `json:"pane"`
+	Window        string `json:"window"`
+	SessionID     string `json:"session_id,omitempty"`
+	Cols          int    `json:"cols"`
+	Rows          int    `json:"rows"`
+	MouseAny      bool   `json:"mouse_any,omitempty"`
+	MouseButton   bool   `json:"mouse_button,omitempty"`
+	MouseStandard bool   `json:"mouse_standard,omitempty"`
+	MouseSGR      bool   `json:"mouse_sgr,omitempty"`
+	Alternate     bool   `json:"alternate,omitempty"`
+	CursorVisible bool   `json:"cursor_visible,omitempty"`
+	CursorKeys    bool   `json:"cursor_keys,omitempty"`
+}
+
+type NativeClient struct {
+	Argv    []string     `json:"argv"`
+	Session string       `json:"session"`
+	Panes   []NativePane `json:"panes"`
 }
 
 type DebugSeedParams struct {

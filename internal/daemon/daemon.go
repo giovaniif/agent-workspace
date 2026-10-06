@@ -550,6 +550,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.addComment(req)
 	case rpc.MethodOpenClient, rpc.MethodFocusMain, rpc.MethodClientReview, rpc.MethodClientPopup, rpc.MethodClientDetach:
 		return d.dispatchClient(req), true
+	case rpc.MethodClientNative:
+		return d.nativeClient(req)
 	case rpc.MethodDebugSeed:
 		var p rpc.DebugSeedParams
 		if err := json.Unmarshal(req.Params, &p); err != nil || p.Count < 1 {
