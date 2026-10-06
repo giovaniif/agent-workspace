@@ -229,3 +229,12 @@ export function resolveWorkItem(fetchFn: Fetch, token: string, workspace: string
 export function startSession(fetchFn: Fetch, token: string, body: NewSessionRequest): Promise<{ ID: string }> {
   return request<{ ID: string }>(fetchFn, "/api/v1/sessions", authed(token, { method: "POST", body: JSON.stringify(body) }));
 }
+
+export async function tokenRefused(fetchFn: Fetch, token: string): Promise<boolean> {
+  try {
+    await listWorkspaces(fetchFn, token);
+    return false;
+  } catch (err) {
+    return err instanceof ApiError && err.status === 401 && err.code === "unauthorized";
+  }
+}
