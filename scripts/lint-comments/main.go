@@ -103,6 +103,7 @@ const (
 	sql
 	script
 	css
+	swift
 )
 
 func languageOf(name string, src []byte) language {
@@ -126,6 +127,8 @@ func languageOf(name string, src []byte) language {
 		return script
 	case ".css":
 		return css
+	case ".swift":
+		return swift
 	case "":
 		if base == "Makefile" {
 			return makefile
@@ -158,6 +161,8 @@ func checkFile(name string, src []byte) ([]finding, error) {
 		return checkScript(name, src, true), nil
 	case css:
 		return checkScript(name, src, false), nil
+	case swift:
+		return checkSwift(name, src), nil
 	}
 	return nil, nil
 }
@@ -169,6 +174,7 @@ var (
 	yamlDirective    = regexp.MustCompile(`^\s*# yaml-language-server:`)
 	txtarFileHeader  = regexp.MustCompile(`^-- \S.* --$`)
 	scriptDirective  = regexp.MustCompile(`^/// <reference \S`)
+	swiftDirective   = regexp.MustCompile(`^// swift-tools-version:`)
 )
 
 func checkGo(name string, src []byte) ([]finding, error) {
