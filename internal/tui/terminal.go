@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -119,11 +120,25 @@ func (m Model) leave() tea.Cmd {
 		err := c.Call(ctx, rpc.MethodClientDetach, struct{}{}, nil)
 		var rerr *rpc.Error
 		switch {
-		case errors.As(err, &rerr) && rerr.Code == rpc.CodeNotFound:
+		case errors.As(err, &rerr) && (rerr.Code == rpc.CodeNotFound || rerr.Code == rpc.CodeVersionMismatch):
+			return tea.QuitMsg{}
+		case lostConnection(err):
 			return tea.QuitMsg{}
 		case err != nil:
 			return errMsg{err}
 		}
 		return nil
 	}
+}
+
+func lostConnection(err error) bool {
+	var op *net.OpError
+	return errors.Is(err, rpc.ErrClosed) || errors.As(err, &op)
+}
+
+func (m Model) quitKey(k string) bool {
+	if k == "ctrl+c" {
+		return true
+	}
+	return k == "q" && !m.typing()
 }
