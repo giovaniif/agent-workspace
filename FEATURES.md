@@ -33,7 +33,7 @@ One terminal tool for running Claude Code, Codex, and Oh My Pi (`omp`) sessions 
 - **Daemon:** owns sessions, worktrees, harness adapters, PR polling, usage data and notifications, and persists state to disk.
 - **Harness adapters:** Claude Code, Codex, and omp. Their hook events map to one state model: `running`, `waiting`, `permission`, `done`, `idle`. Claude and Codex also report context left and usage limits. omp reports model and effort from its hook.
 - **Terminal host:** a separate tmux server (`tmux -L agentws`) with one pane per agent and one per shell. Only the adapter talks to tmux, so it can be replaced later.
-- **TUI:** connects to the daemon over a local socket. Closing it leaves the sessions running.
+- **TUI:** connects to the daemon over a local socket. Closing it leaves the sessions running. `q` and ctrl+c always close it, even when the daemon is gone.
 
 ## P0 (v1)
 
