@@ -1,0 +1,19 @@
+exec agentws daemon start
+exec tmux -L $AGENTWS_TMUX_SOCKET new-session -d -s tui -x 48 -y 24 -e AGENTWS_HOME=$AGENTWS_HOME -e AGENTWS_NO_UPDATE_CHECK=1 agentws tui
+eventually 'Set up agentws' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+exec tmux -L $AGENTWS_TMUX_SOCKET send-keys -t tui Escape
+eventually '0 sessions' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+
+exec agentws daemon stop
+eventually 'daemon disconnected' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+eventually 'reconnecting · try \d+' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+
+exec agentws daemon start
+! eventually 'daemon disconnected' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+exec agentws debug seed 1
+eventually '1 session · 1 worktree' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+
+exec agentws daemon stop
+eventually 'daemon disconnected' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+exec tmux -L $AGENTWS_TMUX_SOCKET send-keys -t tui q
+eventually '^gone$' sh -c 'tmux -L "$AGENTWS_TMUX_SOCKET" has-session -t tui 2>/dev/null || echo gone'
