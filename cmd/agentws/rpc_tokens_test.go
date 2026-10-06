@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func reviewLine(text string) string {
@@ -114,6 +115,84 @@ func TestRpcReviewOpenTokensLeavesAFileWithNoLexerWithoutSpans(t *testing.T) {
 	if !sawSpans {
 		t.Fatalf("no line got spans: %q", out)
 	}
+}
+
+func TestRpcReviewOpenTokensHighlightsAMarkdownHeadingOnTheLastLine(t *testing.T) {
+	spans := tokensFor(t, reviewFile("CHANGES.md", "intro", "# Heading"))
+	if len(spans) != 2 || spans[1] != `[[0,9,"keyword"]]` {
+		t.Fatalf("spans %q", spans)
+	}
+}
+
+func TestRpcReviewOpenWithoutTokensAfterAnUnreadableReplyAddsNoSpans(t *testing.T) {
+	home := shortHome(t)
+	t.Setenv("AGENTWS_HOME", home)
+	ln := fakeSocket(t, home)
+	go func() {
+		c, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		r := bufio.NewReader(c)
+		_, _ = r.ReadString('\n')
+		_, _ = io.WriteString(c, "not json\n")
+		_, _ = r.ReadString('\n')
+		_, _ = io.WriteString(c, `{"v":1,"id":3,"result":`+reviewResult()+"}\n")
+		_ = c.Close()
+	}()
+	inR, inW := io.Pipe()
+	defer func() { _ = inW.Close() }()
+	go func() {
+		_, _ = io.WriteString(inW, tokensRequest+"\n")
+		time.Sleep(50 * time.Millisecond)
+		_, _ = io.WriteString(inW, `{"v":1,"id":3,"method":"review.open","params":{"session":"s1","scope":"branch"}}`+"\n")
+	}()
+	var out, stderr bytes.Buffer
+	if code := runRPC(nil, inR, &out, &stderr); code != 0 {
+		t.Fatalf("exit %d, stderr %q", code, stderr.String())
+	}
+	if strings.Contains(out.String(), "Spans") {
+		t.Fatalf("a request without tokens got spans: %q", out.String())
+	}
+}
+
+func tokensFor(t *testing.T, file string) []string {
+	t.Helper()
+	home := shortHome(t)
+	t.Setenv("AGENTWS_HOME", home)
+	ln := fakeSocket(t, home)
+	go func() {
+		c, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		_, _ = bufio.NewReader(c).ReadString('\n')
+		_, _ = io.WriteString(c, `{"v":1,"id":3,"result":{"worktrees":[{"Files":[`+file+`]}]}}`+"\n")
+		_ = c.Close()
+	}()
+	var out, stderr bytes.Buffer
+	if code := runRPC(nil, strings.NewReader(tokensRequest+"\n"), &out, &stderr); code != 0 {
+		t.Fatalf("exit %d, stderr %q", code, stderr.String())
+	}
+	var resp struct {
+		Result struct {
+			Worktrees []struct {
+				Files []struct {
+					Hunks []struct {
+						Lines []struct{ Spans json.RawMessage }
+					}
+				}
+			} `json:"worktrees"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &resp); err != nil || len(resp.Result.Worktrees) != 1 {
+		t.Fatalf("stdout %q", out.String())
+	}
+	var spans []string
+	for _, l := range resp.Result.Worktrees[0].Files[0].Hunks[0].Lines {
+		spans = append(spans, string(l.Spans))
+	}
+	return spans
 }
 
 func TestRpcReviewOpenWithoutTokensPassesTheReplyThrough(t *testing.T) {
