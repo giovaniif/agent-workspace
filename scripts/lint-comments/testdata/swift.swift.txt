@@ -1,0 +1,16 @@
+// swift-tools-version: 6.0
+import Foundation
+/// doc
+let url = "https://example.com"
+let a = 1 // trailing
+/* block /* nested */ still */
+let b = """
+  // not a comment
+  /* nor this */
+  """
+let c = #"raw // text"#
+let d = "say \("x") // fine"
+/*
+ multi
+ */
+let e = a / 2
