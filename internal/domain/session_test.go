@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 )
 
 var allStates = []AgentState{
@@ -179,5 +180,21 @@ func TestApplyKeepsOtherFields(t *testing.T) {
 	got, _ := s.Apply(HarnessEvent{Kind: EventUserPromptSubmit})
 	if got.ID != "s1" || got.Harness != HarnessCodex || got.Model != "m" || len(got.WorktreeIDs) != 1 {
 		t.Errorf("fields lost: %+v", got)
+	}
+}
+
+func TestLastCreatedSessionIgnoresOnesWithoutAStartTime(t *testing.T) {
+	t0 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	all := []Session{
+		{ID: "unstamped", Harness: HarnessClaude},
+		{ID: "older", StartedAt: t0, StartModel: "sonnet"},
+		{ID: "newer", StartedAt: t0.Add(time.Hour), StartModel: "gpt-5"},
+	}
+	got, ok := LastCreatedSession(all)
+	if !ok || got.ID != "newer" {
+		t.Fatalf("LastCreatedSession = %+v, %v", got, ok)
+	}
+	if _, ok := LastCreatedSession([]Session{{ID: "unstamped"}}); ok {
+		t.Fatal("a session without StartedAt counted as created")
 	}
 }

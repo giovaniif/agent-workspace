@@ -125,6 +125,10 @@ func (d *Daemon) startSession(p rpc.NewSessionParams, prompt string) (domain.Ses
 		}
 		return domain.Session{}, &rpc.Error{Code: rpc.CodeFailed, Message: err.Error()}, true
 	}
+	started.Session.StartedAt = d.ws.now()
+	started.Session.StartModel = started.Session.Model
+	started.Session.StartEffort = started.Session.Effort
+	started.Session.StartWorkspace = in.ws.Root
 	queued := false
 	ok = d.query(func(s *state) {
 		if in.isNew {

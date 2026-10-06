@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -58,6 +59,52 @@ func TestModelSwitchDialogFollowsTheDefaultsWhenTheHarnessChanges(t *testing.T) 
 	got = startedParams(t, m, c)
 	if got.Harness != "claude" || got.Model != "sonnet" || got.Effort != "high" {
 		t.Fatalf("back on claude %+v", got)
+	}
+}
+
+func TestNewSessionDialogReopensOnTheLastCreatedChoices(t *testing.T) {
+	st := withWorkspaces(fixture(1, 0))
+	st.Sessions = []domain.Session{
+		{ID: "old", Harness: domain.HarnessClaude, Model: "sonnet", Effort: "low", StartModel: "sonnet", StartEffort: "low", StartedAt: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)},
+		{ID: "new", Harness: domain.HarnessCodex, Model: "gpt-live", Effort: "low", StartModel: "gpt-5", StartEffort: "xhigh", StartWorkspace: "/src/api", StartedAt: time.Date(2026, 9, 20, 0, 0, 0, 0, time.UTC)},
+	}
+	c := &fakeCaller{}
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c, Defaults: map[domain.Harness]tui.Defaults{
+		domain.HarnessClaude: {Model: "sonnet", Effort: "high"},
+		domain.HarnessCodex:  {Model: "gpt-5-default", Effort: "medium"},
+	}})
+	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 40})
+	m = update(m, tui.StateMsg(st))
+	m = typeText(press(m, "n"), "fix the login bug")
+	m = pressCmd(pressCmd(pressCmd(m, keyTab), keyTab), keyRight)
+	m = pressCmd(m, keyEsc)
+	m = typeText(press(m, "n"), "fix the login bug")
+	if out := screen(m); !strings.Contains(out, "gpt-5") || strings.Contains(out, "gpt-live") || strings.Contains(out, "sonnet") {
+		t.Fatalf("dialog did not restore the created choices:\n%s", out)
+	}
+	got := startedParams(t, m, c)
+	want := rpc.NewSessionParams{Workspace: "/src/api", WorkItem: "fix the login bug", Harness: "codex", Model: "gpt-5", Effort: "xhigh"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("params %+v, want %+v", got, want)
+	}
+}
+
+func TestNewSessionDialogRestoresTheEffortChoicesOfTheLastCreatedHarness(t *testing.T) {
+	st := withWorkspaces(fixture(1, 0))
+	st.Sessions = []domain.Session{
+		{ID: "omp", Harness: domain.HarnessOmp, StartEffort: "off", StartWorkspace: "/src/api", StartedAt: time.Date(2026, 9, 20, 0, 0, 0, 0, time.UTC)},
+	}
+	c := &fakeCaller{}
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c})
+	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 40})
+	m = update(m, tui.StateMsg(st))
+	m = typeText(press(m, "n"), "fix the login bug")
+	m = pressCmd(pressCmd(pressCmd(pressCmd(m, keyTab), keyTab), keyTab), keyTab)
+	m = pressCmd(m, keyRight)
+	got := startedParams(t, m, c)
+	want := rpc.NewSessionParams{Workspace: "/src/api", WorkItem: "fix the login bug", Harness: "omp", Effort: "minimal"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("params %+v, want %+v", got, want)
 	}
 }
 

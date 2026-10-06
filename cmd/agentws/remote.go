@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/charmbracelet/x/term"
 	"rsc.io/qr"
 
 	"github.com/giovaniif/agent-workspace/internal/domain"
@@ -98,11 +101,9 @@ func remotePair(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	img, err := renderQR(link)
-	if err != nil {
+	if err := writeQR(stdout, stderr, link, qrTargetFor(stdout, os.Getenv)); err != nil {
 		return err
 	}
-	fmt.Fprint(stdout, img)
 	fmt.Fprintf(stdout, "\nScan the code with your phone, or open:\n\n  %s\n\nCode %s, single use, expires at %s.\n", link, code.Code, code.ExpiresAt.Local().Format(time.Kitchen))
 	return nil
 }
@@ -161,12 +162,96 @@ func loadServeURL(path string) (string, error) {
 	return cfg.Serve.URL, nil
 }
 
-func renderQR(text string) (string, error) {
+type qrTarget struct {
+	Colour  bool
+	Columns int
+}
+
+func qrTargetFor(w io.Writer, getenv func(string) string) qrTarget {
+	f, ok := w.(*os.File)
+	if !ok || !term.IsTerminal(f.Fd()) {
+		return qrTarget{}
+	}
+	columns, _, err := term.GetSize(f.Fd())
+	if err != nil || columns <= 0 {
+		columns = columnsFrom(getenv)
+	}
+	return qrTarget{Colour: getenv("NO_COLOR") == "", Columns: columns}
+}
+
+func columnsFrom(getenv func(string) string) int {
+	n, err := strconv.Atoi(getenv("COLUMNS"))
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
+}
+
+func qrWidth(text string) (int, error) {
+	code, err := qr.Encode(text, qr.M)
+	if err != nil {
+		return 0, err
+	}
+	return code.Size + 2*qrQuietZone, nil
+}
+
+func writeQR(stdout, stderr io.Writer, text string, t qrTarget) error {
+	width, err := qrWidth(text)
+	if err != nil {
+		return err
+	}
+	if t.Columns > 0 && t.Columns < width {
+		fmt.Fprintf(stderr, "The terminal is %d columns wide and the QR code needs %d, so it is not drawn. Widen the window and run the command again, or use the link below.\n", t.Columns, width)
+		return nil
+	}
+	img, err := renderQR(text, t.Colour)
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(stdout, img)
+	return nil
+}
+
+func renderQR(text string, colour bool) (string, error) {
 	code, err := qr.Encode(text, qr.M)
 	if err != nil {
 		return "", err
 	}
+	if colour {
+		return colourBlocks(code.Size, code.Black, qrQuietZone), nil
+	}
 	return halfBlocks(code.Size, code.Black, qrQuietZone), nil
+}
+
+func colourBlocks(size int, black func(x, y int) bool, quiet int) string {
+	total := size + 2*quiet
+	dark := func(x, y int) bool {
+		cx, cy := x-quiet, y-quiet
+		if cx < 0 || cy < 0 || cx >= size || cy >= size {
+			return false
+		}
+		return black(cx, cy)
+	}
+	colour := func(isDark bool) string {
+		if isDark {
+			return "16"
+		}
+		return "231"
+	}
+	var b strings.Builder
+	for y := 0; y < total; y += 2 {
+		prev := ""
+		for x := range total {
+			seq := "\x1b[38;5;" + colour(dark(x, y)) + ";48;5;" + colour(dark(x, y+1)) + "m"
+			if seq != prev {
+				b.WriteString(seq)
+				prev = seq
+			}
+			b.WriteString("▀")
+		}
+		b.WriteString("\x1b[0m\n")
+	}
+	return b.String()
 }
 
 func halfBlocks(size int, black func(x, y int) bool, quiet int) string {
