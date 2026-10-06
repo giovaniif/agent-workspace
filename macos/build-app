@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+config="${1:-release}"
+swift build -c "$config" --product AgentwsApp
+bin="$(swift build -c "$config" --show-bin-path)/AgentwsApp"
+app=build/agentws.app
+rm -rf "$app"
+mkdir -p "$app/Contents/MacOS"
+cp Info.plist "$app/Contents/Info.plist"
+cp "$bin" "$app/Contents/MacOS/agentws"
+codesign --force --sign - "$app"
+echo "$app"
