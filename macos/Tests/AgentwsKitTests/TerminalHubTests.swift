@@ -82,6 +82,29 @@ struct TerminalHubTests {
         try await waitUntil { opens.value >= 3 && sink.text.components(separatedBy: "\u{1b}chello").count >= 3 }
     }
 
+    @Test(.timeLimit(.minutes(1))) func aFailedCaptureStillLetsLiveOutputThrough() async throws {
+        let bin = try FakeBin()
+        let tmux = try bin.script("tmux", """
+        n=0
+        while IFS= read -r line; do
+          n=$((n+1))
+          printf '%%begin 1 %s 1\\n' $n
+          case "$line" in
+            capture-pane*) printf 'no pane\\n%%error 1 %s 1\\n%%output %%3 abc\\n' $n ;;
+            *) printf '%%end 1 %s 1\\n' $n ;;
+          esac
+        done
+        """)
+        let hub = TerminalHub(endpoint: .local(binary: "agentws")) { _, _ in
+            NativeClient(argv: [tmux], session: "s", panes: [PaneState(pane: "%3", window: "@2", cols: 80, rows: 24)])
+        }
+        hub.start()
+        defer { hub.stop() }
+        let sink = Sink()
+        hub.attach(pane: "%3") { sink.bytes += $0 }
+        try await waitUntil { sink.text.contains("abc") }
+    }
+
     @Test(.timeLimit(.minutes(1))) func aFailedOpenShowsReconnectingAndRetries() async throws {
         let opens = Opens()
         let hub = TerminalHub(endpoint: .local(binary: "agentws"), backoff: Backoff(first: .milliseconds(50), limit: .milliseconds(100))) { _, _ in
