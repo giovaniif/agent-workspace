@@ -10,6 +10,8 @@ public struct LiveWindow: View {
     @State private var endedExpanded = false
     @State private var focusFilter = 0
     @State private var review: ReviewController?
+    @State private var newSession: NewSession?
+    @State private var newSessionTab = NewSessionTab.session
     private let server: String
     private let router: WindowRouter
 #if canImport(SwiftTerm)
@@ -46,11 +48,32 @@ public struct LiveWindow: View {
         .onAppear { terminals.hub.start() }
 #endif
         .onAppear { store.start() }
-        .onChange(of: store.state?.seq) { reconcile(filter: filter) }
+        .onChange(of: store.state?.seq) {
+            reconcile(filter: filter)
+            newSession?.observe(store.state)
+        }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
         .onChange(of: nav.selected) {
             if review != nil { openReview() }
         }
+        .sheet(item: $newSession) { model in
+            NewSessionSheet(
+                model: model, tab: $newSessionTab, server: server, state: store.state,
+                started: { id in
+                    newSession = nil
+                    nav.select(id)
+                },
+                cancel: { newSession = nil }
+            )
+        }
+    }
+
+    private func openNewSession(_ tab: NewSessionTab) {
+        newSessionTab = tab
+        guard newSession == nil else { return }
+        let model = NewSession(caller: store)
+        newSession = model
+        Task { await model.load(state: store.state) }
     }
 
     private var reviewScreen: ReviewScreen? {
@@ -103,6 +126,7 @@ public struct LiveWindow: View {
             reconcile(filter: value)
         }
         a.toggleInspector = { inspector.toggle() }
+        a.newSession = { openNewSession(.session) }
         a.toggleEnded = { endedExpanded.toggle() }
         a.reconnect = {
             store.stop()
@@ -163,6 +187,8 @@ public struct LiveWindow: View {
             Button("") { reviewTask { await $0.send() } }
                 .keyboardShortcut(.return, modifiers: [.command, .shift])
             bound(.nvimAtFile) { openInNvim() }
+            bound(.newSession) { openNewSession(.session) }
+            bound(.linearLauncher) { openNewSession(.launcher) }
         }
         .opacity(0)
         .accessibilityHidden(true)

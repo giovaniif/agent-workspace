@@ -83,6 +83,18 @@ struct SessionID: Encodable, Sendable {
 
 struct Ignored: Decodable, Sendable {}
 
+public enum NewSessionTab: Sendable, Equatable, Hashable {
+    case session
+    case launcher
+}
+
+@MainActor
+final class OfflineCaller: Calling {
+    func call<Params: Encodable & Sendable, Answer: Decodable & Sendable>(_ method: String, params: Params) async throws -> Answer {
+        throw AgentwsError.disconnected
+    }
+}
+
 public struct WorkspaceChoice: Sendable, Equatable, Identifiable {
     public var id: String { root }
     public var root: String
@@ -161,7 +173,7 @@ public struct NewSessionForm: Sendable, Equatable {
     public var workspace = ""
     public var workItem = ""
     public var harnesses: [HarnessOptions] = []
-    public private(set) var harness = ""
+    private var chosenHarness = ""
     public var model = ""
     public var effort = ""
     public var launchInput = ""
@@ -182,8 +194,13 @@ public struct NewSessionForm: Sendable, Equatable {
 
     public var chosen: HarnessOptions? { harnesses.first { $0.harness == harness } }
 
+    public var harness: String {
+        get { chosenHarness }
+        set { choose(harness: newValue) }
+    }
+
     public mutating func choose(harness: String) {
-        self.harness = harness
+        chosenHarness = harness
         model = chosen?.model ?? ""
         effort = chosen?.effort ?? ""
     }
@@ -219,10 +236,11 @@ public struct NewSessionForm: Sendable, Equatable {
 
 @MainActor
 @Observable
-public final class NewSession {
+public final class NewSession: Identifiable {
     public var form = NewSessionForm()
     public private(set) var maxParallel = 0
     public private(set) var limits: [JSONValue] = []
+    public private(set) var queue: [LaunchRow] = []
     public private(set) var card: WorkItemCard?
     public private(set) var resolveError: String?
     public private(set) var failure: String?
@@ -243,7 +261,7 @@ public final class NewSession {
             let options: SessionOptions = try await caller.call("session.options", params: [String: String]())
             form = NewSessionForm(workspaces: state?.workspaces ?? [], options: options)
             maxParallel = options.maxParallel
-            limits = state?.limits ?? []
+            observe(state)
             loadError = nil
         } catch {
             loadError = Self.message(error)
@@ -252,6 +270,22 @@ public final class NewSession {
 
     public func observe(_ state: ViewState?) {
         limits = state?.limits ?? []
+        queue = LaunchRow.rows(state?.queue ?? [])
+    }
+
+    static func preview(
+        form: NewSessionForm, maxParallel: Int, limits: [JSONValue], queue: [LaunchRow],
+        card: WorkItemCard?, failure: String?, launchNote: String?
+    ) -> NewSession {
+        let model = NewSession(caller: OfflineCaller())
+        model.form = form
+        model.maxParallel = maxParallel
+        model.limits = limits
+        model.queue = queue
+        model.card = card
+        model.failure = failure
+        model.launchNote = launchNote
+        return model
     }
 
     public func takeSwitch() {
@@ -313,5 +347,46 @@ public final class NewSession {
         case let AgentwsError.badReply(text): text
         default: "\(error)"
         }
+    }
+}
+
+extension Seed {
+    public static let setupFailure = """
+    setup /Users/me/.agentws/worktrees/api/eng-212: bun install --frozen-lockfile: exit status 1
+    bun install v1.2.4
+    error: lockfile had changes, but lockfile is frozen
+    note: try re-running without --frozen-lockfile and commit the updated lockfile
+    """
+
+    @MainActor
+    public static func newSession(failure: String? = nil) -> NewSession {
+        let workspaces = """
+        [{"Root":"/Users/me/src/acme","Kind":"orchestration","Repos":[{},{},{},{},{},{},{},{},{},{},{},{},{},{}],"LastUsed":"2026-10-05T09:00:00Z"},
+         {"Root":"/Users/me/src/api","Kind":"single","Repos":null,"LastUsed":"2026-10-01T09:00:00Z"}]
+        """
+        let options = SessionOptions(harnesses: [
+            HarnessOptions(harness: "claude", name: "Claude Code", tag: "CC", models: ["opus", "sonnet", "haiku"],
+                           efforts: ["low", "medium", "high", "xhigh", "max"], model: "opus", effort: "high"),
+            HarnessOptions(harness: "codex", name: "Codex", tag: "CX", models: ["gpt-6-sol", "gpt-5.5"],
+                           efforts: ["low", "medium", "high"], model: "gpt-6-sol", effort: "high"),
+        ], maxParallel: 3)
+        let decoded = (try? JSONDecoder().decode([Workspace].self, from: Data(workspaces.utf8))) ?? []
+        var form = NewSessionForm(workspaces: decoded, options: options)
+        form.workItem = "https://linear.app/acme/issue/ENG-212/login-redirect-loop"
+        form.launchInput = "https://linear.app/acme/issue/ENG-214/rate-limit-headers\nhttps://linear.app/acme/issue/ENG-215/audit-log-export"
+        let quota = { (harness: String, label: String, left: Int) -> JSONValue in
+            .object(["Harness": .string(harness), "label": .string(label), "LeftPercent": .number(Double(left)), "low": .bool(left < 20)])
+        }
+        return NewSession.preview(
+            form: form, maxParallel: 3,
+            limits: [quota("claude", "5h", 12), quota("claude", "7d", 48), quota("codex", "7d", 71)],
+            queue: [
+                LaunchRow(id: "q1", ref: "ENG-210", harness: "CC", status: "starting"),
+                LaunchRow(id: "q2", ref: "ENG-211", harness: "CX", status: "queued"),
+                LaunchRow(id: "q3", ref: "ENG-209", harness: "CC", status: "failed: no such issue"),
+            ],
+            card: WorkItemCard(source: "Linear ENG-212", title: "Fix the login redirect loop", branch: "eng-212", existing: nil),
+            failure: failure, launchNote: nil
+        )
     }
 }
