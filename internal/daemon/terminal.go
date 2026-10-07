@@ -112,6 +112,7 @@ func (d *Daemon) dispatchTerminal(req rpc.Request) (*rpc.Response, bool) {
 	}
 	var bad badRequest
 	switch {
+	case errors.Is(err, errNoLayout):
 	case errors.As(err, &bad):
 		return errorResponse(req.ID, rpc.CodeBadRequest, err.Error()), true
 	case errors.Is(err, errNoNvim):

@@ -13,11 +13,15 @@ public struct WindowScene {
     public var now: Date
     public var focusFilter: Int
     public var review: ReviewScreen?
+    public var view: MainView
+    public var pane: String?
+    public var popup: String?
+    public var paneError: String?
 
     public init(
         state: ViewState?, connection: ConnectionStatus, selected: String? = nil, filter: String = "",
         inspector: Bool = true, endedExpanded: Bool = false, server: String = "This Mac", now: Date = Seed.now, focusFilter: Int = 0,
-        review: ReviewScreen? = nil
+        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil
     ) {
         self.state = state
         self.connection = connection
@@ -29,6 +33,10 @@ public struct WindowScene {
         self.now = now
         self.focusFilter = focusFilter
         self.review = review
+        self.view = view
+        self.pane = pane
+        self.popup = popup
+        self.paneError = paneError
     }
 
     public static func seeded(selected: String = "s1", inspector: Bool = true) -> WindowScene {
@@ -68,6 +76,8 @@ public struct WindowActions {
     public var sendReview: () -> Void = {}
     public var hunk: (FileKey, Int, HunkAction) -> Void = { _, _, _ in }
     public var openInNvim: () -> Void = {}
+    public var showView: (MainView) -> Void = { _ in }
+    public var closePopup: () -> Void = {}
     public var dismissError: () -> Void = {}
     public var newSession: () -> Void = {}
 
@@ -114,7 +124,7 @@ public struct MainWindow: View {
                         .frame(width: Metrics.sidebarWidth)
                         .background(theme(.mantle))
                     Rectangle().fill(theme(.surface)).frame(width: 1)
-                    MainColumn(scene: scene)
+                    MainColumn(scene: scene, actions: actions)
                 }
                 if scene.review == nil, scene.inspector {
                     Rectangle().fill(theme(.surface)).frame(width: 1)
@@ -123,6 +133,7 @@ public struct MainWindow: View {
                         .background(theme(.mantle))
                 }
             }
+            .overlay { PopupShell(scene: scene, actions: actions) }
         }
         .foregroundStyle(theme(.text))
         .background(theme(.base))
@@ -145,9 +156,9 @@ struct ToolbarStrip: View {
             .frame(minWidth: 160, alignment: .leading)
             HStack(spacing: 2) {
                 ForEach(Toolbar.views) { tab in
-                    let active = tab.title == (scene.review == nil ? "Terminal" : "Review")
+                    let active = tab.title == (scene.review == nil ? scene.view.rawValue : MainView.review.rawValue)
                     Button {
-                        if tab.enabled, !active { actions.toggleReview() }
+                        if tab.enabled, !active, let view = MainView(rawValue: tab.title) { actions.showView(view) }
                     } label: {
                         Text(tab.title)
                             .font(.system(size: 12, weight: active ? .semibold : .regular))

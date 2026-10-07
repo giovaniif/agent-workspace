@@ -385,3 +385,32 @@ func TestShellFocusShowsTheShellAndPutsFocusInIt(t *testing.T) {
 		t.Fatalf("a second focus hid the shell: below %q, focused %d", r.client.below, r.client.focusedBelow)
 	}
 }
+
+func TestTerminalsWithoutAClientLayoutStillHandBackTheirPanes(t *testing.T) {
+	store := &memStore{}
+	store.snap.Sessions = []domain.Session{termSession}
+	store.snap.Worktrees = termWTs
+	term := newTermFake(&fakeClientHost{}, "%a1")
+	_, path := start(t, store,
+		daemon.WithHarnesses(term, claude.Adapter{}),
+		daemon.WithTerminals(shortDir(t), &fakeEditor{}))
+	c := dial(t, path)
+	for _, method := range []string{rpc.MethodShellToggle, rpc.MethodShellFocus} {
+		var out rpc.ShellResult
+		if err := c.Call(context.Background(), method, rpc.ShellParams{Session: "s1", Worktree: "w-web"}, &out); err != nil || out.Pane == "" || out.Dir != "/wt/web" {
+			t.Fatalf("%s = %+v, %v; want the shell pane with no layout open", method, out, err)
+		}
+	}
+	for _, call := range []struct {
+		method string
+		params rpc.NvimParams
+	}{
+		{rpc.MethodNvimToggle, rpc.NvimParams{Session: "s1"}},
+		{rpc.MethodNvimOpen, rpc.NvimParams{Session: "s1", Worktree: "w-web", Path: "main.go", Line: 3}},
+	} {
+		var out rpc.NvimResult
+		if err := c.Call(context.Background(), call.method, call.params, &out); err != nil || out.Pane == "" {
+			t.Fatalf("%s = %+v, %v; want the nvim pane with no layout open", call.method, out, err)
+		}
+	}
+}

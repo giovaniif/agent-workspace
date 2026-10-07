@@ -4,6 +4,7 @@ import SwiftUI
 
 struct MainColumn: View {
     let scene: WindowScene
+    let actions: WindowActions
     @Environment(\.colorScheme) private var scheme
 #if canImport(SwiftTerm)
     @Environment(\.agentwsTerminals) private var terminals
@@ -12,8 +13,8 @@ struct MainColumn: View {
     @ViewBuilder
     private func terminal(_ session: Session, _ theme: Theme) -> some View {
 #if canImport(SwiftTerm)
-        if let terminals, !session.pane.isEmpty {
-            TerminalArea(hub: terminals.hub, views: terminals.views, pane: session.pane)
+        if let terminals, !shown(session).isEmpty {
+            TerminalArea(hub: terminals.hub, views: terminals.views, pane: shown(session))
         } else {
             placeholder(session, theme)
         }
@@ -21,6 +22,11 @@ struct MainColumn: View {
         placeholder(session, theme)
 #endif
     }
+
+    private func shown(_ session: Session) -> String {
+        scene.pane ?? session.pane
+    }
+
 
     private func placeholder(_ session: Session, _ theme: Theme) -> some View {
         VStack(spacing: 8) {
@@ -45,10 +51,15 @@ struct MainColumn: View {
                     .background(theme(.base))
                 Rectangle().fill(theme(.surface)).frame(height: 1)
                 HStack(spacing: 14) {
-                    Text(session.pane.isEmpty ? "no pane" : "pane " + session.pane)
+                    Text(shown(session).isEmpty ? "no pane" : scene.view.rawValue + " · pane " + shown(session))
+                    if let error = scene.paneError {
+                        Text(error).foregroundStyle(theme(.red)).lineLimit(1)
+                    }
                     Text("⌘1–9 jump")
                     Text("⌃Space next waiting")
                     Text("⌘[ last")
+                    Text("⌘T shell")
+                    Text("⌘E nvim")
                     Text("⌘K filter")
                     Text("⌥⌘I inspector")
                     Spacer()
@@ -68,6 +79,38 @@ struct MainColumn: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    }
+}
+
+struct PopupShell: View {
+    let scene: WindowScene
+    let actions: WindowActions
+    @Environment(\.colorScheme) private var scheme
+#if canImport(SwiftTerm)
+    @Environment(\.agentwsTerminals) private var terminals
+#endif
+
+    var body: some View {
+#if canImport(SwiftTerm)
+        if let popup = scene.popup, let terminals {
+            let theme = Theme(scheme)
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Shell").font(.system(size: 12, weight: .semibold))
+                    Spacer()
+                    Button("Close", action: actions.closePopup).buttonStyle(.plain).font(.system(size: 12))
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(theme(.mantle))
+                TerminalArea(hub: terminals.hub, views: terminals.views, pane: popup)
+            }
+            .background(theme(.base))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme(.surface)))
+            .padding(40)
+        }
+#endif
     }
 }
 
