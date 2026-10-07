@@ -8,12 +8,19 @@ import SwiftUI
 public final class WindowRouter {
     public var focus: String?
     public var focusSeq = 0
+    public var shell: (session: String, worktree: String)?
+    public var shellSeq = 0
 
     public init() {}
 
     public func goTo(session: String) {
         focus = session
         focusSeq += 1
+    }
+
+    public func openShell(session: String, worktree: String) {
+        shell = (session, worktree)
+        shellSeq += 1
     }
 }
 
@@ -97,6 +104,10 @@ public struct LiveDiskWindow: View {
         switch action.kind {
         case .goToSession:
             router.goTo(session: row.sessionID)
+            openWindow(id: "main")
+        case .openShell where !row.sessionID.isEmpty:
+            router.goTo(session: row.sessionID)
+            router.openShell(session: row.sessionID, worktree: row.id)
             openWindow(id: "main")
         case .openShell:
             do {

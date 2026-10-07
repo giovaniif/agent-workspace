@@ -12,6 +12,7 @@ public struct LiveWindow: View {
     @State private var review: ReviewController?
     @State private var newSession: NewSession?
     @State private var newSessionTab = NewSessionTab.session
+    @State private var panes: ShellNvim
     private let server: String
     private let router: WindowRouter
 #if canImport(SwiftTerm)
@@ -23,6 +24,7 @@ public struct LiveWindow: View {
         _store = State(initialValue: store)
         self.server = server
         self.router = router
+        _panes = State(initialValue: ShellNvim(caller: store))
 #if canImport(SwiftTerm)
         let hub = TerminalHub(endpoint: store.endpoint) { [store] cols, rows in
             try await store.call("client.native", params: NativeClientParams(cols: cols, rows: rows))
@@ -37,7 +39,9 @@ public struct LiveWindow: View {
             let scene = WindowScene(
                 state: store.state, connection: store.connection, selected: nav.selected, filter: filter,
                 inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
-                review: reviewScreen
+                review: reviewScreen, view: panes.view,
+                pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
+                popup: panes.popup, paneError: panes.error
             )
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
@@ -53,7 +57,13 @@ public struct LiveWindow: View {
             newSession?.observe(store.state)
         }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
+        .onChange(of: router.shellSeq) {
+            guard let shell = router.shell else { return }
+            review = nil
+            Task { await panes.openShell(session: shell.session, worktree: shell.worktree) }
+        }
         .onChange(of: nav.selected) {
+            panes.close()
             if review != nil { openReview() }
         }
         .sheet(item: $newSession) { model in
@@ -114,8 +124,48 @@ public struct LiveWindow: View {
         let line = review.screen.composer.flatMap { CommentAnchor(lines: $0.lines)?.start }
             ?? file.file.hunks.first?.lines.first { $0.new > 0 }?.new ?? 1
         Task {
-            if await review.openInNvim(file.key, line: line), self.review === review { self.review = nil }
+            guard let pane = await review.openInNvim(file.key, line: line), self.review === review else { return }
+            self.review = nil
+            panes.showNvim(session: review.screen.session, pane: pane)
         }
+    }
+
+    private func toggleShell(popup: Bool) {
+        guard let id = nav.selected else { return }
+        if !popup { review = nil }
+        Task { await panes.toggleShell(session: id, popup: popup) }
+    }
+
+    private func editor() {
+        if review != nil {
+            openInNvim()
+            return
+        }
+        guard let id = nav.selected else { return }
+        Task { await panes.toggleNvim(session: id) }
+    }
+
+    private func show(_ view: MainView) {
+        switch view {
+        case .terminal:
+            review = nil
+            panes.close()
+        case .review:
+            panes.close()
+            if review == nil { openReview() }
+        case .shell:
+            toggleShellView()
+        case .nvim:
+            review = nil
+            guard let id = nav.selected, panes.view != .nvim else { return }
+            Task { await panes.toggleNvim(session: id) }
+        }
+    }
+
+    private func toggleShellView() {
+        review = nil
+        guard let id = nav.selected, panes.view != .shell else { return }
+        Task { await panes.openShell(session: id) }
     }
 
     private var actions: WindowActions {
@@ -161,6 +211,8 @@ public struct LiveWindow: View {
         a.sendReview = { reviewTask { await $0.send() } }
         a.hunk = { key, index, action in reviewTask { await $0.hunk(key, index: index, action: action) } }
         a.openInNvim = { openInNvim() }
+        a.showView = { show($0) }
+        a.closePopup = { panes.closePopup() }
         a.dismissError = { review?.screen.error = nil }
         return a
     }
@@ -186,9 +238,11 @@ public struct LiveWindow: View {
                 .keyboardShortcut("s", modifiers: [.command, .control])
             Button("") { reviewTask { await $0.send() } }
                 .keyboardShortcut(.return, modifiers: [.command, .shift])
-            bound(.nvimAtFile) { openInNvim() }
+            bound(.nvimAtFile) { editor() }
             bound(.newSession) { openNewSession(.session) }
             bound(.linearLauncher) { openNewSession(.launcher) }
+            bound(.shellSplit) { toggleShell(popup: false) }
+            bound(.shellPopup) { toggleShell(popup: true) }
         }
         .opacity(0)
         .accessibilityHidden(true)

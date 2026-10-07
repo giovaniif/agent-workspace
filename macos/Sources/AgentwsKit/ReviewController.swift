@@ -119,16 +119,16 @@ public final class ReviewController {
         await open()
     }
 
-    public func openInNvim(_ key: FileKey, line: Int) async -> Bool {
+    public func openInNvim(_ key: FileKey, line: Int) async -> String? {
         do {
-            let _: NvimOpened = try await caller.call(
+            let opened: NvimOpened = try await caller.call(
                 "nvim.open", params: NvimOpenParams(session: screen.session, worktree: key.worktree, path: key.path, line: line)
             )
             screen.error = nil
-            return true
+            return opened.pane
         } catch {
             screen.error = Self.message(error)
-            return false
+            return nil
         }
     }
 }
