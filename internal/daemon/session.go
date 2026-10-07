@@ -359,11 +359,20 @@ func (d *Daemon) reconcilePanes(ctx context.Context) {
 	for _, s := range onPanes {
 		panes[s.ID] = s.Pane
 	}
-	d.query(func(s *state) {
+	var next domain.Session
+	var hasNext, wasInView bool
+	ok := d.query(func(s *state) {
 		for _, e := range ended {
 			if cur, found := s.sessions[e.ID]; found && cur.Pane == panes[e.ID] {
+				if cur.Focused {
+					wasInView = true
+					next, hasNext = domain.NextInView(sorted(s.tasks), sorted(s.sessions), cur.ID)
+				}
 				s.emit(SessionChanged{Session: cur.End()})
 			}
 		}
 	})
+	if ok && wasInView {
+		d.refillMain(next, hasNext)
+	}
 }
