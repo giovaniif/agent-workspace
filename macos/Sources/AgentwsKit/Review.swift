@@ -41,14 +41,6 @@ public enum LineKind: Sendable, Equatable {
         default: self = .context
         }
     }
-
-    init(name: String) {
-        switch name {
-        case "add", "added", "+": self = .added
-        case "del", "delete", "deleted", "-": self = .deleted
-        default: self = .context
-        }
-    }
 }
 
 public struct TokenSpan: Codable, Sendable, Equatable {
@@ -100,11 +92,7 @@ public struct DiffLine: Codable, Sendable, Equatable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        if let byte = try? c.decode(Int.self, forKey: .kind) {
-            kind = LineKind(byte: byte)
-        } else {
-            kind = LineKind(name: try c.decode(String.self, forKey: .kind))
-        }
+        kind = LineKind(byte: try c.decode(Int.self, forKey: .kind))
         old = try c.decodeIfPresent(Int.self, forKey: .old) ?? 0
         new = try c.decodeIfPresent(Int.self, forKey: .new) ?? 0
         text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
