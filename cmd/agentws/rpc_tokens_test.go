@@ -9,29 +9,46 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-func reviewLine(text string) string {
-	b, _ := json.Marshal(map[string]any{"Kind": "add", "Old": 0, "New": 1, "Text": text})
+func reviewFileDiff(path string, texts ...string) domain.FileDiff {
+	lines := make([]domain.DiffLine, len(texts))
+	for i, t := range texts {
+		lines[i] = domain.DiffLine{Kind: domain.LineAdded, New: i + 1, Text: t}
+	}
+	return domain.FileDiff{Path: path, Status: domain.FileAdded, Added: len(texts), Blob: "b-" + path, Hunks: []domain.Hunk{{Header: "@@ -0,0 +1 @@", Lines: lines}}}
+}
+
+func mustJSON(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
 	return string(b)
 }
 
 func reviewFile(path string, texts ...string) string {
-	lines := make([]string, len(texts))
-	for i, t := range texts {
-		lines[i] = reviewLine(t)
-	}
-	return `{"Path":"` + path + `","Status":"modified","Hunks":[{"Header":"@@ -0,0 +1 @@","Lines":[` + strings.Join(lines, ",") + `]}]}`
+	return mustJSON(reviewFileDiff(path, texts...))
 }
 
 func reviewResult() string {
-	files := []string{
-		reviewFile("main.go", "package main", "", "func main() {", "\tfmt.Println(\"hi\", 42) // greet", "}"),
-		reviewFile("web/app.ts", "export const total = (n: number): string => `${n}`;", "/* sum */ let x = 1 + 2;"),
-		reviewFile("README.md", "# agentws", "- run `make build`", "<!-- note -->"),
-		reviewFile("notes.unknownext", "just some text"),
-	}
-	return `{"scope":"branch","worktrees":[{"Worktree":{"ID":"w1","Repo":"api"},"From":"main","Files":[` + strings.Join(files, ",") + `],"Err":""}],"viewed":[],"draft":{}}`
+	return mustJSON(rpc.Review{
+		Scope: domain.ScopeBranch,
+		Worktrees: []domain.WorktreeReview{{
+			Worktree: domain.Worktree{ID: "w1", Repo: "api"},
+			From:     "main",
+			Files: []domain.FileDiff{
+				reviewFileDiff("main.go", "package main", "", "func main() {", "\tfmt.Println(\"hi\", 42) // greet", "}"),
+				reviewFileDiff("web/app.ts", "export const total = (n: number): string => `${n}`;", "/* sum */ let x = 1 + 2;"),
+				reviewFileDiff("README.md", "# agentws", "- run `make build`", "<!-- note -->"),
+				reviewFileDiff("notes.unknownext", "just some text"),
+			},
+		}},
+		Viewed: []domain.ViewedMark{},
+	})
 }
 
 func runReviewOpen(t *testing.T, request string) (daemonGot, stdout string) {
