@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -409,6 +410,7 @@ type fakeHost struct {
 	specs       []app.PaneSpec
 	err         error
 	panes       []app.PaneInfo
+	listed      int
 	killed      []app.PaneID
 	shown       []shown
 	typed       []string
@@ -694,7 +696,17 @@ func (h *fakeHost) Show(_ context.Context, pane app.PaneID, slot app.Slot) error
 func (h *fakeHost) List(context.Context) ([]app.PaneInfo, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return h.panes, nil
+	h.listed++
+	return slices.Clone(h.panes), nil
+}
+
+func (h *fakeHost) waitListed(t *testing.T) {
+	t.Helper()
+	waitUntil(t, "the startup pane reconcile to list panes", func() bool {
+		h.mu.Lock()
+		defer h.mu.Unlock()
+		return h.listed > 0
+	})
 }
 
 type addedWorktree struct{ repo, path, branch, base string }
