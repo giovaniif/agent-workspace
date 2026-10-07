@@ -184,8 +184,15 @@ public final class TerminalHub {
         draws[pane] = Draw()
         Task {
             let query = try? await link.command(ControlCommand.query(pane: pane))
+            guard self.link === link else { return }
             if let line = query?.lines.first, let state = PaneState(query: line) { panes.set(state) }
-            guard let capture = try? await link.command(ControlCommand.capture(pane: pane)), capture.ok else { return }
+            guard let capture = try? await link.command(ControlCommand.capture(pane: pane)), capture.ok else {
+                if self.link === link, draws[pane] != nil {
+                    draws[pane] = nil
+                    live.insert(pane)
+                }
+                return
+            }
             guard self.link === link, let sink = sinks[pane], var d = draws[pane], d.until == nil else { return }
             let state = panes[pane] ?? PaneState(pane: pane, window: "", cols: size.cols, rows: size.rows)
             sink(state.prime(history: capture.lines))
