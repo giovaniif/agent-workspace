@@ -423,7 +423,7 @@ func (m Model) overlayMenu(lines, owners []string, row, col int) ([]string, []st
 	for len(owners) < len(lines) {
 		owners = append(owners, "")
 	}
-	box := m.menuBox(shown, selected, max(width-col, 1))
+	box := m.menuBox(shown, selected, m.menuInner(max(width-col, 1)))
 	row = placeMenu(row, len(box), len(lines))
 	mark := ownField + strconv.Itoa(int(fieldModel))
 	for i, b := range box {
@@ -466,9 +466,8 @@ func (m Model) menuInner(room int) int {
 	return min(inner, max(room-2, 1))
 }
 
-func (m Model) menuBox(shown []string, selected, room int) []string {
+func (m Model) menuBox(shown []string, selected, inner int) []string {
 	t := m.opts.Theme
-	inner := m.menuInner(room)
 	edge := m.styles.dim
 	text := m.styles.text
 	hot := m.styles.bold.Background(lipgloss.Color(t.Selected))
