@@ -1,6 +1,7 @@
 package tui_test
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -159,6 +160,61 @@ func TestOpeningAProjectWithAPopupPassesItsRoot(t *testing.T) {
 	}
 	if _, leaked := popup.Env["AGENTWS_PROJECT"]; leaked {
 		t.Fatal("opening a project changed the shared popup env")
+	}
+}
+
+func manyProjects(n int, root string) rpc.State {
+	var st rpc.State
+	for i := range n {
+		name := fmt.Sprintf("proj%02d", i)
+		st.Projects = append(st.Projects, domain.Project{Root: root + name, Name: name})
+	}
+	return st
+}
+
+func TestALateAddAnswerLeavesANewerAddFormAlone(t *testing.T) {
+	m, _ := projectsModel(t, withProjects(rpc.State{}), tui.Options{})
+	m = press(m, "P", "a")
+	m = typeText(m, "/src/first")
+	next, first := m.Update(keyEnter)
+	m = next.(tui.Model)
+	m = pressCmd(m, keyEsc)
+	m = press(m, "a")
+	m = typeText(m, "/src/second")
+	m = run(m, first)
+	if out := screen(m); !strings.Contains(out, "/src/second") {
+		t.Fatalf("the first add's answer closed the second form:\n%s", out)
+	}
+}
+
+func TestProjectsPanelKeepsTheNameOfAProjectWithALongRoot(t *testing.T) {
+	m, _ := projectsModel(t, manyProjects(1, "/home/someone/work/clients/acme/monorepo/services/"), tui.Options{})
+	if out := screen(press(m, "P")); !strings.Contains(out, "proj00") {
+		t.Fatalf("the long root hid the project's name:\n%s", out)
+	}
+}
+
+func TestManyProjectsFitASmallSidebar(t *testing.T) {
+	c := &fakeCaller{}
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c})
+	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 16})
+	m = update(m, tui.StateMsg(manyProjects(30, "/p/")))
+	if lines := strings.Split(screen(m), "\n"); len(lines) > 16 {
+		t.Fatalf("%d lines in a 16-row sidebar", len(lines))
+	}
+	if out := screen(m); !strings.Contains(out, "more") {
+		t.Fatalf("hidden projects are not counted:\n%s", out)
+	}
+}
+
+func TestProjectsPanelScrollsWithItsCursor(t *testing.T) {
+	m, _ := projectsModel(t, manyProjects(60, "/p/"), tui.Options{})
+	m = press(m, "P")
+	for range 55 {
+		m = press(m, "j")
+	}
+	if out := screen(m); !strings.Contains(out, "proj55") {
+		t.Fatalf("the cursor left the screen:\n%s", out)
 	}
 }
 
