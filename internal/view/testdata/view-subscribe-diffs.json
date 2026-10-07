@@ -322,5 +322,17 @@
       "size": 4096,
       "pending": 0
     }
+  },
+  {
+    "seq": 17,
+    "project": {
+      "Root": "/w/web",
+      "Name": "web",
+      "Setup": ""
+    }
+  },
+  {
+    "seq": 18,
+    "removed_project": "/w/api"
   }
 ]

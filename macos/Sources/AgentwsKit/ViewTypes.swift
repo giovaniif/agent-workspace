@@ -243,9 +243,26 @@ public struct ReviewDraft: Codable, Sendable, Equatable {
     }
 }
 
+public struct Project: Codable, Sendable, Equatable {
+    public var root: String
+    public var name: String
+    public var setup: String
+
+    public init(root: String, name: String, setup: String) {
+        self.root = root
+        self.name = name
+        self.setup = setup
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case root = "Root", name = "Name", setup = "Setup"
+    }
+}
+
 public struct ViewState: Codable, Sendable, Equatable {
     public var seq: UInt64
     public var workspaces: [Workspace]
+    public var projects: [Project]
     public var tasks: [TaskItem]
     public var worktrees: [Worktree]
     public var sessions: [Session]
@@ -273,7 +290,9 @@ public struct ViewDiff: Codable, Sendable, Equatable {
     public var removedWorkspace: String?
     public var removedWorktree: String?
     public var removedSession: String?
+    public var removedProject: String?
     public var workspace: Workspace?
+    public var project: Project?
     public var task: TaskItem?
     public var worktree: Worktree?
     public var session: Session?
@@ -294,5 +313,6 @@ public struct ViewDiff: Codable, Sendable, Equatable {
         case seq, removedWorkspace = "removed_workspace", removedWorktree = "removed_worktree"
         case removedSession = "removed_session", workspace, task, worktree, session, limits, queue, sends
         case event, subagent, draft, comment, reclaimable
+        case removedProject = "removed_project", project
     }
 }
