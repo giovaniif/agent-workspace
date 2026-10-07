@@ -3,7 +3,7 @@ import Testing
 @testable import AgentwsKit
 
 @MainActor
-final class FakeCaller: Calling {
+final class NewSessionCaller: Caller {
     var replies: [String: Result<String, RPCError>] = [:]
     private(set) var calls: [(method: String, params: JSONValue)] = []
 
@@ -51,7 +51,7 @@ enum NewSessionFixtures {
     }
 
     @MainActor
-    static func loaded(_ caller: FakeCaller, limits: [JSONValue] = []) async throws -> NewSession {
+    static func loaded(_ caller: NewSessionCaller, limits: [JSONValue] = []) async throws -> NewSession {
         caller.replies["session.options"] = .success(options)
         let model = NewSession(caller: caller)
         var state = Seed.state(sessions: [])
@@ -65,7 +65,7 @@ enum NewSessionFixtures {
 @MainActor
 struct NewSessionTests {
     @Test func theLastUsedWorkspaceIsPreselectedAndEachShowsItsKind() async throws {
-        let model = try await NewSessionFixtures.loaded(FakeCaller())
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
         #expect(model.form.workspace == "/src/acme")
         #expect(model.form.workspaces.map(\.root) == ["/src/acme", "/src/api", "/src/web"])
         #expect(model.form.workspaces.map(\.detail) == ["orchestration root · 3 repos", "single repo", "single repo"])
@@ -73,7 +73,7 @@ struct NewSessionTests {
     }
 
     @Test func defaultsComeFromTheServersDefaultsTables() async throws {
-        let model = try await NewSessionFixtures.loaded(FakeCaller())
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
         #expect(model.form.harness == "claude")
         #expect(model.form.model == "opus")
         #expect(model.form.effort == "xhigh")
@@ -90,7 +90,7 @@ struct NewSessionTests {
             NewSessionFixtures.quota("claude", "7d", left: 60),
             NewSessionFixtures.quota("codex", "7d", left: 70),
         ]
-        let model = try await NewSessionFixtures.loaded(FakeCaller(), limits: limits)
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller(), limits: limits)
         let warning = try #require(model.warning)
         #expect(warning.message == "Claude Code 5h quota is low: 12% left")
         #expect(warning.button == "Switch to Codex")
@@ -102,10 +102,10 @@ struct NewSessionTests {
 
     @Test func noSwitchIsOfferedWhenTheOtherHarnessIsLowOrUnreported() async throws {
         let bothLow = [NewSessionFixtures.quota("claude", "5h", left: 5), NewSessionFixtures.quota("codex", "7d", left: 9)]
-        let low = try await NewSessionFixtures.loaded(FakeCaller(), limits: bothLow)
+        let low = try await NewSessionFixtures.loaded(NewSessionCaller(), limits: bothLow)
         #expect(low.warning?.message == "Claude Code 5h quota is low: 5% left")
         #expect(low.warning?.button == nil)
-        let fine = try await NewSessionFixtures.loaded(FakeCaller(), limits: [NewSessionFixtures.quota("claude", "5h", left: 50)])
+        let fine = try await NewSessionFixtures.loaded(NewSessionCaller(), limits: [NewSessionFixtures.quota("claude", "5h", left: 50)])
         #expect(fine.warning == nil)
     }
 
@@ -116,7 +116,7 @@ struct NewSessionTests {
         ("/src/acme", "https://linear.app/acme/issue/ENG-7/billing"),
     ])
     func startSendsTheFormAndFocusesTheNewSession(workspace: String, item: String) async throws {
-        let caller = FakeCaller()
+        let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         caller.replies["session.new"] = .success(#"{"ID":"s9","State":"idle"}"#)
         caller.replies["session.focus"] = .success("{}")
@@ -134,7 +134,7 @@ struct NewSessionTests {
     }
 
     @Test func anEmptyWorkItemCannotStart() async throws {
-        let caller = FakeCaller()
+        let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         model.form.workItem = "   "
         #expect(!model.form.canStart)
@@ -143,7 +143,7 @@ struct NewSessionTests {
     }
 
     @Test func aSetupFailureShowsItsOutputInTheSheet() async throws {
-        let caller = FakeCaller()
+        let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         let message = "setup /h/api/eng-7: exit status 1: bun install\nerror: lockfile had changes"
         caller.replies["session.new"] = .failure(RPCError(code: "failed", message: message))
@@ -154,7 +154,7 @@ struct NewSessionTests {
     }
 
     @Test func theWorkItemResolvesIntoACardNamingTheBranchAndAnExistingWorktree() async throws {
-        let caller = FakeCaller()
+        let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         caller.replies["session.resolve"] = .success(
             #"{"source":"linear","ref":"ENG-7","title":"Billing export","worktree":"42-login-redirect","workspace":"/src/acme"}"#
@@ -170,7 +170,7 @@ struct NewSessionTests {
     }
 
     @Test func aStaleOrFailedResolveLeavesNoCard() async throws {
-        let caller = FakeCaller()
+        let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         caller.replies["session.resolve"] = .failure(RPCError(code: "bad_request", message: "not a pull request link"))
         model.form.workItem = "https://github.com/acme/web/issues/4"
@@ -184,7 +184,7 @@ struct NewSessionTests {
     }
 
     @Test func theLauncherQueuesSeveralLinearIssues() async throws {
-        let caller = FakeCaller()
+        let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         caller.replies["launcher.enqueue"] = .success("{\"queued\":[\"q1\",\"q2\"],\"rejected\":[\"https://example.com/x\"]}")
         let input = "https://linear.app/acme/issue/ENG-1/a\nhttps://linear.app/acme/issue/ENG-2/b https://example.com/x"
