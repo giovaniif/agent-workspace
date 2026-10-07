@@ -29,16 +29,23 @@ public final class ReviewController {
     }
 
     public func open() async {
+        let scope = screen.scope
         do {
             let result: ReviewResult = try await caller.call(
-                "review.open", params: ReviewOpenParams(session: screen.session, scope: screen.scope, worktree: "")
+                "review.open", params: ReviewOpenParams(session: screen.session, scope: scope, worktree: "")
             )
+            guard screen.scope == scope else { return }
             screen.result = result
             screen.viewed = result.viewed
-            if let draft = result.draft, !draft.id.isEmpty || !draft.comments.isEmpty { screen.draft = draft }
+            if let draft = result.draft, !draft.id.isEmpty || !draft.comments.isEmpty {
+                screen.draft = draft
+            } else {
+                screen.draft = nil
+            }
             screen.selected = screen.selectedFile?.key
             screen.error = nil
         } catch {
+            guard screen.scope == scope else { return }
             screen.error = Self.message(error)
         }
     }
