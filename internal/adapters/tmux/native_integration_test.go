@@ -249,7 +249,7 @@ func TestNativeClientShowsThePaneInTheTUISlotAcrossSwapsWithoutResizingTheTUI(t 
 	}
 }
 
-func TestTUIWindowFollowsItsTerminalSizeWhileANativeClientIsAttached(t *testing.T) {
+func TestTUIFollowsTerminalSizeBesideNative(t *testing.T) {
 	ctx := context.Background()
 	h := newHost(t)
 	slot, err := h.OpenClient(ctx, "main", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
