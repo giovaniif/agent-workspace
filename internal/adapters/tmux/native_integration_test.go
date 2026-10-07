@@ -238,6 +238,9 @@ func TestNativeClientShowsThePaneInTheTUISlotAcrossSwapsWithoutResizingTheTUI(t 
 	if err := h.Show(ctx, b, slot); err != nil {
 		t.Fatal(err)
 	}
+	if got := h.ShownIn(ctx, slot); got != b {
+		t.Fatalf("pane in the TUI slot after the swap = %s; want %s", got, b)
+	}
 	client.mu.Lock()
 	client.lines = nil
 	client.mu.Unlock()
