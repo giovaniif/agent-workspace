@@ -112,6 +112,22 @@ func TestReviewSendPastesTheDraftAsOnePromptAndArchivesIt(t *testing.T) {
 	}
 }
 
+func TestReviewSendWithANoteAppendsItToTheSamePrompt(t *testing.T) {
+	env := startSend(t, domain.StateIdle)
+	addComments(t, env.c, commentA)
+	var sent domain.ReviewDraft
+	if err := env.c.Call(context.Background(), rpc.MethodReviewSend, rpc.ReviewSendParams{Session: "s1", Note: "Also add tests."}, &sent); err != nil {
+		t.Fatal(err)
+	}
+	if sent.Note != "Also add tests." {
+		t.Errorf("sent note %q", sent.Note)
+	}
+	want := []string{"%1 paste=true " + domain.ReviewPrompt([]domain.ReviewComment{commentA}) + "\nOverall:\n   Also add tests.\n", "%1 keys Enter"}
+	if typed := env.host.waitTyped(t, len(want)); !reflect.DeepEqual(typed, want) {
+		t.Fatalf("typed %q", typed)
+	}
+}
+
 func TestReviewSendWhileRunningQueuesUntilTheNextStop(t *testing.T) {
 	env := startSend(t, domain.StateRunning)
 	addComments(t, env.c, commentA)
