@@ -26,6 +26,8 @@ public final class ShellNvim {
     public private(set) var nvims: [String: String] = [:]
     public var error: String?
     private let caller: Caller
+    private var pending: MainView?
+    private var generation = 0
 
     public init(caller: Caller) {
         self.caller = caller
@@ -44,7 +46,7 @@ public final class ShellNvim {
             self.popup = nil
             return
         }
-        if !popup, view == .shell {
+        if !popup, view == .shell || pending == .shell {
             close()
             return
         }
@@ -52,10 +54,12 @@ public final class ShellNvim {
     }
 
     public func openShell(session: String, worktree: String = "", popup: Bool = false) async {
+        let ticket = begin(popup ? nil : .shell)
         do {
             let opened: ShellResult = try await caller.call("shell.focus", params: ShellFocusParams(session: session, worktree: worktree))
             guard let pane = opened.pane, !pane.isEmpty else { return }
             shells[session] = pane
+            guard current(ticket) else { return }
             error = nil
             if popup {
                 self.popup = pane
@@ -63,24 +67,40 @@ public final class ShellNvim {
                 view = .shell
             }
         } catch {
-            self.error = ReviewController.message(error)
+            if current(ticket) { self.error = ReviewController.message(error) }
         }
     }
 
     public func toggleNvim(session: String) async {
-        if view == .nvim {
+        if view == .nvim || pending == .nvim {
             close()
             return
         }
+        let ticket = begin(.nvim)
         do {
             let opened: NvimOpened = try await caller.call("nvim.toggle", params: NvimToggleParams(session: session))
-            showNvim(session: session, pane: opened.pane)
+            nvims[session] = opened.pane
+            if current(ticket) { showNvim(session: session, pane: opened.pane) }
         } catch {
-            self.error = ReviewController.message(error)
+            if current(ticket) { self.error = ReviewController.message(error) }
         }
     }
 
+    private func begin(_ view: MainView?) -> Int {
+        generation += 1
+        if let view { pending = view }
+        return generation
+    }
+
+    private func current(_ ticket: Int) -> Bool {
+        guard ticket == generation else { return false }
+        pending = nil
+        return true
+    }
+
     public func showNvim(session: String, pane: String) {
+        generation += 1
+        pending = nil
         nvims[session] = pane
         error = nil
         view = .nvim
@@ -91,6 +111,8 @@ public final class ShellNvim {
     }
 
     public func close() {
+        generation += 1
+        pending = nil
         view = .terminal
         popup = nil
     }
