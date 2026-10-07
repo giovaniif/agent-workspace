@@ -21,6 +21,10 @@ public enum Snapshot {
         renderView(NewSessionSheet(model: model, tab: .constant(tab), server: "This Mac", state: nil, live: false), size: size, dark: dark)
     }
 
+    public static func render(menu scene: MenuScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(AttentionMenuView(scene: scene), size: size, dark: dark)
+    }
+
     static func renderView(_ content: some View, size: CGSize, dark: Bool) -> NSBitmapImageRep {
         let root = content
             .environment(\.colorScheme, dark ? .dark : .light)

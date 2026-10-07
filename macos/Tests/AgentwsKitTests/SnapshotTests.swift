@@ -141,6 +141,27 @@ struct SnapshotTests {
         scene.connection = .reconnecting(in: .seconds(4))
         _ = try shoot("reconnecting", scene)
     }
+    @Test func aPermissionSessionShowsTheCardOverItsTerminal() throws {
+        let rep = try shoot("permission-card", .seededPermission())
+        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 100)
+        _ = try shoot("permission-card-mocha", .seededPermission(), dark: true)
+    }
+
+    @Test func aStaleAnswerSaysThePromptIsGone() throws {
+        var scene = WindowScene.seededPermission()
+        scene.card = nil
+        scene.message = "That prompt is gone; nothing was sent."
+        _ = try shoot("permission-stale", scene)
+    }
+
+    @Test func theMenuBarExtraListsWhatNeedsYou() throws {
+        let rep = Snapshot.render(menu: .seeded(), size: CGSize(width: 340, height: 620), dark: false)
+        let png = try #require(rep.representation(using: .png, properties: [:]))
+        try FileManager.default.createDirectory(at: Self.directory, withIntermediateDirectories: true)
+        try png.write(to: Self.directory.appendingPathComponent("menu-bar.png"))
+        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 20)
+    }
+
     @Test func reviewModeDrawsTheHighlightedDiffAndTheDraft() throws {
         let rep = try shoot("review-latte", .seededReview())
         #expect(pixels(rep, near: Palette.latte.hex(.green)) > 100)

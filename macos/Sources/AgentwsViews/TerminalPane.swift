@@ -27,7 +27,11 @@ public final class TerminalViews {
 
 final class PaneTerminal: TerminalView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if !event.modifierFlags.contains(.command), window?.firstResponder === self {
+        let flags = event.modifierFlags
+        let forwards = TerminalKeys.goesToPane(
+            key: event.charactersIgnoringModifiers ?? "", command: flags.contains(.command), control: flags.contains(.control)
+        )
+        if forwards, window?.firstResponder === self {
             keyDown(with: event)
             return true
         }

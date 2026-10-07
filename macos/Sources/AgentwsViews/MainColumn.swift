@@ -49,6 +49,17 @@ struct MainColumn: View {
                 terminal(session, theme)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(theme(.base))
+                    .overlay(alignment: .bottom) {
+                        VStack(spacing: 8) {
+                            if let message = scene.message {
+                                AttentionMessage(text: message, dismiss: actions.dismissMessage)
+                            }
+                            if let card = scene.card, card.session == session.id, !card.hidden {
+                                PermissionCardView(card: card, answer: actions.answer, hide: actions.hideCard)
+                            }
+                        }
+                        .padding(Metrics.gutter)
+                    }
                 Rectangle().fill(theme(.surface)).frame(height: 1)
                 HStack(spacing: 14) {
                     Text(shown(session).isEmpty ? "no pane" : scene.view.rawValue + " · pane " + shown(session))
