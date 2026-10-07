@@ -16,12 +16,15 @@ struct SnapshotTests {
     }
 
     func shoot(_ name: String, _ scene: WindowScene, dark: Bool = false) throws -> NSBitmapImageRep {
-        let rep = Snapshot.render(scene, size: Self.size, dark: dark)
+        try save(name, Snapshot.render(scene, size: Self.size, dark: dark), size: Self.size)
+    }
+
+    func save(_ name: String, _ rep: NSBitmapImageRep, size: CGSize) throws -> NSBitmapImageRep {
         let png = try #require(rep.representation(using: .png, properties: [:]))
         try FileManager.default.createDirectory(at: Self.directory, withIntermediateDirectories: true)
         try png.write(to: Self.directory.appendingPathComponent(name + ".png"))
-        #expect(rep.pixelsWide >= Int(Self.size.width))
-        #expect(rep.pixelsHigh >= Int(Self.size.height))
+        #expect(rep.pixelsWide >= Int(size.width))
+        #expect(rep.pixelsHigh >= Int(size.height))
         return rep
     }
 
@@ -108,6 +111,29 @@ struct SnapshotTests {
             connection: .versionMismatch("daemon runs agentws v0.5.0+def but this client is v0.4.0+abc; restart the daemon")
         ))
         #expect(pixels(rep, near: Palette.latte.hex(.red)) > 100)
+    }
+
+    @Test func everySettingsTabRenders() throws {
+        for tab in SettingsTab.allCases {
+            let size = CGSize(width: 760, height: 560)
+            _ = try save("settings-\(tab.rawValue)", Snapshot.settings(.seeded(tab: tab), size: size, dark: false), size: size)
+        }
+    }
+
+    @Test func theAppearanceTabPreviewsTheTerminalInTheChosenTheme() throws {
+        let size = CGSize(width: 760, height: 560)
+        var scene = SettingsScene.seeded(tab: .appearance)
+        scene.settings.appearance.theme = .mocha
+        let rep = try save("settings-appearance-mocha", Snapshot.settings(scene, size: size, dark: false), size: size)
+        #expect(pixels(rep, near: Palette.mocha.hex(.base)) > 2_000)
+    }
+
+    @Test func aRefusedShortcutShowsWhoHoldsIt() throws {
+        let size = CGSize(width: 760, height: 560)
+        var scene = SettingsScene.seeded(tab: .shortcuts)
+        scene.refusal = "⌘R is already used by Review"
+        let rep = try save("settings-shortcut-conflict", Snapshot.settings(scene, size: size, dark: false), size: size)
+        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 50)
     }
 
     @Test func aDroppedConnectionKeepsTheLastStateUnderTheBanner() throws {
