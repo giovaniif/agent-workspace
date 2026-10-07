@@ -6,10 +6,12 @@ import Testing
 final class FakeCaller: Caller {
     var replies: [String: Result<String, RPCError>] = [:]
     var calls: [(method: String, params: [String: Any])] = []
+    var beforeReply: (() -> Void)?
 
     func call<Params: Encodable & Sendable, Reply: Decodable & Sendable>(_ method: String, params: Params) async throws -> Reply {
         let data = try JSONEncoder().encode(params)
         calls.append((method, (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]))
+        beforeReply?()
         switch replies[method] {
         case let .success(json)?: return try JSONDecoder().decode(Reply.self, from: Data(json.utf8))
         case let .failure(error)?: throw AgentwsError.rpc(error)
@@ -174,6 +176,32 @@ struct ReviewControllerTests {
         #expect(params["worktree"] as? String == "/w/api-feat")
         #expect(params["path"] as? String == "main.go")
         #expect(params["line"] as? Int == 2)
+    }
+
+    @Test func aReplyForAScopeNoLongerChosenIsDropped() async {
+        let caller = FakeCaller()
+        caller.replies["review.open"] = .success(openReply)
+        let controller = ReviewController(session: "s1", caller: caller)
+        caller.beforeReply = { controller.screen.scope = .branch }
+        await controller.open()
+        #expect(controller.screen.result == nil)
+        caller.replies["review.open"] = .failure(RPCError(code: "failed", message: "stale"))
+        caller.beforeReply = { controller.screen.scope = .uncommitted }
+        await controller.open()
+        #expect(controller.screen.error == nil)
+    }
+
+    @Test func reopeningAfterASendClearsTheSentDraft() async throws {
+        let (controller, caller) = await opened()
+        caller.replies["review.comment"] = .success(draftReply)
+        caller.replies["review.send"] = .success(draftReply.replacingOccurrences(of: #""status":"open""#, with: #""status":"sent""#))
+        let lines = try #require(controller.screen.selectedFile?.file.hunks.first?.lines)
+        await controller.comment(on: key, lines: [lines[2]], body: "call it y?")
+        await controller.send()
+        #expect(controller.screen.draft?.status == "sent")
+        await controller.open()
+        #expect(controller.screen.draft == nil)
+        #expect(controller.screen.draftRows.isEmpty)
     }
 
     @Test func aFailedOpenKeepsTheMessage() async {
