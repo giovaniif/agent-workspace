@@ -2,6 +2,7 @@ package domain
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -21,6 +22,7 @@ type RepoListing struct {
 type SessionHint struct {
 	ID  string
 	Cwd string
+	Tab bool
 }
 
 type WorktreeClaim struct {
@@ -28,6 +30,7 @@ type WorktreeClaim struct {
 	Cwd       string
 	Command   string
 	At        time.Time
+	Tab       bool
 }
 
 func IsWorktreeAdd(command string) bool {
@@ -72,6 +75,8 @@ func SubagentParent(path string) (string, bool) {
 }
 
 func AttributeWorktree(wt ListedWorktree, hints []SessionHint, claims []WorktreeClaim, now time.Time) string {
+	hints = slices.DeleteFunc(slices.Clone(hints), func(h SessionHint) bool { return h.Tab })
+	claims = ownerClaims(claims)
 	if parent, ok := SubagentParent(wt.Path); ok {
 		for _, h := range hints {
 			if filepath.Clean(h.Cwd) == parent {
@@ -118,7 +123,12 @@ func namedBy(path, branch string, claims []WorktreeClaim) string {
 	return id
 }
 
+func ownerClaims(claims []WorktreeClaim) []WorktreeClaim {
+	return slices.DeleteFunc(slices.Clone(claims), func(c WorktreeClaim) bool { return c.Tab })
+}
+
 func ReclaimWorktrees(known []Worktree, claims []WorktreeClaim, now time.Time) []Worktree {
+	claims = ownerClaims(claims)
 	var recent []WorktreeClaim
 	for _, c := range claims {
 		if now.Sub(c.At) <= ClaimWindow {

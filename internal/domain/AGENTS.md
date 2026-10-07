@@ -26,6 +26,7 @@ Pure types and rules: no IO, no imports from other `internal/*` packages. `Works
 - Pairing ([ADR 0046](../../docs/adr/0046-remote-app.md)): `NewPairCode` (8 characters from `PairCodeAlphabet`, which drops 0, 1, O, I and L, drawn from an injected `intn`), `NormalizePairCode`, `Pairing.Issue`/`Redeem` (5-minute codes, single use; a wrong code voids nothing; 5 failed tries a minute per address and 20 in all, after which every try is refused and not counted), `NewDevice` (32 random bytes as base64url, stored as `HashDeviceToken`), `CheckDeviceToken` (constant time), `RevokeDevice`, `Device.Seen` (at most once a minute), `DeviceName`, `NewDeviceID`, `PairURL`.
 - `MergeLoginPath(current, login)`: the daemon's PATH plus the login shell's entries it lacks, current entries first (see [internal/daemon/](../daemon/AGENTS.md)).
 - `NewProject(workspace, name, setup)`, `ProjectOf(projects, path)`, `ProjectOfWorktree` (by main checkout, then path) and `ProjectRows` (the sidebar rows, by name, with the worktrees each holds): registered projects (see [internal/daemon/](../daemon/AGENTS.md#projects)).
+- Tabs of a project worktree: `TabHome` (the project worktree a session's strip belongs to: its `Tab`, else the first project worktree it holds; none for sessions outside projects), `WorktreeTabs` (live agents holding or tabbed into the worktree, and its `ShellTab`s, in the order they opened), `StepTab` (wraps), `TabAfterClose` (a neighbour, right first, only when the shown tab closes), `TabStrip` and `TabbedTitle` (the strip in front of the pane's own title).
 
 ### Discovery
 
@@ -39,6 +40,7 @@ See [ADR 0007](../../docs/adr/0007-workspace-discovery.md). `KindOfRoot`, `Repos
 `IsWorktreeAdd`, `SubagentParent`, `AttributeWorktree`, `ReclaimWorktrees`, `ReconcileWorktrees`, `RollupChecks`, `PRForBranch`. See [ADR 0012](../../docs/adr/0012-worktree-detection.md).
 
 - **Attribution** (`AttributeWorktree`), for worktrees not seen before: the parent session of a subagent worktree (`<cwd>/.claude/worktrees/agent-*`), then a session whose cwd is inside it, then a `git worktree add` claim from a `PostToolUse` hook in the last 30 s. With claims from several sessions, only one whose command names the path or branch wins. Otherwise unassigned. A scan can run while `git worktree add` does, before the `PostToolUse` claim lands; `ReclaimWorktrees` then attaches an unassigned worktree once a recent claim from one session names its path or branch.
+- **Tab sessions** (`Session.Tab` set: an extra agent opened in a project worktree) never own a worktree: hints and claims marked `Tab` are dropped before attribution and reclaiming, so a worktree and its PR stay with the session that made it, and a tab names no PR.
 
 ### Review
 
