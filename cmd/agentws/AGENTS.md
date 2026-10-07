@@ -12,7 +12,7 @@ Hooks call `agentws hook`, which writes one message to the socket and exits. It 
 
 ## Version
 
-`internal/version.Version` and `.Commit` are stamped with `-ldflags -X` (`make build`, `scripts/dev`, releases), the commit falling back to the Go build info's VCS revision. The build handshake that uses them is in [internal/rpc/](../../internal/rpc/AGENTS.md).
+`internal/version.Version` and `.Commit` are stamped with `-ldflags -X` (`make build`, `scripts/dev`, releases), the commit falling back to the Go build info's VCS revision. The build handshake that uses them is in [internal/rpc/](../../internal/rpc/AGENTS.md). `agentws version --build` prints only `version.String()`, the exact string the handshake compares; the Mac app reads its build from the bundled binary this way.
 
 ## Subcommands
 
