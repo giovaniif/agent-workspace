@@ -67,12 +67,13 @@ jobs:
         env:
           AGENTWS_APP_VERSION: ${{ needs.goreleaser.outputs.version }}
           AGENTWS_APP_BINARIES: ${{ github.workspace }}/binaries
+          AGENTWS_APP_BUILD: ${{ github.run_number }}
       - name: Check the bundle
         run: |
           app=macos/build/agentws.app
           codesign --verify --deep --strict --verbose "$app"
-          plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist"
-          "$app/Contents/Resources/bin/darwin_$(uname -m | sed 's/x86_64/amd64/')/agentws" version | grep -F "${VERSION}"
+          [ "$(plutil -extract AgentwsVersion raw "$app/Contents/Info.plist")" = "$VERSION" ]
+          [ "$("$app/Contents/Resources/bin/darwin_$(uname -m | sed 's/x86_64/amd64/')/agentws" version | awk '{print $2}')" = "$VERSION" ]
         env:
           AGENTWS_NO_UPDATE_CHECK: "1"
           VERSION: ${{ needs.goreleaser.outputs.version }}

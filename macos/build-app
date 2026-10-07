@@ -10,8 +10,11 @@ app=build/agentws.app
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp Info.plist "$app/Contents/Info.plist"
-plutil -replace CFBundleShortVersionString -string "${version#v}" "$app/Contents/Info.plist"
-plutil -replace CFBundleVersion -string "${version#v}" "$app/Contents/Info.plist"
+short="${version#v}"
+short="${short%%-*}"
+plutil -replace CFBundleShortVersionString -string "$short" "$app/Contents/Info.plist"
+plutil -replace CFBundleVersion -string "${AGENTWS_APP_BUILD:-0}" "$app/Contents/Info.plist"
+plutil -replace AgentwsVersion -string "$version" "$app/Contents/Info.plist"
 cp "$bin" "$app/Contents/MacOS/agentws"
 if [ -n "$binaries" ]; then
   for target in darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
