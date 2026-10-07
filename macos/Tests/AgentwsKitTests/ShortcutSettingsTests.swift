@@ -42,6 +42,20 @@ struct ShortcutSettingsTests {
         }
     }
 
+    @Test func fixedWindowShortcutsAreReservedByName() {
+        var shortcuts = Shortcuts.defaults
+        #expect(throws: ShortcutRefusal.taken(by: "Show the sidebar in review")) {
+            try shortcuts.assign(KeyCombo("s", [.control, .command]), to: .nvimAtFile)
+        }
+        #expect(throws: ShortcutRefusal.taken(by: "Send review")) {
+            try shortcuts.assign(KeyCombo("return", [.shift, .command]), to: .nvimAtFile)
+        }
+        #expect(throws: ShortcutRefusal.taken(by: "Settings")) {
+            try shortcuts.assign(KeyCombo(",", [.command]), to: .nvimAtFile)
+        }
+        #expect(shortcuts == Shortcuts.defaults)
+    }
+
     @Test func aShortcutNeedsCommandOrControlSoTheTerminalKeepsPlainKeys() {
         var shortcuts = Shortcuts.defaults
         #expect(throws: ShortcutRefusal.needsModifier) {

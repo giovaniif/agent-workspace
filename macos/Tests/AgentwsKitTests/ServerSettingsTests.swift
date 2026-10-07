@@ -91,6 +91,16 @@ struct ServerSettingsTests {
         #expect(sent.map(\.params) == [#"{"path":"\/u\/code\/new"}"#, #"{"root":"\/u\/code\/notes"}"#])
     }
 
+    @Test func aDaemonWithoutWorkspacesStillShowsItsAgents() async {
+        let fake = caller()
+        fake.failures["workspace.list"] = .rpc(RPCError(code: "unknown_method", message: "unknown method workspace.list"))
+        let server = ServerSettings(caller: fake)
+        await server.refresh()
+        #expect(server.agents?.harnesses["claude"]?.installed == true)
+        #expect(server.workspaces.isEmpty)
+        #expect(server.error == nil)
+    }
+
     @Test func aFailedCallIsShownAndTheLastKnownValuesStay() async {
         let fake = caller()
         let server = ServerSettings(caller: fake)
