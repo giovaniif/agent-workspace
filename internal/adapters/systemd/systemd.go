@@ -23,9 +23,13 @@ func ExecIn(runtimeRoot string) Runner {
 		hint := ""
 		if os.Getenv("XDG_RUNTIME_DIR") == "" {
 			dir := filepath.Join(runtimeRoot, strconv.Itoa(os.Getuid()))
-			if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			info, err := os.Stat(dir)
+			switch {
+			case err == nil && info.IsDir():
 				cmd.Env = append(os.Environ(), "XDG_RUNTIME_DIR="+dir, "DBUS_SESSION_BUS_ADDRESS=unix:path="+dir+"/bus")
-			} else {
+			case err != nil && !errors.Is(err, os.ErrNotExist):
+				hint = "; " + err.Error()
+			default:
 				hint = "; no user runtime dir " + dir + ", so systemd --user needs linger: sudo loginctl enable-linger $USER"
 			}
 		}
