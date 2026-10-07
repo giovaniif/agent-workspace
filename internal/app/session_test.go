@@ -105,6 +105,16 @@ func TestStartSessionStopsBeforeTheLaunchWhenTheProjectSetupFails(t *testing.T) 
 	}
 }
 
+func TestStartSessionRefusesAProjectSetupWithNoRunnerToRunIt(t *testing.T) {
+	host := &fakeHost{}
+	s := app.Sessions{Host: host, Worktrees: &fakeWorktrees{}}
+	req := newSession(singlePlan)
+	req.ProjectSetup = "make env"
+	if _, err := s.Start(context.Background(), req); err == nil || len(host.created) != 0 {
+		t.Fatalf("err %v, created %+v", err, host.created)
+	}
+}
+
 func TestStartSessionAtAnOrchestrationRootRunsNoProjectSetup(t *testing.T) {
 	var log []string
 	s := app.Sessions{Host: &fakeHost{log: &log}, Worktrees: &fakeWorktrees{log: &log}, Runner: fakeRunner{log: &log}}
