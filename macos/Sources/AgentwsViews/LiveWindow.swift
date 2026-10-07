@@ -27,13 +27,16 @@ public struct LiveWindow: View {
         }
         .frame(minWidth: 900, minHeight: 560)
         .onAppear { store.start() }
-        .onChange(of: store.state?.seq) { reconcile() }
+        .onChange(of: store.state?.seq) { reconcile(filter: filter) }
     }
 
     private var actions: WindowActions {
         var a = WindowActions()
         a.select = { nav.select($0) }
-        a.filter = { filter = $0 }
+        a.filter = { value in
+            filter = value
+            reconcile(filter: value)
+        }
         a.toggleInspector = { inspector.toggle() }
         a.toggleEnded = { endedExpanded.toggle() }
         a.reconnect = {
@@ -43,7 +46,7 @@ public struct LiveWindow: View {
         return a
     }
 
-    private func reconcile() {
+    private func reconcile(filter: String) {
         if let state = store.state { nav.reconcile(with: Sidebar(state: state, filter: filter)) }
     }
 
