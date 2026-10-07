@@ -29,6 +29,8 @@ enum Launch {
 @Observable
 final class Launcher {
     private(set) var store: ViewStore?
+    private(set) var server: ServerSettings?
+    let settings = SettingsStore()
     private var loading = false
 
     func load() async {
@@ -36,7 +38,17 @@ final class Launcher {
         loading = true
         let binary = Launch.binary
         let build = await Task.detached { (try? Build.read(binary: binary)) ?? "unknown" }.value
-        store = ViewStore(endpoint: .local(binary: binary), build: build)
+        let store = ViewStore(endpoint: .local(binary: binary), build: build)
+        self.store = store
+        server = ServerSettings(caller: store)
+    }
+
+    var colorScheme: ColorScheme? {
+        switch settings.settings.appearance.theme {
+        case .system: nil
+        case .latte: .light
+        case .mocha: .dark
+        }
     }
 }
 
@@ -49,7 +61,8 @@ struct AgentwsApp: App {
             if Launch.demo {
                 MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560)
             } else if let store = launcher.store {
-                LiveWindow(store: store, server: "This Mac", router: router)
+                LiveWindow(store: store, server: "This Mac", router: router, shortcuts: launcher.settings.settings.shortcuts)
+                    .preferredColorScheme(launcher.colorScheme)
             } else {
                 MainWindow(scene: WindowScene(state: nil, connection: .connecting, now: .now))
                     .frame(minWidth: 900, minHeight: 560)
@@ -68,6 +81,14 @@ struct AgentwsApp: App {
             }
         }
         .keyboardShortcut("w", modifiers: [.command, .shift])
+        Settings {
+            LiveSettings(
+                store: launcher.settings, server: launcher.server, serverName: "This Mac",
+                cli: CLILink(target: Launch.binary)
+            )
+            .preferredColorScheme(launcher.colorScheme)
+            .task { await launcher.load() }
+        }
     }
 }
 

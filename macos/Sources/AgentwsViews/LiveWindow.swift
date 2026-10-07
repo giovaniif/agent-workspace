@@ -15,8 +15,9 @@ public struct LiveWindow: View {
 #if canImport(SwiftTerm)
     @State private var terminals: (hub: TerminalHub, views: TerminalViews)
 #endif
+    private let keys: Shortcuts
 
-    public init(store: ViewStore, server: String, router: WindowRouter = WindowRouter()) {
+    public init(store: ViewStore, server: String, router: WindowRouter = WindowRouter(), shortcuts: Shortcuts = .defaults) {
         _store = State(initialValue: store)
         self.server = server
         self.router = router
@@ -26,6 +27,7 @@ public struct LiveWindow: View {
         }
         _terminals = State(initialValue: (hub, TerminalViews()))
 #endif
+        keys = shortcuts
     }
 
     public var body: some View {
@@ -151,25 +153,26 @@ public struct LiveWindow: View {
                 Button("") { if let sidebar { nav.jump(to: n, in: sidebar) } }
                     .keyboardShortcut(KeyEquivalent(Character("\(n)")), modifiers: .command)
             }
-            Button("") { if let sidebar { nav.nextWaiting(in: sidebar) } }
-                .keyboardShortcut(.space, modifiers: .control)
-            Button("") { nav.last() }
-                .keyboardShortcut("[", modifiers: .command)
-            Button("") { focusFilter += 1 }
-                .keyboardShortcut("k", modifiers: .command)
-            Button("") { inspector.toggle() }
-                .keyboardShortcut("i", modifiers: [.command, .option])
-            Button("") { toggleReview() }
-                .keyboardShortcut("r", modifiers: .command)
+            bound(.nextWaiting) { if let sidebar { nav.nextWaiting(in: sidebar) } }
+            bound(.lastSession) { nav.last() }
+            bound(.filter) { focusFilter += 1 }
+            bound(.inspector) { inspector.toggle() }
+            bound(.review) { toggleReview() }
             Button("") { review?.screen.sidebarShown.toggle() }
                 .keyboardShortcut("s", modifiers: [.command, .control])
             Button("") { reviewTask { await $0.send() } }
                 .keyboardShortcut(.return, modifiers: [.command, .shift])
-            Button("") { openInNvim() }
-                .keyboardShortcut("e", modifiers: .command)
+            bound(.nvimAtFile) { openInNvim() }
         }
         .opacity(0)
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func bound(_ action: ShortcutAction, _ perform: @escaping () -> Void) -> some View {
+        if let combo = keys.combo(for: action) {
+            Button("", action: perform).keyboardShortcut(combo.equivalent, modifiers: combo.eventModifiers)
+        }
     }
 }
 #endif
