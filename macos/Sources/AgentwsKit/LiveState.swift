@@ -11,6 +11,8 @@ extension ViewState {
         seq = diff.seq
         if let w = diff.workspace { Self.upsert(&workspaces, w) { $0.root == w.root } }
         if let root = diff.removedWorkspace { workspaces.removeAll { $0.root == root } }
+        if let p = diff.project { Self.upsert(&projects, p) { $0.root == p.root } }
+        if let root = diff.removedProject { projects.removeAll { $0.root == root } }
         if let t = diff.task { Self.upsert(&tasks, t) { $0.id == t.id } }
         if let w = diff.worktree { Self.upsert(&worktrees, w) { $0.id == w.id } }
         if let id = diff.removedWorktree { worktrees.removeAll { $0.id == id } }
