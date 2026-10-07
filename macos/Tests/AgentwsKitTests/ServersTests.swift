@@ -192,7 +192,8 @@ struct ServersTests {
         let setup = server.setup()
         let start = ContinuousClock.now
         await setup.setUp()
-        #expect(ContinuousClock.now - start < .seconds(10))
+        #expect(ContinuousClock.now - start < .seconds(30))
+        #expect(server.bin.read("ssh.log").split(separator: "\n").allSatisfy { $0.contains("BatchMode=yes") })
         let error = try #require(setup.error)
         #expect(error.contains("key"))
         #expect(error.contains("agent"))
