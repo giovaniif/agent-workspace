@@ -114,6 +114,21 @@ struct AttentionTests {
         #expect(attention.card == nil)
     }
 
+    @Test func aDroppedConnectionKeepsTheCardButADialogThatIsGoneDropsIt() async {
+        let (attention, caller, _) = attention()
+        await attention.refreshCard(session: "s1", state: "permission")
+        caller.replies["session.prompt"] = nil
+        await attention.refreshCard(session: "s1", state: "permission")
+        #expect(attention.card?.prompt.id == "p1")
+        await attention.refreshCard(session: "s2", state: "permission")
+        #expect(attention.card == nil)
+        caller.replies["session.prompt"] = .success(permissionPrompt)
+        await attention.refreshCard(session: "s1", state: "permission")
+        caller.replies["session.prompt"] = .failure(RPCError(code: "not_found", message: "no dialog"))
+        await attention.refreshCard(session: "s1", state: "permission")
+        #expect(attention.card == nil)
+    }
+
     @Test func leavingPermissionDropsTheCardWithoutAsking() async {
         let (attention, caller, _) = attention()
         await attention.refreshCard(session: "s1", state: "permission")
