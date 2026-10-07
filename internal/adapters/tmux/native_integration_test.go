@@ -249,6 +249,32 @@ func TestNativeClientShowsThePaneInTheTUISlotAcrossSwapsWithoutResizingTheTUI(t 
 	}
 }
 
+func TestTUISizesTheWindowItAttaches(t *testing.T) {
+	ctx := context.Background()
+	h := newHost(t)
+	first, err := h.OpenClient(ctx, "one", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := h.OpenClient(ctx, "two", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	native, err := h.OpenNative(ctx, 90, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	size := func(slot app.Slot) string {
+		return tmuxOut(t, native.Argv, "display-message", "-p", "-t", string(slot), "#{window_width}x#{window_height}")
+	}
+	before := size(first)
+	outerTerminal(t, h, second)
+	waitFor(t, "the attached TUI window to take its terminal's size", func() bool { return size(second) == "120x40" })
+	if got := size(first); got != before {
+		t.Fatalf("the other TUI window = %s; want %s", got, before)
+	}
+}
+
 func TestTUIFollowsTerminalSizeBesideNative(t *testing.T) {
 	ctx := context.Background()
 	h := newHost(t)
