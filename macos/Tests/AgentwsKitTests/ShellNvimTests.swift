@@ -81,6 +81,18 @@ struct ShellNvimTests {
         #expect(views.error == "nvim is not on PATH")
     }
 
+    @Test func closingWhileAShellOrNvimCallIsPendingKeepsTheTerminal() async {
+        let (views, caller) = make()
+        caller.beforeReply = { views.close() }
+        await views.toggleShell(session: "s1")
+        #expect(views.view == .terminal)
+        await views.toggleNvim(session: "s1")
+        #expect(views.view == .terminal)
+        caller.beforeReply = nil
+        await views.toggleShell(session: "s1")
+        #expect(views.view == .shell)
+    }
+
     @Test func anotherSessionWithoutAShellFallsBackToItsAgentPane() async {
         let (views, _) = make()
         await views.toggleShell(session: "s1")
