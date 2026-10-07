@@ -37,7 +37,8 @@ struct FakeServer {
         esac
         """)
         try bin.script("systemctl", """
-        [ -n "$XDG_RUNTIME_DIR" ] && [ -n "$DBUS_SESSION_BUS_ADDRESS" ] || { echo 'Failed to connect to bus: No medium found' >&2; exit 1; }
+        uid="$(id -u)"
+        [ "$XDG_RUNTIME_DIR" = "/run/user/$uid" ] && [ "$DBUS_SESSION_BUS_ADDRESS" = "unix:path=/run/user/$uid/bus" ] || { echo 'Failed to connect to bus: No medium found' >&2; exit 1; }
         printf '%s\\n' "$*" >> "\(bin.path("systemctl.log"))"
         """)
         let built = bundle + "/linux_arm64/agentws"
