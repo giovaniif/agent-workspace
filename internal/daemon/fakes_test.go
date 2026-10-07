@@ -411,6 +411,7 @@ type fakeHost struct {
 	err         error
 	panes       []app.PaneInfo
 	listed      int
+	listGate    chan struct{}
 	killed      []app.PaneID
 	shown       []shown
 	typed       []string
@@ -695,6 +696,12 @@ func (h *fakeHost) Show(_ context.Context, pane app.PaneID, slot app.Slot) error
 
 func (h *fakeHost) List(context.Context) ([]app.PaneInfo, error) {
 	h.mu.Lock()
+	if gate := h.listGate; gate != nil {
+		h.listGate = nil
+		h.mu.Unlock()
+		<-gate
+		h.mu.Lock()
+	}
 	defer h.mu.Unlock()
 	h.listed++
 	return slices.Clone(h.panes), nil
