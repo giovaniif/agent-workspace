@@ -7,7 +7,7 @@ This document gives the top-level design of `agentws`. [FEATURES.md](FEATURES.md
 - **Language:** Go (current stable). It builds one static binary. The binary is the daemon, the TUI, the CLI and the hook handler. The reasons are in [docs/adr/0001-go.md](docs/adr/0001-go.md).
 - **TUI:** Bubble Tea v2, Lip Gloss and Bubbles (charmbracelet).
 - **Syntax highlighting:** chroma's lexer engine with a curated set of its lexers in `internal/syntax/lexers/`. Do not use its `lexers`/`styles` packages: their init makes each hook slower.
-- **Git:** the `git` CLI through exec. Never a Go git library.
+- **Git:** the `git` CLI through exec. Do not use a Go git library.
 - **GitHub:** the `gh` CLI (`gh api graphql`). It uses the user's `gh` auth. Each poll is one GraphQL request, with backoff.
 - **Terminals:** the `tmux` CLI on a dedicated server (`tmux -L agentws`) with its own config. Only `internal/adapters/tmux` controls it. See [docs/adr/0003-tmux-terminal-host.md](docs/adr/0003-tmux-terminal-host.md).
 - **Config:** `github.com/BurntSushi/toml` reads the per-repo `.agentws.toml` setup recipe and `$AGENTWS_HOME/config.toml`.
@@ -39,7 +39,7 @@ test/e2e               testscript suite with fake claude, codex and gh
 test/integration       the daemon with its real adapters
 ```
 
-Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` → `rpc` only, and `serve` → `rpc` only. `golangci-lint depguard` enforces the rule (see `.golangci.yml`). Thus a break of the rule fails CI. `tui` can import `domain` types.
+Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` and `serve` talk to the daemon only through `rpc`. `tui` can also import `domain` types. `golangci-lint depguard` enforces the rule, and `.golangci.yml` lists the exact allowed imports. Thus a break of the rule fails CI.
 
 - **Domain** holds each rule as a pure, table-tested function. The rules are the session state machine (`Session.Apply`), naming, banners, cleanup decisions, quotas and fallback, discovery, worktree attribution, ports, disk and review.
 - **App** holds the use cases and the port interfaces that the adapters implement. Its tests use in-memory fakes.
@@ -49,7 +49,7 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` → `rpc` onl
 - **Daemon.** There is one long-lived `agentws daemon` for each `AGENTWS_HOME`. A `flock` guards it. One goroutine event loop owns all in-memory state. The daemon writes SQLite in the background after each change, and reads never go to disk. Git, gh, tmux, `lsof` and `du` run on workers or connection goroutines, never on the loop.
 - **Hooks in.** Claude and Codex hooks run `agentws hook`. It writes one `hook` message to the socket and exits. The daemon maps the pane to a session and the hook to a harness-neutral event. Then it applies `Session.Apply` and does its effects (banners, queued sends).
 - **State out.** Each change increments `seq` and sends a diff to all subscribers. The TUI subscribes, keeps a snapshot and renders from it. A second connection makes the calls, so diffs never delay a key.
-- **Panes.** The tmux server and the daemon own the panes of the sessions. Thus, when you quit the TUI, nothing changes. `agentws` attaches to a client layout: the TUI is on the left, and the session in view is swapped into the main slot.
+- **Panes.** The tmux server and the daemon own the panes of the sessions. Thus, when you quit the TUI, nothing changes. `agentws` attaches to a client layout: the TUI is on the left, and the daemon swaps the session in view into the main slot.
 - **Workers.**
   - Worktree scan (10 s).
   - PR poll (60 s, one GraphQL request).
@@ -80,12 +80,12 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` → `rpc` onl
 
 ## Staying fast
 
-Clean layers must not add latency. Thus these rules apply:
+Do not let clean layers add latency. Apply these rules:
 
 - **One state owner.** One goroutine event loop in the daemon owns the in-memory state. The daemon writes SQLite in the background after each change. Reads never go to disk.
 - **Push, do not poll, for agent state.** Hooks call `agentws hook`. It writes one message to the socket and exits in 50 ms or less. It never blocks the agent. If the daemon is down, the hook drops the event and logs it to `hook.log`. `scripts/bench-hook.sh` checks the wall-time budget in CI. See [docs/adr/0006-hook-ingestion.md](docs/adr/0006-hook-ingestion.md).
 - **TUI renders from a snapshot.** The daemon pushes state diffs. The TUI never runs git, gh or tmux on the render path.
-- **Heavy work goes to workers:** `du`, cleanup, diffs and PR polling run in a bounded pool with debounce. The diff cache uses the tree hash as its key.
+- **Put heavy work in workers:** `du`, cleanup, diffs and PR polling run in a bounded pool with debounce. The diff cache uses the tree hash in its key.
 - **Batch git:** one `git status --porcelain=v2 -z` for each worktree for each burst of changes. fsnotify starts it with a 300 ms debounce.
 - **Poll GitHub politely:** each poll is one GraphQL request for all repos. The base interval is 60 s. It is faster only while checks run. After a failure, it uses exponential backoff. GraphQL POSTs cannot use ETags (ADR 0024).
 

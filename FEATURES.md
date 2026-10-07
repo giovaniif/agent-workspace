@@ -14,7 +14,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
   - It has no uncommitted changes.
   - No session uses it.
 
-  If it has uncommitted changes, the tool backs them up and asks you first.
+  If it has uncommitted changes, the tool makes a backup of them and asks you first.
 
 ## Evidence (last 57 days, as of 2026-09-29)
 
@@ -56,11 +56,11 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 
 **Attention**
 - Notifications for waiting, permission requests and done: a macOS banner, an optional sound, and a mute for each session (`m`).
-  - There is no banner for the session that you look at while the terminal is in front. There is a maximum of one banner for each session every 10 s.
+  - There is no banner for the session that you view while the terminal is in front. There is a maximum of one banner for each session every 10 s.
   - The title gives the session and where it runs (`fix login · api@42-retry`).
   - The body tells what the session needs (`needs permission: Bash: npm test`, `asks: Should I keep the alias?`). Or it tells what the session did: the first line of its last message and the duration of the turn. It also tells you when the session got a usage limit or an API error.
-  - With `terminal-notifier` installed, a session keeps one banner, and a newer banner replaces it. A click on the banner brings the terminal to the front on that session (`agentws focus <id>`). The banner goes away when the session resumes or gets focus.
-- An unread marker stays until you look at the session. Waiting sessions go to the top.
+  - With `terminal-notifier` installed, a session keeps one banner, and a newer banner replaces it. A click on the banner focuses the terminal on that session (`agentws focus <id>`). The banner disappears when the session resumes or gets focus.
+- An unread marker stays until you view the session. Waiting sessions move to the top.
 - Claude and Codex notify on the same events.
 
 **Model, effort, limits**
@@ -83,18 +83,23 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 - Scope toggle: last agent turn / uncommitted / whole branch vs base.
 - A worktree switcher: "all" or a single worktree. In "all", the file tree is grouped by repo, then by subtask and PR.
 - Review is local: diffs come from git in each worktree, not from GitHub.
-- Line and range comments go into a draft review. The tool sends the draft to the session as one prompt. Each comment has its worktree and file path, so the agent edits the correct checkout.
+- The tool adds line and range comments to a draft review. The tool sends the draft to the session as one prompt. Each comment has its worktree and file path, so the agent edits the correct checkout.
 - Stage or revert each hunk.
 
 **Terminal and nvim**
 - One key opens a shell in the selected worktree of the session (or the workspace root), as a split or a popup.
 - One key opens the current file and line in nvim. A session can have a long-lived nvim in its own pane. The tool controls it through `nvim --listen`.
-- Diffs open in nvim with diffview. Comments that you write in nvim go into the same draft review.
+- Diffs open in nvim with diffview. The plugin adds comments that you write in nvim to the same draft review.
 - `C-h/j/k/l` moves between nvim splits and panes, without the current tmux conflict.
 
 ## P1
 
-- A PR board for each session: checks with the names of failing jobs linked to their runs, review-bot comments since the last push, unresolved threads and merge readiness. `agentws pr <session> [--json]` shows it. babysit-pr reads it, and does not poll `gh` (see ADR 0024).
+- A PR board for each session. It shows:
+  - checks, with the names of failing jobs linked to their runs
+  - review-bot comments since the last push
+  - unresolved threads and merge readiness.
+
+  `agentws pr <session> [--json]` shows it. babysit-pr reads it, and does not poll `gh` (see ADR 0024).
 - A subagent tree for each session under its sidebar row, from the subagent hooks of the harness. Only Claude has it today. There are no stop and steer controls, because no harness gives them for each subagent (see ADR 0019).
 - A Linear launcher: `L` takes one or more issue URLs and starts a worktree and a session for each. A maximum of `[launcher] max_parallel` (default 3) start at the same time. The others wait in a queue and start when sessions finish. See ADR 0031.
 - When the Claude quota is low, offer to start queued work in Codex.
@@ -102,15 +107,15 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
   - Click a session to select it and go to its pane.
   - Click key hints and buttons, select from lists, open review files, put the review cursor or drag a range, and scroll with the wheel.
   - In tmux, a click focuses a pane, a drag on a border resizes, and the wheel scrolls the agent history.
-  - Shift-drag (Option in some macOS terminals) keeps the selection of the terminal. `[ui] mouse = false` turns off all mouse support (see ADR 0042).
+  - Shift-drag (Option in some macOS terminals) keeps the selection of the terminal. `[ui] mouse = false` disables all mouse support (see ADR 0042).
 - A first-run walkthrough: select Claude, Codex or both. See the hook state of each, and install it with a backup. Do the trust step of Codex, and get the nvim snippet for the installed plugin. `S` or `agentws setup` opens it again (see ADR 0040).
 
 ## P2
 
 - Native macOS client.
 - A phone app: a PWA that `agentws serve` serves (see ADR 0046). It lists sessions, chats with them, starts new ones and gets push notifications. It uses the network path that the user selects.
-  - While you type in an attached `agentws` tmux client, the tool holds pushes (`[push] away_after`, default 2 minutes, `"0"` turns it off).
-  - If you go away and a session still needs you, the tool sends the push one time.
+  - While you type in an attached `agentws` tmux client, the tool holds pushes (`[push] away_after`, default 2 minutes, `"0"` disables it).
+  - If you leave and a session still needs you, the tool sends the push one time.
   - A device with the app open on screen gets no push.
 - Compare the attempts of two agents at the same task, side by side.
 - Attach to a remote daemon through SSH.
