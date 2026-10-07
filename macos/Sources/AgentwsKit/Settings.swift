@@ -36,7 +36,7 @@ public enum SettingsTab: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    public var perServer: Bool { self != .general && self != .shortcuts }
+    public var perServer: Bool { self != .general && self != .servers && self != .shortcuts }
 }
 
 public enum BadgeCount: String, Codable, CaseIterable, Sendable {
