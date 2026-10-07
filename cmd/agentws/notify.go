@@ -103,7 +103,7 @@ func parseBridge(args []string) (bridge, error) {
 }
 
 func (b bridge) streamArgv() []string {
-	return []string{"ssh", "-T", "-o", "ServerAliveInterval=15", b.host, remotePath(b.remoteBin) + " notify stream"}
+	return []string{"ssh", "-T", "-o", "RemoteCommand=none", "-o", "RequestTTY=no", "-o", "ServerAliveInterval=15", b.host, remotePath(b.remoteBin) + " notify stream"}
 }
 
 func remotePath(p string) string {
@@ -114,7 +114,7 @@ func remotePath(p string) string {
 }
 
 func (b bridge) focusCmd() string {
-	return "ssh -T " + shellQuote(b.host) + " " + remotePath(b.remoteBin) + " focus"
+	return "ssh -T -o RemoteCommand=none -o RequestTTY=no " + shellQuote(b.host) + " " + remotePath(b.remoteBin) + " focus"
 }
 
 func shellQuote(s string) string {
