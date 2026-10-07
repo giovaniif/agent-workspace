@@ -83,7 +83,7 @@ public struct NewSessionSheet: View {
         .frame(minWidth: 560, minHeight: 520)
         .foregroundStyle(theme(.text))
         .background(theme(.base))
-        .task(id: live ? model.form.workItem + "\n" + model.form.workspace : "") {
+        .task(id: live && tab == .session ? model.form.workItem + "\n" + model.form.workspace : "") {
             guard live, tab == .session else { return }
             try? await Task.sleep(for: .milliseconds(300))
             if Task.isCancelled { return }
