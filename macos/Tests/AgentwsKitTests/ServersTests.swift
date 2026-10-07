@@ -127,7 +127,7 @@ struct ServersTests {
         #expect(items["git"]?.state == .ok)
         #expect(items["tmux"]?.state == .failed)
         #expect(items["gh"]?.state == .warning)
-        #expect(items["gh"]?.command == "ssh -t box gh auth login")
+        #expect(items["gh"]?.command == "ssh -t 'box' gh auth login")
         #expect(items["agentws"]?.state == .failed)
         #expect(items["agentws"]?.fix == "Set up")
     }
@@ -262,5 +262,20 @@ struct ServersTests {
         #expect(SettingsTab.allCases.contains(.servers))
         #expect(SettingsTab.servers.title == "Servers")
         #expect(!SettingsTab.servers.perServer)
+    }
+
+    @Test func theCopiedGhLoginCommandQuotesTheHost() {
+        let probe = Probe.parse("tool=gh\n")
+        let item = Checklist.items(server: .ssh(host: "$(touch x)"), probe: probe, appBuild: "v1").first { $0.id == "gh" }
+        #expect(item?.command == "ssh -t '$(touch x)' gh auth login")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aSecondSetupWhileOneRunsIsIgnored() async throws {
+        let server = try FakeServer()
+        let setup = server.setup()
+        async let first: Void = setup.setUp()
+        async let second: Void = setup.setUp()
+        _ = await (first, second)
+        #expect(server.bin.read("daemon.log") == "setup daemon\n")
     }
 }
