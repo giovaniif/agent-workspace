@@ -113,6 +113,28 @@ struct ReviewTests {
         #expect(CommentAnchor(lines: []) == nil)
     }
 
+    @Test func aShiftClickExtendsTheCommentToTheLinesBetween() {
+        let lines = (1...5).map { line(.added, new: $0, "l\($0)") }
+        let key = FileKey(worktree: "/w/api", path: "a.go")
+        var screen = ReviewScreen(session: "s1")
+        screen.result = ReviewResult(scope: .branch, worktrees: [
+            WorktreeReview(worktree: ReviewWorktree(id: "/w/api", repo: "api", path: "/w/api", branch: "x"), from: "main",
+                           files: [fileDiff("a.go", hunks: [DiffHunk(header: "@@", lines: Array(lines[0..<2])), DiffHunk(header: "@@", lines: Array(lines[2...]))])]),
+        ])
+        screen.startComment(key, lines[3])
+        screen.composer?.text = "draft"
+        screen.extendComment(to: lines[1])
+        #expect(screen.composer?.lines == Array(lines[1...3]))
+        #expect(screen.composer?.text == "draft")
+        screen.extendComment(to: lines[4])
+        #expect(screen.composer?.lines == Array(lines[1...4]))
+        screen.startComment(key, lines[0])
+        #expect(screen.composer == Composer(key: key, lines: [lines[0]]))
+        screen.composer = nil
+        screen.extendComment(to: lines[2])
+        #expect(screen.composer == Composer(key: key, lines: [lines[2]]))
+    }
+
     @Test func theTreeGroupsFilesByWorktreeWithItsPR() {
         let api = ReviewWorktree(id: "/w/api", repo: "api", path: "/w/api", branch: "42-login", pr: 42)
         let web = ReviewWorktree(id: "/w/web", repo: "web", path: "/w/web", branch: "billing")
