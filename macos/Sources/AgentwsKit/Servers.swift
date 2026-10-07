@@ -331,7 +331,7 @@ public final class ServerSetup {
     private static func restart(_ platform: Platform) -> String {
         platform.os == "darwin"
             ? #"launchctl kickstart -k "gui/$(id -u)/dev.agentws.daemon""#
-            : "systemctl --user restart agentws-daemon.service"
+            : #"export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"; export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"; systemctl --user restart agentws-daemon.service"#
     }
 
     private func binary(_ platform: Platform) throws -> String {
