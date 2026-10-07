@@ -117,6 +117,16 @@ func TestContextMenuClosesWhenTheSelectionChanges(t *testing.T) {
 	}
 }
 
+func TestContextMenuClickBesideTheMenuOnItsRowDoesNotAct(t *testing.T) {
+	m, c := menuModel(t)
+	m = rightClickOn(t, m, "session 2 change")
+	x, y := spot(t, m, "End session")
+	m = drive(m, click(x+20, y), release(x+20, y))
+	if strings.Contains(screen(m), "y/n") || len(c.methods()) != 0 {
+		t.Fatalf("a click right of the menu acted:\n%s", screen(m))
+	}
+}
+
 func TestContextMenuIgnoresRightClicksOffSessionRows(t *testing.T) {
 	m, _ := menuModel(t)
 	for _, text := range []string{"task number 2", "SESSIONS"} {
