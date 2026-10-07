@@ -262,7 +262,7 @@ extension Endpoint {
         case .local:
             argv
         case let .ssh(host, _):
-            ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ServerAliveInterval=15", host, "--"]
+            sshArgv(host: host, options: ["ServerAliveInterval=15"]) + ["--"]
                 + [argv.map { "'" + $0.replacingOccurrences(of: "'", with: #"'\''"#) + "'" }.joined(separator: " ")]
         }
     }
