@@ -17,7 +17,7 @@ struct FakeServer {
             ? "echo 'box: Permission denied (publickey,password).' >&2\nexit 255"
             : unreachable
             ? "echo 'ssh: connect to host box port 22: Connection refused' >&2\nexit 255"
-            : "for last; do :; done\nHOME=\"\(home)\" exec sh -c \"$last\""
+            : "for last; do :; done\nHOME=\"\(home)\" exec env -u XDG_RUNTIME_DIR -u DBUS_SESSION_BUS_ADDRESS sh -c \"$last\""
         try bin.script("ssh", """
         printf '%s %s %s %s %s %s %s %s %s %s\\n' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" >> "\(bin.path("ssh.log"))"
         case " $* " in
@@ -36,7 +36,10 @@ struct FakeServer {
           -m) echo \(uname.machine) ;;
         esac
         """)
-        try bin.script("systemctl", "printf '%s\\n' \"$*\" >> \"\(bin.path("systemctl.log"))\"\n")
+        try bin.script("systemctl", """
+        [ -n "$XDG_RUNTIME_DIR" ] && [ -n "$DBUS_SESSION_BUS_ADDRESS" ] || { echo 'Failed to connect to bus: No medium found' >&2; exit 1; }
+        printf '%s\\n' "$*" >> "\(bin.path("systemctl.log"))"
+        """)
         let built = bundle + "/linux_arm64/agentws"
         try agentws(build: "v1.2.0 abc").write(toFile: built, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: built)
