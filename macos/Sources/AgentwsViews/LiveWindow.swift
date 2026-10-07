@@ -30,7 +30,7 @@ public struct LiveWindow: View {
         .frame(minWidth: 900, minHeight: 560)
         .onAppear { store.start() }
         .onChange(of: store.state?.seq) { reconcile(filter: filter) }
-        .onChange(of: router.focusSeq) { if let id = router.focus { nav.select(id) } }
+        .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
     }
 
     private var actions: WindowActions {
