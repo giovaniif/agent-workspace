@@ -169,6 +169,15 @@ func TestTabSessionsNeverTakeAWorktreeByCwdOrClaim(t *testing.T) {
 	}
 }
 
+func TestTabSessionsWorkInTheWorktreeTheyAreATabOf(t *testing.T) {
+	if got := (Session{Tab: "/h/a", WorktreeIDs: []string{"/h/b"}}).WorksIn(); !reflect.DeepEqual(got, []string{"/h/a"}) {
+		t.Errorf("tab works in %v", got)
+	}
+	if got := (Session{WorktreeIDs: []string{"/h/b", "/h/c"}}).WorksIn(); !reflect.DeepEqual(got, []string{"/h/b", "/h/c"}) {
+		t.Errorf("owner works in %v", got)
+	}
+}
+
 func TestTabSessionMarksSessionsOpenedAsTabs(t *testing.T) {
 	if !(Session{Tab: "/h/api/b"}).IsTab() || (Session{WorktreeIDs: []string{"/h/api/b"}}).IsTab() {
 		t.Error("IsTab is wrong")
