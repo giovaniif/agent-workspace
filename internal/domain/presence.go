@@ -13,10 +13,42 @@ const (
 type Presence struct {
 	AwayAfter time.Duration
 	LastInput time.Time
+	AppFront  bool
+	AppLeft   time.Time
 }
 
 func (p Presence) AtTerminal(now time.Time) bool {
-	return p.AwayAfter > 0 && !p.LastInput.IsZero() && now.Sub(p.LastInput) < p.AwayAfter
+	if p.AwayAfter <= 0 {
+		return false
+	}
+	return p.AppFront || p.within(p.LastInput, now) || p.within(p.AppLeft, now)
+}
+
+func (p Presence) within(at, now time.Time) bool {
+	return !at.IsZero() && now.Sub(at) < p.AwayAfter
+}
+
+type ClientView struct {
+	Session string
+	Front   bool
+}
+
+func InView(views []ClientView, id string) bool {
+	for _, v := range views {
+		if v.Front && id != "" && v.Session == id {
+			return true
+		}
+	}
+	return false
+}
+
+func AppFront(views []ClientView) bool {
+	for _, v := range views {
+		if v.Front {
+			return true
+		}
+	}
+	return false
 }
 
 func NeedsYou(s Session) bool {

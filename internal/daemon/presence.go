@@ -113,3 +113,39 @@ func (s *state) viewing(now time.Time) map[string]bool {
 	}
 	return domain.Viewing(reports, now)
 }
+
+func (d *Daemon) clientViewing(c *conn, req rpc.Request) (*rpc.Response, bool) {
+	var p rpc.ClientViewingParams
+	if err := json.Unmarshal(req.Params, &p); err != nil {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "client.viewing params: "+err.Error()), true
+	}
+	ok := d.query(func(s *state) {
+		s.clients[c] = domain.ClientView{Session: p.Session, Front: p.Front}
+		s.noteClients(time.Now())
+	})
+	return result(req.ID, struct{}{}), ok
+}
+
+func (s *state) dropClientView(c *conn, now time.Time) {
+	if _, ok := s.clients[c]; !ok {
+		return
+	}
+	delete(s.clients, c)
+	s.noteClients(now)
+}
+
+func (s *state) noteClients(now time.Time) {
+	front := domain.AppFront(s.clientViews())
+	if s.presence.AppFront && !front {
+		s.presence.AppLeft = now
+	}
+	s.presence.AppFront = front
+}
+
+func (s *state) clientViews() []domain.ClientView {
+	views := make([]domain.ClientView, 0, len(s.clients))
+	for _, v := range s.clients {
+		views = append(views, v)
+	}
+	return views
+}
