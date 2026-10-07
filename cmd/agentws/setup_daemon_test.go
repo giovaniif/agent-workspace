@@ -199,6 +199,21 @@ func TestSetupDaemonCheckFailsWhenTheServiceFileCannotBeInspected(t *testing.T) 
 	}
 }
 
+func TestSetupDaemonMakesARelativeAgentwsHomeAbsolute(t *testing.T) {
+	f := newDaemonSetupFixture(t, "linux", "yes")
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code, _, errOut := f.run(t, "linux", "rel-home"); code != 0 {
+		t.Fatalf("code %d err %q", code, errOut)
+	}
+	unit, _ := os.ReadFile(f.path)
+	if !strings.Contains(string(unit), "append:"+filepath.Join(wd, "rel-home", "daemon-service.log")) || !strings.Contains(string(unit), "AGENTWS_HOME="+filepath.Join(wd, "rel-home")) {
+		t.Fatalf("unit\n%s", unit)
+	}
+}
+
 func TestSetupDaemonRefusesArguments(t *testing.T) {
 	f := newDaemonSetupFixture(t, "linux", "yes")
 	for _, args := range [][]string{{"extra"}, {"--bogus"}, {"--check", "--remove"}} {
