@@ -96,7 +96,7 @@ func (s *state) noteHook(sessionID string, kind domain.HarnessEventKind, payload
 				kept = append(kept, c)
 			}
 		}
-		s.hints.claims = append(kept, domain.WorktreeClaim{SessionID: sessionID, Cwd: p.Cwd, Command: cmd, At: now})
+		s.hints.claims = append(kept, domain.WorktreeClaim{SessionID: sessionID, Cwd: p.Cwd, Command: cmd, At: now, Tab: s.sessions[sessionID].IsTab()})
 		s.hints.wake()
 	}
 }
@@ -197,8 +197,8 @@ func (d *Daemon) scanWorktrees(ctx context.Context) {
 func (s *state) sessionHints() []domain.SessionHint {
 	hints := make([]domain.SessionHint, 0, len(s.hints.cwd))
 	for id, cwd := range s.hints.cwd {
-		if _, ok := s.sessions[id]; ok {
-			hints = append(hints, domain.SessionHint{ID: id, Cwd: cwd})
+		if x, ok := s.sessions[id]; ok {
+			hints = append(hints, domain.SessionHint{ID: id, Cwd: cwd, Tab: x.IsTab()})
 		}
 	}
 	sort.Slice(hints, func(i, j int) bool { return hints[i].ID < hints[j].ID })
