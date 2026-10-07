@@ -34,7 +34,12 @@ type sessionRig struct {
 
 func startSessions(t *testing.T, store *memStore, setup app.SetupFunc) sessionRig {
 	t.Helper()
-	r := sessionRig{host: &fakeHost{}, wts: &fakeWorktrees{}, now: time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)}
+	return startSessionsOn(t, &fakeHost{}, store, setup)
+}
+
+func startSessionsOn(t *testing.T, host *fakeHost, store *memStore, setup app.SetupFunc) sessionRig {
+	t.Helper()
+	r := sessionRig{host: host, wts: &fakeWorktrees{}, now: time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)}
 	store.snap.Workspaces = append(store.snap.Workspaces, singleWS, orchWS)
 	for _, s := range store.snap.Sessions {
 		r.host.panes = append(r.host.panes, app.PaneInfo{ID: app.PaneID(s.Pane), Alive: true})
@@ -293,6 +298,61 @@ func TestAgentExitingInViewShowsTheNextOne(t *testing.T) {
 		t.Fatal("session a is still listed after its agent exited")
 	}
 	waitUntil(t, "b to be marked in view", func() bool { return sessionState(t, r, "b").Focused })
+}
+
+func TestStartupFindingTheInViewAgentDeadShowsTheNextOne(t *testing.T) {
+	gate := make(chan struct{})
+	host := &fakeHost{listGate: gate}
+	store := &memStore{}
+	store.snap.Sessions = []domain.Session{{ID: "a", Pane: "%7"}, {ID: "b", Pane: "%8"}}
+	r := startSessionsOn(t, host, store, nil)
+	r.d.SetClientHost(&fakeClientHost{})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.c.Call(context.Background(), rpc.MethodSessionFocus, rpc.SessionFocusParams{ID: "a"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	host.mu.Lock()
+	host.shown = nil
+	host.mu.Unlock()
+	host.die("%7")
+	close(gate)
+	waitUntil(t, "b to be shown", func() bool {
+		host.mu.Lock()
+		defer host.mu.Unlock()
+		return reflect.DeepEqual(host.shown, []shown{{"%8", app.Slot(opened.Slot)}})
+	})
+	waitUntil(t, "b to be marked in view", func() bool { return sessionState(t, r, "b").Focused })
+}
+
+func TestStartupSkipsOtherDeadAgentsWhenRefillingTheSlot(t *testing.T) {
+	gate := make(chan struct{})
+	host := &fakeHost{listGate: gate}
+	store := &memStore{}
+	store.snap.Sessions = []domain.Session{{ID: "a", Pane: "%7"}, {ID: "b", Pane: "%8"}, {ID: "c", Pane: "%9"}}
+	r := startSessionsOn(t, host, store, nil)
+	r.d.SetClientHost(&fakeClientHost{})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.c.Call(context.Background(), rpc.MethodSessionFocus, rpc.SessionFocusParams{ID: "a"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	host.mu.Lock()
+	host.shown = nil
+	host.mu.Unlock()
+	host.die("%7")
+	host.die("%8")
+	close(gate)
+	waitUntil(t, "c to be shown", func() bool {
+		host.mu.Lock()
+		defer host.mu.Unlock()
+		return reflect.DeepEqual(host.shown, []shown{{"%9", app.Slot(opened.Slot)}})
+	})
+	waitUntil(t, "c to be marked in view", func() bool { return sessionState(t, r, "c").Focused })
 }
 
 func TestSlotWatchDoesNotEndASessionThatTookTheSlotMeanwhile(t *testing.T) {
