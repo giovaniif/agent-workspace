@@ -1,6 +1,21 @@
 import Foundation
 
 public enum Build {
+    public static func binary(
+        environment: [String: String],
+        resources: String?,
+        arch: String,
+        isExecutable: (String) -> Bool
+    ) -> String {
+        if let path = environment["AGENTWS_BINARY"], !path.isEmpty { return path }
+        if let resources {
+            let goArch = arch == "x86_64" ? "amd64" : arch
+            let bundled = "\(resources)/bin/darwin_\(goArch)/agentws"
+            if isExecutable(bundled) { return bundled }
+        }
+        return "agentws"
+    }
+
     public static func read(binary: String, environment: [String: String]? = nil) throws -> String {
         let process = Process()
         let output = Pipe()
