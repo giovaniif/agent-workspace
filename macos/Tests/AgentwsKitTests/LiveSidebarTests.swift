@@ -13,7 +13,7 @@ struct LiveSidebarTests {
         for index in 1...samples {
             var session = state.sessions[0]
             session.state = index % 2 == 1 ? "permission" : "running"
-            var diff = ViewDiff(seq: state.seq + index)
+            var diff = ViewDiff(seq: state.seq + UInt64(index))
             diff.session = session
             try bin.write("diff\(index)", #"{"v":1,"id":1,"diff":"# + String(decoding: try encoder.encode(diff), as: UTF8.self) + "}\n")
         }
