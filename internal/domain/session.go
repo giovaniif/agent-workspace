@@ -63,6 +63,7 @@ type Session struct {
 	ResumeID       string
 	Transcript     string
 	Dir            string
+	Tab            string `json:",omitempty"`
 	Usage          Usage
 	Limits         []RateLimit
 	LimitsAt       time.Time
