@@ -24,6 +24,22 @@ enum Launch {
     }
 
     static var demo: Bool { CommandLine.arguments.contains("--demo") }
+
+    static var bundled: @Sendable (Platform) -> String? {
+        let resources = Bundle.main.resourcePath
+        let environment = ProcessInfo.processInfo.environment
+        return { platform in
+            if platform.os == "darwin", let path = environment["AGENTWS_BINARY"], !path.isEmpty { return path }
+            guard let resources else { return nil }
+            let path = "\(resources)/bin/\(platform.directory)/agentws"
+            return FileManager.default.isExecutableFile(atPath: path) ? path : nil
+        }
+    }
+
+    static var sshHosts: [String] {
+        let config = (try? String(contentsOfFile: NSHomeDirectory() + "/.ssh/config", encoding: .utf8)) ?? ""
+        return SSHConfig.hosts(config)
+    }
 }
 
 @MainActor
@@ -40,15 +56,39 @@ final class Launcher {
     var openMain: () -> Void = {}
     private var stream: NoticeStream?
     private var loading = false
+    private(set) var setup: ServerSetup?
+    private(set) var current: ServerKind?
+    private(set) var build: String?
+    let servers = ServerList()
+
+    var needsFirstRun: Bool { servers.servers.isEmpty }
 
     func load() async {
-        guard store == nil, !loading else { return }
+        guard build == nil, !loading else { return }
         loading = true
         let binary = Launch.binary
         self.binary = binary
-        let build = await Task.detached { (try? Build.read(binary: binary)) ?? "unknown" }.value
-        let store = ViewStore(endpoint: .local(binary: binary), build: build)
-        let notifier = UserNotifier { [weak self] action in self?.handle(action) }
+        build = await Task.detached { (try? Build.read(binary: binary)) ?? "unknown" }.value
+        if !needsFirstRun { connect(servers.selected) }
+    }
+
+    func added(_ server: ServerKind) {
+        servers.add(server)
+        servers.selected = server
+        guard current != server else { return }
+        connect(server)
+    }
+
+    func connect(_ server: ServerKind) {
+        guard let build, current != server else { return }
+        store?.stop()
+        stream?.stop()
+        if servers.selected != server { servers.selected = server }
+        let store = ViewStore(endpoint: server.endpoint(localBinary: binary), build: build)
+        setup = ServerSetup(server: server, appBuild: build, bundled: Launch.bundled, shell: ProcessShell(server: server))
+        current = server
+        let freshNotifier = self.notifier == nil
+        let notifier = self.notifier ?? UserNotifier { [weak self] action in self?.handle(action) }
         let attention = Attention(caller: store, notifier: notifier)
         attention.preferences = settings.settings.notifications
         attention.isMuted = { [weak store] id in store?.state?.sessions.first { $0.id == id }?.muted ?? false }
@@ -61,12 +101,12 @@ final class Launcher {
             attention?.receive(notice)
         }
         self.store = store
-        server = ServerSettings(caller: store)
+        self.server = ServerSettings(caller: store)
         self.notifier = notifier
         self.attention = attention
         self.stream = stream
         store.start()
-        notifier.start()
+        if freshNotifier { notifier.start() }
         stream.start()
         findBridges()
     }
@@ -190,6 +230,22 @@ struct MenuLabel: View {
     }
 }
 
+struct FirstRunHost: View {
+    let launcher: Launcher
+    let build: String
+    @Environment(\.dismissWindow) private var dismissWindow
+
+    var body: some View {
+        FirstRunView(
+            appBuild: build, localBinary: Launch.binary, bundled: Launch.bundled, hosts: Launch.sshHosts,
+            cli: CLILink(target: Launch.binary)
+        ) { server in
+            launcher.added(server)
+            dismissWindow(id: "setup")
+        }
+    }
+}
+
 struct AgentwsApp: App {
     @State private var launcher = Launcher()
     private var router: WindowRouter { launcher.router }
@@ -198,11 +254,16 @@ struct AgentwsApp: App {
         WindowGroup("agentws", id: "main") {
             if Launch.demo {
                 MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560)
-            } else if let store = launcher.store {
-                LiveWindow(store: store, server: "This Mac", router: router, shortcuts: launcher.settings.settings.shortcuts,
-                           attention: launcher.attention, diffLayout: launcher.settings.settings.appearance.diffLayout,
-                           confirmEnd: launcher.settings.settings.general.confirmOnEnd)
-                    .preferredColorScheme(launcher.colorScheme)
+            } else if let build = launcher.build, launcher.needsFirstRun {
+                FirstRunHost(launcher: launcher, build: build).preferredColorScheme(launcher.colorScheme)
+            } else if let store = launcher.store, let current = launcher.current {
+                LiveWindow(
+                    store: store, server: current.name, router: router, shortcuts: launcher.settings.settings.shortcuts,
+                    attention: launcher.attention, diffLayout: launcher.settings.settings.appearance.diffLayout,
+                    confirmEnd: launcher.settings.settings.general.confirmOnEnd, servers: launcher.servers.servers, switchServer: { launcher.connect($0) }
+                )
+                .id(current)
+                .preferredColorScheme(launcher.colorScheme)
             } else {
                 MainWindow(scene: WindowScene(state: nil, connection: .connecting, now: .now))
                     .frame(minWidth: 900, minHeight: 560)
@@ -210,6 +271,14 @@ struct AgentwsApp: App {
             }
         }
         .commands { CommandGroup(replacing: .newItem) {} }
+        Window("Add a server", id: "setup") {
+            if let build = launcher.build {
+                FirstRunHost(launcher: launcher, build: build).preferredColorScheme(launcher.colorScheme)
+            } else {
+                ProgressView().frame(width: 640, height: 520).task { await launcher.load() }
+            }
+        }
+        .windowResizability(.contentSize)
         Window("Worktrees and disk", id: "disk") {
             if Launch.demo {
                 DiskWindow(scene: .seeded()).frame(minWidth: 820, minHeight: 480)
@@ -224,9 +293,10 @@ struct AgentwsApp: App {
         .keyboardShortcut(launcher.settings.settings.shortcuts.combo(for: .worktrees).map(\.keyboardShortcut))
         Settings {
             LiveSettings(
-                store: launcher.settings, server: launcher.server, serverName: "This Mac",
-                cli: CLILink(target: Launch.binary)
+                store: launcher.settings, server: launcher.server, serverName: launcher.current?.name ?? "This Mac",
+                cli: CLILink(target: Launch.binary), servers: launcher.servers, setup: launcher.setup
             )
+            .onChange(of: launcher.servers.selected) { launcher.connect(launcher.servers.selected) }
             .preferredColorScheme(launcher.colorScheme)
             .task { await launcher.load() }
         }

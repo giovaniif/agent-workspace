@@ -76,6 +76,7 @@ public struct Probe: Equatable, Sendable {
     public var kernel = ""
     public var machine = ""
     public var user = ""
+    public var home = ""
     public var build: String?
     public var daemon: DaemonCheck?
     public var tools: Set<String> = []
@@ -93,6 +94,7 @@ public struct Probe: Equatable, Sendable {
             case "kernel": probe.kernel = value
             case "machine": probe.machine = value
             case "user": probe.user = value
+            case "home": probe.home = value
             case "build": probe.build = value.isEmpty ? nil : value
             case "daemon": probe.daemon = try? JSONDecoder().decode(DaemonCheck.self, from: Data(value.utf8))
             case "tool": probe.tools.insert(value)
@@ -354,7 +356,7 @@ public final class ServerSetup {
         }
         let script = """
         PATH="$PATH:$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin"
-        echo "kernel=$(uname -s)"; echo "machine=$(uname -m)"; echo "user=$(id -un)"
+        echo "kernel=$(uname -s)"; echo "machine=$(uname -m)"; echo "user=$(id -un)"; echo "home=$HOME"
         b=\(binary)
         if [ -x "$b" ]; then echo "build=$("$b" version --build 2>/dev/null)"; echo "daemon=$("$b" setup daemon --check 2>/dev/null)"; fi
         for t in git tmux gh; do command -v "$t" >/dev/null 2>&1 && echo "tool=$t"; done

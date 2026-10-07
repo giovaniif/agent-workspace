@@ -14,13 +14,22 @@ public struct SettingsScene: Sendable, Equatable {
     public var refusal: String?
     public var notice: String?
     public var error: String?
+    public var servers: [ServerKind] = []
+    public var selectedServer: ServerKind = .thisMac
+    public var checklist: [CheckItem] = []
+    public var serverBusy = false
 
     public init(
         tab: SettingsTab = .general, server: String = "This Mac", settings: AppSettings = AppSettings(),
         agents: AgentsStatus? = nil, workspaces: [WorkspaceInfo] = [], cliLink: CLILinkStatus = .missing,
         config: ServerConfig? = nil, harnesses: [HarnessOptions] = [], devices: [PairedDevice] = [], pairing: PairingCode? = nil,
-        refusal: String? = nil, notice: String? = nil, error: String? = nil
+        refusal: String? = nil, notice: String? = nil, error: String? = nil,
+        servers: [ServerKind] = [], selectedServer: ServerKind = .thisMac, checklist: [CheckItem] = [], serverBusy: Bool = false
     ) {
+        self.servers = servers
+        self.selectedServer = selectedServer
+        self.checklist = checklist
+        self.serverBusy = serverBusy
         self.tab = tab
         self.server = server
         self.settings = settings
@@ -64,7 +73,17 @@ public struct SettingsScene: Sendable, Equatable {
                 HarnessOptions(harness: "claude", name: "Claude Code", tag: "CC", models: ["opus", "sonnet", "haiku"], efforts: ["low", "medium", "high", "xhigh", "max"], model: "opus", effort: "high"),
                 HarnessOptions(harness: "codex", name: "Codex", tag: "CX", models: ["gpt-6-sol", "gpt-6-luna"], efforts: ["low", "medium", "high"], model: "", effort: ""),
             ],
-            devices: [PairedDevice(id: "d1", name: "iPhone", createdAt: "2026-10-01T10:00:00Z", lastSeen: "2026-10-06T09:30:00Z")]
+            devices: [PairedDevice(id: "d1", name: "iPhone", createdAt: "2026-10-01T10:00:00Z", lastSeen: "2026-10-06T09:30:00Z")],
+            servers: [.thisMac, .ssh(host: "devbox")],
+            selectedServer: .ssh(host: "devbox"),
+            checklist: [
+                CheckItem(id: "ssh", title: "SSH", state: .ok, detail: "devbox reachable · 38 ms · Linux x86_64"),
+                CheckItem(id: "agentws", title: "agentws", state: .warning, detail: "build v0.9.0 1a2b3c, the app is v1.0.0 4d5e6f", fix: "Update server"),
+                CheckItem(id: "daemon", title: "Daemon", state: .warning, detail: "running, but linger is off: the daemon and every session stop at logout", command: "sudo loginctl enable-linger me"),
+                CheckItem(id: "git", title: "git", state: .ok, detail: "found"),
+                CheckItem(id: "tmux", title: "tmux", state: .ok, detail: "found"),
+                CheckItem(id: "gh", title: "gh", state: .warning, detail: "not signed in", fix: "Run gh auth login", command: "ssh -t devbox gh auth login"),
+            ]
         )
     }
 }

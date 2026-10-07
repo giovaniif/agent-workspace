@@ -47,10 +47,17 @@ public struct LiveWindow: View {
     private let diffLayout: DiffLayout
     private let confirmEnd: Bool
 
+    private let servers: [ServerKind]
+    private let switchServer: (ServerKind) -> Void
+    @Environment(\.openWindow) private var openWindow
+
     public init(
         store: ViewStore, server: String, router: WindowRouter = WindowRouter(), shortcuts: Shortcuts = .defaults,
-        attention: Attention? = nil, diffLayout: DiffLayout = .unified, confirmEnd: Bool = true
+        attention: Attention? = nil, diffLayout: DiffLayout = .unified, confirmEnd: Bool = true,
+        servers: [ServerKind] = [], switchServer: @escaping (ServerKind) -> Void = { _ in }
     ) {
+        self.servers = servers
+        self.switchServer = switchServer
         _store = State(initialValue: store)
         self.server = server
         self.router = router
@@ -77,7 +84,7 @@ public struct LiveWindow: View {
                 inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
                 review: reviewScreen, view: panes.view,
                 pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error, card: attention?.card, message: attention?.message ?? commands.message
+                popup: panes.popup, paneError: panes.error, card: attention?.card, message: attention?.message ?? commands.message, servers: servers
             )
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
@@ -323,6 +330,8 @@ public struct LiveWindow: View {
 
     private var actions: WindowActions {
         var a = WindowActions()
+        a.switchServer = switchServer
+        a.addServer = { openWindow(id: "setup") }
         a.select = { nav.select($0) }
         a.filter = { value in
             filter = value

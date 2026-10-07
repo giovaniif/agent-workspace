@@ -1,5 +1,6 @@
 #if canImport(SwiftUI)
 import AgentwsKit
+import AppKit
 import ServiceManagement
 import SwiftUI
 
@@ -8,13 +9,21 @@ public struct LiveSettings: View {
     private let server: ServerSettings?
     private let serverName: String
     private let cli: CLILink
+    private let servers: ServerList?
+    private let setup: ServerSetup?
+    @Environment(\.openWindow) private var openWindow
     @State private var tab = SettingsTab.general
     @State private var refusal: String?
     @State private var localNotice: String?
     @State private var localError: String?
     @State private var cliStatus = CLILinkStatus.missing
 
-    public init(store: SettingsStore, server: ServerSettings?, serverName: String, cli: CLILink) {
+    public init(
+        store: SettingsStore, server: ServerSettings?, serverName: String, cli: CLILink,
+        servers: ServerList? = nil, setup: ServerSetup? = nil
+    ) {
+        self.servers = servers
+        self.setup = setup
         self.store = store
         self.server = server
         self.serverName = serverName
@@ -26,12 +35,18 @@ public struct LiveSettings: View {
             tab: tab, server: serverName, settings: store.settings, agents: server?.agents, workspaces: server?.workspaces ?? [],
             cliLink: cliStatus, config: server?.config, harnesses: server?.harnesses ?? [], devices: server?.devices ?? [],
             pairing: server?.pairing, refusal: tab == .shortcuts ? refusal : nil,
-            notice: localNotice ?? server?.notice, error: localError ?? server?.error
+            notice: localNotice ?? (tab == .servers ? setup?.notice : server?.notice),
+            error: localError ?? (tab == .servers ? setup?.error : server?.error),
+            servers: servers?.servers ?? [], selectedServer: servers?.selected ?? .thisMac,
+            checklist: setup?.checklist ?? [], serverBusy: setup?.busy ?? false
         )
         SettingsView(scene: scene, actions: actions)
             .frame(width: 760, height: 600)
             .task { cliStatus = cli.status }
-            .task(id: tab) { if tab.perServer { await server?.refresh() } }
+            .task(id: tab) {
+                if tab.perServer { await server?.refresh() }
+                if tab == .servers { await setup?.check() }
+            }
     }
 
     private var actions: SettingsActions {
@@ -67,6 +82,16 @@ public struct LiveSettings: View {
         a.setConfig = { key, value in act { await $0.setConfig(key, to: value) } }
         a.revokeDevice = { id in act { await $0.revokeDevice(id) } }
         a.pairPhone = { act { await $0.pairPhone() } }
+        a.selectServer = { servers?.selected = $0 }
+        a.removeServer = { servers?.remove($0) }
+        a.addServer = { openWindow(id: "setup") }
+        a.checkServer = { serverTask { await $0.check() } }
+        a.setUpServer = { serverTask { await $0.setUp() } }
+        a.copy = { command in
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(command, forType: .string)
+            localNotice = "Copied: \(command)"
+        }
         return a
     }
 
@@ -86,6 +111,13 @@ public struct LiveSettings: View {
         localNotice = nil
         localError = nil
         Task { await body(server) }
+    }
+
+    private func serverTask(_ body: @escaping @MainActor (ServerSetup) async -> Void) {
+        guard let setup else { return }
+        localNotice = nil
+        localError = nil
+        Task { await body(setup) }
     }
 
     private func changeLink(_ body: () throws -> Void) {

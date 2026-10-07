@@ -19,12 +19,14 @@ public struct WindowScene {
     public var paneError: String?
     public var card: PermissionCard?
     public var message: String?
+    public var servers: [ServerKind]
 
     public init(
         state: ViewState?, connection: ConnectionStatus, selected: String? = nil, filter: String = "",
         inspector: Bool = true, endedExpanded: Bool = false, server: String = "This Mac", now: Date = Seed.now, focusFilter: Int = 0,
-        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil, card: PermissionCard? = nil, message: String? = nil
+        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil, card: PermissionCard? = nil, message: String? = nil, servers: [ServerKind] = []
     ) {
+        self.servers = servers
         self.state = state
         self.connection = connection
         self.selected = selected
@@ -109,6 +111,8 @@ public struct WindowActions {
     public var hideCard: () -> Void = {}
     public var dismissMessage: () -> Void = {}
     public var sessionMenu: (SessionMenuItem, String) -> Void = { _, _ in }
+    public var switchServer: (ServerKind) -> Void = { _ in }
+    public var addServer: () -> Void = {}
 
     public init() {}
 }
@@ -206,7 +210,18 @@ struct ToolbarStrip: View {
             ForEach(QuotaMeter.all(scene.state?.limits ?? [], now: scene.now)) { meter in
                 QuotaMeterView(meter: meter)
             }
-            ServerChip(server: scene.server, connection: scene.connection)
+            Menu {
+                ForEach(scene.servers) { server in
+                    Button(server.name) { actions.switchServer(server) }.disabled(server.name == scene.server)
+                }
+                Divider()
+                Button("Add server…", action: actions.addServer)
+            } label: {
+                ServerChip(server: scene.server, connection: scene.connection)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
             Button(action: actions.newSession) {
                 Label("New", systemImage: "plus")
                     .font(.system(size: 12, weight: .medium))
