@@ -362,17 +362,33 @@ func (d *Daemon) reconcilePanes(ctx context.Context) {
 	var next domain.Session
 	var hasNext, wasInView bool
 	ok := d.query(func(s *state) {
+		dead := map[string]bool{}
 		for _, e := range ended {
 			if cur, found := s.sessions[e.ID]; found && cur.Pane == panes[e.ID] {
-				if cur.Focused {
-					wasInView = true
-					next, hasNext = domain.NextInView(sorted(s.tasks), sorted(s.sessions), cur.ID)
-				}
-				s.emit(SessionChanged{Session: cur.End()})
+				dead[cur.ID] = true
 			}
+		}
+		for id := range dead {
+			if s.sessions[id].Focused {
+				wasInView = true
+				next, hasNext = domain.NextInView(sorted(s.tasks), aliveOr(sorted(s.sessions), dead, id), id)
+			}
+		}
+		for id := range dead {
+			s.emit(SessionChanged{Session: s.sessions[id].End()})
 		}
 	})
 	if ok && wasInView {
 		d.refillMain(next, hasNext)
 	}
+}
+
+func aliveOr(sessions []domain.Session, dead map[string]bool, keep string) []domain.Session {
+	var out []domain.Session
+	for _, s := range sessions {
+		if !dead[s.ID] || s.ID == keep {
+			out = append(out, s)
+		}
+	}
+	return out
 }
