@@ -5,6 +5,34 @@ import SwiftUI
 struct MainColumn: View {
     let scene: WindowScene
     @Environment(\.colorScheme) private var scheme
+#if canImport(SwiftTerm)
+    @Environment(\.agentwsTerminals) private var terminals
+#endif
+
+    @ViewBuilder
+    private func terminal(_ session: Session, _ theme: Theme) -> some View {
+#if canImport(SwiftTerm)
+        if let terminals, !session.pane.isEmpty {
+            TerminalArea(hub: terminals.hub, views: terminals.views, pane: session.pane)
+        } else {
+            placeholder(session, theme)
+        }
+#else
+        placeholder(session, theme)
+#endif
+    }
+
+    private func placeholder(_ session: Session, _ theme: Theme) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "terminal").font(.system(size: 28)).foregroundStyle(theme(.grey))
+            Text(session.pane.isEmpty ? "This session has no pane" : "Connecting to the terminal…")
+                .font(.system(size: 13))
+                .foregroundStyle(theme(.subtext))
+            if !session.banner.isEmpty {
+                Text(session.banner).font(Metrics.mono).foregroundStyle(theme(.subtext))
+            }
+        }
+    }
 
     var body: some View {
         let theme = Theme(scheme)
@@ -12,15 +40,9 @@ struct MainColumn: View {
             if let session = scene.session {
                 HeaderStrip(header: Header(session: session, now: scene.now))
                 Rectangle().fill(theme(.surface)).frame(height: 1)
-                VStack(spacing: 8) {
-                    Image(systemName: "terminal").font(.system(size: 28)).foregroundStyle(theme(.grey))
-                    Text("The terminal arrives in the next release.").font(.system(size: 13)).foregroundStyle(theme(.subtext))
-                    if !session.banner.isEmpty {
-                        Text(session.banner).font(Metrics.mono).foregroundStyle(theme(.subtext))
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(theme(.base))
+                terminal(session, theme)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(theme(.base))
                 Rectangle().fill(theme(.surface)).frame(height: 1)
                 HStack(spacing: 14) {
                     Text(session.pane.isEmpty ? "no pane" : "pane " + session.pane)

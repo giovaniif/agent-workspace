@@ -12,11 +12,20 @@ public struct LiveWindow: View {
     @State private var review: ReviewController?
     private let server: String
     private let router: WindowRouter
+#if canImport(SwiftTerm)
+    @State private var terminals: (hub: TerminalHub, views: TerminalViews)
+#endif
 
     public init(store: ViewStore, server: String, router: WindowRouter = WindowRouter()) {
         _store = State(initialValue: store)
         self.server = server
         self.router = router
+#if canImport(SwiftTerm)
+        let hub = TerminalHub(endpoint: store.endpoint) { [store] cols, rows in
+            try await store.call("client.native", params: NativeClientParams(cols: cols, rows: rows))
+        }
+        _terminals = State(initialValue: (hub, TerminalViews()))
+#endif
     }
 
     public var body: some View {
@@ -30,6 +39,10 @@ public struct LiveWindow: View {
                 .background { shortcuts(scene) }
         }
         .frame(minWidth: 900, minHeight: 560)
+#if canImport(SwiftTerm)
+        .environment(\.agentwsTerminals, terminals)
+        .onAppear { terminals.hub.start() }
+#endif
         .onAppear { store.start() }
         .onChange(of: store.state?.seq) { reconcile(filter: filter) }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
@@ -92,6 +105,10 @@ public struct LiveWindow: View {
         a.reconnect = {
             store.stop()
             store.start()
+#if canImport(SwiftTerm)
+            terminals.hub.stop()
+            terminals.hub.start()
+#endif
         }
         a.toggleReview = { toggleReview() }
         a.toggleSidebar = { review?.screen.sidebarShown.toggle() }
