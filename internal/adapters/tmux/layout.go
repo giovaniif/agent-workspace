@@ -31,7 +31,7 @@ func (h *Host) OpenClient(ctx context.Context, name string, tui app.PaneSpec) (a
 	return slot, nil
 }
 
-const resizeToClient = "run-shell -C 'resize-window -t #{window_id} -x #{client_width} -y #{client_height} ; set-hook -R -w -t #{window_id} window-resized'"
+const resizeToClient = "run-shell -C 'resize-window -t " + sessionName + ": -x #{client_width} -y #{client_height} ; set-hook -R -w -t " + sessionName + ": window-resized'"
 
 func (h *Host) sizeByTerminalOnly(ctx context.Context, slot app.Slot) error {
 	if _, err := h.run(ctx, "", "set-option", "-w", "-t", string(slot), "window-size", "manual"); err != nil {
@@ -121,7 +121,7 @@ func (h *Host) FocusSlot(ctx context.Context, slot app.Slot) error {
 }
 
 func (h *Host) AttachCommand(slot app.Slot) []string {
-	return []string{"tmux", "-L", h.socket, "-f", h.configPath, "attach-session", "-t", string(slot)}
+	return []string{"tmux", "-L", h.socket, "-f", h.configPath, "attach-session", "-t", "=" + sessionName + ":" + string(slot)}
 }
 
 func (h *Host) ShownIn(ctx context.Context, slot app.Slot) app.PaneID {
