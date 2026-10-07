@@ -186,7 +186,7 @@ struct NewSessionTests {
     @Test func theLauncherQueuesSeveralLinearIssues() async throws {
         let caller = FakeCaller()
         let model = try await NewSessionFixtures.loaded(caller)
-        caller.replies["launcher.enqueue"] = .success(#"{"queued":["q1","q2"],"rejected":["https://example.com/x"]}"#)
+        caller.replies["launcher.enqueue"] = .success("{\"queued\":[\"q1\",\"q2\"],\"rejected\":[\"https://example.com/x\"]}")
         let input = "https://linear.app/acme/issue/ENG-1/a\nhttps://linear.app/acme/issue/ENG-2/b https://example.com/x"
         model.form.launchInput = input
         await model.enqueue()
