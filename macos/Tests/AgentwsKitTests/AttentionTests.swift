@@ -117,6 +117,17 @@ struct AttentionTests {
         #expect(attention.message == "That prompt is gone; nothing was sent.")
     }
 
+    @Test func allowingWhileDisconnectedKeepsTheBannerAndTheCard() async {
+        let (attention, caller, notifier) = attention()
+        await attention.refreshCard(session: "s1", state: "permission")
+        caller.replies["session.prompt"] = nil
+        await attention.allow("s1")
+        #expect(caller.methods() == ["session.prompt", "session.prompt"])
+        #expect(attention.message == "Not connected to the daemon.")
+        #expect(attention.card?.session == "s1")
+        #expect(notifier.withdrawn.isEmpty)
+    }
+
     @Test func anUnparsedDialogShowsNoCard() async {
         let (attention, caller, _) = attention()
         caller.replies["session.prompt"] = .success(#"{"text":"","choices":[],"raw":"Do you want to proceed?"}"#)
