@@ -137,6 +137,7 @@ public final class Attention {
     private let caller: Caller
     private let notifier: Notifier
     private var reported: ViewingParams?
+    private var wanted: ViewingParams?
     private var frontWindow: String?
     private var refreshes = 0
 
@@ -149,9 +150,11 @@ public final class Attention {
         if let id = notice.remove, !id.isEmpty { notifier.withdraw(id) }
         guard let banner = notice.banner, !banner.group.isEmpty else { return }
         if preferences.skipSessionInView && front && viewing == banner.group { return }
-        if !preferences.notifyMuted && isMuted(banner.group) { return }
         let alert = preferences.alert(for: banner.state)
-        guard alert.banner else { return }
+        guard alert.banner, preferences.notifyMuted || !isMuted(banner.group) else {
+            notifier.withdraw(banner.group)
+            return
+        }
         notifier.post(BannerPost(
             id: banner.group, title: banner.title, body: banner.body, kind: BannerKind(state: banner.state), sound: alert.sound
         ))
@@ -169,14 +172,16 @@ public final class Attention {
         self.front = front
         if front, let session { notifier.withdraw(session) }
         let params = ViewingParams(session: session ?? "", front: front)
+        wanted = params
         if let reported, reported.session == params.session, reported.front == params.front { return }
         reported = params
         await report(params)
     }
 
     public func reconnected() async {
-        guard let reported else { return }
-        await report(reported)
+        guard let wanted else { return }
+        reported = wanted
+        await report(wanted)
     }
 
     private func report(_ params: ViewingParams) async {
