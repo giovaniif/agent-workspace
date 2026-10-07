@@ -52,6 +52,19 @@ struct ShortcutSettingsTests {
         }
     }
 
+    @Test func aKeyMustBeOneCharacterOrANamedKey() throws {
+        var shortcuts = Shortcuts.defaults
+        #expect(throws: ShortcutRefusal.unsupportedKey) {
+            try shortcuts.assign(KeyCombo("ab", [.command]), to: .review)
+        }
+        #expect(throws: ShortcutRefusal.unsupportedKey) {
+            try shortcuts.assign(KeyCombo("", [.command]), to: .review)
+        }
+        try shortcuts.assign(KeyCombo("space", [.command, .shift]), to: .review)
+        try shortcuts.assign(KeyCombo("é", [.command]), to: .inspector)
+        #expect(ShortcutRefusal.unsupportedKey.message(for: KeyCombo("ab", [.command])) == "⌘AB is not a key agentws can bind")
+    }
+
     @Test func reassigningAnActionToItsOwnKeyOrClearingItIsAllowed() throws {
         var shortcuts = Shortcuts.defaults
         try shortcuts.assign(KeyCombo("r", [.command]), to: .review)

@@ -221,6 +221,9 @@ func TestAnOmpHookFileOfTheUsersIsReportedNotOverwritten(t *testing.T) {
 	if _, err := w.probe.Install(context.Background(), domain.HarnessOmp); err == nil {
 		t.Error("install over the user's file succeeded")
 	}
+	if _, err := w.probe.Remove(context.Background(), domain.HarnessOmp); err == nil {
+		t.Error("remove of the user's file reported nothing to do")
+	}
 	if b, _ := os.ReadFile(file); string(b) != "export default function () {}\n" {
 		t.Errorf("the user's file became %q", b)
 	}
