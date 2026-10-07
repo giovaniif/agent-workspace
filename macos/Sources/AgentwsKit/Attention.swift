@@ -149,9 +149,9 @@ public final class Attention {
     public func receive(_ notice: Notice) {
         if let id = notice.remove, !id.isEmpty { notifier.withdraw(id) }
         guard let banner = notice.banner, !banner.group.isEmpty else { return }
-        if preferences.skipSessionInView && front && viewing == banner.group { return }
         let alert = preferences.alert(for: banner.state)
-        guard alert.banner, preferences.notifyMuted || !isMuted(banner.group) else {
+        let inView = preferences.skipSessionInView && front && viewing == banner.group
+        guard !inView, alert.banner, preferences.notifyMuted || !isMuted(banner.group) else {
             notifier.withdraw(banner.group)
             return
         }
