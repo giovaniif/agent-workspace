@@ -3,9 +3,11 @@ package tui
 import (
 	"context"
 	"maps"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/giovaniif/agent-workspace/internal/domain"
 	"github.com/giovaniif/agent-workspace/internal/rpc"
@@ -27,6 +29,7 @@ type projectForm struct {
 	onSetup     bool
 	busy        bool
 	err         string
+	seq         int
 }
 
 type projectAddedMsg struct{ seq int }
@@ -55,13 +58,24 @@ func (m Model) projectSection() (lines, owners []string) {
 	s := m.styles
 	lines = append(lines, m.rule("PROJECTS", nil))
 	owners = append(owners, "")
-	for _, r := range m.projectRows() {
+	rows := m.projectRows()
+	room := max(m.height/3-2, 1)
+	hidden := 0
+	if len(rows) > room {
+		hidden = len(rows) - room + 1
+		rows = rows[:room-1]
+	}
+	for _, r := range rows {
 		var right []piece
 		if r.Worktrees > 0 {
 			right = []piece{{s.dim, count(r.Worktrees, "worktree") + " "}}
 		}
 		lines = append(lines, m.line(false, []piece{{s.dim, " ▸ "}, {s.text, r.Project.Name}}, right))
 		owners = append(owners, ownProject+r.Project.Root)
+	}
+	if hidden > 0 {
+		lines = append(lines, m.line(false, []piece{{s.dim, " + " + strconv.Itoa(hidden) + " more · P lists all"}}, nil))
+		owners = append(owners, "")
 	}
 	return append(lines, ""), append(owners, "")
 }
@@ -96,7 +110,8 @@ func (m Model) projectsKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "k", "up":
 		p.cursor = max(p.cursor-1, 0)
 	case "a":
-		p.adding = &projectForm{}
+		m.launches++
+		p.adding = &projectForm{seq: m.launches}
 	case "d":
 		if p.cursor < len(rows) {
 			p.removing = rows[p.cursor].Project.Root
@@ -182,7 +197,7 @@ func (m Model) addProject() tea.Cmd {
 		return nil
 	}
 	f.busy = true
-	seq := m.proj.seq
+	seq := f.seq
 	params := rpc.ProjectAddParams{Path: path, Setup: strings.TrimSpace(f.setup)}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
@@ -195,7 +210,7 @@ func (m Model) addProject() tea.Cmd {
 }
 
 func (m Model) projectAddDone(seq int, err error) Model {
-	if m.proj == nil || m.proj.seq != seq || m.proj.adding == nil {
+	if m.proj == nil || m.proj.adding == nil || m.proj.adding.seq != seq {
 		return m
 	}
 	p := *m.proj
@@ -224,6 +239,10 @@ func (m Model) openProject(root string) (tea.Model, tea.Cmd) {
 		return m, m.popup(p, root)
 	}
 	return m.openDialogIn(root), nil
+}
+
+func (m Model) projectPanelSelRow() int {
+	return 3 + m.proj.cursor
 }
 
 func (m Model) projectPanelLines() []string {
@@ -258,7 +277,12 @@ func (m Model) projectPanelLines() []string {
 		if sel {
 			bar = piece{s.bar, "▌"}
 		}
-		out = append(out, m.line(sel, []piece{bar, {s.bold, " " + r.Project.Name}}, []piece{{s.dim, r.Project.Root + " "}}))
+		room := m.width - ansi.StringWidth(r.Project.Name) - 6
+		var right []piece
+		if room > 4 {
+			right = []piece{{s.dim, ansi.TruncateLeft(r.Project.Root, max(ansi.StringWidth(r.Project.Root)-room+1, 0), "…") + " "}}
+		}
+		out = append(out, m.line(sel, []piece{bar, {s.bold, " " + r.Project.Name}}, right))
 		if sel && r.Project.Setup != "" {
 			out = append(out, m.line(sel, []piece{bar, {s.dim, "   setup: " + cleanText(r.Project.Setup)}}, nil))
 		}

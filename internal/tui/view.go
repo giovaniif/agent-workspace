@@ -163,7 +163,7 @@ func (m Model) mainScreen() (lines, owners []string) {
 	if len(body) > room {
 		body, bodyOwners = body[:room], bodyOwners[:room]
 	}
-	owners = make([]string, len(lines), m.height)
+	owners = make([]string, len(lines), max(m.height, len(lines)))
 	copy(owners[projectAt:], projectOwners)
 	lines = append(lines, body...)
 	owners = append(owners, bodyOwners...)
@@ -230,7 +230,7 @@ func (m Model) body() ([]string, int, []string) {
 		return m.dialogLines()
 	}
 	if m.proj != nil {
-		return m.projectPanelLines(), 0, nil
+		return m.projectPanelLines(), m.projectPanelSelRow(), nil
 	}
 	if m.launching != nil {
 		return m.launcherLines(), 0, nil
