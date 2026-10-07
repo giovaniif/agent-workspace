@@ -187,10 +187,11 @@ struct NewSessionTests {
         let caller = FakeCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         caller.replies["launcher.enqueue"] = .success(#"{"queued":["q1","q2"],"rejected":["https://example.com/x"]}"#)
-        model.form.launchInput = "https://linear.app/acme/issue/ENG-1/a\nhttps://linear.app/acme/issue/ENG-2/b https://example.com/x"
+        let input = "https://linear.app/acme/issue/ENG-1/a\nhttps://linear.app/acme/issue/ENG-2/b https://example.com/x"
+        model.form.launchInput = input
         await model.enqueue()
         #expect(caller.params("launcher.enqueue") == .object([
-            "workspace": .string("/src/acme"), "input": .string(model.form.launchInput), "harness": .string("claude"),
+            "workspace": .string("/src/acme"), "input": .string(input), "harness": .string("claude"),
             "model": .string("opus"), "effort": .string("xhigh"),
         ]))
         #expect(model.launchNote == "Queued 2 · not a Linear issue: https://example.com/x")
