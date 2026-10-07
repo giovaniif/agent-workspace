@@ -50,6 +50,10 @@ func (d *Daemon) diskView(req rpc.Request) (*rpc.Response, bool) {
 	}
 	view.Reclaimable, view.ReclaimablePending = domain.Reclaimable(view.Rows)
 	view.WorktreesSize, view.WorktreesPending = domain.TotalSize(view.Rows)
+	d.publishReclaimable(rpc.Reclaimable{Size: view.Reclaimable, Pending: view.ReclaimablePending})
+	if next := d.cl.nextRun(); !next.IsZero() {
+		view.NextCleanup = &next
+	}
 	if d.disk.Volume != nil {
 		view.Free, view.Total, _ = d.disk.Volume.Stat(d.disk.VolumePath)
 	}
@@ -66,6 +70,22 @@ func (d *Daemon) diskView(req rpc.Request) (*rpc.Response, bool) {
 		}
 	}
 	return result(req.ID, view), true
+}
+
+type ReclaimableChanged struct{ Reclaimable rpc.Reclaimable }
+
+func (e ReclaimableChanged) apply(s *state) rpc.Diff {
+	s.reclaimable = e.Reclaimable
+	r := e.Reclaimable
+	return rpc.Diff{Reclaimable: &r}
+}
+
+func (d *Daemon) publishReclaimable(r rpc.Reclaimable) {
+	d.query(func(s *state) {
+		if s.reclaimable != r {
+			s.emit(ReclaimableChanged{Reclaimable: r})
+		}
+	})
 }
 
 func (d *Daemon) cleanupWorktree(req rpc.Request) (*rpc.Response, bool) {

@@ -93,6 +93,7 @@ type state struct {
 	tasks           map[string]domain.Task
 	worktrees       map[string]domain.Worktree
 	sessions        map[string]domain.Session
+	reclaimable     rpc.Reclaimable
 	events          map[string][]domain.SessionEvent
 	subagents       []domain.Subagent
 	subs            map[*conn]uint64
@@ -277,6 +278,7 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	go d.watchMainSlot(ctx)
 	go d.paneTitles(ctx)
 	go d.snapshotTurns(ctx)
+	d.cl.schedule()
 	go d.cleanupEvery(ctx)
 	go d.runLauncher(ctx)
 	loopDone := make(chan struct{})
@@ -595,16 +597,17 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 
 func (s *state) snapshot() rpc.State {
 	return rpc.State{
-		Seq:        s.seq,
-		Workspaces: sorted(s.workspaces),
-		Tasks:      sorted(s.tasks),
-		Worktrees:  sorted(s.worktrees),
-		Sessions:   sorted(s.sessions),
-		Events:     flatten(s.events),
-		Subagents:  append([]domain.Subagent{}, s.subagents...),
-		Queue:      append([]domain.LaunchItem{}, s.queue...),
-		Drafts:     s.draftList(),
-		Sends:      append([]domain.QueuedSend{}, s.sends...),
+		Seq:         s.seq,
+		Workspaces:  sorted(s.workspaces),
+		Tasks:       sorted(s.tasks),
+		Worktrees:   sorted(s.worktrees),
+		Sessions:    sorted(s.sessions),
+		Events:      flatten(s.events),
+		Subagents:   append([]domain.Subagent{}, s.subagents...),
+		Queue:       append([]domain.LaunchItem{}, s.queue...),
+		Drafts:      s.draftList(),
+		Sends:       append([]domain.QueuedSend{}, s.sends...),
+		Reclaimable: s.reclaimable,
 	}
 }
 

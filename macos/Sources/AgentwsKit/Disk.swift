@@ -41,6 +41,7 @@ public struct DiskView: Codable, Sendable, Equatable {
     public var reclaimablePending: Int
     public var worktreesSize: Int64
     public var worktreesPending: Int
+    public var nextCleanup: String?
 
     public var autoCleanEvery: Duration { .nanoseconds(autoCleanEveryNanos) }
 
@@ -48,6 +49,7 @@ public struct DiskView: Codable, Sendable, Equatable {
         case free, total, autoCleanEveryNanos = "auto_clean_every", depsStore = "deps_store", rows, recent
         case reclaimable, reclaimablePending = "reclaimable_pending"
         case worktreesSize = "worktrees_size", worktreesPending = "worktrees_pending"
+        case nextCleanup = "next_cleanup"
     }
 }
 
@@ -140,7 +142,8 @@ public struct DiskTableRow: Sendable, Equatable, Identifiable {
 }
 
 public enum DiskTable {
-    public static func rows(_ view: DiskView, state: ViewState?) -> [DiskTableRow] {
+    public static func rows(_ view: DiskView, state: ViewState?, timeZone: TimeZone = .current) -> [DiskTableRow] {
+        let removesAt = view.nextCleanup.flatMap(Self.date).map { Self.clock($0, timeZone: timeZone) }
         let worktrees = Dictionary((state?.worktrees ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let sessions = Dictionary((state?.sessions ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         return view.rows.map { row in
@@ -161,7 +164,7 @@ public enum DiskTable {
                 size: DiskTiles.size(row.size),
                 ports: ports.map { ":\($0.port)" }.joined(separator: " "),
                 pgids: Array(Set(ports.map(\.pgid))).sorted(),
-                plan: Self.plan(row, detached: detached),
+                plan: Self.plan(row, detached: detached, removesAt: removesAt),
                 action: row.action
             )
         }
@@ -178,9 +181,24 @@ public enum DiskTable {
         return pr.state == "MERGED" ? ("Merged · clean", .green) : ("Open", .blue)
     }
 
-    static func plan(_ row: DiskRow, detached: Bool) -> String {
+    static func date(_ stamp: String) -> Date? {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: stamp) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: stamp)
+    }
+
+    static func clock(_ date: Date, timeZone: TimeZone) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let c = calendar.dateComponents([.hour, .minute], from: date)
+        return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
+    }
+
+    static func plan(_ row: DiskRow, detached: Bool, removesAt: String?) -> String {
         switch row.action {
-        case .remove: return "removes in the next cleanup"
+        case .remove: return removesAt.map { "removes at " + $0 } ?? "removes in the next cleanup"
         case .backupThenAsk: return detached ? "backup branch first" : "back up then ask"
         case .keep: return "kept: " + row.reason
         }
