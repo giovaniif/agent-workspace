@@ -53,10 +53,10 @@ struct ChromeTests {
         #expect(meters[1].tone == .peach)
     }
 
-    @Test func theViewSwitcherEnablesTerminalAndReview() {
+    @Test func theViewSwitcherEnablesTerminalAndReviewAndNewIsOn() {
         #expect(Toolbar.views.map(\.title) == ["Terminal", "Review", "Shell", "nvim"])
         #expect(Toolbar.views.map(\.enabled) == [true, true, false, false])
-        #expect(!Toolbar.newEnabled)
+        #expect(Toolbar.newEnabled)
     }
 
     @Test func theConnectionBannerTellsRetryingFromStopped() {
