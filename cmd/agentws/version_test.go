@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/giovaniif/agent-workspace/internal/version"
 )
 
 func TestVersionTellsAboutNewerRelease(t *testing.T) {
@@ -40,5 +42,15 @@ func TestVersionQuietWhenCurrentOrCheckFails(t *testing.T) {
 		if got := out.String(); got != "agentws v0.1.0-alpha.2 (commit abc)\n" {
 			t.Errorf("output = %q", got)
 		}
+	}
+}
+
+func TestVersionBuildPrintsTheHandshakeBuildOnly(t *testing.T) {
+	var out, errOut bytes.Buffer
+	if code := run([]string{"version", "--build"}, &out, &errOut); code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+	if got, want := out.String(), version.String()+"\n"; got != want {
+		t.Fatalf("output %q, want %q", got, want)
 	}
 }
