@@ -19,12 +19,16 @@ func (d *Daemon) onboarding(req rpc.Request) *rpc.Response {
 	}
 	ctx := d.ws.ctx
 	switch req.Method {
-	case rpc.MethodOnboardingInstall:
+	case rpc.MethodOnboardingInstall, rpc.MethodOnboardingRemove:
 		var p rpc.OnboardInstallParams
 		if err := json.Unmarshal(req.Params, &p); err != nil || !slices.Contains(domain.Harnesses(), p.Harness) {
-			return errorResponse(req.ID, rpc.CodeBadRequest, "onboarding.install needs a harness: claude, codex or omp")
+			return errorResponse(req.ID, rpc.CodeBadRequest, req.Method+" needs a harness: claude, codex or omp")
 		}
-		s, err := d.onboard.Install(ctx, p.Harness)
+		change := d.onboard.Install
+		if req.Method == rpc.MethodOnboardingRemove {
+			change = d.onboard.Remove
+		}
+		s, err := change(ctx, p.Harness)
 		if err != nil {
 			return errorResponse(req.ID, rpc.CodeFailed, err.Error())
 		}

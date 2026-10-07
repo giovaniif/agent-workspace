@@ -11,6 +11,7 @@ const (
 	MethodOnboardingInstall = "onboarding.install"
 	MethodOnboardingFinish  = "onboarding.finish"
 	MethodOnboardingNvim    = "onboarding.nvim"
+	MethodOnboardingRemove  = "onboarding.remove"
 )
 
 type OnboardInstallParams struct {
@@ -26,6 +27,12 @@ func (c *Client) Onboarding(ctx context.Context) (domain.Onboarding, error) {
 func (c *Client) OnboardInstall(ctx context.Context, h domain.Harness) (domain.HarnessSetup, error) {
 	var out domain.HarnessSetup
 	err := c.Call(ctx, MethodOnboardingInstall, OnboardInstallParams{Harness: h}, &out)
+	return out, err
+}
+
+func (c *Client) OnboardRemove(ctx context.Context, h domain.Harness) (domain.HarnessSetup, error) {
+	var out domain.HarnessSetup
+	err := c.Call(ctx, MethodOnboardingRemove, OnboardInstallParams{Harness: h}, &out)
 	return out, err
 }
 

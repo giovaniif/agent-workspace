@@ -13,6 +13,10 @@ public enum Snapshot {
         renderView(DiskWindow(scene: scene), size: size, dark: dark)
     }
 
+    public static func settings(_ scene: SettingsScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(SettingsView(scene: scene), size: size, dark: dark)
+    }
+
     static func renderView(_ content: some View, size: CGSize, dark: Bool) -> NSBitmapImageRep {
         let root = content
             .environment(\.colorScheme, dark ? .dark : .light)

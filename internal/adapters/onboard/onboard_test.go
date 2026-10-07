@@ -221,6 +221,9 @@ func TestAnOmpHookFileOfTheUsersIsReportedNotOverwritten(t *testing.T) {
 	if _, err := w.probe.Install(context.Background(), domain.HarnessOmp); err == nil {
 		t.Error("install over the user's file succeeded")
 	}
+	if _, err := w.probe.Remove(context.Background(), domain.HarnessOmp); err == nil {
+		t.Error("remove of the user's file reported nothing to do")
+	}
 	if b, _ := os.ReadFile(file); string(b) != "export default function () {}\n" {
 		t.Errorf("the user's file became %q", b)
 	}
@@ -293,4 +296,56 @@ func TestNvimConfigBehindASymlinkIsScanned(t *testing.T) {
 	if !got.Nvim.Configured {
 		t.Errorf("nvim = %+v, want configured through the symlink", got.Nvim)
 	}
+}
+
+func TestRemoveBacksUpTheHookFileFirstAndCanBeReinstalled(t *testing.T) {
+	w := newWorld(t, false)
+	ctx := context.Background()
+	write(t, w.probe.ClaudeSettings, `{"model":"opus"}`)
+	for _, h := range []domain.Harness{domain.HarnessClaude, domain.HarnessCodex} {
+		if _, err := w.probe.Install(ctx, h); err != nil {
+			t.Fatal(err)
+		}
+		installed, err := os.ReadFile(setupFile(w, h))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := w.probe.Remove(ctx, h)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Installed || got.Backup == "" {
+			t.Fatalf("%s remove = %+v", h, got)
+		}
+		saved, err := os.ReadFile(got.Backup)
+		if err != nil || string(saved) != string(installed) {
+			t.Errorf("%s backup = %q, %v; want the installed file", h, saved, err)
+		}
+		again, err := w.probe.Install(ctx, h)
+		if err != nil || !again.Installed {
+			t.Errorf("%s reinstall = %+v, %v", h, again, err)
+		}
+	}
+	after, err := os.ReadFile(w.probe.ClaudeSettings)
+	if err != nil || !strings.Contains(string(after), `"opus"`) {
+		t.Errorf("claude settings lost the user's keys: %s, %v", after, err)
+	}
+}
+
+func TestRemoveWithNothingInstalledMakesNoBackup(t *testing.T) {
+	w := newWorld(t, false)
+	got, err := w.probe.Remove(context.Background(), domain.HarnessClaude)
+	if err != nil || got.Installed || got.Backup != "" {
+		t.Errorf("remove = %+v, %v", got, err)
+	}
+	if _, err := os.Stat(w.probe.ClaudeSettings); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("settings.json created: %v", err)
+	}
+}
+
+func setupFile(w world, h domain.Harness) string {
+	if h == domain.HarnessCodex {
+		return filepath.Join(w.probe.CodexHome, "hooks.json")
+	}
+	return w.probe.ClaudeSettings
 }
