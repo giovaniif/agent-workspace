@@ -62,8 +62,11 @@ func (h *Host) HideBelow(ctx context.Context, slot app.Slot) error {
 	if below == "" {
 		return nil
 	}
-	_, err := h.run(ctx, "", "break-pane", "-d", "-s", string(below), "-n", "pane-parked")
-	return err
+	if _, err := h.run(ctx, "", "break-pane", "-d", "-s", string(below), "-n", "pane-parked"); err != nil {
+		return err
+	}
+	_ = h.linkParked(ctx)
+	return nil
 }
 
 func (h *Host) Popup(ctx context.Context, pane app.PaneID) error {
