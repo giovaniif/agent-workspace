@@ -174,8 +174,18 @@ public final class Attention {
             card = nil
             return
         }
-        guard let prompt = try? await fetchPrompt(session), !prompt.choices.isEmpty else {
-            if card?.session == session || card != nil { card = nil }
+        let prompt: Prompt
+        do {
+            prompt = try await fetchPrompt(session)
+        } catch let AgentwsError.rpc(error) where error.kind == .notFound {
+            card = nil
+            return
+        } catch {
+            if card?.session != session { card = nil }
+            return
+        }
+        guard !prompt.choices.isEmpty else {
+            card = nil
             return
         }
         let hidden = card.map { $0.session == session && $0.prompt.id == prompt.id && $0.hidden } ?? false
