@@ -117,6 +117,19 @@ struct ReviewControllerTests {
         #expect(!controller.screen.canSend)
     }
 
+    @Test func aNoteEditedWhileSendingIsKept() async throws {
+        let (controller, caller) = await opened()
+        caller.replies["review.comment"] = .success(draftReply)
+        caller.replies["review.send"] = .success(draftReply)
+        let lines = try #require(controller.screen.selectedFile?.file.hunks.first?.lines)
+        await controller.comment(on: key, lines: [lines[2]], body: "call it y?")
+        controller.screen.note = "first"
+        caller.beforeReply = { controller.screen.note = "second" }
+        await controller.send()
+        #expect(caller.calls.last?.params["note"] as? String == "first")
+        #expect(controller.screen.note == "second")
+    }
+
     @Test func aRefusedHunkShowsGitsMessageAndChangesNothing() async throws {
         let (controller, caller) = await opened()
         let before = controller.screen.result
