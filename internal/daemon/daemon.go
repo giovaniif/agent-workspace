@@ -130,6 +130,7 @@ type state struct {
 	projects        map[string]domain.Project
 	shellTabs       map[string]domain.ShellTab
 	activeTabs      map[string]string
+	orphanPanes     []app.PaneID
 	transcriptMoved func(sessionID, path string, gone bool)
 }
 

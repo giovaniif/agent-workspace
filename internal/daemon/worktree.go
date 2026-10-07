@@ -192,6 +192,7 @@ func (d *Daemon) scanWorktrees(ctx context.Context) {
 		}
 	})
 	d.dropTurns(ctx, removedBy)
+	d.killOrphanPanes(ctx)
 }
 
 func (s *state) sessionHints() []domain.SessionHint {
@@ -219,6 +220,7 @@ func (s *state) removeWorktree(id string) {
 	owner := s.worktrees[id].SessionID
 	s.emit(WorktreeRemoved{ID: id})
 	s.relink(id, owner, "")
+	s.dropTabsOf(id)
 }
 
 func (s *state) relink(id, from, to string) {

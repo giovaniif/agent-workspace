@@ -20,6 +20,9 @@ func (e ShellTabChanged) apply(s *state) rpc.Diff {
 type ShellTabRemoved struct{ ID string }
 
 func (e ShellTabRemoved) apply(s *state) rpc.Diff {
+	if w := s.shellTabs[e.ID].Worktree; s.activeTabs[w] == e.ID {
+		delete(s.activeTabs, w)
+	}
 	delete(s.shellTabs, e.ID)
 	return rpc.Diff{RemovedShellTab: e.ID}
 }
@@ -60,6 +63,27 @@ func (s *state) tabInput(id string) tabInput {
 		}
 	}
 	return in
+}
+
+func (s *state) dropTabsOf(worktree string) {
+	for _, sh := range sorted(s.shellTabs) {
+		if sh.Worktree == worktree {
+			s.orphanPanes = append(s.orphanPanes, app.PaneID(sh.Pane))
+			s.emit(ShellTabRemoved{ID: sh.ID})
+		}
+	}
+	delete(s.activeTabs, worktree)
+}
+
+func (d *Daemon) killOrphanPanes(ctx context.Context) {
+	var panes []app.PaneID
+	d.query(func(s *state) { panes, s.orphanPanes = s.orphanPanes, nil })
+	if d.hs.host == nil {
+		return
+	}
+	for _, p := range panes {
+		_ = d.hs.host.Kill(ctx, p)
+	}
 }
 
 func (s *state) noteActiveTab(session domain.Session) {
