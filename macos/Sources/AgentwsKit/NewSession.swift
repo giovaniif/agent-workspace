@@ -1,13 +1,6 @@
 import Foundation
 import Observation
 
-@MainActor
-public protocol Calling: AnyObject {
-    func call<Params: Encodable & Sendable, Answer: Decodable & Sendable>(_ method: String, params: Params) async throws -> Answer
-}
-
-extension ViewStore: Calling {}
-
 public struct HarnessOptions: Codable, Sendable, Equatable {
     public var harness: String
     public var name: String
@@ -89,7 +82,7 @@ public enum NewSessionTab: Sendable, Equatable, Hashable {
 }
 
 @MainActor
-final class OfflineCaller: Calling {
+final class OfflineCaller: Caller {
     func call<Params: Encodable & Sendable, Answer: Decodable & Sendable>(_ method: String, params: Params) async throws -> Answer {
         throw AgentwsError.disconnected
     }
@@ -248,9 +241,9 @@ public final class NewSession: Identifiable {
     public private(set) var launchNote: String?
     public private(set) var loadError: String?
 
-    private let caller: Calling
+    private let caller: Caller
 
-    public init(caller: Calling) {
+    public init(caller: Caller) {
         self.caller = caller
     }
 
