@@ -72,6 +72,18 @@ struct NewSessionTests {
         #expect(model.form.workspaces.first?.name == "acme")
     }
 
+    @Test func textTypedWhileTheOptionsLoadIsKept() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        model.form.workItem = "fix the login redirect"
+        model.form.launchInput = "https://linear.app/acme/issue/ENG-1/a"
+        await model.load(state: nil)
+        #expect(model.form.workItem == "fix the login redirect")
+        #expect(model.form.launchInput == "https://linear.app/acme/issue/ENG-1/a")
+        #expect(model.form.harness == "claude")
+    }
+
     @Test func defaultsComeFromTheServersDefaultsTables() async throws {
         let model = try await NewSessionFixtures.loaded(NewSessionCaller())
         #expect(model.form.harness == "claude")
