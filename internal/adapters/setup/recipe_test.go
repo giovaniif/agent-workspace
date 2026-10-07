@@ -92,3 +92,19 @@ func TestRecipeLockfilePicksTheKnownOneAndHashesContent(t *testing.T) {
 		t.Errorf("none = %+v, want the zero lockfile", ln)
 	}
 }
+
+func TestShellFailureCarriesTheCommandOutput(t *testing.T) {
+	var shown strings.Builder
+	err := setup.Shell{Out: &shown}.Run(t.Context(), t.TempDir(), "sh", "-c", "echo installing; echo lockfile is stale >&2; exit 3")
+	if err == nil {
+		t.Fatal("a failing command gave no error")
+	}
+	for _, want := range []string{"installing", "lockfile is stale", "exit status 3"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q lacks %q", err, want)
+		}
+	}
+	if !strings.Contains(shown.String(), "lockfile is stale") {
+		t.Fatalf("output not streamed: %q", shown.String())
+	}
+}
