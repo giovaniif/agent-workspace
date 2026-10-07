@@ -2,7 +2,13 @@
   "v": 1,
   "id": 3,
   "result": {
-    "draft": {},
+    "draft": {
+      "id": "",
+      "session": "",
+      "status": "",
+      "comments": null,
+      "turns": null
+    },
     "scope": "branch",
     "viewed": [],
     "worktrees": [
@@ -10,12 +16,16 @@
         "Err": "",
         "Files": [
           {
+            "Added": 5,
+            "Binary": false,
+            "Blob": "b-main.go",
+            "Deleted": 0,
             "Hunks": [
               {
                 "Header": "@@ -0,0 +1 @@",
                 "Lines": [
                   {
-                    "Kind": "add",
+                    "Kind": 43,
                     "New": 1,
                     "Old": 0,
                     "Spans": [
@@ -28,15 +38,15 @@
                     "Text": "package main"
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 2,
                     "Old": 0,
                     "Spans": [],
                     "Text": ""
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 3,
                     "Old": 0,
                     "Spans": [
                       [
@@ -63,8 +73,8 @@
                     "Text": "func main() {"
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 4,
                     "Old": 0,
                     "Spans": [
                       [
@@ -111,8 +121,8 @@
                     "Text": "\tfmt.Println(\"hi\", 42) // greet"
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 5,
                     "Old": 0,
                     "Spans": [
                       [
@@ -126,16 +136,21 @@
                 ]
               }
             ],
+            "OldPath": "",
             "Path": "main.go",
-            "Status": "modified"
+            "Status": "A"
           },
           {
+            "Added": 2,
+            "Binary": false,
+            "Blob": "b-web/app.ts",
+            "Deleted": 0,
             "Hunks": [
               {
                 "Header": "@@ -0,0 +1 @@",
                 "Lines": [
                   {
-                    "Kind": "add",
+                    "Kind": 43,
                     "New": 1,
                     "Old": 0,
                     "Spans": [
@@ -203,8 +218,8 @@
                     "Text": "export const total = (n: number): string =\u003e `${n}`;"
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 2,
                     "Old": 0,
                     "Spans": [
                       [
@@ -248,16 +263,21 @@
                 ]
               }
             ],
+            "OldPath": "",
             "Path": "web/app.ts",
-            "Status": "modified"
+            "Status": "A"
           },
           {
+            "Added": 3,
+            "Binary": false,
+            "Blob": "b-README.md",
+            "Deleted": 0,
             "Hunks": [
               {
                 "Header": "@@ -0,0 +1 @@",
                 "Lines": [
                   {
-                    "Kind": "add",
+                    "Kind": 43,
                     "New": 1,
                     "Old": 0,
                     "Spans": [
@@ -270,8 +290,8 @@
                     "Text": "# agentws"
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 2,
                     "Old": 0,
                     "Spans": [
                       [
@@ -288,8 +308,8 @@
                     "Text": "- run `make build`"
                   },
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
+                    "New": 3,
                     "Old": 0,
                     "Spans": [
                       [
@@ -303,31 +323,43 @@
                 ]
               }
             ],
+            "OldPath": "",
             "Path": "README.md",
-            "Status": "modified"
+            "Status": "A"
           },
           {
+            "Added": 1,
+            "Binary": false,
+            "Blob": "b-notes.unknownext",
+            "Deleted": 0,
             "Hunks": [
               {
                 "Header": "@@ -0,0 +1 @@",
                 "Lines": [
                   {
-                    "Kind": "add",
-                    "New": 1,
+                    "Kind": 43,
                     "Old": 0,
+                    "New": 1,
                     "Text": "just some text"
                   }
                 ]
               }
             ],
+            "OldPath": "",
             "Path": "notes.unknownext",
-            "Status": "modified"
+            "Status": "A"
           }
         ],
         "From": "main",
         "Worktree": {
           "ID": "w1",
-          "Repo": "api"
+          "Repo": "api",
+          "Path": "",
+          "Branch": "",
+          "PR": null,
+          "SubtaskSlug": "",
+          "SessionID": "",
+          "Ports": null
         }
       }
     ]
