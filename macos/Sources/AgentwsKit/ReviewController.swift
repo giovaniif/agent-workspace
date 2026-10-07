@@ -14,8 +14,8 @@ public final class ReviewController {
     public var screen: ReviewScreen
     private let caller: Caller
 
-    public init(session: String, sessionState: String = "idle", caller: Caller) {
-        screen = ReviewScreen(session: session, sessionState: sessionState)
+    public init(session: String, sessionState: String = "idle", caller: Caller, layout: DiffLayout = .unified) {
+        screen = ReviewScreen(session: session, sessionState: sessionState, layout: layout)
         self.caller = caller
     }
 

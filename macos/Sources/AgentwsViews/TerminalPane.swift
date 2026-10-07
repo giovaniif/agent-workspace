@@ -7,12 +7,28 @@ import SwiftUI
 @MainActor
 public final class TerminalViews {
     private var hosts: [String: PaneHost] = [:]
+    public var bound = Shortcuts.defaults.bound
+    private var wantsFocus = false
 
     public init() {}
+
+    public func focusNextShown() {
+        wantsFocus = true
+    }
+
+    func claimFocus(_ host: PaneHost) {
+        guard wantsFocus else { return }
+        wantsFocus = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak host] in
+            guard let host else { return }
+            host.window?.makeFirstResponder(host.terminal)
+        }
+    }
 
     func host(_ pane: String, hub: TerminalHub) -> PaneHost {
         if let host = hosts[pane], host.hub === hub { return host }
         let host = PaneHost(pane: pane, hub: hub)
+        host.terminal.bound = { [weak self] in self?.bound ?? Shortcuts.defaults.bound }
         hosts[pane] = host
         return host
     }
@@ -26,10 +42,17 @@ public final class TerminalViews {
 }
 
 final class PaneTerminal: TerminalView {
+    var bound: () -> Set<KeyCombo> = { Shortcuts.defaults.bound }
+
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let flags = event.modifierFlags
+        var modifiers: Modifiers = []
+        if flags.contains(.command) { modifiers.insert(.command) }
+        if flags.contains(.control) { modifiers.insert(.control) }
+        if flags.contains(.option) { modifiers.insert(.option) }
+        if flags.contains(.shift) { modifiers.insert(.shift) }
         let forwards = TerminalKeys.goesToPane(
-            key: event.charactersIgnoringModifiers ?? "", command: flags.contains(.command), control: flags.contains(.control)
+            key: event.charactersIgnoringModifiers ?? "", modifiers: modifiers, bound: bound()
         )
         if forwards, window?.firstResponder === self {
             keyDown(with: event)
@@ -167,6 +190,7 @@ struct TerminalPaneView: NSViewRepresentable {
             slot.addSubview(host)
             slot.current = host
             hub.show(pane: pane)
+            views.claimFocus(host)
         }
         host.needsLayout = true
         DispatchQueue.main.async { host.window?.makeFirstResponder(host.terminal) }

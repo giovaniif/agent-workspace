@@ -67,6 +67,16 @@ public struct WindowScene {
     var session: Session? { state?.sessions.first { $0.id == selected } }
 }
 
+public enum SessionMenuItem: Sendable {
+    case rename
+    case model
+    case effort
+    case mute
+    case end
+    case resume
+    case killDevServers
+}
+
 @MainActor
 public struct WindowActions {
     public var select: (String) -> Void = { _ in }
@@ -98,6 +108,7 @@ public struct WindowActions {
     public var answer: (String) -> Void = { _ in }
     public var hideCard: () -> Void = {}
     public var dismissMessage: () -> Void = {}
+    public var sessionMenu: (SessionMenuItem, String) -> Void = { _, _ in }
 
     public init() {}
 }

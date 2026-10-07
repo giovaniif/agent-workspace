@@ -618,6 +618,8 @@ extension KeyCombo {
         }
     }
 
+    public var keyboardShortcut: KeyboardShortcut { KeyboardShortcut(equivalent, modifiers: eventModifiers) }
+
     var eventModifiers: EventModifiers {
         var out: EventModifiers = []
         if modifiers.contains(.command) { out.insert(.command) }
