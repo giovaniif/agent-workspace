@@ -65,6 +65,9 @@ public struct NewSessionSheet: View {
                 }
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: Metrics.corner).fill(theme(.peach).opacity(0.14)))
+                .overlay(alignment: .leading) {
+                    Rectangle().fill(theme(.peach)).frame(width: 3)
+                }
             }
             if tab == .session {
                 if let failure = model.failure {
