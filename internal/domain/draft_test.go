@@ -100,6 +100,27 @@ func TestDraftIsSentOnlyWhenTheSessionIsBetweenTools(t *testing.T) {
 	}
 }
 
+func TestDraftPromptEndsWithTheOverallNote(t *testing.T) {
+	c := ReviewComment{Worktree: "/w", Path: "a.go", Start: 1, End: 1, Body: "x"}
+	d := ReviewDraft{ID: "d1", Session: "s1"}.Add(c).WithNote("  Also add tests.\nKeep it small.\n ").Queue()
+	_, prompt, ok := d.Dispatch(Session{State: StateIdle}, time.Unix(1, 0))
+	want := ReviewPrompt([]ReviewComment{c}) + "\nOverall:\n   Also add tests.\n   Keep it small.\n"
+	if !ok || prompt != want {
+		t.Errorf("prompt %q\nwant %q", prompt, want)
+	}
+}
+
+func TestBlankNoteLeavesThePromptAsTheComments(t *testing.T) {
+	c := ReviewComment{Worktree: "/w", Path: "a.go", Start: 1, End: 1, Body: "x"}
+	d := ReviewDraft{ID: "d1"}.Add(c).WithNote(" \n").Queue()
+	if d.Note != "" {
+		t.Errorf("note %q", d.Note)
+	}
+	if _, prompt, _ := d.Dispatch(Session{State: StateIdle}, time.Unix(1, 0)); prompt != ReviewPrompt(d.Comments) {
+		t.Errorf("prompt %q", prompt)
+	}
+}
+
 func TestEmptyDraftIsNeverQueued(t *testing.T) {
 	if d := (ReviewDraft{ID: "d1"}).Queue(); d.Status != DraftOpen {
 		t.Errorf("empty draft queued: %+v", d)

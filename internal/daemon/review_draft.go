@@ -46,6 +46,9 @@ func (d *Daemon) sendReview(req rpc.Request) (*rpc.Response, bool) {
 			resp = errorResponse(req.ID, rpc.CodeBadRequest, "the draft has no comments")
 			return
 		}
+		if p.Note != "" {
+			draft = draft.WithNote(p.Note)
+		}
 		draft = draft.Queue()
 		s.drafts[p.Session] = draft
 		s.putDraft(draft, nil)

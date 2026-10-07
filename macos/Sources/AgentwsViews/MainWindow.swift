@@ -12,10 +12,12 @@ public struct WindowScene {
     public var server: String
     public var now: Date
     public var focusFilter: Int
+    public var review: ReviewScreen?
 
     public init(
         state: ViewState?, connection: ConnectionStatus, selected: String? = nil, filter: String = "",
-        inspector: Bool = true, endedExpanded: Bool = false, server: String = "This Mac", now: Date = Seed.now, focusFilter: Int = 0
+        inspector: Bool = true, endedExpanded: Bool = false, server: String = "This Mac", now: Date = Seed.now, focusFilter: Int = 0,
+        review: ReviewScreen? = nil
     ) {
         self.state = state
         self.connection = connection
@@ -26,10 +28,15 @@ public struct WindowScene {
         self.server = server
         self.now = now
         self.focusFilter = focusFilter
+        self.review = review
     }
 
     public static func seeded(selected: String = "s1", inspector: Bool = true) -> WindowScene {
         WindowScene(state: Seed.window, connection: .live, selected: selected, inspector: inspector)
+    }
+
+    public static func seededReview(layout: DiffLayout = .unified) -> WindowScene {
+        WindowScene(state: Seed.window, connection: .live, selected: "s2", review: Seed.review(layout: layout))
     }
 
     var sidebar: Sidebar? { state.map { Sidebar(state: $0, filter: filter) } }
@@ -44,6 +51,24 @@ public struct WindowActions {
     public var toggleInspector: () -> Void = {}
     public var toggleEnded: () -> Void = {}
     public var reconnect: () -> Void = {}
+    public var toggleReview: () -> Void = {}
+    public var toggleSidebar: () -> Void = {}
+    public var setScope: (ReviewScope) -> Void = { _ in }
+    public var stepScope: (Int) -> Void = { _ in }
+    public var setWorktree: (String) -> Void = { _ in }
+    public var setLayout: (DiffLayout) -> Void = { _ in }
+    public var selectFile: (FileKey) -> Void = { _ in }
+    public var toggleViewed: (FileKey) -> Void = { _ in }
+    public var startComment: (FileKey, DiffLine) -> Void = { _, _ in }
+    public var extendComment: (DiffLine) -> Void = { _ in }
+    public var editComment: (String) -> Void = { _ in }
+    public var submitComment: () -> Void = {}
+    public var cancelComment: () -> Void = {}
+    public var editNote: (String) -> Void = { _ in }
+    public var sendReview: () -> Void = {}
+    public var hunk: (FileKey, Int, HunkAction) -> Void = { _, _, _ in }
+    public var openInNvim: () -> Void = {}
+    public var dismissError: () -> Void = {}
 
     public init() {}
 }
@@ -67,12 +92,30 @@ public struct MainWindow: View {
                 BannerView(banner: banner, reconnect: actions.reconnect)
             }
             HStack(spacing: 0) {
-                SidebarView(scene: scene, actions: actions)
-                    .frame(width: Metrics.sidebarWidth)
-                    .background(theme(.mantle))
-                Rectangle().fill(theme(.surface)).frame(width: 1)
-                MainColumn(scene: scene)
-                if scene.inspector {
+                if let review = scene.review {
+                    if review.sidebarShown {
+                        SidebarView(scene: scene, actions: actions)
+                            .frame(width: Metrics.sidebarWidth)
+                            .background(theme(.mantle))
+                    } else {
+                        RailView(scene: scene, actions: actions)
+                            .frame(width: Metrics.railWidth)
+                            .background(theme(.mantle))
+                    }
+                    Rectangle().fill(theme(.surface)).frame(width: 1)
+                    ReviewView(review: review, actions: actions)
+                    Rectangle().fill(theme(.surface)).frame(width: 1)
+                    DraftPanel(review: review, actions: actions)
+                        .frame(width: Metrics.inspectorWidth)
+                        .background(theme(.mantle))
+                } else {
+                    SidebarView(scene: scene, actions: actions)
+                        .frame(width: Metrics.sidebarWidth)
+                        .background(theme(.mantle))
+                    Rectangle().fill(theme(.surface)).frame(width: 1)
+                    MainColumn(scene: scene)
+                }
+                if scene.review == nil, scene.inspector {
                     Rectangle().fill(theme(.surface)).frame(width: 1)
                     InspectorView(session: scene.session)
                         .frame(width: Metrics.inspectorWidth)
@@ -101,12 +144,19 @@ struct ToolbarStrip: View {
             .frame(minWidth: 160, alignment: .leading)
             HStack(spacing: 2) {
                 ForEach(Toolbar.views) { tab in
-                    Text(tab.title)
-                        .font(.system(size: 12, weight: tab.enabled ? .semibold : .regular))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 5).fill(tab.enabled ? theme(.base) : .clear))
-                        .foregroundStyle(tab.enabled ? theme(.text) : theme(.grey))
+                    let active = tab.title == (scene.review == nil ? "Terminal" : "Review")
+                    Button {
+                        if tab.enabled, !active { actions.toggleReview() }
+                    } label: {
+                        Text(tab.title)
+                            .font(.system(size: 12, weight: active ? .semibold : .regular))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 5).fill(active ? theme(.base) : .clear))
+                            .foregroundStyle(tab.enabled ? theme(.text) : theme(.grey))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!tab.enabled)
                 }
             }
             .padding(2)

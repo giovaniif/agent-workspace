@@ -116,6 +116,24 @@ type ReviewDraft struct {
 	Comments []ReviewComment `json:"comments"`
 	SentAt   time.Time       `json:"sent_at,omitzero"`
 	Turns    []string        `json:"turns"`
+	Note     string          `json:"note,omitempty"`
+}
+
+func (d ReviewDraft) WithNote(note string) ReviewDraft {
+	d.Note = strings.TrimSpace(note)
+	return d
+}
+
+func (d ReviewDraft) prompt() string {
+	out := ReviewPrompt(d.Comments)
+	if d.Note == "" {
+		return out
+	}
+	out += "\nOverall:\n"
+	for l := range strings.Lines(d.Note) {
+		out += "   " + strings.TrimRight(l, "\n") + "\n"
+	}
+	return out
 }
 
 func (d ReviewDraft) Add(c ReviewComment) ReviewDraft {
@@ -141,7 +159,7 @@ func (d ReviewDraft) Dispatch(s Session, now time.Time) (ReviewDraft, string, bo
 		return d, "", false
 	}
 	d.Status, d.SentAt = DraftSent, now
-	return d, ReviewPrompt(d.Comments), true
+	return d, d.prompt(), true
 }
 
 func (d ReviewDraft) Unsend() ReviewDraft {

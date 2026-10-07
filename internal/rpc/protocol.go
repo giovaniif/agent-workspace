@@ -189,6 +189,7 @@ type Review struct {
 
 type ReviewSendParams struct {
 	Session string `json:"session"`
+	Note    string `json:"note,omitempty"`
 }
 
 type SessionSendParams struct {
