@@ -15,7 +15,6 @@ struct MainColumn: View {
 #if canImport(SwiftTerm)
         if let terminals, !shown(session).isEmpty {
             TerminalArea(hub: terminals.hub, views: terminals.views, pane: shown(session))
-                .overlay { popupShell(terminals) }
         } else {
             placeholder(session, theme)
         }
@@ -28,29 +27,6 @@ struct MainColumn: View {
         scene.pane ?? session.pane
     }
 
-#if canImport(SwiftTerm)
-    @ViewBuilder
-    private func popupShell(_ terminals: (hub: TerminalHub, views: TerminalViews)) -> some View {
-        if let popup = scene.popup {
-            let theme = Theme(scheme)
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Shell").font(.system(size: 12, weight: .semibold))
-                    Spacer()
-                    Button("Close", action: actions.closePopup).buttonStyle(.plain).font(.system(size: 12))
-                }
-                .padding(.horizontal, 10)
-                .frame(height: 26)
-                .background(theme(.mantle))
-                TerminalArea(hub: terminals.hub, views: terminals.views, pane: popup)
-            }
-            .background(theme(.base))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme(.surface)))
-            .padding(40)
-        }
-    }
-#endif
 
     private func placeholder(_ session: Session, _ theme: Theme) -> some View {
         VStack(spacing: 8) {
@@ -103,6 +79,38 @@ struct MainColumn: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    }
+}
+
+struct PopupShell: View {
+    let scene: WindowScene
+    let actions: WindowActions
+    @Environment(\.colorScheme) private var scheme
+#if canImport(SwiftTerm)
+    @Environment(\.agentwsTerminals) private var terminals
+#endif
+
+    var body: some View {
+#if canImport(SwiftTerm)
+        if let popup = scene.popup, let terminals {
+            let theme = Theme(scheme)
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Shell").font(.system(size: 12, weight: .semibold))
+                    Spacer()
+                    Button("Close", action: actions.closePopup).buttonStyle(.plain).font(.system(size: 12))
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(theme(.mantle))
+                TerminalArea(hub: terminals.hub, views: terminals.views, pane: popup)
+            }
+            .background(theme(.base))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme(.surface)))
+            .padding(40)
+        }
+#endif
     }
 }
 

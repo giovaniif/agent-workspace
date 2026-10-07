@@ -133,6 +133,7 @@ public struct MainWindow: View {
                         .background(theme(.mantle))
                 }
             }
+            .overlay { PopupShell(scene: scene, actions: actions) }
         }
         .foregroundStyle(theme(.text))
         .background(theme(.base))
