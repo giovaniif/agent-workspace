@@ -35,6 +35,7 @@ public struct LiveWindow: View {
     @State private var commands: SessionCommands
     @State private var prompt: SessionPrompt?
     @State private var renameText = ""
+    @State private var choiceRequest = 0
     @Environment(\.controlActiveState) private var activeState
     private let server: String
     private let router: WindowRouter
@@ -105,6 +106,7 @@ public struct LiveWindow: View {
             Task { await panes.openShell(session: shell.session, worktree: shell.worktree) }
         }
         .onChange(of: nav.selected) {
+            choiceRequest += 1
             panes.close()
             if review != nil { openReview() }
         }
@@ -122,6 +124,7 @@ public struct LiveWindow: View {
                 model: model, tab: $newSessionTab, server: server, state: store.state,
                 started: { id in
                     newSession = nil
+                    review = nil
 #if canImport(SwiftTerm)
                     terminals.views.focusNextShown()
 #endif
@@ -180,9 +183,12 @@ public struct LiveWindow: View {
             prompt = .rename(id)
         case .model, .effort:
             let kind: SwitchKind = item == .model ? .model : .effort
+            choiceRequest += 1
+            let request = choiceRequest
             Task {
                 let values = await commands.choices(for: session, kind: kind)
-                if !values.isEmpty { prompt = .choose(id, kind, values) }
+                guard request == choiceRequest, prompt == nil, !values.isEmpty else { return }
+                prompt = .choose(id, kind, values)
             }
         case .mute:
             Task { await commands.toggleMute(session) }
