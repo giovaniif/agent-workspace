@@ -53,9 +53,9 @@ struct ChromeTests {
         #expect(meters[1].tone == .peach)
     }
 
-    @Test func theViewSwitcherOnlyEnablesTerminal() {
+    @Test func theViewSwitcherEnablesTerminalAndReview() {
         #expect(Toolbar.views.map(\.title) == ["Terminal", "Review", "Shell", "nvim"])
-        #expect(Toolbar.views.map(\.enabled) == [true, false, false, false])
+        #expect(Toolbar.views.map(\.enabled) == [true, true, false, false])
         #expect(!Toolbar.newEnabled)
     }
 

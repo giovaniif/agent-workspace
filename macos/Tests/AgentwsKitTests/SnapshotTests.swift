@@ -115,5 +115,26 @@ struct SnapshotTests {
         scene.connection = .reconnecting(in: .seconds(4))
         _ = try shoot("reconnecting", scene)
     }
+    @Test func reviewModeDrawsTheHighlightedDiffAndTheDraft() throws {
+        let rep = try shoot("review-latte", .seededReview())
+        #expect(pixels(rep, near: Palette.latte.hex(.green)) > 100)
+        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 50)
+    }
+
+    @Test func reviewModeInMocha() throws {
+        let rep = try shoot("review-mocha", .seededReview(), dark: true)
+        #expect(pixels(rep, near: Palette.mocha.hex(.base)) > 1_000)
+    }
+
+    @Test func reviewModeSplitsTheDiff() throws {
+        _ = try shoot("review-split", .seededReview(layout: .split))
+    }
+
+    @Test func aRefusedHunkShowsGitsMessage() throws {
+        var scene = WindowScene.seededReview()
+        scene.review?.error = "error: patch failed: src/session.ts:12"
+        let rep = try shoot("review-hunk-refused", scene)
+        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 50)
+    }
 }
 #endif
