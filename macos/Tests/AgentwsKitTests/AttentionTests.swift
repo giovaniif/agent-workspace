@@ -11,6 +11,16 @@ final class FakeNotifier: Notifier {
     func withdraw(_ id: String) { withdrawn.append(id) }
 }
 
+@MainActor
+final class HeldCaller: Caller {
+    var held: [CheckedContinuation<String, Never>] = []
+
+    func call<Params: Encodable & Sendable, Reply: Decodable & Sendable>(_ method: String, params: Params) async throws -> Reply {
+        let json = await withCheckedContinuation { held.append($0) }
+        return try JSONDecoder().decode(Reply.self, from: Data(json.utf8))
+    }
+}
+
 let permissionPrompt = #"""
 {"id":"p1","text":"Bash: npm test","choices":[{"id":"1","label":"Yes"},{"id":"2","label":"Yes, and don't ask again for npm commands"},{"id":"3","label":"No, and tell Claude what to do differently"}]}
 """#
@@ -173,6 +183,33 @@ struct AttentionTests {
         #expect(caller.methods() == ["client.viewing", "client.viewing", "client.viewing"])
         #expect(caller.calls.last?.params["session"] as? String == "")
         #expect(caller.calls.last?.params["front"] as? Bool == false)
+    }
+
+    @Test func aWindowGoingToTheBackDoesNotOverrideTheOneNowInFront() async throws {
+        let (attention, caller, notifier) = attention()
+        await attention.view(session: "s1", front: true, window: "A")
+        await attention.view(session: "s2", front: true, window: "B")
+        await attention.view(session: "s1", front: false, window: "A")
+        #expect(caller.calls.map { $0.params["session"] as? String } == ["s1", "s2"])
+        attention.receive(try noticeLine(permissionNotice.replacingOccurrences(of: "\"s1\"", with: "\"s2\"")))
+        #expect(notifier.posted.isEmpty)
+        await attention.view(session: "s2", front: false, window: "B")
+        #expect(caller.calls.last?.params["front"] as? Bool == false)
+    }
+
+    @Test func anOlderPromptReplyDoesNotReplaceTheCardOfTheSessionNowShown() async throws {
+        let caller = HeldCaller()
+        let attention = Attention(caller: caller, notifier: FakeNotifier())
+        let first = Task { await attention.refreshCard(session: "s1", state: "permission") }
+        while caller.held.isEmpty { await Task.yield() }
+        let second = Task { await attention.refreshCard(session: "s2", state: "permission") }
+        while caller.held.count < 2 { await Task.yield() }
+        caller.held[1].resume(returning: permissionPrompt.replacingOccurrences(of: "\"p1\"", with: "\"p2\""))
+        await second.value
+        caller.held[0].resume(returning: permissionPrompt)
+        await first.value
+        #expect(attention.card?.session == "s2")
+        #expect(attention.card?.prompt.id == "p2")
     }
 
     @Test func viewingIsReportedAgainAfterAReconnect() async {
