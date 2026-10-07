@@ -43,7 +43,7 @@ public struct LiveSettings: View {
         SettingsView(scene: scene, actions: actions)
             .frame(width: 760, height: 600)
             .task { cliStatus = cli.status }
-            .task(id: tab) {
+            .task(id: "\(tab.rawValue)|\(servers?.selected.name ?? "")") {
                 if tab.perServer { await server?.refresh() }
                 if tab == .servers, setup?.busy != true { await setup?.check() }
             }

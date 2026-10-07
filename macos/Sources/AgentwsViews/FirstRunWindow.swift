@@ -19,6 +19,7 @@ public struct FirstRunView: View {
     @State private var store: ViewStore?
     @State private var path = ""
     @State private var dirs: [String] = []
+    @State private var browsing = ""
     @State private var linkNote: String?
     @State private var notifications: String?
     @Environment(\.colorScheme) private var scheme
@@ -292,7 +293,7 @@ public struct FirstRunView: View {
                 Button("Add") { Task { await settings?.addWorkspace(path) } }.disabled(path.isEmpty || settings == nil)
             }
             if !dirs.isEmpty {
-                SettingsGroup(title: "Folders in \(path)") {
+                SettingsGroup(title: "Folders in \(browsing)") {
                     ForEach(dirs, id: \.self) { dir in
                         Button {
                             path = dir
@@ -322,7 +323,11 @@ public struct FirstRunView: View {
 
     private func browse(_ folder: String) {
         guard let settings else { return }
-        Task { dirs = await settings.dirs(folder) }
+        browsing = folder
+        Task {
+            let found = await settings.dirs(folder)
+            if browsing == folder { dirs = found }
+        }
     }
 
     private var done: some View {

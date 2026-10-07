@@ -69,7 +69,9 @@ final class Launcher {
         let binary = Launch.binary
         self.binary = binary
         build = await Task.detached { (try? Build.read(binary: binary)) ?? "unknown" }.value
-        if !needsFirstRun { connect(servers.selected) }
+        guard !needsFirstRun else { return }
+        let named = settings.settings.general.launchServer
+        connect(servers.servers.first { $0.name == named } ?? servers.selected)
     }
 
     func added(_ server: ServerKind) {
