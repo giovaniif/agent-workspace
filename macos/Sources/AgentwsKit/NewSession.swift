@@ -252,7 +252,10 @@ public final class NewSession: Identifiable {
     public func load(state: ViewState?) async {
         do {
             let options: SessionOptions = try await caller.call("session.options", params: [String: String]())
-            form = NewSessionForm(workspaces: state?.workspaces ?? [], options: options)
+            var loaded = NewSessionForm(workspaces: state?.workspaces ?? [], options: options)
+            loaded.workItem = form.workItem
+            loaded.launchInput = form.launchInput
+            form = loaded
             maxParallel = options.maxParallel
             observe(state)
             loadError = nil
