@@ -9,17 +9,30 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 type Runner func(ctx context.Context, name string, args ...string) error
 
-func Exec(ctx context.Context, name string, args ...string) error {
-	out, err := exec.CommandContext(ctx, name, args...).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%s %v: %w: %s", name, args, err, bytes.TrimSpace(out))
+var Exec = ExecIn("/run/user")
+
+func ExecIn(runtimeRoot string) Runner {
+	return func(ctx context.Context, name string, args ...string) error {
+		cmd := exec.CommandContext(ctx, name, args...)
+		if os.Getenv("XDG_RUNTIME_DIR") == "" {
+			dir := filepath.Join(runtimeRoot, strconv.Itoa(os.Getuid()))
+			if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+				return fmt.Errorf("%s %v: no user runtime dir %s, so systemd --user is not running without a login; run: sudo loginctl enable-linger $USER", name, args, dir)
+			}
+			cmd.Env = append(os.Environ(), "XDG_RUNTIME_DIR="+dir, "DBUS_SESSION_BUS_ADDRESS=unix:path="+dir+"/bus")
+		}
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("%s %v: %w: %s", name, args, err, bytes.TrimSpace(out))
+		}
+		return nil
 	}
-	return nil
 }
 
 type Unit struct {
