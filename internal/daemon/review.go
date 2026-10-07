@@ -76,6 +76,11 @@ func (s *state) reviewTargets(session string) []app.ReviewTarget {
 		}
 	}
 	var out []app.ReviewTarget
+	if x, ok := s.sessions[session]; ok && x.IsTab() {
+		if w, known := s.worktrees[x.Tab]; known {
+			return []app.ReviewTarget{{Session: session, Worktree: w, DefaultBranch: defaults[w.Repo]}}
+		}
+	}
 	for _, w := range sorted(s.worktrees) {
 		if w.SessionID == session {
 			out = append(out, app.ReviewTarget{Session: session, Worktree: w, DefaultBranch: defaults[w.Repo]})
