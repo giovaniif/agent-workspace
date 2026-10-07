@@ -34,6 +34,7 @@ Colors are Catppuccin Latte, overridden per key in the `[theme]` table of `$AGEN
 ## Mouse
 
 - On unless `[ui] mouse = false` (`tui.LoadMouse` sets `Options.NoMouse`). Each screen's layout function returns an owner per row beside its lines (`mainScreen`, `dialogScreenLines`, `diskScreenLines`, `treeLines`); `View` ignores them and a click re-runs the layout and looks the row up, so rendering pays nothing. The review is hit-tested by its fixed bands. A click on a key hint fires that key through the normal key path; only footers, help rows and button rows (they name `esc`) are hints, and while a text field is focused only non-printing keys fire. See [ADR 0042](../../docs/adr/0042-mouse.md).
+- Right-click on a session row selects it and opens a small context menu under it (`contextmenu.go`). Its entries are the fixed list `sessionMenuActions`, each a label and the key it fires through the normal key path ("End session" fires `x`, so the same y/n confirm follows); add an entry there. ↑/↓ and enter pick, any other key, any click outside it, or a selection change closes it. Task headers own `h:` rows, so a right-click on them does nothing. Tests: `go test ./internal/tui/ -run ContextMenu`.
 - Tests: `go test ./internal/tui/ -run Mouse -bench Mouse`. By hand, run `agentws tui` in a pane of a throwaway `tmux -L x` server with a temp `AGENTWS_HOME` and `AGENTWS_TMUX_SOCKET`, and send SGR mouse sequences with `send-keys -l` (`\e[<0;COL;ROWM`, then the same ending in `m`).
 
 ## Review viewer

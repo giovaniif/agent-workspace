@@ -113,6 +113,7 @@ type Model struct {
 	top      TopBarMsg
 	status   string
 	confirm  *killPrompt
+	menu     *sessionMenu
 	rv       reviewState
 	dk       diskState
 	paint    *painter
@@ -270,6 +271,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.dk.open {
 			return m.diskKey(msg.String())
+		}
+		if m.menu != nil {
+			return m.menuKey(msg)
 		}
 		return m.key(msg)
 	case tea.MouseMsg:
@@ -452,6 +456,7 @@ func (m *Model) rebuild() {
 		m.last = ""
 	}
 	m.choosePending()
+	m.closeStaleMenu()
 }
 
 func (m *Model) choosePending() {
@@ -483,6 +488,7 @@ func (m *Model) choose(i int) {
 	}
 	m.last, m.selected = m.selected, id
 	m.scrolled = false
+	m.closeStaleMenu()
 }
 
 func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {

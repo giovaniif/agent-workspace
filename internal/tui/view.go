@@ -173,6 +173,9 @@ func (m Model) mainScreen() (lines, owners []string) {
 	if m.dialog != nil {
 		lines, owners = m.overlayMenu(lines, owners, head+m.dialog.menuAt-off, m.dialog.menuCol)
 	}
+	if m.menu != nil {
+		lines, owners = m.overlaySessionMenu(lines, owners)
+	}
 	return lines, owners
 }
 
@@ -260,7 +263,7 @@ func (m Model) body() ([]string, int, []string) {
 		own := ownSession + e.session.ID
 		if e.groupStart {
 			out = append(out, "", m.line(false, m.taskHeader(e.task), []piece{{s.dim, strings.Join(e.groupRepos, " ")}}))
-			owners = append(owners, "", own)
+			owners = append(owners, "", ownHeader+e.session.ID)
 		}
 		sel := e.session.ID == m.selected
 		if sel {
