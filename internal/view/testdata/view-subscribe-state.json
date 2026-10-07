@@ -186,5 +186,9 @@
       "Summary": ""
     }
   ],
-  "drafts": []
+  "drafts": [],
+  "reclaimable": {
+    "size": 2048,
+    "pending": 1
+  }
 }

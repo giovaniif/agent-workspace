@@ -146,6 +146,7 @@ type DiskView struct {
 	Free               uint64           `json:"free"`
 	Total              uint64           `json:"total"`
 	AutoCleanEvery     time.Duration    `json:"auto_clean_every"`
+	NextCleanup        *time.Time       `json:"next_cleanup,omitempty"`
 	DepsStore          *DepsStore       `json:"deps_store,omitempty"`
 	Rows               []domain.DiskRow `json:"rows"`
 	Recent             []RecentCleanup  `json:"recent"`
@@ -476,16 +477,22 @@ type Status struct {
 }
 
 type State struct {
-	Seq        uint64                `json:"seq"`
-	Workspaces []domain.Workspace    `json:"workspaces"`
-	Tasks      []domain.Task         `json:"tasks"`
-	Worktrees  []domain.Worktree     `json:"worktrees"`
-	Sessions   []domain.Session      `json:"sessions"`
-	Events     []domain.SessionEvent `json:"events"`
-	Subagents  []domain.Subagent     `json:"subagents"`
-	Queue      []domain.LaunchItem   `json:"queue"`
-	Drafts     []domain.ReviewDraft  `json:"drafts"`
-	Sends      []domain.QueuedSend   `json:"sends"`
+	Seq         uint64                `json:"seq"`
+	Workspaces  []domain.Workspace    `json:"workspaces"`
+	Tasks       []domain.Task         `json:"tasks"`
+	Worktrees   []domain.Worktree     `json:"worktrees"`
+	Sessions    []domain.Session      `json:"sessions"`
+	Events      []domain.SessionEvent `json:"events"`
+	Subagents   []domain.Subagent     `json:"subagents"`
+	Queue       []domain.LaunchItem   `json:"queue"`
+	Drafts      []domain.ReviewDraft  `json:"drafts"`
+	Sends       []domain.QueuedSend   `json:"sends"`
+	Reclaimable Reclaimable           `json:"reclaimable"`
+}
+
+type Reclaimable struct {
+	Size    int64 `json:"size"`
+	Pending int   `json:"pending"`
 }
 
 type Diff struct {
@@ -504,6 +511,7 @@ type Diff struct {
 	Draft            *domain.ReviewDraft   `json:"draft,omitempty"`
 	Comment          *domain.ReviewComment `json:"comment,omitempty"`
 	Sends            *[]domain.QueuedSend  `json:"sends,omitempty"`
+	Reclaimable      *Reclaimable          `json:"reclaimable,omitempty"`
 }
 
 func Home() (string, error) {

@@ -35,6 +35,9 @@ public struct Sidebar: Sendable, Equatable {
         var parts = ["\(live.count) session\(live.count == 1 ? "" : "s")"]
         if waiting > 0 { parts.append("\(waiting) need\(waiting == 1 ? "s" : "") you") }
         if !gone.isEmpty { parts.append("\(gone.count) ended") }
+        if let r = state.reclaimable, r.size > 0 || r.pending > 0 {
+            parts.append(DiskTiles.measured(r.size, pending: r.pending) + " reclaimable")
+        }
         footer = parts.joined(separator: " · ")
     }
 

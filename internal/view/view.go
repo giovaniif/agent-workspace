@@ -78,17 +78,18 @@ type NativeSession struct {
 }
 
 type NativeState struct {
-	Seq        uint64                `json:"seq"`
-	Workspaces []domain.Workspace    `json:"workspaces"`
-	Tasks      []domain.Task         `json:"tasks"`
-	Worktrees  []domain.Worktree     `json:"worktrees"`
-	Sessions   []NativeSession       `json:"sessions"`
-	Limits     []Quota               `json:"limits"`
-	Queue      []domain.LaunchItem   `json:"queue"`
-	Sends      []domain.QueuedSend   `json:"sends"`
-	Events     []domain.SessionEvent `json:"events"`
-	Subagents  []domain.Subagent     `json:"subagents"`
-	Drafts     []domain.ReviewDraft  `json:"drafts"`
+	Seq         uint64                `json:"seq"`
+	Workspaces  []domain.Workspace    `json:"workspaces"`
+	Tasks       []domain.Task         `json:"tasks"`
+	Worktrees   []domain.Worktree     `json:"worktrees"`
+	Sessions    []NativeSession       `json:"sessions"`
+	Limits      []Quota               `json:"limits"`
+	Queue       []domain.LaunchItem   `json:"queue"`
+	Sends       []domain.QueuedSend   `json:"sends"`
+	Events      []domain.SessionEvent `json:"events"`
+	Subagents   []domain.Subagent     `json:"subagents"`
+	Drafts      []domain.ReviewDraft  `json:"drafts"`
+	Reclaimable rpc.Reclaimable       `json:"reclaimable"`
 }
 
 type NativeDiff struct {
@@ -107,6 +108,7 @@ type NativeDiff struct {
 	Subagent         *domain.Subagent      `json:"subagent,omitempty"`
 	Draft            *domain.ReviewDraft   `json:"draft,omitempty"`
 	Comment          *domain.ReviewComment `json:"comment,omitempty"`
+	Reclaimable      *rpc.Reclaimable      `json:"reclaimable,omitempty"`
 }
 
 type derived struct {
@@ -183,17 +185,18 @@ func build(st rpc.State, native bool) (*View, *NativeState) {
 	}
 	v.limits = v.quotas()
 	return v, &NativeState{
-		Seq:        st.Seq,
-		Workspaces: orEmpty(st.Workspaces),
-		Tasks:      orEmpty(st.Tasks),
-		Worktrees:  orEmpty(st.Worktrees),
-		Sessions:   sessions,
-		Limits:     v.limits,
-		Queue:      orEmpty(st.Queue),
-		Sends:      orEmpty(st.Sends),
-		Events:     orEmpty(st.Events),
-		Subagents:  orEmpty(st.Subagents),
-		Drafts:     orEmpty(st.Drafts),
+		Seq:         st.Seq,
+		Workspaces:  orEmpty(st.Workspaces),
+		Tasks:       orEmpty(st.Tasks),
+		Worktrees:   orEmpty(st.Worktrees),
+		Sessions:    sessions,
+		Limits:      v.limits,
+		Queue:       orEmpty(st.Queue),
+		Sends:       orEmpty(st.Sends),
+		Events:      orEmpty(st.Events),
+		Subagents:   orEmpty(st.Subagents),
+		Drafts:      orEmpty(st.Drafts),
+		Reclaimable: st.Reclaimable,
 	}
 }
 
@@ -224,6 +227,7 @@ func (v *View) ApplyNative(d rpc.Diff) []*NativeDiff {
 		Subagent:         d.Subagent,
 		Draft:            d.Draft,
 		Comment:          d.Comment,
+		Reclaimable:      d.Reclaimable,
 	}
 	if d.Session != nil {
 		s := v.show(*d.Session, orders)
@@ -433,7 +437,7 @@ func (d *Diff) keep() bool {
 }
 
 func (d *NativeDiff) keep() bool {
-	return d.phone().keep() || d.Event != nil || d.Subagent != nil || d.Draft != nil || d.Comment != nil
+	return d.phone().keep() || d.Event != nil || d.Subagent != nil || d.Draft != nil || d.Comment != nil || d.Reclaimable != nil
 }
 
 func withoutPorts(wt domain.Worktree) domain.Worktree {

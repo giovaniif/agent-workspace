@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/giovaniif/agent-workspace/internal/app"
@@ -17,6 +18,21 @@ type cleanupWorker struct {
 	every time.Duration
 	kick  chan struct{}
 	mu    sync.Mutex
+	next  atomic.Int64
+}
+
+func (w *cleanupWorker) schedule() {
+	if w.c != nil && w.every > 0 {
+		w.next.Store(time.Now().Add(w.every).UnixNano())
+	}
+}
+
+func (w *cleanupWorker) nextRun() time.Time {
+	n := w.next.Load()
+	if n == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, n)
 }
 
 func WithCleanup(c *app.Cleanup, every time.Duration) Option {
@@ -41,6 +57,7 @@ func (d *Daemon) cleanupEvery(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-tick:
+			d.cl.schedule()
 			d.runCleanup(ctx, true)
 		case <-d.cl.kick:
 			d.runCleanup(ctx, true)

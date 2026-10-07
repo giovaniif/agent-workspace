@@ -8,7 +8,8 @@ struct LiveStateTests {
         for diff in try Goldens.diffs() {
             state.apply(diff)
         }
-        #expect(state.seq == 15)
+        #expect(state.seq == 16)
+        #expect(state.reclaimable == Reclaimable(size: 4096, pending: 0))
         #expect(state.sessions.map(\.id) == ["s1", "s2"])
         #expect(state.sessions.first { $0.id == "s1" }?.name == "Add login")
         #expect(state.sessions.first { $0.id == "s1" }?.order == 1)
@@ -17,6 +18,10 @@ struct LiveStateTests {
         #expect(state.worktrees.first { $0.id == "w1" }?.pr?.number == 12)
         #expect(state.events.map(\.sessionID) == ["s2"])
         #expect(state.subagents.map(\.state) == ["stopped"])
+    }
+
+    @Test func theStateCarriesTheReclaimableDisk() throws {
+        #expect(try Goldens.state().reclaimable == Reclaimable(size: 2048, pending: 1))
     }
 
     @Test func sortedSessionsFollowTheirOrder() throws {

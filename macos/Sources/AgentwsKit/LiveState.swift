@@ -26,6 +26,7 @@ extension ViewState {
         if let s = diff.sends { sends = s }
         if let e = diff.event { append(e) }
         if let a = diff.subagent { Self.upsert(&subagents, a) { $0.sessionID == a.sessionID && $0.id == a.id } }
+        if let r = diff.reclaimable { reclaimable = r }
         if let d = diff.draft { Self.upsert(&drafts, d) { $0.session == d.session } }
     }
 

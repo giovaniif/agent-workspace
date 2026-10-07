@@ -64,6 +64,7 @@ func nativeFixture() rpc.State {
 		Subagents: []domain.Subagent{
 			{SessionID: "s1", ID: "a1", Type: "Explore", State: domain.SubagentRunning, StartedAt: t0},
 		},
+		Reclaimable: rpc.Reclaimable{Size: 2048, Pending: 1},
 	}
 }
 
@@ -84,6 +85,7 @@ func TestViewSubscribeDiffsGolden(t *testing.T) {
 		{Seq: 13, Session: &waiting},
 		{Seq: 14, Subagent: &domain.Subagent{SessionID: "s1", ID: "a1", Type: "Explore", State: domain.SubagentStopped, StartedAt: t0, StoppedAt: t0.Add(time.Minute)}},
 		{Seq: 15, RemovedSession: "s3"},
+		{Seq: 16, Reclaimable: &rpc.Reclaimable{Size: 4096}},
 	} {
 		out = append(out, v.ApplyNative(d)...)
 	}
