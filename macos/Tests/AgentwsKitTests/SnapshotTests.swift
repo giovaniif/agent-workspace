@@ -11,7 +11,8 @@ struct SnapshotTests {
 
     static var directory: URL {
         let env = ProcessInfo.processInfo.environment["AGENTWS_SNAPSHOTS"]
-        return URL(fileURLWithPath: env ?? NSTemporaryDirectory() + "agentws-snapshots")
+        if let env { return URL(fileURLWithPath: env) }
+        return URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("agentws-snapshots")
     }
 
     func shoot(_ name: String, _ scene: WindowScene, dark: Bool = false) throws -> NSBitmapImageRep {
