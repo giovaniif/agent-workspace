@@ -253,8 +253,10 @@ struct DiffView: View {
             .padding(.horizontal, Metrics.gutter)
             .frame(height: 32)
             .background(theme(.crust))
-            ScrollView([.vertical, .horizontal]) {
-                LazyVStack(alignment: .leading, spacing: 0) {
+            GeometryReader { geo in
+                let half = max(320, (geo.size.width - 1) / 2)
+                ScrollView(review.layout == .split ? [.vertical] : [.vertical, .horizontal]) {
+                VStack(alignment: .leading, spacing: 0) {
                     if selected.file.binary {
                         Text("Binary file").font(.system(size: 12)).foregroundStyle(theme(.subtext)).padding(Metrics.gutter)
                     } else if selected.file.hunks.isEmpty {
@@ -265,7 +267,7 @@ struct DiffView: View {
                                    revert: { actions.hunk(selected.key, index, .revert) })
                         if review.layout == .split {
                             ForEach(Array(SplitRow.rows(hunk).enumerated()), id: \.offset) { _, row in
-                                SplitLineRow(row: row, selected: selected, review: review, actions: actions)
+                                SplitLineRow(row: row, selected: selected, review: review, actions: actions, halfWidth: half)
                                 composer(after: row.right ?? row.left)
                             }
                         } else {
@@ -276,7 +278,8 @@ struct DiffView: View {
                         }
                     }
                 }
-                .frame(minWidth: 600, alignment: .leading)
+                .frame(minWidth: geo.size.width, minHeight: geo.size.height, alignment: .topLeading)
+                }
             }
         }
     }
@@ -407,6 +410,7 @@ struct SplitLineRow: View {
     let selected: SelectedFile
     let review: ReviewScreen
     let actions: WindowActions
+    let halfWidth: CGFloat
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -429,7 +433,7 @@ struct SplitLineRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(width: 520, alignment: .leading)
+        .frame(width: halfWidth, alignment: .leading)
         .clipped()
         .background(tone.map { theme($0).opacity(0.13) } ?? (line == nil ? theme(.crust) : .clear))
     }
@@ -466,10 +470,10 @@ struct CommentComposer: View {
             .font(.system(size: 12))
         }
         .padding(10)
-        .frame(width: 560, alignment: .leading)
+        .frame(width: 460, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 8).fill(theme(.mantle)))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme(.blue).opacity(0.5)))
-        .padding(.leading, 104)
+        .padding(.leading, 84)
         .padding(.vertical, 6)
         .onAppear { focused = true }
     }
