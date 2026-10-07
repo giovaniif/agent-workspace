@@ -130,6 +130,35 @@ type Shell struct {
 func (s Shell) Run(ctx context.Context, dir string, argv ...string) error {
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = dir
-	cmd.Stdout, cmd.Stderr = s.Out, s.Out
-	return cmd.Run()
+	var tail tailBuffer
+	out := io.Writer(&tail)
+	if s.Out != nil {
+		out = io.MultiWriter(s.Out, &tail)
+	}
+	cmd.Stdout, cmd.Stderr = out, out
+	if err := cmd.Run(); err != nil {
+		if shown := strings.TrimSpace(tail.String()); shown != "" {
+			return fmt.Errorf("%s: %w\n%s", strings.Join(argv, " "), err, shown)
+		}
+		return fmt.Errorf("%s: %w", strings.Join(argv, " "), err)
+	}
+	return nil
+}
+
+const shellTailBytes = 4096
+
+type tailBuffer struct {
+	data []byte
+}
+
+func (t *tailBuffer) Write(p []byte) (int, error) {
+	t.data = append(t.data, p...)
+	if len(t.data) > shellTailBytes {
+		t.data = t.data[len(t.data)-shellTailBytes:]
+	}
+	return len(p), nil
+}
+
+func (t *tailBuffer) String() string {
+	return string(t.data)
 }

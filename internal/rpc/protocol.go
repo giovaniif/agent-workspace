@@ -31,6 +31,7 @@ const (
 	MethodWorktreeAssign   = "worktree.assign"
 	MethodNewSession       = "session.new"
 	MethodSessionResolve   = "session.resolve"
+	MethodSessionOptions   = "session.options"
 	MethodEndSession       = "session.end"
 	MethodResumeSession    = "session.resume"
 	MethodSessionRename    = "session.rename"
@@ -283,6 +284,21 @@ type WorkItemResolved struct {
 	Title     string `json:"title,omitempty"`
 	Worktree  string `json:"worktree"`
 	Workspace string `json:"workspace"`
+}
+
+type HarnessOptions struct {
+	Harness string   `json:"harness"`
+	Name    string   `json:"name"`
+	Tag     string   `json:"tag"`
+	Models  []string `json:"models"`
+	Efforts []string `json:"efforts"`
+	Model   string   `json:"model"`
+	Effort  string   `json:"effort"`
+}
+
+type SessionOptions struct {
+	Harnesses   []HarnessOptions `json:"harnesses"`
+	MaxParallel int              `json:"max_parallel"`
 }
 
 type LauncherEnqueueParams struct {

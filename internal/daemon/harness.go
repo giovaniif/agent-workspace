@@ -17,6 +17,7 @@ import (
 type harnesses struct {
 	host     app.TerminalHost
 	adapters map[domain.Harness]app.HarnessAdapter
+	defaults map[domain.Harness]StartDefaults
 	sendMu   sync.Mutex
 }
 
