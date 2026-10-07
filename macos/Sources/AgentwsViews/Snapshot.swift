@@ -21,6 +21,14 @@ public enum Snapshot {
         renderView(NewSessionSheet(model: model, tab: .constant(tab), server: "This Mac", state: nil, live: false), size: size, dark: dark)
     }
 
+    public static func renderFirstRun(_ flow: FirstRunFlow, hosts: [String], size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        let view = FirstRunView(
+            appBuild: "v0.0.0", localBinary: "agentws", bundled: { _ in nil }, hosts: hosts,
+            cli: CLILink(target: "/Applications/agentws.app/Contents/Resources/bin/agentws"), initial: flow, cancel: {}, finish: { _ in }
+        )
+        return renderView(view, size: size, dark: dark)
+    }
+
     public static func render(menu scene: MenuScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
         renderView(AttentionMenuView(scene: scene), size: size, dark: dark)
     }
