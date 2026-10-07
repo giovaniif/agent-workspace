@@ -19,6 +19,7 @@ import (
 const (
 	ownSession      = "s:"
 	ownPick         = "p:"
+	ownResume       = "r:"
 	ownField        = "f:"
 	ownFieldColumns = "fc:"
 	ownDisk         = "d:"
@@ -155,6 +156,12 @@ func (m Model) clickOwner(owner string, x int) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m.applyChoice(*m.picker, shown[i])
+	case strings.HasPrefix(owner, ownResume):
+		i, _ := strconv.Atoi(strings.TrimPrefix(owner, ownResume))
+		if m.resuming == nil || i < 0 || i >= len(m.resuming.choices) {
+			return m, nil
+		}
+		return m.resume(m.resuming.choices[i].ID)
 	case strings.HasPrefix(owner, ownFieldColumns):
 		w, _ := strconv.Atoi(strings.TrimPrefix(owner, ownFieldColumns))
 		col := min(max(x, 0)/max(w, 1), int(fieldEffort-fieldHarness))

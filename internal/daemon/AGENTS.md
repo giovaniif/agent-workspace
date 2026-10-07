@@ -19,6 +19,10 @@ Socket server, event loop and workers; wires the adapters into `app`. It may not
 
 See [ADR 0007](../../docs/adr/0007-workspace-discovery.md); the discovery rules are in [internal/domain/](../domain/AGENTS.md). `workspace.add` answers from the filesystem alone, publishes the workspace, then refreshes repo facts off the loop and publishes again only if something changed. The daemon repeats that for every workspace every 30 s. `Workspace.LastUsed` is set on every `add`, stored with the workspace, and `workspace.list` returns the most recent as `last_used`; the new-session dialog defaults to it.
 
+## Projects
+
+`go test ./internal/domain/ ./internal/daemon/ ./internal/adapters/sqlite/ -run Project`. A project (`domain.Project`: `Root`, `Name`, `Setup`) is a registered workspace root, single repo or orchestration, plus an optional machine-local setup script kept in the `projects` table, never in the repo. `project.add` discovers the path off the loop, refuses one with no repos (`domain.NewProject`), adds the workspace as `workspace.add` does, then publishes the project; adding the same root again replaces its name and script. `project.remove` forgets the project and leaves the workspace. Opening a project is `session.new` with its root as `workspace`, so it works from any cwd. `domain.ProjectOf` finds the project holding a path (the deepest root wins).
+
 ## Sessions
 
 See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).

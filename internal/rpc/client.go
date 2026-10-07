@@ -167,6 +167,22 @@ func (c *Client) WorktreeShell(ctx context.Context, id string) error {
 	return c.Call(ctx, MethodShellToggle, ShellParams{Worktree: id}, nil)
 }
 
+func (c *Client) ProjectAdd(ctx context.Context, p ProjectAddParams) (domain.Project, error) {
+	var out domain.Project
+	err := c.Call(ctx, MethodProjectAdd, p, &out)
+	return out, err
+}
+
+func (c *Client) ProjectList(ctx context.Context) (ProjectList, error) {
+	var out ProjectList
+	err := c.Call(ctx, MethodProjectList, nil, &out)
+	return out, err
+}
+
+func (c *Client) ProjectRemove(ctx context.Context, root string) error {
+	return c.Call(ctx, MethodProjectRemove, ProjectRemoveParams{Root: root}, nil)
+}
+
 func (c *Client) WorkspaceRemove(ctx context.Context, root string) error {
 	return c.Call(ctx, MethodWorkspaceRemove, WorkspaceRemoveParams{Root: root}, nil)
 }
