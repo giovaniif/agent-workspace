@@ -41,6 +41,18 @@ jobs:
       - run: go vet -tags integration -composites=false ./...
       - run: go test -p 2 -tags integration ./...
 
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: swift --version
+      - run: swift test
+        working-directory: macos
+      - run: macos/build-app
+      - run: codesign --verify --verbose macos/build/agentws.app
+
   tdd:
     if: github.event_name == 'pull_request'
     runs-on: macos-latest

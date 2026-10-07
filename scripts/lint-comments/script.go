@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"regexp"
 	"slices"
 )
 
@@ -11,6 +12,7 @@ type scriptScan struct {
 	name      string
 	src       []byte
 	js        bool
+	swift     bool
 	i         int
 	line      int
 	findings  []finding
@@ -24,6 +26,19 @@ func checkScript(name string, src []byte, js bool) []finding {
 	s := &scriptScan{name: name, src: src, js: js, line: 1}
 	s.code()
 	return s.findings
+}
+
+func checkSwift(name string, src []byte) []finding {
+	s := &scriptScan{name: name, src: src, swift: true, line: 1}
+	s.code()
+	return s.findings
+}
+
+func (s *scriptScan) lineDirective() *regexp.Regexp {
+	if s.swift {
+		return swiftDirective
+	}
+	return scriptDirective
 }
 
 func (s *scriptScan) report() {
@@ -52,15 +67,21 @@ func (s *scriptScan) code() {
 		switch {
 		case ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r':
 			s.advance(1)
-		case s.js && bytes.HasPrefix(s.rest(), []byte("//")):
+		case (s.js || s.swift) && bytes.HasPrefix(s.rest(), []byte("//")):
 			end := bytes.IndexByte(s.rest(), '\n')
 			if end < 0 {
 				end = len(s.rest())
 			}
-			if !scriptDirective.Match(s.rest()[:end]) {
+			if !s.lineDirective().Match(s.rest()[:end]) {
 				s.report()
 			}
 			s.advance(end)
+		case s.swift && bytes.HasPrefix(s.rest(), []byte("/*")):
+			s.report()
+			s.nestedBlock()
+		case s.swift && bytes.HasPrefix(s.rest(), []byte(`"""`)):
+			s.multiline()
+			s.mark('a')
 		case bytes.HasPrefix(s.rest(), []byte("/*")):
 			s.report()
 			end := bytes.Index(s.rest()[2:], []byte("*/"))
@@ -130,6 +151,40 @@ func (s *scriptScan) quoted(q byte) {
 	}
 	if s.i < len(s.src) && s.src[s.i] == q {
 		s.advance(1)
+	}
+}
+
+func (s *scriptScan) nestedBlock() {
+	depth := 0
+	for s.i < len(s.src) {
+		switch {
+		case bytes.HasPrefix(s.rest(), []byte("/*")):
+			depth++
+			s.advance(2)
+		case bytes.HasPrefix(s.rest(), []byte("*/")):
+			depth--
+			s.advance(2)
+			if depth == 0 {
+				return
+			}
+		default:
+			s.advance(1)
+		}
+	}
+}
+
+func (s *scriptScan) multiline() {
+	s.advance(3)
+	for s.i < len(s.src) {
+		switch {
+		case s.src[s.i] == '\\':
+			s.advance(2)
+		case bytes.HasPrefix(s.rest(), []byte(`"""`)):
+			s.advance(3)
+			return
+		default:
+			s.advance(1)
+		}
 	}
 }
 
