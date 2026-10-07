@@ -205,5 +205,19 @@ struct SnapshotTests {
         let rep = try save("new-session-failed", Snapshot.renderNewSession(Seed.newSession(failure: Seed.setupFailure), tab: .session, size: Self.sheet, dark: false), size: Self.sheet)
         #expect(pixels(rep, near: Palette.latte.hex(.red)) > 20)
     }
+
+    static let firstRun = CGSize(width: 860, height: 600)
+
+    @Test func theFirstRunWindowFillsTheWindowWithASidebarOfSteps() throws {
+        for step in FirstRunStep.allCases {
+            var flow = FirstRunFlow()
+            flow.kind = .ssh(host: "box")
+            flow.step = step
+            for dark in [false, true] {
+                let name = "first-run-\(step.rawValue)\(dark ? "-dark" : "")"
+                _ = try save(name, Snapshot.renderFirstRun(flow, hosts: ["box", "devbox"], size: Self.firstRun, dark: dark), size: Self.firstRun)
+            }
+        }
+    }
 }
 #endif

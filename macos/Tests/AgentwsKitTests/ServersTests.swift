@@ -235,6 +235,33 @@ struct ServersTests {
         #expect(flow.step == .done)
     }
 
+    @Test func theStepListHidesTheServerStepForThisMac() {
+        var flow = FirstRunFlow()
+        #expect(flow.steps == [.welcome, .location, .setup, .workspace, .done])
+        flow.kind = .ssh(host: "box")
+        #expect(flow.steps == FirstRunStep.allCases)
+    }
+
+    @Test func theButtonBarFollowsTheStep() {
+        var flow = FirstRunFlow()
+        #expect(flow.canGoBack == false)
+        #expect(flow.primaryTitle == "Get started")
+        flow.next()
+        #expect(flow.canGoBack)
+        #expect(flow.primaryTitle == "Continue")
+        flow.step = .done
+        #expect(flow.primaryTitle == "Open agentws")
+    }
+
+    @Test func aStepIsCompleteOnceTheFlowHasPassedIt() {
+        var flow = FirstRunFlow()
+        flow.kind = .ssh(host: "box")
+        flow.step = .setup
+        #expect(flow.isComplete(.host))
+        #expect(!flow.isComplete(.setup))
+        #expect(!flow.isComplete(.done))
+    }
+
     @Test func savedServersKeepThisMacFirstAndAddEachHostOnce() throws {
         let suite = "agentws-servers-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
