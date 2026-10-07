@@ -82,7 +82,7 @@ public struct FirstRunView: View {
             if let cancel {
                 Button("Cancel", action: cancel)
                     .keyboardShortcut(.cancelAction)
-                    .background { Button("", action: cancel).keyboardShortcut(".", modifiers: .command).hidden() }
+                    .background { Button("", action: cancel).keyboardShortcut(".", modifiers: .command).opacity(0).accessibilityHidden(true) }
             }
             Spacer()
             if flow.canGoBack {
@@ -140,7 +140,13 @@ public struct FirstRunView: View {
             get: { flow.kind.isRemote },
             set: { isRemote in
                 guard isRemote != flow.kind.isRemote else { return }
-                flow.kind = isRemote ? .ssh(host: hosts.first ?? "") : .thisMac
+                if !isRemote {
+                    flow.kind = .thisMac
+                } else if let first = hosts.first {
+                    pick(first)
+                } else {
+                    flow.kind = .ssh(host: "")
+                }
             }
         )
     }
