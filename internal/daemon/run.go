@@ -98,6 +98,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithLauncher(maxParallel),
 		WithStartDefaults(startDefaults),
+		WithConfig(filepath.Join(home, "config.toml")),
 		WithNotifier(banners, notify.New(), sounds),
 		WithWorktrees(gitadapter.Worktrees{}, &github.Finder{}),
 		WithTitles(app.TitleResolvers{linear.Client{Token: linearToken}, github.Titles{}}),

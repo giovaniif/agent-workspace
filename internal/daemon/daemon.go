@@ -149,6 +149,7 @@ type Daemon struct {
 	disk     DiskDeps
 	onboard  app.Onboarder
 	lc       launcherCfg
+	cfg      configCfg
 	term     terminals
 	tx       *transcripts
 	push     app.PushProvider
@@ -528,6 +529,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.resolveWorkItem(req)
 	case rpc.MethodSessionOptions:
 		return result(req.ID, d.sessionOptions()), true
+	case rpc.MethodConfigGet, rpc.MethodConfigSet:
+		return d.configMethod(req), true
 	case rpc.MethodEndSession:
 		return d.endSession(req)
 	case rpc.MethodResumeSession:
