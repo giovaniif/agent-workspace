@@ -29,6 +29,11 @@ public struct NoticeLine: Decodable, Sendable {
 public struct PromptChoice: Codable, Sendable, Equatable, Identifiable {
     public var id: String
     public var label: String
+
+    public init(id: String, label: String) {
+        self.id = id
+        self.label = label
+    }
 }
 
 public struct Prompt: Codable, Sendable, Equatable {
@@ -36,6 +41,13 @@ public struct Prompt: Codable, Sendable, Equatable {
     public var text: String
     public var choices: [PromptChoice]
     public var raw: String?
+
+    public init(id: String?, text: String, choices: [PromptChoice], raw: String? = nil) {
+        self.id = id
+        self.text = text
+        self.choices = choices
+        self.raw = raw
+    }
 
     public var allow: PromptChoice? { choices.first }
 
@@ -82,6 +94,12 @@ public struct PermissionCard: Sendable, Equatable {
     public var session: String
     public var prompt: Prompt
     public var hidden: Bool
+
+    public init(session: String, prompt: Prompt, hidden: Bool = false) {
+        self.session = session
+        self.prompt = prompt
+        self.hidden = hidden
+    }
 }
 
 struct ViewingParams: Encodable, Sendable {

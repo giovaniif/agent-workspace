@@ -1,6 +1,9 @@
 #if canImport(SwiftUI)
 import AgentwsKit
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 public struct LiveWindow: View {
     @State private var store: ViewStore
@@ -13,18 +16,24 @@ public struct LiveWindow: View {
     @State private var newSession: NewSession?
     @State private var newSessionTab = NewSessionTab.session
     @State private var panes: ShellNvim
+    @State private var front = true
     private let server: String
     private let router: WindowRouter
+    private let attention: Attention?
 #if canImport(SwiftTerm)
     @State private var terminals: (hub: TerminalHub, views: TerminalViews)
 #endif
     private let keys: Shortcuts
 
-    public init(store: ViewStore, server: String, router: WindowRouter = WindowRouter(), shortcuts: Shortcuts = .defaults) {
+    public init(
+        store: ViewStore, server: String, router: WindowRouter = WindowRouter(), shortcuts: Shortcuts = .defaults,
+        attention: Attention? = nil
+    ) {
         _store = State(initialValue: store)
         self.server = server
         self.router = router
         _panes = State(initialValue: ShellNvim(caller: store))
+        self.attention = attention
 #if canImport(SwiftTerm)
         let hub = TerminalHub(endpoint: store.endpoint) { [store] cols, rows in
             try await store.call("client.native", params: NativeClientParams(cols: cols, rows: rows))
@@ -41,7 +50,7 @@ public struct LiveWindow: View {
                 inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
                 review: reviewScreen, view: panes.view,
                 pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error
+                popup: panes.popup, paneError: panes.error, card: attention?.card, message: attention?.message
             )
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
@@ -67,6 +76,19 @@ public struct LiveWindow: View {
             panes.close()
             if review != nil { openReview() }
         }
+        .onChange(of: viewingKey, initial: true) { reportViewing() }
+        .onChange(of: selectedState, initial: true) { refreshCard() }
+        .onChange(of: store.connection) {
+            if store.connection == .live, let attention { Task { await attention.reconnected() } }
+        }
+        .onDisappear {
+            if let attention { Task { await attention.view(session: nil, front: false) } }
+        }
+#if canImport(AppKit)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in front = true }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in front = false }
+        .onAppear { front = NSApplication.shared.isActive }
+#endif
         .sheet(item: $newSession) { model in
             NewSessionSheet(
                 model: model, tab: $newSessionTab, server: server, state: store.state,
@@ -85,6 +107,27 @@ public struct LiveWindow: View {
         let model = NewSession(caller: store)
         newSession = model
         Task { await model.load(state: store.state) }
+    }
+
+    private var viewingKey: String { (nav.selected ?? "") + (front ? "|front" : "|back") }
+
+    private var selectedState: String {
+        guard let id = nav.selected, let session = store.state?.sessions.first(where: { $0.id == id }) else { return "" }
+        return id + "|" + session.state
+    }
+
+    private func reportViewing() {
+        guard let attention else { return }
+        let session = nav.selected
+        let front = front
+        Task { await attention.view(session: session, front: front) }
+    }
+
+    private func refreshCard() {
+        guard let attention else { return }
+        let id = nav.selected
+        let state = id.flatMap { id in store.state?.sessions.first { $0.id == id }?.state }
+        Task { await attention.refreshCard(session: id, state: state) }
     }
 
     private var reviewScreen: ReviewScreen? {
@@ -215,6 +258,11 @@ public struct LiveWindow: View {
         a.showView = { show($0) }
         a.closePopup = { panes.closePopup() }
         a.dismissError = { review?.screen.error = nil }
+        a.answer = { choice in
+            if let attention { Task { await attention.answer(choice: choice) } }
+        }
+        a.hideCard = { attention?.hideCard() }
+        a.dismissMessage = { attention?.message = nil }
         return a
     }
 

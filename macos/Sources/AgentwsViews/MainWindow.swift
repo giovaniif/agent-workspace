@@ -17,11 +17,13 @@ public struct WindowScene {
     public var pane: String?
     public var popup: String?
     public var paneError: String?
+    public var card: PermissionCard?
+    public var message: String?
 
     public init(
         state: ViewState?, connection: ConnectionStatus, selected: String? = nil, filter: String = "",
         inspector: Bool = true, endedExpanded: Bool = false, server: String = "This Mac", now: Date = Seed.now, focusFilter: Int = 0,
-        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil
+        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil, card: PermissionCard? = nil, message: String? = nil
     ) {
         self.state = state
         self.connection = connection
@@ -37,10 +39,23 @@ public struct WindowScene {
         self.pane = pane
         self.popup = popup
         self.paneError = paneError
+        self.card = card
+        self.message = message
     }
 
     public static func seeded(selected: String = "s1", inspector: Bool = true) -> WindowScene {
         WindowScene(state: Seed.window, connection: .live, selected: selected, inspector: inspector)
+    }
+
+    public static func seededPermission() -> WindowScene {
+        WindowScene(state: Seed.window, connection: .live, selected: "s1", card: PermissionCard(
+            session: "s1",
+            prompt: Prompt(id: "p1", text: "Bash: npm test -- --runInBand", choices: [
+                PromptChoice(id: "1", label: "Yes"),
+                PromptChoice(id: "2", label: "Yes, and don't ask again for npm test commands in /work/api"),
+                PromptChoice(id: "3", label: "No, and tell Claude what to do differently"),
+            ])
+        ))
     }
 
     public static func seededReview(layout: DiffLayout = .unified) -> WindowScene {
@@ -80,6 +95,9 @@ public struct WindowActions {
     public var closePopup: () -> Void = {}
     public var dismissError: () -> Void = {}
     public var newSession: () -> Void = {}
+    public var answer: (String) -> Void = { _ in }
+    public var hideCard: () -> Void = {}
+    public var dismissMessage: () -> Void = {}
 
     public init() {}
 }
