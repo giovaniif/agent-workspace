@@ -8,6 +8,13 @@
       "LastUsed": "0001-01-01T00:00:00Z"
     }
   ],
+  "projects": [
+    {
+      "Root": "/w/api",
+      "Name": "api",
+      "Setup": "make deps"
+    }
+  ],
   "tasks": [
     {
       "ID": "t1",

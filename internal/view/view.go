@@ -80,6 +80,7 @@ type NativeSession struct {
 type NativeState struct {
 	Seq         uint64                `json:"seq"`
 	Workspaces  []domain.Workspace    `json:"workspaces"`
+	Projects    []domain.Project      `json:"projects"`
 	Tasks       []domain.Task         `json:"tasks"`
 	Worktrees   []domain.Worktree     `json:"worktrees"`
 	Sessions    []NativeSession       `json:"sessions"`
@@ -97,7 +98,9 @@ type NativeDiff struct {
 	RemovedWorkspace string                `json:"removed_workspace,omitempty"`
 	RemovedWorktree  string                `json:"removed_worktree,omitempty"`
 	RemovedSession   string                `json:"removed_session,omitempty"`
+	RemovedProject   string                `json:"removed_project,omitempty"`
 	Workspace        *domain.Workspace     `json:"workspace,omitempty"`
+	Project          *domain.Project       `json:"project,omitempty"`
 	Task             *domain.Task          `json:"task,omitempty"`
 	Worktree         *domain.Worktree      `json:"worktree,omitempty"`
 	Session          *NativeSession        `json:"session,omitempty"`
@@ -187,6 +190,7 @@ func build(st rpc.State, native bool) (*View, *NativeState) {
 	return v, &NativeState{
 		Seq:         st.Seq,
 		Workspaces:  orEmpty(st.Workspaces),
+		Projects:    orEmpty(st.Projects),
 		Tasks:       orEmpty(st.Tasks),
 		Worktrees:   orEmpty(st.Worktrees),
 		Sessions:    sessions,
@@ -218,7 +222,9 @@ func (v *View) ApplyNative(d rpc.Diff) []*NativeDiff {
 		RemovedWorkspace: d.RemovedWorkspace,
 		RemovedWorktree:  d.RemovedWorktree,
 		RemovedSession:   d.RemovedSession,
+		RemovedProject:   d.RemovedProject,
 		Workspace:        d.Workspace,
+		Project:          d.Project,
 		Task:             d.Task,
 		Worktree:         d.Worktree,
 		Queue:            d.Queue,
@@ -437,7 +443,8 @@ func (d *Diff) keep() bool {
 }
 
 func (d *NativeDiff) keep() bool {
-	return d.phone().keep() || d.Event != nil || d.Subagent != nil || d.Draft != nil || d.Comment != nil || d.Reclaimable != nil
+	return d.phone().keep() || d.Event != nil || d.Subagent != nil || d.Draft != nil || d.Comment != nil || d.Reclaimable != nil ||
+		d.Project != nil || d.RemovedProject != ""
 }
 
 func withoutPorts(wt domain.Worktree) domain.Worktree {
