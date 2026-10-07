@@ -13,18 +13,36 @@ const slotPaneIndex = "1"
 const SidebarWidth = 48
 
 func (h *Host) OpenClient(ctx context.Context, name string, tui app.PaneSpec) (app.Slot, error) {
-	id, err := h.newWindow(ctx, "client-"+name, tui)
+	id, err := h.newWindow(ctx, clientWindowPrefix+name, tui)
 	if err != nil {
 		return "", err
 	}
 	slot := app.Slot(id.window)
+	if err := h.sizeByTerminalOnly(ctx, slot); err != nil {
+		return "", err
+	}
 	if err := h.addSlotPane(ctx, slot); err != nil {
 		return "", err
 	}
 	if err := h.pinSidebar(ctx, slot, strconv.Itoa(SidebarWidth)); err != nil {
 		return "", err
 	}
+	_ = h.linkNative(ctx)
 	return slot, nil
+}
+
+const resizeToClient = "run-shell -C 'resize-window -t " + sessionName + ": -x #{client_width} -y #{client_height} ; set-hook -R -w -t " + sessionName + ": window-resized'"
+
+func (h *Host) sizeByTerminalOnly(ctx context.Context, slot app.Slot) error {
+	if _, err := h.run(ctx, "", "set-option", "-w", "-t", string(slot), "window-size", "manual"); err != nil {
+		return err
+	}
+	for _, hook := range []string{"client-attached", "client-resized"} {
+		if _, err := h.run(ctx, "", "set-hook", "-t", sessionName, hook, resizeToClient); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 const ReviewWidth = "75%"
@@ -103,7 +121,7 @@ func (h *Host) FocusSlot(ctx context.Context, slot app.Slot) error {
 }
 
 func (h *Host) AttachCommand(slot app.Slot) []string {
-	return []string{"tmux", "-L", h.socket, "-f", h.configPath, "attach-session", "-t", string(slot)}
+	return []string{"tmux", "-L", h.socket, "-f", h.configPath, "attach-session", "-t", "=" + sessionName + ":" + string(slot)}
 }
 
 func (h *Host) ShownIn(ctx context.Context, slot app.Slot) app.PaneID {
