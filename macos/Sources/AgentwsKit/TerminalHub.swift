@@ -129,7 +129,10 @@ public final class TerminalHub {
             backoff.reset()
             link.post(ControlCommand.pauseAfter(seconds: 5))
             for pane in sinks.keys.sorted() { draw(pane) }
-            for await event in link.events { handle(event) }
+            for await event in link.events {
+                guard !Task.isCancelled, self.link === link else { break }
+                handle(event)
+            }
             link.close()
             if self.link === link { self.link = nil }
             if Task.isCancelled { return }
