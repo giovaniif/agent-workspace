@@ -127,6 +127,17 @@ func TestContextMenuClickBesideTheMenuOnItsRowDoesNotAct(t *testing.T) {
 	}
 }
 
+func TestContextMenuQuitKeysStillDetach(t *testing.T) {
+	for _, k := range []tea.KeyPressMsg{key("q"), {Code: 'c', Mod: tea.ModCtrl}} {
+		m, c := menuModel(t)
+		m = rightClickOn(t, m, "session 2 change")
+		m = pressCmd(m, k)
+		if !slices.Equal(c.methods(), []string{rpc.MethodClientDetach}) || strings.Contains(screen(m), "End session") {
+			t.Fatalf("%s with the menu open: calls %v\n%s", k, c.methods(), screen(m))
+		}
+	}
+}
+
 func TestContextMenuIgnoresRightClicksOffSessionRows(t *testing.T) {
 	m, _ := menuModel(t)
 	for _, text := range []string{"task number 2", "SESSIONS"} {
