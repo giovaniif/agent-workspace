@@ -57,9 +57,9 @@ func (m Model) menuClick(x, y int) (tea.Model, tea.Cmd) {
 	return m.runMenuAction(menu.session, i)
 }
 
-func (m Model) menuKey(k string) (tea.Model, tea.Cmd) {
+func (m Model) menuKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	menu := *m.menu
-	switch k {
+	switch k := msg.String(); k {
 	case "up", "k":
 		menu.cursor = max(menu.cursor-1, 0)
 	case "down", "j":
@@ -67,6 +67,9 @@ func (m Model) menuKey(k string) (tea.Model, tea.Cmd) {
 	case "enter":
 		m.menu = nil
 		return m.runMenuAction(menu.session, menu.cursor)
+	case "q", "ctrl+c":
+		m.menu = nil
+		return m.key(msg)
 	default:
 		m.menu = nil
 		return m, nil

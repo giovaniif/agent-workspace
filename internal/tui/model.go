@@ -273,7 +273,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.diskKey(msg.String())
 		}
 		if m.menu != nil {
-			return m.menuKey(msg.String())
+			return m.menuKey(msg)
 		}
 		return m.key(msg)
 	case tea.MouseMsg:
