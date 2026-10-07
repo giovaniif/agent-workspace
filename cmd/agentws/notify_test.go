@@ -12,10 +12,10 @@ func TestNotifyBridgeStreamsOverSSHAndFocusesThroughIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"ssh", "-T", "-o", "ServerAliveInterval=15", "me@vps", "~/'.local/bin/agentws' notify stream"}; !reflect.DeepEqual(p.streamArgv(), want) {
+	if want := []string{"ssh", "-T", "-o", "RemoteCommand=none", "-o", "RequestTTY=no", "-o", "ServerAliveInterval=15", "me@vps", "~/'.local/bin/agentws' notify stream"}; !reflect.DeepEqual(p.streamArgv(), want) {
 		t.Fatalf("stream argv %q", p.streamArgv())
 	}
-	if want := `ssh -T 'me@vps' ~/'.local/bin/agentws' focus`; p.focusCmd() != want {
+	if want := `ssh -T -o RemoteCommand=none -o RequestTTY=no 'me@vps' ~/'.local/bin/agentws' focus`; p.focusCmd() != want {
 		t.Fatalf("focus cmd %q", p.focusCmd())
 	}
 }
