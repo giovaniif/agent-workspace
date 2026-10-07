@@ -13,18 +13,36 @@ const slotPaneIndex = "1"
 const SidebarWidth = 48
 
 func (h *Host) OpenClient(ctx context.Context, name string, tui app.PaneSpec) (app.Slot, error) {
-	id, err := h.newWindow(ctx, "client-"+name, tui)
+	id, err := h.newWindow(ctx, clientWindowPrefix+name, tui)
 	if err != nil {
 		return "", err
 	}
 	slot := app.Slot(id.window)
+	if err := h.sizeByTerminalOnly(ctx, slot); err != nil {
+		return "", err
+	}
 	if err := h.addSlotPane(ctx, slot); err != nil {
 		return "", err
 	}
 	if err := h.pinSidebar(ctx, slot, strconv.Itoa(SidebarWidth)); err != nil {
 		return "", err
 	}
+	_ = h.linkNative(ctx)
 	return slot, nil
+}
+
+const resizeToClient = "run-shell -C 'resize-window -t #{window_id} -x #{client_width} -y #{client_height} ; set-hook -R -w -t #{window_id} window-resized'"
+
+func (h *Host) sizeByTerminalOnly(ctx context.Context, slot app.Slot) error {
+	if _, err := h.run(ctx, "", "set-option", "-w", "-t", string(slot), "window-size", "manual"); err != nil {
+		return err
+	}
+	for _, hook := range []string{"client-attached", "client-resized"} {
+		if _, err := h.run(ctx, "", "set-hook", "-t", sessionName, hook, resizeToClient); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 const ReviewWidth = "75%"

@@ -65,7 +65,7 @@ func (h *Host) HideBelow(ctx context.Context, slot app.Slot) error {
 	if _, err := h.run(ctx, "", "break-pane", "-d", "-s", string(below), "-n", "pane-parked"); err != nil {
 		return err
 	}
-	_ = h.linkParked(ctx)
+	_ = h.linkNative(ctx)
 	return nil
 }
 
