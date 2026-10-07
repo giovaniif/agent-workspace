@@ -18,6 +18,7 @@ type termFake struct {
 	created []app.PaneID
 	shown   []app.PaneID
 	titles  map[app.PaneID]string
+	killed  []app.PaneID
 }
 
 func newTermFake(client *fakeClientHost, live ...app.PaneID) *termFake {
@@ -125,4 +126,18 @@ func (t *termFake) title(pane app.PaneID) string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.titles[pane]
+}
+
+func (t *termFake) Kill(_ context.Context, pane app.PaneID) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.alive[pane] = false
+	t.killed = append(t.killed, pane)
+	return nil
+}
+
+func (t *termFake) killedPanes() []app.PaneID {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return append([]app.PaneID(nil), t.killed...)
 }
