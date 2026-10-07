@@ -200,7 +200,8 @@ struct AgentwsApp: App {
                 MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560)
             } else if let store = launcher.store {
                 LiveWindow(store: store, server: "This Mac", router: router, shortcuts: launcher.settings.settings.shortcuts,
-                           attention: launcher.attention)
+                           attention: launcher.attention, diffLayout: launcher.settings.settings.appearance.diffLayout,
+                           confirmEnd: launcher.settings.settings.general.confirmOnEnd)
                     .preferredColorScheme(launcher.colorScheme)
             } else {
                 MainWindow(scene: WindowScene(state: nil, connection: .connecting, now: .now))
@@ -220,7 +221,7 @@ struct AgentwsApp: App {
                     .task { await launcher.load() }
             }
         }
-        .keyboardShortcut("w", modifiers: [.command, .shift])
+        .keyboardShortcut(launcher.settings.settings.shortcuts.combo(for: .worktrees).map(\.keyboardShortcut))
         Settings {
             LiveSettings(
                 store: launcher.settings, server: launcher.server, serverName: "This Mac",

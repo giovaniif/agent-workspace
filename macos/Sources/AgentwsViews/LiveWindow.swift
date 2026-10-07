@@ -2,6 +2,24 @@
 import AgentwsKit
 import SwiftUI
 
+enum SessionPrompt {
+    case rename(String)
+    case choose(String, SwitchKind, [String])
+    case end(String)
+
+    enum Kind {
+        case rename, choose, end
+    }
+
+    var kind: Kind {
+        switch self {
+        case .rename: .rename
+        case .choose: .choose
+        case .end: .end
+        }
+    }
+}
+
 public struct LiveWindow: View {
     @State private var store: ViewStore
     @State private var nav = Navigator()
@@ -14,6 +32,9 @@ public struct LiveWindow: View {
     @State private var newSessionTab = NewSessionTab.session
     @State private var panes: ShellNvim
     @State private var windowID = UUID().uuidString
+    @State private var commands: SessionCommands
+    @State private var prompt: SessionPrompt?
+    @State private var renameText = ""
     @Environment(\.controlActiveState) private var activeState
     private let server: String
     private let router: WindowRouter
@@ -22,23 +43,30 @@ public struct LiveWindow: View {
     @State private var terminals: (hub: TerminalHub, views: TerminalViews)
 #endif
     private let keys: Shortcuts
+    private let diffLayout: DiffLayout
+    private let confirmEnd: Bool
 
     public init(
         store: ViewStore, server: String, router: WindowRouter = WindowRouter(), shortcuts: Shortcuts = .defaults,
-        attention: Attention? = nil
+        attention: Attention? = nil, diffLayout: DiffLayout = .unified, confirmEnd: Bool = true
     ) {
         _store = State(initialValue: store)
         self.server = server
         self.router = router
         _panes = State(initialValue: ShellNvim(caller: store))
+        _commands = State(initialValue: SessionCommands(caller: store))
         self.attention = attention
 #if canImport(SwiftTerm)
         let hub = TerminalHub(endpoint: store.endpoint) { [store] cols, rows in
             try await store.call("client.native", params: NativeClientParams(cols: cols, rows: rows))
         }
-        _terminals = State(initialValue: (hub, TerminalViews()))
+        let views = TerminalViews()
+        views.bound = shortcuts.bound
+        _terminals = State(initialValue: (hub, views))
 #endif
         keys = shortcuts
+        self.diffLayout = diffLayout
+        self.confirmEnd = confirmEnd
     }
 
     public var body: some View {
@@ -48,7 +76,7 @@ public struct LiveWindow: View {
                 inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
                 review: reviewScreen, view: panes.view,
                 pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error, card: attention?.card, message: attention?.message
+                popup: panes.popup, paneError: panes.error, card: attention?.card, message: attention?.message ?? commands.message
             )
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
@@ -57,6 +85,7 @@ public struct LiveWindow: View {
 #if canImport(SwiftTerm)
         .environment(\.agentwsTerminals, terminals)
         .onAppear { terminals.hub.start() }
+        .onChange(of: keys.bound, initial: true) { terminals.views.bound = keys.bound }
 #endif
         .onAppear { store.start() }
         .onChange(of: store.state?.seq) {
@@ -93,10 +122,82 @@ public struct LiveWindow: View {
                 model: model, tab: $newSessionTab, server: server, state: store.state,
                 started: { id in
                     newSession = nil
+#if canImport(SwiftTerm)
+                    terminals.views.focusNextShown()
+#endif
                     nav.select(id)
                 },
                 cancel: { newSession = nil }
             )
+        }
+        .alert("Rename and pin", isPresented: presenting(.rename)) {
+            TextField("Name", text: $renameText)
+            Button("Rename") {
+                if case let .rename(id)? = prompt { Task { await commands.rename(id, to: renameText) } }
+                prompt = nil
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { prompt = nil }
+        }
+        .confirmationDialog(choiceTitle, isPresented: presenting(.choose), titleVisibility: .visible) {
+            if case let .choose(id, kind, values)? = prompt {
+                ForEach(values, id: \.self) { value in
+                    Button(value) { Task { await commands.switchTo(id, kind: kind, value: value) } }
+                }
+            }
+            Button("Cancel", role: .cancel) { prompt = nil }
+        }
+        .confirmationDialog("End this session?", isPresented: presenting(.end), titleVisibility: .visible) {
+            Button("End session", role: .destructive) {
+                if case let .end(id)? = prompt { Task { await commands.end(id) } }
+                prompt = nil
+            }
+            Button("Cancel", role: .cancel) { prompt = nil }
+        } message: {
+            Text("The agent stops; its worktrees stay. Resume it later from Ended.")
+        }
+    }
+
+    private func presenting(_ kind: SessionPrompt.Kind) -> Binding<Bool> {
+        Binding(get: { prompt?.kind == kind }, set: { if !$0 { prompt = nil } })
+    }
+
+    private var choiceTitle: String {
+        guard case let .choose(_, kind, _)? = prompt else { return "" }
+        return kind == .model ? "Switch model" : "Switch effort"
+    }
+
+    private func onSelected(_ item: SessionMenuItem) {
+        guard let id = nav.selected else { return }
+        perform(item, on: id)
+    }
+
+    private func perform(_ item: SessionMenuItem, on id: String) {
+        guard let state = store.state, let session = state.sessions.first(where: { $0.id == id }) else { return }
+        switch item {
+        case .rename:
+            renameText = session.name
+            prompt = .rename(id)
+        case .model, .effort:
+            let kind: SwitchKind = item == .model ? .model : .effort
+            Task {
+                let values = await commands.choices(for: session, kind: kind)
+                if !values.isEmpty { prompt = .choose(id, kind, values) }
+            }
+        case .mute:
+            Task { await commands.toggleMute(session) }
+        case .end:
+            guard !session.ended else { return }
+            if confirmEnd {
+                prompt = .end(id)
+            } else {
+                Task { await commands.end(id) }
+            }
+        case .resume:
+            guard session.ended else { return }
+            Task { await commands.resume(id) }
+        case .killDevServers:
+            Task { await commands.killDevServers(id, state: state) }
         }
     }
 
@@ -146,7 +247,7 @@ public struct LiveWindow: View {
             return
         }
         let previous = review?.screen
-        let controller = ReviewController(session: id, caller: store)
+        let controller = ReviewController(session: id, caller: store, layout: diffLayout)
         if let previous {
             controller.screen.scope = previous.scope
             controller.screen.layout = previous.layout
@@ -264,7 +365,11 @@ public struct LiveWindow: View {
             if let attention { Task { await attention.answer(choice: choice) } }
         }
         a.hideCard = { attention?.hideCard() }
-        a.dismissMessage = { attention?.message = nil }
+        a.dismissMessage = {
+            attention?.message = nil
+            commands.message = nil
+        }
+        a.sessionMenu = { item, id in perform(item, on: id) }
         return a
     }
 
@@ -294,6 +399,13 @@ public struct LiveWindow: View {
             bound(.linearLauncher) { openNewSession(.launcher) }
             bound(.shellSplit) { toggleShell(popup: false) }
             bound(.shellPopup) { toggleShell(popup: true) }
+            bound(.rename) { onSelected(.rename) }
+            bound(.model) { onSelected(.model) }
+            bound(.effort) { onSelected(.effort) }
+            bound(.mute) { onSelected(.mute) }
+            bound(.endSession) { onSelected(.end) }
+            bound(.resumeEnded) { onSelected(.resume) }
+            bound(.killDevServers) { onSelected(.killDevServers) }
         }
         .opacity(0)
         .accessibilityHidden(true)

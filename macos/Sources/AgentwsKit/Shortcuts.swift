@@ -178,6 +178,10 @@ public struct Shortcuts: Codable, Equatable, Sendable {
         return bound
     }
 
+    public var bound: Set<KeyCombo> {
+        Set(ShortcutAction.allCases.compactMap { combo(for: $0) })
+    }
+
     public func holder(of combo: KeyCombo) -> ShortcutAction? {
         ShortcutAction.allCases.first { self.combo(for: $0) == combo }
     }

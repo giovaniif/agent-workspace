@@ -1,7 +1,17 @@
 public enum TerminalKeys {
-    public static func goesToPane(key: String, command: Bool, control: Bool) -> Bool {
-        if command { return false }
-        if control && key == " " { return false }
-        return true
+    public static func goesToPane(key: String, modifiers: Modifiers, bound: Set<KeyCombo>) -> Bool {
+        if modifiers.contains(.command) { return false }
+        return !bound.contains(KeyCombo(name(of: key), modifiers))
+    }
+
+    static func name(of key: String) -> String {
+        switch key {
+        case " ": "space"
+        case "\r": "return"
+        case "\u{1b}": "escape"
+        case "\t": "tab"
+        case "\u{7f}", "\u{8}": "delete"
+        default: key
+        }
     }
 }

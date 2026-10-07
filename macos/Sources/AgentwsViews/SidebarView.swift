@@ -71,6 +71,7 @@ struct SidebarView: View {
                     ForEach(sidebar?.rows ?? []) { row in
                         SidebarRowView(row: row, selected: row.id == scene.selected)
                             .onTapGesture { actions.select(row.id) }
+                            .contextMenu { SessionMenu(row: row, ended: false, actions: actions) }
                     }
                     if let ended = sidebar?.ended, !ended.isEmpty {
                         Button(action: actions.toggleEnded) {
@@ -89,6 +90,7 @@ struct SidebarView: View {
                                 SidebarRowView(row: row, selected: row.id == scene.selected)
                                     .opacity(0.7)
                                     .onTapGesture { actions.select(row.id) }
+                                    .contextMenu { SessionMenu(row: row, ended: true, actions: actions) }
                             }
                         }
                     }
@@ -100,6 +102,26 @@ struct SidebarView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(theme(.subtext))
                 .padding(Metrics.gutter)
+        }
+    }
+}
+
+struct SessionMenu: View {
+    let row: SidebarRow
+    let ended: Bool
+    let actions: WindowActions
+
+    var body: some View {
+        if ended {
+            Button("Resume") { actions.sessionMenu(.resume, row.id) }
+        } else {
+            Button("Rename…") { actions.sessionMenu(.rename, row.id) }
+            Button(row.muted ? "Unmute" : "Mute") { actions.sessionMenu(.mute, row.id) }
+            Button("Switch model…") { actions.sessionMenu(.model, row.id) }
+            Button("Switch effort…") { actions.sessionMenu(.effort, row.id) }
+            Divider()
+            Button("Kill dev servers") { actions.sessionMenu(.killDevServers, row.id) }
+            Button("End session…") { actions.sessionMenu(.end, row.id) }
         }
     }
 }
