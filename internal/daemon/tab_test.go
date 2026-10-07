@@ -207,6 +207,56 @@ func TestTabStripIsInEveryTabPanesTitle(t *testing.T) {
 	}
 }
 
+func TestTabCloseOfTheLastShellClearsTheActiveTab(t *testing.T) {
+	r := startTabs(t)
+	if _, err := r.tab(t, rpc.MethodTabNew, rpc.TabParams{Session: "host", Kind: "shell"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.tab(t, rpc.MethodTabClose, rpc.TabParams{Session: "host", Tab: "host"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.tab(t, rpc.MethodTabClose, rpc.TabParams{Session: "host"}); err != nil {
+		t.Fatal(err)
+	}
+	st := eventually(t, r.path, 2*time.Second, "no shell tabs", func(st rpc.State) bool { return len(st.ShellTabs) == 0 })
+	if tab, ok := st.ActiveTabs[tabWT.ID]; ok {
+		t.Fatalf("active tab %q after every tab closed", tab)
+	}
+}
+
+func TestTabShellsGoWithTheirRemovedWorktree(t *testing.T) {
+	store := &memStore{}
+	store.snap.Projects = []domain.Project{{Root: "/solo", Name: "solo"}}
+	store.snap.Sessions = []domain.Session{{ID: "host", Pane: "%7", State: domain.StateIdle, WorktreeIDs: []string{"/solo-feat"}}}
+	store.snap.Worktrees = []domain.Worktree{{ID: "/solo-feat", Repo: "/solo", Path: "/solo-feat", Branch: "feat", SessionID: "host"}}
+	client := &fakeClientHost{}
+	term := newTermFake(client, "%7")
+	env := wtEnv{lister: &fakeLister{listings: map[string]domain.RepoListing{}}, finder: &fakeFinder{prs: map[string][]domain.PullRequest{}}}
+	env.lister.set("/solo", domain.ListedWorktree{Path: "/solo-feat", Branch: "feat"})
+	store.snap.Workspaces = []domain.Workspace{{Root: "/solo", Kind: domain.WorkspaceSingle, Repos: []domain.Repo{{Name: "solo", Path: "/solo"}}}}
+	_, env.path = start(t, store,
+		daemon.WithWorkspaces(soloFS, fakeGit{}),
+		daemon.WithRefreshInterval(0),
+		daemon.WithWorktrees(env.lister, env.finder),
+		daemon.WithWorktreePoll(50*time.Millisecond, time.Hour),
+		daemon.WithHarnesses(term, claude.Adapter{}),
+		daemon.WithTerminals(shortDir(t), &fakeEditor{}),
+	)
+	var tab domain.Tab
+	if err := dial(t, env.path).Call(context.Background(), rpc.MethodTabNew, rpc.TabParams{Session: "host", Kind: "shell"}, &tab); err != nil {
+		t.Fatal(err)
+	}
+	env.lister.set("/solo")
+	st := eventually(t, env.path, 2*time.Second, "the worktree and its shell gone", func(st rpc.State) bool {
+		_, ok := worktree(st, "/solo-feat")
+		return !ok && len(st.ShellTabs) == 0
+	})
+	if _, ok := st.ActiveTabs["/solo-feat"]; ok {
+		t.Error("the removed worktree kept an active tab")
+	}
+	waitFor(t, func() bool { return len(term.killedPanes()) == 1 && term.killedPanes()[0] == app.PaneID(tab.Pane) })
+}
+
 func TestTabSessionsLeaveTheWorktreesTheyTouchUnassigned(t *testing.T) {
 	store := &memStore{}
 	store.snap.Sessions = []domain.Session{{ID: "tab", Pane: "%2", State: domain.StateRunning, Tab: "/solo-host"}}
