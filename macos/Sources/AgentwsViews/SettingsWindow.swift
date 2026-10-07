@@ -20,6 +20,12 @@ public struct SettingsActions {
     public var setConfig: (String, String) -> Void = { _, _ in }
     public var revokeDevice: (String) -> Void = { _ in }
     public var pairPhone: () -> Void = {}
+    public var selectServer: (ServerKind) -> Void = { _ in }
+    public var removeServer: (ServerKind) -> Void = { _ in }
+    public var addServer: () -> Void = {}
+    public var checkServer: () -> Void = {}
+    public var setUpServer: () -> Void = {}
+    public var copy: (String) -> Void = { _ in }
 
     public init() {}
 }
@@ -88,6 +94,7 @@ public struct SettingsView: View {
     private var content: some View {
         switch scene.tab {
         case .general: GeneralPane(scene: scene, actions: actions)
+        case .servers: ServersPane(scene: scene, actions: actions)
         case .workspaces: WorkspacesPane(scene: scene, actions: actions)
         case .agents: AgentsPane(scene: scene, actions: actions)
         case .notifications: NotificationsPane(scene: scene, actions: actions)
@@ -173,6 +180,108 @@ struct GeneralPane: View {
         case .linked: "\(CLILink.standardPath) → this app's agentws"
         case .missing: "\(CLILink.standardPath) is not set up"
         case .elsewhere(let other): "\(CLILink.standardPath) points at \(other)"
+        }
+    }
+}
+
+struct ServersPane: View {
+    let scene: SettingsScene
+    let actions: SettingsActions
+    @State private var removing: ServerKind?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SettingsGroup(title: "Servers") {
+                ForEach(scene.servers) { server in
+                    HStack {
+                        Image(systemName: server.isRemote ? "server.rack" : "laptopcomputer").frame(width: 18)
+                        Text(server.name).font(.system(size: 13, weight: server == scene.selectedServer ? .semibold : .regular))
+                        if server == scene.selectedServer {
+                            Text("in use").font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if server != scene.selectedServer {
+                            Button("Switch") { actions.selectServer(server) }
+                        }
+                        if server.isRemote {
+                            Button("Remove…") { removing = server }
+                        }
+                    }
+                }
+                Button(action: actions.addServer) { Label("Add server…", systemImage: "plus") }
+            }
+            SettingsGroup(title: "\(scene.selectedServer.name) status") {
+                if scene.checklist.isEmpty {
+                    Text(scene.serverBusy ? "Checking…" : "Not checked yet").foregroundStyle(.secondary)
+                }
+                ForEach(scene.checklist) { item in
+                    CheckRow(item: item) { item in
+                        if let command = item.command {
+                            actions.copy(command)
+                        } else {
+                            actions.setUpServer()
+                        }
+                    }
+                    .disabled(scene.serverBusy && item.command == nil)
+                }
+                HStack {
+                    Button("Check again", action: actions.checkServer)
+                    Button("Set up or update", action: actions.setUpServer)
+                    if scene.serverBusy { ProgressView().controlSize(.small) }
+                }
+                .disabled(scene.serverBusy)
+            }
+        }
+        .confirmationDialog(
+            "Remove this server from the app?",
+            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+            presenting: removing
+        ) { server in
+            Button("Remove \(server.name)", role: .destructive) { actions.removeServer(server) }
+        } message: { _ in
+            Text("Only the app forgets it. agentws and its sessions keep running on the server.")
+        }
+    }
+}
+
+struct CheckRow: View {
+    let item: CheckItem
+    let fix: (CheckItem) -> Void
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let theme = Theme(scheme)
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: symbol).foregroundStyle(theme(tone)).frame(width: 16)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title).font(.system(size: 12, weight: .medium))
+                Text(item.detail).font(.system(size: 11)).foregroundStyle(.secondary)
+                if let command = item.command {
+                    Text(command).font(Metrics.mono).textSelection(.enabled)
+                }
+            }
+            Spacer()
+            if let label = item.fix {
+                Button(label) { fix(item) }
+            } else if item.command != nil {
+                Button("Copy command") { fix(item) }
+            }
+        }
+    }
+
+    private var symbol: String {
+        switch item.state {
+        case .ok: "checkmark.circle.fill"
+        case .warning: "exclamationmark.triangle.fill"
+        case .failed: "xmark.octagon.fill"
+        }
+    }
+
+    private var tone: Tone {
+        switch item.state {
+        case .ok: .green
+        case .warning: .peach
+        case .failed: .red
         }
     }
 }

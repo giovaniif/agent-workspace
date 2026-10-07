@@ -3,6 +3,7 @@ import Observation
 
 public enum SettingsTab: String, CaseIterable, Sendable, Identifiable {
     case general
+    case servers
     case workspaces
     case agents
     case notifications
@@ -14,6 +15,7 @@ public enum SettingsTab: String, CaseIterable, Sendable, Identifiable {
     public var title: String {
         switch self {
         case .general: "General"
+        case .servers: "Servers"
         case .workspaces: "Workspaces"
         case .agents: "Agents"
         case .notifications: "Notifications"
@@ -25,6 +27,7 @@ public enum SettingsTab: String, CaseIterable, Sendable, Identifiable {
     public var symbol: String {
         switch self {
         case .general: "gearshape"
+        case .servers: "server.rack"
         case .workspaces: "folder"
         case .agents: "cpu"
         case .notifications: "bell"
@@ -33,7 +36,7 @@ public enum SettingsTab: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    public var perServer: Bool { self != .general && self != .shortcuts }
+    public var perServer: Bool { self != .general && self != .servers && self != .shortcuts }
 }
 
 public enum BadgeCount: String, Codable, CaseIterable, Sendable {

@@ -103,6 +103,17 @@ struct WorkspaceListReply: Decodable, Sendable {
     }
 }
 
+struct DirsReply: Decodable, Sendable {
+    struct Child: Codable, Equatable, Sendable {
+        var path: String
+
+        enum CodingKeys: String, CodingKey {
+            case path = "Path"
+        }
+    }
+
+    @NullAsEmpty var dirs: [Child]
+}
 
 @MainActor
 @Observable
@@ -170,6 +181,15 @@ public final class ServerSettings {
             let added: WorkspaceInfo = try await self.caller.call("workspace.add", params: ["path": path])
             self.notice = "Added \(added.root) (\(added.summary))"
         }
+    }
+
+    public func dirs(_ path: String) async -> [String] {
+        var found: [String] = []
+        await run {
+            let reply: DirsReply = try await self.caller.call("workspace.dirs", params: ["path": path])
+            found = reply.dirs.map(\.path)
+        }
+        return found
     }
 
     public func removeWorkspace(_ root: String) async {
