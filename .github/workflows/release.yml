@@ -3,6 +3,12 @@ name: release
 on:
   push:
     tags: ["v*"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .goreleaser.yaml
+      - macos/**
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -10,6 +16,8 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -27,6 +35,56 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --clean ${{ startsWith(github.ref, 'refs/tags/v') && ' ' || '--snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        run: echo "version=$(jq -r .tag dist/metadata.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archives
+          path: dist/*.tar.gz
+
+  macos-app:
+    needs: goreleaser
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v5
+        with:
+          name: archives
+          path: archives
+      - name: Unpack the agentws builds
+        run: |
+          for target in darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
+            mkdir -p "binaries/$target"
+            tar -xzf "archives/agentws_$target.tar.gz" -C "binaries/$target" agentws
+          done
+      - name: Build agentws.app
+        run: macos/build-app release
+        env:
+          AGENTWS_APP_VERSION: ${{ needs.goreleaser.outputs.version }}
+          AGENTWS_APP_BINARIES: ${{ github.workspace }}/binaries
+      - name: Check the bundle
+        run: |
+          app=macos/build/agentws.app
+          codesign --verify --deep --strict --verbose "$app"
+          plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist"
+          "$app/Contents/Resources/bin/darwin_$(uname -m | sed 's/x86_64/amd64/')/agentws" version | grep -F "${VERSION}"
+        env:
+          AGENTWS_NO_UPDATE_CHECK: "1"
+          VERSION: ${{ needs.goreleaser.outputs.version }}
+      - run: macos/build-dmg "build/agentws_${VERSION}.dmg"
+        env:
+          VERSION: ${{ needs.goreleaser.outputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: macos/build/*.dmg
+      - if: startsWith(github.ref, 'refs/tags/v')
+        run: gh release upload "$VERSION" "macos/build/agentws_${VERSION}.dmg" --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.goreleaser.outputs.version }}
