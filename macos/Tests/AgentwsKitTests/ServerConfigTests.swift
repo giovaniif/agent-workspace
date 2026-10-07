@@ -97,4 +97,8 @@ struct ServerConfigTests {
         #expect(ConfigFields.theme.first?.key == "theme.text")
         #expect(ConfigFields.defaults(for: "codex").map(\.key) == ["defaults.codex.model", "defaults.codex.effort"])
     }
+
+    @Test func theTabsWithServerSettingsReadTheServerWhenShown() {
+        #expect(SettingsTab.allCases.filter(\.perServer) == [.workspaces, .agents, .notifications, .appearance])
+    }
 }
