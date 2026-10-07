@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"time"
 
@@ -96,6 +97,10 @@ type Model struct {
 	workspaces map[string]domain.Workspace
 	projects   map[string]domain.Project
 	proj       *projectsPanel
+	shellTabs  map[string]domain.ShellTab
+	activeTabs map[string]string
+	tabNew     *tabChooser
+	closingTab *tabClose
 	tasks      map[string]domain.Task
 	taskOrder  []string
 	worktrees  map[string]domain.Worktree
@@ -283,6 +288,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.dk.open {
 			return m.diskKey(msg.String())
 		}
+		if m.tabNew != nil {
+			return m.tabChooserKey(msg)
+		}
 		if m.menu != nil {
 			return m.menuKey(msg)
 		}
@@ -344,6 +352,14 @@ func (m *Model) load(st rpc.State) {
 	for _, p := range st.Projects {
 		m.projects[p.Root] = p
 	}
+	m.shellTabs = map[string]domain.ShellTab{}
+	for _, sh := range st.ShellTabs {
+		m.shellTabs[sh.ID] = sh
+	}
+	m.activeTabs = maps.Clone(st.ActiveTabs)
+	if m.activeTabs == nil {
+		m.activeTabs = map[string]string{}
+	}
 	m.tasks = map[string]domain.Task{}
 	m.worktrees = map[string]domain.Worktree{}
 	m.sessions = map[string]domain.Session{}
@@ -400,6 +416,15 @@ func (m *Model) apply(d rpc.Diff) {
 		return
 	case d.RemovedProject != "":
 		delete(m.projects, d.RemovedProject)
+		return
+	case d.ShellTab != nil:
+		m.shellTabs[d.ShellTab.ID] = *d.ShellTab
+		return
+	case d.RemovedShellTab != "":
+		delete(m.shellTabs, d.RemovedShellTab)
+		return
+	case d.ActiveTab != nil:
+		m.activeTabs[d.ActiveTab.Worktree] = d.ActiveTab.Tab
 		return
 	case d.Task != nil:
 		m.putTask(*d.Task)
@@ -531,6 +556,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.resumeKey(k)
 	}
 	cur := m.index(m.selected)
+	if m.closingTab != nil {
+		return m.confirmCloseTab(k)
+	}
 	if m.ending != "" {
 		id := m.ending
 		m.ending, m.status = "", ""
@@ -538,6 +566,9 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, m.endSession(id)
 		}
 		return m, nil
+	}
+	if next, cmd, handled := m.tabKey(k); handled {
+		return next, cmd
 	}
 	switch k {
 	case "n":
