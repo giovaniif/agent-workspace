@@ -23,6 +23,7 @@ type Sessions struct {
 	Host      TerminalHost
 	Worktrees WorktreeAdder
 	Setup     SetupFunc
+	Runner    CommandRunner
 }
 
 type NewSession struct {
@@ -34,6 +35,8 @@ type NewSession struct {
 	Model   string
 	Effort  string
 	Prompt  string
+
+	ProjectSetup string
 }
 
 type Started struct {
@@ -54,6 +57,14 @@ func (s Sessions) Start(ctx context.Context, req NewSession) (Started, error) {
 		if s.Setup != nil {
 			if err := s.Setup(ctx, added.Path); err != nil {
 				return Started{Worktree: wt}, fmt.Errorf("setup %s: %w", added.Path, err)
+			}
+		}
+		if req.ProjectSetup != "" {
+			if s.Runner == nil {
+				return Started{Worktree: wt}, fmt.Errorf("project setup %s: no command runner configured", added.Path)
+			}
+			if err := s.Runner.Run(ctx, added.Path, "sh", "-c", req.ProjectSetup); err != nil {
+				return Started{Worktree: wt}, fmt.Errorf("project setup %s: %w", added.Path, err)
 			}
 		}
 	}

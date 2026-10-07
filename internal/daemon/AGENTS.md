@@ -23,6 +23,8 @@ See [ADR 0007](../../docs/adr/0007-workspace-discovery.md); the discovery rules 
 
 `go test ./internal/domain/ ./internal/daemon/ ./internal/adapters/sqlite/ -run Project`. A project (`domain.Project`: `Root`, `Name`, `Setup`) is a registered workspace root, single repo or orchestration, plus an optional machine-local setup script kept in the `projects` table, never in the repo. `project.add` discovers the path off the loop, refuses one with no repos (`domain.NewProject`), adds the workspace as `workspace.add` does, then publishes the project; adding the same root again replaces its name and script. `project.remove` forgets the project and leaves the workspace. Opening a project is `session.new` with its root as `workspace`, so it works from any cwd. `domain.ProjectOf` finds the project holding a path (the deepest root wins).
 
+- **Setup script.** When `session.new` creates a worktree in a project's workspace, the project's `Setup` runs there as `sh -c <script>` (`WithProjectSetup`, `setup.Shell`), after the `.agentws.toml` recipe and before the harness launches; an empty script runs nothing. A failing script fails the start like a failing recipe and keeps the worktree. An orchestration root starts with no worktree, so nothing runs there; worktrees an agent adds itself are not set up. Tests: `go test ./internal/app/ ./internal/daemon/ -run 'ProjectSetup|SetupScript'`.
+
 ## Sessions
 
 See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).

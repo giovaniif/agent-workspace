@@ -57,6 +57,77 @@ func TestStartSessionInASingleRepoAddsTheWorktreeRunsSetupThenLaunchesWhereGitPu
 	}
 }
 
+func TestStartSessionRunsTheProjectSetupAfterTheRecipeAndBeforeTheLaunch(t *testing.T) {
+	var log []string
+	s := app.Sessions{
+		Host:      &fakeHost{log: &log},
+		Worktrees: &fakeWorktrees{log: &log},
+		Runner:    fakeRunner{log: &log},
+		Setup: func(_ context.Context, dir string) error {
+			log = append(log, "setup "+dir)
+			return nil
+		},
+	}
+	req := newSession(singlePlan)
+	req.ProjectSetup = "make env"
+	if _, err := s.Start(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"add /h/api/eng-1", "setup /real/h/api/eng-1", "run /real/h/api/eng-1 sh -c make env", "create /real/h/api/eng-1"}
+	if !slices.Equal(log, want) {
+		t.Fatalf("steps %v, want %v", log, want)
+	}
+}
+
+func TestStartSessionWithoutAProjectSetupRunsNoScript(t *testing.T) {
+	var log []string
+	s := app.Sessions{Host: &fakeHost{log: &log}, Worktrees: &fakeWorktrees{log: &log}, Runner: fakeRunner{log: &log}}
+	if _, err := s.Start(context.Background(), newSession(singlePlan)); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"add /h/api/eng-1", "create /real/h/api/eng-1"}; !slices.Equal(log, want) {
+		t.Fatalf("steps %v, want %v", log, want)
+	}
+}
+
+func TestStartSessionStopsBeforeTheLaunchWhenTheProjectSetupFails(t *testing.T) {
+	var log []string
+	host := &fakeHost{log: &log}
+	s := app.Sessions{Host: host, Worktrees: &fakeWorktrees{log: &log}, Runner: fakeRunner{log: &log, err: errors.New("exit 2")}}
+	req := newSession(singlePlan)
+	req.ProjectSetup = "false"
+	got, err := s.Start(context.Background(), req)
+	if err == nil || len(host.created) != 0 {
+		t.Fatalf("err %v, created %+v", err, host.created)
+	}
+	if got.Worktree == nil || got.Worktree.Path != "/real/h/api/eng-1" {
+		t.Fatalf("the worktree must be reported so it is kept: %+v", got.Worktree)
+	}
+}
+
+func TestStartSessionRefusesAProjectSetupWithNoRunnerToRunIt(t *testing.T) {
+	host := &fakeHost{}
+	s := app.Sessions{Host: host, Worktrees: &fakeWorktrees{}}
+	req := newSession(singlePlan)
+	req.ProjectSetup = "make env"
+	if _, err := s.Start(context.Background(), req); err == nil || len(host.created) != 0 {
+		t.Fatalf("err %v, created %+v", err, host.created)
+	}
+}
+
+func TestStartSessionAtAnOrchestrationRootRunsNoProjectSetup(t *testing.T) {
+	var log []string
+	s := app.Sessions{Host: &fakeHost{log: &log}, Worktrees: &fakeWorktrees{log: &log}, Runner: fakeRunner{log: &log}}
+	req := newSession(domain.SessionPlan{Dir: "/src/shop"})
+	req.ProjectSetup = "make env"
+	if _, err := s.Start(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"create /src/shop"}; !slices.Equal(log, want) {
+		t.Fatalf("steps %v, want %v", log, want)
+	}
+}
+
 func TestStartSessionAtAnOrchestrationRootCreatesNoWorktree(t *testing.T) {
 	host := &fakeHost{}
 	wts := &fakeWorktrees{}

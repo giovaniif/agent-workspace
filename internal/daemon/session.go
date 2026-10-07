@@ -17,6 +17,7 @@ type sessionDeps struct {
 	worktrees    app.WorktreeAdder
 	setup        app.SetupFunc
 	worktreeHome string
+	scripts      app.CommandRunner
 	addMu        sync.Mutex
 	resumeMu     sync.Mutex
 
@@ -31,12 +32,16 @@ func WithFirstPromptGrace(grace time.Duration) Option {
 
 func WithSessions(worktrees app.WorktreeAdder, setup app.SetupFunc, worktreeHome string) Option {
 	return func(d *Daemon) {
-		d.sess = sessionDeps{worktrees: worktrees, setup: setup, worktreeHome: worktreeHome, firstPromptGrace: d.sess.firstPromptGrace}
+		d.sess = sessionDeps{worktrees: worktrees, setup: setup, worktreeHome: worktreeHome, scripts: d.sess.scripts, firstPromptGrace: d.sess.firstPromptGrace}
 	}
 }
 
+func WithProjectSetup(runner app.CommandRunner) Option {
+	return func(d *Daemon) { d.sess.scripts = runner }
+}
+
 func (d *Daemon) sessions() app.Sessions {
-	return app.Sessions{Host: d.hs.host, Worktrees: serialAdder{mu: &d.sess.addMu, inner: d.sess.worktrees}, Setup: d.sess.setup}
+	return app.Sessions{Host: d.hs.host, Worktrees: serialAdder{mu: &d.sess.addMu, inner: d.sess.worktrees}, Setup: d.sess.setup, Runner: d.sess.scripts}
 }
 
 type serialAdder struct {
@@ -56,6 +61,8 @@ type newSessionInput struct {
 	isNew   bool
 	taken   []string
 	missing string
+
+	projectSetup string
 }
 
 func (d *Daemon) newSession(req rpc.Request) (*rpc.Response, bool) {
@@ -118,6 +125,7 @@ func (d *Daemon) startSession(p rpc.NewSessionParams, prompt string) (domain.Ses
 	started, err := d.sessions().Start(d.ws.ctx, app.NewSession{
 		ID: newID(), Task: in.task, Plan: plan, Harness: adapter,
 		Name: name, Model: p.Model, Effort: p.Effort, Prompt: prompt,
+		ProjectSetup: in.projectSetup,
 	})
 	if err != nil {
 		if started.Worktree != nil && !d.query(func(s *state) { s.putWorktree(*started.Worktree) }) {
@@ -170,6 +178,9 @@ func (s *state) newSessionInput(root string, parsed domain.Task) newSessionInput
 			return in
 		}
 		in.ws = ws
+	}
+	if project, found := domain.ProjectOf(sorted(s.projects), in.ws.Root); found {
+		in.projectSetup = project.Setup
 	}
 	known, found := domain.FindTask(sorted(s.tasks), parsed)
 	in.task, in.isNew = known, !found
