@@ -65,6 +65,16 @@ struct ReviewTests {
         #expect(back?.map { $0["Kind"] as? Int } == [32, 43, 45])
     }
 
+    @Test func aKindNamedAsAStringIsRejected() {
+        let json = #"[{"Kind":"add","Old":0,"New":1,"Text":"a"}]"#
+        #expect(throws: DecodingError.self) { try JSONDecoder().decode([DiffLine].self, from: Data(json.utf8)) }
+    }
+
+    @Test func theTokensGoldenCarriesGoFileStatuses() throws {
+        let review = try ReviewGoldens.tokens()
+        #expect(review.worktrees[0].files.map(\.status) == ["A", "A", "A", "A"])
+    }
+
     @Test func highlightSplitsALineByItsByteSpans() throws {
         let review = try ReviewGoldens.tokens()
         let lines = review.worktrees[0].files[0].hunks[0].lines
