@@ -110,6 +110,15 @@ public struct NotificationSettings: Codable, Equatable, Sendable {
         self.skipSessionInView = skipSessionInView
         self.notifyMuted = notifyMuted
     }
+
+    public func alert(for state: String) -> EventAlert {
+        switch state {
+        case "permission": permission
+        case "waiting": waiting
+        case "done": done
+        default: limitOrError
+        }
+    }
 }
 
 public enum ThemeChoice: String, Codable, CaseIterable, Sendable {

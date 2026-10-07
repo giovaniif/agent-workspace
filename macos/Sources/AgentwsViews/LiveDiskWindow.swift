@@ -10,12 +10,17 @@ public final class WindowRouter {
     public var focusSeq = 0
     public var shell: (session: String, worktree: String)?
     public var shellSeq = 0
+    public var newSessionRequested = false
 
     public init() {}
 
     public func goTo(session: String) {
         focus = session
         focusSeq += 1
+    }
+
+    public func newSession() {
+        newSessionRequested = true
     }
 
     public func openShell(session: String, worktree: String) {

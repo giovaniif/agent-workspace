@@ -179,7 +179,7 @@ struct AttentionTests {
         #expect(viewing.params["front"] as? Bool == true)
         attention.receive(try noticeLine(permissionNotice))
         #expect(notifier.posted.isEmpty)
-        #expect(notifier.withdrawn == ["s1"])
+        #expect(notifier.withdrawn == ["s1", "s1"])
         await attention.view(session: "s1", front: false)
         attention.receive(try noticeLine(permissionNotice))
         #expect(notifier.posted.map(\.id) == ["s1"])
@@ -228,6 +228,16 @@ struct AttentionTests {
         await attention.view(session: "s1", front: true)
         await attention.reconnected()
         #expect(caller.methods() == ["client.viewing", "client.viewing"])
+    }
+
+    @Test func aViewingReportThatFailedIsSentAgainAfterAReconnect() async {
+        let (attention, caller, _) = attention()
+        caller.replies["client.viewing"] = nil
+        await attention.view(session: "s1", front: true)
+        caller.replies["client.viewing"] = .success("{}")
+        await attention.reconnected()
+        #expect(caller.methods() == ["client.viewing", "client.viewing"])
+        #expect(caller.calls.last?.params["session"] as? String == "s1")
     }
 
     @Test func replySendsTheTextToTheSession() async throws {

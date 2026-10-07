@@ -37,6 +37,7 @@ public final class ViewStore {
     public private(set) var state: ViewState?
     public private(set) var connection: ConnectionStatus = .idle
 
+    public var callsRestarted: @MainActor () -> Void = {}
     public let endpoint: Endpoint
     public let build: String
     private let environment: [String: String]?
@@ -82,8 +83,10 @@ public final class ViewStore {
         if let calls, !calls.isClosed {
             client = calls
         } else {
+            let restarted = calls != nil
             client = try RPCClient(endpoint: endpoint, build: build, environment: environment)
             calls = client
+            if restarted { callsRestarted() }
         }
         return try await client.call(method, params: params)
     }

@@ -50,6 +50,11 @@ final class Launcher {
         let store = ViewStore(endpoint: .local(binary: binary), build: build)
         let notifier = UserNotifier { [weak self] action in self?.handle(action) }
         let attention = Attention(caller: store, notifier: notifier)
+        attention.preferences = settings.settings.notifications
+        attention.isMuted = { [weak store] id in store?.state?.sessions.first { $0.id == id }?.muted ?? false }
+        store.callsRestarted = { [weak attention] in
+            if let attention { Task { await attention.reconnected() } }
+        }
         let stream = NoticeStream(endpoint: store.endpoint, build: build, connected: { [weak attention] in
             if let attention { Task { await attention.reconnected() } }
         }) { [weak attention] notice in
@@ -149,6 +154,7 @@ struct MenuContent: View {
         a.always = { id in if let attention = launcher.attention { Task { await attention.allow(id, always: true) } } }
         a.open = { launcher.open($0) }
         a.newSession = {
+            launcher.router.newSession()
             openWindow(id: "main")
             NSApplication.shared.activate()
         }
@@ -178,6 +184,9 @@ struct MenuLabel: View {
             if !Launch.demo { await launcher.load() }
         }
         .onChange(of: menu.badge, initial: true) { launcher.updateBadge() }
+        .onChange(of: launcher.settings.settings.notifications) {
+            launcher.attention?.preferences = launcher.settings.settings.notifications
+        }
     }
 }
 
