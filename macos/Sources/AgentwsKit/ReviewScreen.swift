@@ -225,6 +225,26 @@ public struct ReviewScreen: Sendable, Equatable {
         return nil
     }
 
+    public mutating func startComment(_ key: FileKey, _ line: DiffLine) {
+        selected = key
+        composer = Composer(key: key, lines: [line])
+    }
+
+    public mutating func extendComment(to line: DiffLine) {
+        guard let file = selectedFile else { return }
+        guard var composer, composer.key == file.key,
+              let first = composer.lines.first, let last = composer.lines.last else {
+            startComment(file.key, line)
+            return
+        }
+        let all = file.file.hunks.flatMap(\.lines)
+        guard let from = all.firstIndex(of: first), let to = all.firstIndex(of: last), let target = all.firstIndex(of: line) else {
+            return
+        }
+        composer.lines = Array(all[min(from, target)...max(to, target)])
+        self.composer = composer
+    }
+
     public var fileCount: Int { visible.reduce(0) { $0 + $1.files.count } }
 
     public var draftRows: [DraftRow] {
