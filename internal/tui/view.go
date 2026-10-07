@@ -241,7 +241,11 @@ func (m Model) body() ([]string, int, []string) {
 		return m.pickerLines(), 0, owners
 	}
 	if m.resuming != nil {
-		return m.resumeLines(), 2 + m.resuming.cursor, nil
+		owners := []string{"", ""}
+		for i := range m.resuming.choices {
+			owners = append(owners, ownResume+strconv.Itoa(i))
+		}
+		return m.resumeLines(), 2 + m.resuming.cursor, owners
 	}
 	if len(m.entries) == 0 {
 		return append([]string{
