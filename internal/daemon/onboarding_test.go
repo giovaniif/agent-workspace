@@ -75,3 +75,26 @@ func TestOnboardNvimAddsThePluginSetup(t *testing.T) {
 		t.Errorf("nvim = %+v, %v, installs %d", n, err, f.nvimInstalls)
 	}
 }
+
+func TestOnboardRemoveTakesTheHooksOutAndReportsTheBackup(t *testing.T) {
+	f := &fakeOnboarder{}
+	_, path := start(t, &memStore{}, daemon.WithOnboarding(f))
+	c := dial(t, path)
+	ctx := context.Background()
+
+	if _, err := c.OnboardInstall(ctx, domain.HarnessClaude); err != nil {
+		t.Fatal(err)
+	}
+	got, err := c.OnboardRemove(ctx, domain.HarnessClaude)
+	if err != nil || got.Installed || got.Backup != "/c/claude.bak" {
+		t.Errorf("remove = %+v, %v", got, err)
+	}
+	status, err := c.Onboarding(ctx)
+	if err != nil || status.Harnesses[domain.HarnessClaude].Installed {
+		t.Errorf("after remove = %+v, %v", status, err)
+	}
+	var rerr *rpc.Error
+	if _, err := c.OnboardRemove(ctx, "vim"); !errors.As(err, &rerr) || rerr.Code != rpc.CodeBadRequest {
+		t.Errorf("unknown harness: %v", err)
+	}
+}

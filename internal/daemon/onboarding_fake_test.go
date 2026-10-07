@@ -53,3 +53,15 @@ func (f *fakeOnboarder) InstallNvim(context.Context) (domain.NvimSetup, error) {
 	f.nvimInstalls++
 	return f.state.Nvim, nil
 }
+
+func (f *fakeOnboarder) Remove(_ context.Context, h domain.Harness) (domain.HarnessSetup, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	setup := domain.HarnessSetup{File: "/c/" + string(h), Backup: "/c/" + string(h) + ".bak"}
+	f.state.Harnesses = maps.Clone(f.state.Harnesses)
+	if f.state.Harnesses == nil {
+		f.state.Harnesses = map[domain.Harness]domain.HarnessSetup{}
+	}
+	f.state.Harnesses[h] = setup
+	return setup, nil
+}
