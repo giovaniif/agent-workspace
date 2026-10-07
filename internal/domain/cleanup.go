@@ -24,6 +24,7 @@ type CleanupFacts struct {
 	SessionLive  bool
 	LastActivity time.Time
 	Unknown      string
+	Project      string
 }
 
 type CleanupDecision struct {
@@ -39,6 +40,8 @@ func PlanCleanup(w Worktree, f CleanupFacts, now time.Time) CleanupDecision {
 	switch {
 	case filepath.Clean(w.Path) == filepath.Clean(w.Repo):
 		d.Reason = "the main checkout"
+	case f.Project != "":
+		d.Reason = "held by project " + f.Project
 	case f.Unknown != "":
 		d.Reason = "facts unavailable: " + f.Unknown
 	case len(f.Holders) > 0:

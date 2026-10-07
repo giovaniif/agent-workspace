@@ -52,7 +52,10 @@ func (d *Daemon) projectAdd(req rpc.Request) (*rpc.Response, bool) {
 		}
 		return nil, false
 	}
-	if !d.commit(ProjectChanged{Project: project}) {
+	d.cl.mu.Lock()
+	committed := d.commit(ProjectChanged{Project: project})
+	d.cl.mu.Unlock()
+	if !committed {
 		return nil, false
 	}
 	return result(req.ID, project), true

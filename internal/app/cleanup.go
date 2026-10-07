@@ -51,6 +51,7 @@ type CleanupRecord struct {
 type SessionActivity struct {
 	Live         bool
 	LastActivity time.Time
+	Project      string
 }
 
 type CleanupResult struct {
@@ -124,6 +125,7 @@ func (c *Cleanup) decide(w domain.Worktree, g WorktreeGitFacts, gitErr error, ho
 		Holders:      holders,
 		SessionLive:  act.Live,
 		LastActivity: latest(g.ModifiedAt, act.LastActivity),
+		Project:      act.Project,
 	}
 	switch {
 	case procErr != nil:

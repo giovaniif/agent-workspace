@@ -129,3 +129,20 @@ func TestCleanupRunsWhenAPRIsSeenMerged(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+func TestCleanupKeepsTheWorktreesOfAProjectAfterTheirSessionEnded(t *testing.T) {
+	store := &memStore{}
+	store.snap.Projects = []domain.Project{{Root: "/solo", Name: "solo"}}
+	store.snap.Worktrees = []domain.Worktree{{ID: "/h/solo-a", Repo: "/solo", Path: "/h/solo-a", Branch: "a", SessionID: "s2", PR: &domain.PullRequest{Number: 1, Head: "a", State: domain.PRMerged}}}
+	env := startCleanup(t, store, time.Hour, domain.ListedWorktree{Path: "/h/solo-a", Branch: "a"})
+	items, err := dial(t, env.path).CleanupRun(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].Action != domain.CleanupKeep || items[0].Reason != "held by project solo" {
+		t.Errorf("items = %+v, want kept for the project", items)
+	}
+	if moved := env.world.movedPaths(); len(moved) != 0 {
+		t.Errorf("moved = %v", moved)
+	}
+}

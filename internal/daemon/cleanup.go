@@ -70,14 +70,17 @@ func (d *Daemon) cleanupInputs() ([]domain.Worktree, func(domain.Worktree) app.S
 	activity := map[string]app.SessionActivity{}
 	ok := d.query(func(s *state) {
 		wts = sorted(s.worktrees)
+		projects := sorted(s.projects)
 		for _, w := range wts {
-			x, found := s.sessions[w.SessionID]
-			if !found || w.SessionID == "" {
-				continue
+			var a app.SessionActivity
+			if p, found := projectHolding(projects, w); found {
+				a.Project = p.Name
 			}
-			a := app.SessionActivity{Live: x.State != domain.StateIdle}
-			if evs := s.events[x.ID]; len(evs) > 0 {
-				a.LastActivity = evs[len(evs)-1].At
+			if x, found := s.sessions[w.SessionID]; found && w.SessionID != "" {
+				a.Live = x.State != domain.StateIdle
+				if evs := s.events[x.ID]; len(evs) > 0 {
+					a.LastActivity = evs[len(evs)-1].At
+				}
 			}
 			activity[w.ID] = a
 		}
@@ -120,4 +123,11 @@ func (d *Daemon) cleanupMethod(req rpc.Request) (*rpc.Response, bool) {
 		items = append(items, rpc.CleanupItem{Path: w.Path, Branch: w.Branch, Action: r.Decision.Action, Reason: r.Decision.Reason, Outcome: r.Outcome})
 	}
 	return result(req.ID, items), ok
+}
+
+func projectHolding(projects []domain.Project, w domain.Worktree) (domain.Project, bool) {
+	if p, found := domain.ProjectOf(projects, w.Repo); found {
+		return p, true
+	}
+	return domain.ProjectOf(projects, w.Path)
 }

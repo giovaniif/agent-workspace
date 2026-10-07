@@ -96,6 +96,18 @@ func TestCleanupPlanSessionActivityCountsAsActivity(t *testing.T) {
 	}
 }
 
+func TestCleanupPlanKeepsAWorktreeHeldByAProject(t *testing.T) {
+	w := newCleanupWorld(map[string]app.WorktreeGitFacts{"/w/a": {ModifiedAt: cleanupNow.Add(-domain.CleanupGrace - time.Hour)}})
+	held := func(domain.Worktree) app.SessionActivity { return app.SessionActivity{Project: "shop"} }
+	got := w.c.Plan(context.Background(), []domain.Worktree{merged("/w/a", "a", 1)}, held)
+	if got[0].Action != domain.CleanupKeep || got[0].Reason != "held by project shop" {
+		t.Errorf("decision = %+v, want kept for the project", got[0])
+	}
+	if res := w.c.Execute(context.Background(), []domain.Worktree{merged("/w/a", "a", 1)}, held); res[0].Outcome == "removed" {
+		t.Errorf("execute removed a project's worktree: %+v", res[0])
+	}
+}
+
 func TestCleanupPlanKeepsEverythingWhenProcessesAreUnknown(t *testing.T) {
 	w := newCleanupWorld(map[string]app.WorktreeGitFacts{"/w/a": {ModifiedAt: cleanupNow.Add(-domain.CleanupGrace - time.Hour)}})
 	w.procs.err = errors.New("lsof missing")
