@@ -194,3 +194,27 @@ func TestCleanupWorktreeUnknownPathIsNotFound(t *testing.T) {
 		t.Errorf("got %v, want not_found", err)
 	}
 }
+
+func TestDiskViewCarriesTheReclaimableAndWorktreeTotalsWithPendingCounts(t *testing.T) {
+	env := startDisk(t, mergedWT("a", 1), domain.Worktree{ID: "/solo-b", Repo: "/solo", Path: "/solo-b", Branch: "b"}, mergedWT("c", 3))
+	env.world.dirty["/solo-c"] = 2
+	c := dial(t, env.path)
+
+	view, err := c.DiskView(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.Reclaimable != 0 || view.ReclaimablePending != 2 || view.WorktreesSize != 0 || view.WorktreesPending != 3 {
+		t.Errorf("before du: reclaimable %d (%d pending), worktrees %d (%d pending)", view.Reclaimable, view.ReclaimablePending, view.WorktreesSize, view.WorktreesPending)
+	}
+
+	close(env.sizer.open)
+	env.sizes.Wait()
+	view, err = c.DiskView(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.Reclaimable != 340 || view.ReclaimablePending != 0 || view.WorktreesSize != 390 || view.WorktreesPending != 0 {
+		t.Errorf("after du: reclaimable %d (%d pending), worktrees %d (%d pending)", view.Reclaimable, view.ReclaimablePending, view.WorktreesSize, view.WorktreesPending)
+	}
+}

@@ -55,6 +55,29 @@ struct SnapshotTests {
         return (Double(v >> 16 & 0xff), Double(v >> 8 & 0xff), Double(v & 0xff))
     }
 
+    func shootDisk(_ name: String, _ scene: DiskScene, dark: Bool = false) throws -> NSBitmapImageRep {
+        let rep = Snapshot.render(disk: scene, size: Self.size, dark: dark)
+        let png = try #require(rep.representation(using: .png, properties: [:]))
+        try FileManager.default.createDirectory(at: Self.directory, withIntermediateDirectories: true)
+        try png.write(to: Self.directory.appendingPathComponent(name + ".png"))
+        return rep
+    }
+
+    @Test func theDiskWindowMarksDirtyAndMergedWorktrees() throws {
+        let rep = try shootDisk("disk-worktrees", .seeded())
+        #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
+        #expect(pixels(rep, near: Palette.latte.hex(.green)) > 20)
+    }
+
+    @Test func theDiskWindowShowsMeasuringSizesInMocha() throws {
+        _ = try shootDisk("disk-measuring-mocha", .seeded(measuring: true), dark: true)
+    }
+
+    @Test func theDiskWindowListsPortsAndRecentCleanups() throws {
+        _ = try shootDisk("disk-ports", .seeded(tab: .ports))
+        _ = try shootDisk("disk-recent", .seeded(tab: .recent))
+    }
+
     @Test func theSeededWindowDrawsEveryStateInLatte() throws {
         let rep = try shoot("window-latte", .seeded())
         for tone in [Tone.red, .peach, .blue, .green, .grey] {
