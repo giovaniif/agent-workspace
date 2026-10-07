@@ -26,6 +26,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runTUI(args[1:], stderr)
 	case cmd == "debug":
 		return runDebug(args[1:], stdout, stderr)
+	case cmd == "version" && len(args) == 2 && args[1] == "--build":
+		fmt.Fprintln(stdout, version.String())
+		return 0
 	case cmd == "version":
 		return runVersion(version.Version, buildCommit(), latestRelease, stdout)
 	case cmd == "hook":
@@ -94,5 +97,5 @@ func buildCommit() string {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|review|focus|notify|remote|serve|rpc|cleanup|version]")
+	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|review|focus|notify|remote|serve|rpc|cleanup|version [--build]]")
 }
