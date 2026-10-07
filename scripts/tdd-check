@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-base="$1"
-head="$2"
+base=$(git rev-parse --verify --quiet "$1^{commit}") || { echo "tdd: unknown base $1"; exit 2; }
+head=$(git rev-parse --verify --quiet "$2^{commit}") || { echo "tdd: unknown head $2"; exit 2; }
+start_ref=$(git symbolic-ref --quiet --short HEAD || git rev-parse HEAD)
 
 is_test_path() {
   case "$1" in
@@ -142,6 +143,16 @@ if [ ${#changed[@]} -eq 0 ]; then
   exit 0
 fi
 
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "tdd: the worktree has uncommitted changes; commit or set them aside first"
+  exit 2
+fi
+restore_start() {
+  git reset --quiet --hard
+  git checkout --quiet "$start_ref"
+  rm -rf "$tmp"
+}
+trap restore_start EXIT
 git checkout --quiet --detach "$base"
 git checkout "$head" -- "${changed[@]}"
 for f in ${removed[@]+"${removed[@]}"}; do

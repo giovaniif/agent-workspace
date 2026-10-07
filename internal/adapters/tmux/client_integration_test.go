@@ -32,7 +32,7 @@ func TestClientLayoutCanBeFoundFocusedAndAttached(t *testing.T) {
 		t.Fatal(err)
 	}
 	attach := h.AttachCommand(slot)
-	if attach[0] != "tmux" || !slices.Contains(attach, "-L") || !slices.Contains(attach, string(slot)) {
+	if attach[0] != "tmux" || !slices.Contains(attach, "-L") || !slices.Contains(attach, "=agentws:"+string(slot)) {
 		t.Fatalf("attach = %v; want tmux on the dedicated socket targeting %s", attach, slot)
 	}
 	active := slices.Clone(attach[:len(attach)-3])

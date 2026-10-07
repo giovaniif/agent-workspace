@@ -15,6 +15,7 @@ const (
 	nativeSessionPrefix = "agentws-native-"
 	nativeWindowName    = "native"
 	parkedWindowPrefix  = "pane-"
+	clientWindowPrefix  = "client-"
 	nativeUnattachedTTL = time.Minute
 )
 
@@ -37,7 +38,7 @@ func (h *Host) OpenNative(ctx context.Context, cols, rows int) (app.NativeClient
 		h.killSession(ctx, name)
 		return app.NativeClient{}, err
 	}
-	if err := h.linkParked(ctx); err != nil {
+	if err := h.linkNative(ctx); err != nil {
 		h.killSession(ctx, name)
 		return app.NativeClient{}, err
 	}
@@ -83,7 +84,7 @@ func staleNative(out string, now time.Time) []string {
 	return stale
 }
 
-func (h *Host) linkParked(ctx context.Context) error {
+func (h *Host) linkNative(ctx context.Context) error {
 	h.nativeMu.Lock()
 	defer h.nativeMu.Unlock()
 	out, err := h.run(ctx, "", "list-windows", "-a", "-F", "#{session_name}\t#{window_id}\t#{window_name}")
@@ -116,7 +117,7 @@ func missingLinks(out string) []windowLink {
 			seen[session] = true
 			natives = append(natives, session)
 		}
-		if session == sessionName && strings.HasPrefix(name, parkedWindowPrefix) {
+		if session == sessionName && (strings.HasPrefix(name, parkedWindowPrefix) || strings.HasPrefix(name, clientWindowPrefix)) {
 			parked = append(parked, window)
 		}
 	}

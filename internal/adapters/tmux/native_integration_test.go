@@ -8,10 +8,12 @@ import (
 	"io"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/giovaniif/agent-workspace/internal/adapters/tmux"
 	"github.com/giovaniif/agent-workspace/internal/app"
 )
 
@@ -132,9 +134,6 @@ func TestNativeClientGetsOutputOfEveryParkedPaneAndNewWindows(t *testing.T) {
 			t.Fatalf("panes = %+v; want parked pane %s with its window and size", native.Panes, want)
 		}
 	}
-	if _, ok := panes[shown]; ok {
-		t.Fatalf("panes = %+v; the pane in the TUI's slot is not parked", native.Panes)
-	}
 
 	client := attachNative(t, native.Argv)
 	if _, err := io.WriteString(client.stdin, "refresh-client -C 132x40\n"); err != nil {
@@ -191,4 +190,125 @@ func TestNativeClientsGetTheirOwnSessionsWhichGoWhenTheyDetach(t *testing.T) {
 	if !slices.Contains(sessions, second.Session) || !slices.Contains(sessions, "agentws") {
 		t.Fatalf("sessions = %v; want the other native session and agentws kept", sessions)
 	}
+}
+
+func TestNativeClientShowsThePaneInTheTUISlotAcrossSwapsWithoutResizingTheTUI(t *testing.T) {
+	ctx := context.Background()
+	h := newHost(t)
+	slot, err := h.OpenClient(ctx, "main", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := h.Create(ctx, ticker("a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := h.Create(ctx, ticker("b"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Show(ctx, a, slot); err != nil {
+		t.Fatal(err)
+	}
+	native, err := h.OpenNative(ctx, 90, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var inSlot app.NativePane
+	for _, p := range native.Panes {
+		if p.Pane == a {
+			inSlot = p
+		}
+	}
+	if inSlot.Window != string(slot) || inSlot.Cols == 0 || inSlot.Rows == 0 {
+		t.Fatalf("panes = %+v; want %s in the TUI window %s with its size", native.Panes, a, slot)
+	}
+
+	layout := func() string {
+		return tmuxOut(t, native.Argv, "list-panes", "-t", string(slot), "-F", "#{pane_index} #{pane_width}x#{pane_height}")
+	}
+	before := layout()
+
+	client := attachNative(t, native.Argv)
+	if _, err := io.WriteString(client.stdin, "refresh-client -C 90x20\n"); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "%output from the pane in the TUI slot", func() bool { return client.saw("%output "+string(a)+" ", "tick-a") })
+
+	if err := h.Show(ctx, b, slot); err != nil {
+		t.Fatal(err)
+	}
+	if got := h.ShownIn(ctx, slot); got != b {
+		t.Fatalf("pane in the TUI slot after the swap = %s; want %s", got, b)
+	}
+	client.mu.Lock()
+	client.lines = nil
+	client.mu.Unlock()
+	for _, p := range []app.PaneID{a, b} {
+		waitFor(t, "%output from "+string(p)+" after the swap", func() bool { return client.saw("%output "+string(p)+" ", "tick-") })
+	}
+	if got := layout(); got != before {
+		t.Fatalf("TUI layout with a smaller native client = %q; want %q", got, before)
+	}
+}
+
+func TestTUISizesTheWindowItAttaches(t *testing.T) {
+	ctx := context.Background()
+	h := newHost(t)
+	first, err := h.OpenClient(ctx, "one", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := h.OpenClient(ctx, "two", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	native, err := h.OpenNative(ctx, 90, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	size := func(slot app.Slot) string {
+		return tmuxOut(t, native.Argv, "display-message", "-p", "-t", string(slot), "#{window_width}x#{window_height}")
+	}
+	before := size(first)
+	outerTerminal(t, h, second)
+	waitFor(t, "the attached TUI window to take its terminal's size", func() bool { return size(second) == "120x40" })
+	if got := size(first); got != before {
+		t.Fatalf("the other TUI window = %s; want %s", got, before)
+	}
+}
+
+func TestTUIFollowsTerminalSizeBesideNative(t *testing.T) {
+	ctx := context.Background()
+	h := newHost(t)
+	slot, err := h.OpenClient(ctx, "main", app.PaneSpec{Name: "tui", Command: []string{"sleep", "600"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := h.Create(ctx, ticker("a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Show(ctx, a, slot); err != nil {
+		t.Fatal(err)
+	}
+	native, err := h.OpenNative(ctx, 90, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := attachNative(t, native.Argv)
+	if _, err := io.WriteString(client.stdin, "refresh-client -C 90x20\n"); err != nil {
+		t.Fatal(err)
+	}
+	outer := outerTerminal(t, h, slot)
+	size := func() string {
+		return tmuxOut(t, native.Argv, "display-message", "-p", "-t", string(slot), "#{window_width}x#{window_height}")
+	}
+	sidebar := func() string {
+		return tmuxOut(t, native.Argv, "display-message", "-p", "-t", string(slot)+".0", "#{pane_width}")
+	}
+	waitFor(t, "the TUI window to take its terminal's size", func() bool { return size() == "120x40" })
+	outer("resize-window", "-t", "outer", "-x", "150", "-y", "45")
+	waitFor(t, "the TUI window to follow its terminal's new size", func() bool { return size() == "150x45" })
+	waitFor(t, "the sidebar to stay pinned", func() bool { return sidebar() == strconv.Itoa(tmux.SidebarWidth) })
 }
