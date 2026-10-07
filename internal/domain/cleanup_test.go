@@ -41,6 +41,9 @@ func TestCleanupPlan(t *testing.T) {
 		{"detached in default and clean", detached, CleanupFacts{InDefault: true, LastActivity: idle}, CleanupRemove, "merged into the default branch", ""},
 		{"detached in use", detached, CleanupFacts{Holders: []string{"node (pid 9)"}, LastActivity: idle}, CleanupKeep, "in use by node (pid 9)", ""},
 		{"main checkout", Worktree{ID: "/w/api", Repo: "/w/api", Path: "/w/api", Branch: "feat", PR: merged}, CleanupFacts{LastActivity: idle}, CleanupKeep, "the main checkout", ""},
+		{"merged but held by a project", onBranch(merged), CleanupFacts{Project: "shop", LastActivity: idle}, CleanupKeep, "held by project shop", ""},
+		{"dirty and held by a project", onBranch(merged), CleanupFacts{Project: "shop", Uncommitted: 2, LastActivity: idle}, CleanupKeep, "held by project shop", ""},
+		{"detached and held by a project", detached, CleanupFacts{Project: "shop", LastActivity: idle}, CleanupKeep, "held by project shop", ""},
 		{"facts unknown", onBranch(merged), CleanupFacts{Unknown: "git status failed", LastActivity: idle}, CleanupKeep, "facts unavailable: git status failed", ""},
 	}
 	for _, c := range cases {
