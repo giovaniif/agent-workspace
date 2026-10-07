@@ -26,7 +26,7 @@ public final class TerminalHub {
 
     public private(set) var status: TerminalStatus = .idle
     public private(set) var panes = TerminalPanes()
-    public var size = (cols: 200, rows: 50)
+    @ObservationIgnored public var size = (cols: 200, rows: 50)
 
     private let endpoint: Endpoint
     private let environment: [String: String]?
@@ -37,6 +37,7 @@ public final class TerminalHub {
     @ObservationIgnored private var draws: [String: Draw] = [:]
     @ObservationIgnored private var link: TerminalLink?
     @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var sized: [String: String] = [:]
 
     public init(endpoint: Endpoint, environment: [String: String]? = nil, backoff: Backoff = Backoff(), open: @escaping Open) {
         self.endpoint = endpoint
@@ -89,7 +90,10 @@ public final class TerminalHub {
     public func resize(pane: String, cols: Int, rows: Int) {
         size = (cols, rows)
         guard let link, let window = panes[pane]?.window else { return }
-        link.post(ControlCommand.size(window: window, cols: cols, rows: rows))
+        let command = ControlCommand.size(window: window, cols: cols, rows: rows)
+        guard sized[window] != command else { return }
+        sized[window] = command
+        link.post(command)
     }
 
     public func letterbox(pane: String, viewCols: Int, viewRows: Int) -> Letterbox? {
@@ -120,6 +124,7 @@ public final class TerminalHub {
             panes.reset()
             live = []
             draws = [:]
+            sized = [:]
             status = .live
             backoff.reset()
             link.post(ControlCommand.pauseAfter(seconds: 5))
