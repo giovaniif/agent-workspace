@@ -25,6 +25,7 @@ Pure types and rules: no IO, no imports from other `internal/*` packages. `Works
 - `Message`, `MessageLog`, `TranscriptLines`, `TranscriptFromHook`, `ToolSummary`, `ToolResult`, `OneLine`, `ClipText`, and for paging and watching `ToolCalls` (finishes a bare tool result from a call seen earlier, drops one whose call it never saw), `NewestPage` (the newest messages without splitting a line) and `TranscriptPageLimit` (50 by default, at most 500): the harness-neutral chat model the Claude and Codex transcript parsers produce (see [internal/adapters/](../adapters/AGENTS.md) and [ADR 0046](../../docs/adr/0046-remote-app.md)).
 - Pairing ([ADR 0046](../../docs/adr/0046-remote-app.md)): `NewPairCode` (8 characters from `PairCodeAlphabet`, which drops 0, 1, O, I and L, drawn from an injected `intn`), `NormalizePairCode`, `Pairing.Issue`/`Redeem` (5-minute codes, single use; a wrong code voids nothing; 5 failed tries a minute per address and 20 in all, after which every try is refused and not counted), `NewDevice` (32 random bytes as base64url, stored as `HashDeviceToken`), `CheckDeviceToken` (constant time), `RevokeDevice`, `Device.Seen` (at most once a minute), `DeviceName`, `NewDeviceID`, `PairURL`.
 - `MergeLoginPath(current, login)`: the daemon's PATH plus the login shell's entries it lacks, current entries first (see [internal/daemon/](../daemon/AGENTS.md)).
+- `NewProject(workspace, name, setup)` and `ProjectOf(projects, path)`: registered projects (see [internal/daemon/](../daemon/AGENTS.md#projects)).
 
 ### Discovery
 

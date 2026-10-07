@@ -55,6 +55,12 @@ func (d *Daemon) workspaceMethod(req rpc.Request) (resp *rpc.Response, ok, handl
 		resp, ok = d.workspaceRemove(req)
 	case rpc.MethodWorkspaceDirs:
 		resp, ok = d.workspaceDirs(req), true
+	case rpc.MethodProjectAdd:
+		resp, ok = d.projectAdd(req)
+	case rpc.MethodProjectRemove:
+		resp, ok = d.projectRemove(req)
+	case rpc.MethodProjectList:
+		resp, ok = d.projectList(req)
 	default:
 		resp, ok = d.workspaceList(req)
 	}
