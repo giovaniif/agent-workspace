@@ -160,4 +160,21 @@ struct ViewStoreTests {
         #expect(bin.read("runs") == "run\nrun\n")
         store.stop()
     }
+
+    @Test(.timeLimit(.minutes(1))) func aNewCallConnectionAfterADropReportsARestart() async throws {
+        let bin = try FakeBin()
+        let agentws = try bin.script("agentws", """
+        IFS= read -r line
+        printf '{"v":1,"id":1,"result":{"echo":1}}\\n'
+        """)
+        let store = ViewStore(endpoint: .local(binary: agentws), build: "v1", environment: bin.environment)
+        var restarts = 0
+        store.callsRestarted = { restarts += 1 }
+        let _: Echo = try await store.call("status", params: [String: String]())
+        #expect(restarts == 0)
+        try await Task.sleep(for: .milliseconds(300))
+        let _: Echo = try await store.call("status", params: [String: String]())
+        #expect(restarts == 1)
+        store.stop()
+    }
 }
