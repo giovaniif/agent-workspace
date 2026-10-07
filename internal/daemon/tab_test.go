@@ -27,7 +27,7 @@ func startTabs(t *testing.T) termRig {
 	store.snap.Sessions = []domain.Session{tabHost, soloHost}
 	store.snap.Worktrees = []domain.Worktree{tabWT, soloWT}
 	store.snap.Projects = []domain.Project{tabProject}
-	store.snap.Tasks = []domain.Task{{ID: "t1", Title: "x"}, {ID: "t2", Title: "y"}}
+	store.snap.Tasks = []domain.Task{{ID: "t1", Text: "x"}, {ID: "t2", Text: "y"}}
 	r := termRig{client: &fakeClientHost{}, editor: &fakeEditor{}, home: shortDir(t)}
 	r.term = newTermFake(r.client, "%a1", "%a2")
 	d, path := start(t, store,
@@ -204,5 +204,29 @@ func TestTabStripIsInEveryTabPanesTitle(t *testing.T) {
 	})
 	if got := r.term.title("%a2"); strings.Contains(got, "┃") {
 		t.Errorf("a session outside projects got a tab strip: %q", got)
+	}
+}
+
+func TestTabSessionsLeaveTheWorktreesTheyTouchUnassigned(t *testing.T) {
+	store := &memStore{}
+	store.snap.Sessions = []domain.Session{{ID: "tab", Pane: "%2", State: domain.StateRunning, Tab: "/solo-host"}}
+	env := startWorktrees(t, store, 50*time.Millisecond)
+
+	env.lister.set("/solo", domain.ListedWorktree{Path: "/solo-feat", Branch: "feat"}, domain.ListedWorktree{Path: "/solo-mine", Branch: "mine"})
+	postToolUse(t, env.path, "%2", "/solo-mine", "git worktree add ../solo-feat -b feat")
+	eventually(t, env.path, 2*time.Second, "both worktrees listed", func(st rpc.State) bool {
+		_, feat := worktree(st, "/solo-feat")
+		_, mine := worktree(st, "/solo-mine")
+		return feat && mine
+	})
+	time.Sleep(200 * time.Millisecond)
+	st := snapshot(t, env.path)
+	for _, id := range []string{"/solo-feat", "/solo-mine"} {
+		if w, _ := worktree(st, id); w.SessionID != "" {
+			t.Errorf("%s went to %q; a tab session must not own a worktree", id, w.SessionID)
+		}
+	}
+	if ids := session(st, "tab").WorktreeIDs; len(ids) != 0 {
+		t.Errorf("tab session holds %v", ids)
 	}
 }
