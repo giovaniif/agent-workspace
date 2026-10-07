@@ -47,7 +47,7 @@ struct Echo: Decodable, Equatable { let echo: Int }
 struct TransportTests {
     @Test func sshRunsTheRemoteBridgeInBatchModeWithKeepalives() {
         let argv = Endpoint.ssh(host: "box", remoteBinary: "~/.local/bin/agentws").argv
-        #expect(argv == ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ServerAliveInterval=15", "box", "~/.local/bin/agentws", "rpc"])
+        #expect(argv == ["ssh", "-T", "-o", "BatchMode=yes", "-o", "RemoteCommand=none", "-o", "RequestTTY=no", "-o", "ServerAliveInterval=15", "box", "~/.local/bin/agentws", "rpc"])
     }
 
     @Test func localRunsTheBundledBridge() {
@@ -62,12 +62,16 @@ struct TransportTests {
           *" BatchMode=yes "*) ;;
           *) read -r password < /dev/tty; exec sleep 600 ;;
         esac
+        case " $* " in
+          *" RemoteCommand=none "*) ;;
+          *) echo 'Cannot execute command-line and remote command.' >&2; exit 255 ;;
+        esac
         \(echoReplies)
         """)
         let client = try RPCClient(endpoint: .ssh(host: "box", remoteBinary: "agentws"), build: "test", environment: bin.environment)
         let reply: Echo = try await client.call("status", params: [String: String]())
         #expect(reply == Echo(echo: 1))
-        #expect(bin.read("argv") == "-T\n-o\nBatchMode=yes\n-o\nServerAliveInterval=15\nbox\nagentws\nrpc\n")
+        #expect(bin.read("argv") == "-T\n-o\nBatchMode=yes\n-o\nRemoteCommand=none\n-o\nRequestTTY=no\n-o\nServerAliveInterval=15\nbox\nagentws\nrpc\n")
         client.close()
     }
 

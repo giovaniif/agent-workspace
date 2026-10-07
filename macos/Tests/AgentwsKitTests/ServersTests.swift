@@ -7,7 +7,7 @@ struct FakeServer {
     let home: String
     let bundle: String
 
-    init(uname: (kernel: String, machine: String) = ("Linux", "aarch64"), password: Bool = false) throws {
+    init(uname: (kernel: String, machine: String) = ("Linux", "aarch64"), password: Bool = false, unreachable: Bool = false) throws {
         bin = try FakeBin()
         home = bin.path("remote-home")
         bundle = bin.path("bundle")
@@ -15,12 +15,18 @@ struct FakeServer {
         try FileManager.default.createDirectory(atPath: bundle + "/linux_arm64", withIntermediateDirectories: true)
         let login = password
             ? "echo 'box: Permission denied (publickey,password).' >&2\nexit 255"
+            : unreachable
+            ? "echo 'ssh: connect to host box port 22: Connection refused' >&2\nexit 255"
             : "for last; do :; done\nHOME=\"\(home)\" exec sh -c \"$last\""
         try bin.script("ssh", """
-        printf '%s %s %s %s %s %s\\n' "$1" "$2" "$3" "$4" "$5" "$6" >> "\(bin.path("ssh.log"))"
+        printf '%s %s %s %s %s %s %s %s %s %s\\n' "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" >> "\(bin.path("ssh.log"))"
         case " $* " in
           *" BatchMode=yes "*) ;;
           *) read -r password < /dev/tty; exec sleep 600 ;;
+        esac
+        case " $* " in
+          *" RemoteCommand=none "*) ;;
+          *) echo 'Cannot execute command-line and remote command.' >&2; exit 255 ;;
         esac
         \(login)
         """)
@@ -150,7 +156,7 @@ struct ServersTests {
         #expect(setup.probe?.build == "v1.2.0 abc")
         #expect(setup.probe?.daemon?.running == true)
         #expect(setup.lingerCommand == "sudo loginctl enable-linger \(NSUserName())")
-        #expect(server.bin.read("ssh.log").split(separator: "\n").allSatisfy { $0 == "-T -o BatchMode=yes -o ConnectTimeout=10 box" })
+        #expect(server.bin.read("ssh.log").split(separator: "\n").allSatisfy { $0 == "-T -o BatchMode=yes -o RemoteCommand=none -o RequestTTY=no -o ConnectTimeout=10 box" })
         #expect(server.bin.read("systemctl.log") == "")
     }
 
@@ -187,6 +193,16 @@ struct ServersTests {
         #expect(error.contains("key"))
         #expect(error.contains("agent"))
         #expect(error.contains("Permission denied"))
+        #expect(server.inode == nil)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func anSshFailureThatIsNotAboutLoginShowsWhatSshSaid() async throws {
+        let server = try FakeServer(unreachable: true)
+        let setup = server.setup()
+        await setup.setUp()
+        let error = try #require(setup.error)
+        #expect(error.contains("Connection refused"))
+        #expect(!error.contains("password"))
         #expect(server.inode == nil)
     }
 

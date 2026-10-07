@@ -205,7 +205,7 @@ public struct ProcessShell: ServerShell {
         case .thisMac:
             ["sh", "-c", script]
         case let .ssh(host):
-            ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", host, "sh -c " + shellQuote(script)]
+            sshArgv(host: host, options: ["ConnectTimeout=10"]) + ["sh -c " + shellQuote(script)]
         }
     }
 
@@ -387,7 +387,7 @@ public final class ServerSetup {
 
     private func failure(_ what: String, _ result: RunResult) -> ServerSetupError {
         let said = result.error.trimmingCharacters(in: .whitespacesAndNewlines)
-        if server.isRemote, result.status == 255 {
+        if server.isRemote, result.status == 255, said.contains("Permission denied") {
             return ServerSetupError(message: "Could not log in to \(server.name) without a password. agentws runs ssh -o BatchMode=yes, so set up key login (ssh-copy-id \(server.name)), load the key into ssh-agent, or use Tailscale SSH. ssh said: \(said)")
         }
         return ServerSetupError(message: "\(what) failed (exit \(result.status))\(said.isEmpty ? "" : ": \(said)")")

@@ -10,9 +10,13 @@ public enum Endpoint: Sendable, Equatable {
         case let .local(binary):
             [binary, "rpc"]
         case let .ssh(host, remoteBinary):
-            ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ServerAliveInterval=15", host, remoteBinary, "rpc"]
+            sshArgv(host: host, options: ["ServerAliveInterval=15"]) + [remoteBinary, "rpc"]
         }
     }
+}
+
+public func sshArgv(host: String, options: [String]) -> [String] {
+    ["ssh", "-T"] + (["BatchMode=yes", "RemoteCommand=none", "RequestTTY=no"] + options).flatMap { ["-o", $0] } + [host]
 }
 
 public final class LineProcess: Sendable {
