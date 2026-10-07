@@ -133,6 +133,8 @@ public final class Attention {
     private let caller: Caller
     private let notifier: Notifier
     private var reported: ViewingParams?
+    private var frontWindow: String?
+    private var refreshes = 0
 
     public init(caller: Caller, notifier: Notifier) {
         self.caller = caller
@@ -146,7 +148,14 @@ public final class Attention {
         notifier.post(BannerPost(id: banner.group, title: banner.title, body: banner.body, kind: BannerKind(state: banner.state)))
     }
 
-    public func view(session: String?, front: Bool) async {
+    public func view(session: String?, front: Bool, window: String = "") async {
+        if front {
+            frontWindow = window
+        } else if let frontWindow, frontWindow != window {
+            return
+        } else {
+            frontWindow = nil
+        }
         viewing = session
         self.front = front
         if front, let session { notifier.withdraw(session) }
@@ -170,6 +179,8 @@ public final class Attention {
     }
 
     public func refreshCard(session: String?, state: String?) async {
+        refreshes += 1
+        let mine = refreshes
         guard let session, state == "permission" else {
             card = nil
             return
@@ -178,12 +189,13 @@ public final class Attention {
         do {
             prompt = try await fetchPrompt(session)
         } catch let AgentwsError.rpc(error) where error.kind == .notFound {
-            card = nil
+            if mine == refreshes { card = nil }
             return
         } catch {
-            if card?.session != session { card = nil }
+            if mine == refreshes, card?.session != session { card = nil }
             return
         }
+        guard mine == refreshes else { return }
         guard !prompt.choices.isEmpty else {
             card = nil
             return

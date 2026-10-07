@@ -1,9 +1,6 @@
 #if canImport(SwiftUI)
 import AgentwsKit
 import SwiftUI
-#if canImport(AppKit)
-import AppKit
-#endif
 
 public struct LiveWindow: View {
     @State private var store: ViewStore
@@ -16,7 +13,8 @@ public struct LiveWindow: View {
     @State private var newSession: NewSession?
     @State private var newSessionTab = NewSessionTab.session
     @State private var panes: ShellNvim
-    @State private var front = true
+    @State private var windowID = UUID().uuidString
+    @Environment(\.controlActiveState) private var activeState
     private let server: String
     private let router: WindowRouter
     private let attention: Attention?
@@ -82,13 +80,9 @@ public struct LiveWindow: View {
             if store.connection == .live, let attention { Task { await attention.reconnected() } }
         }
         .onDisappear {
-            if let attention { Task { await attention.view(session: nil, front: false) } }
+            let window = windowID
+            if let attention { Task { await attention.view(session: nil, front: false, window: window) } }
         }
-#if canImport(AppKit)
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in front = true }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in front = false }
-        .onAppear { front = NSApplication.shared.isActive }
-#endif
         .sheet(item: $newSession) { model in
             NewSessionSheet(
                 model: model, tab: $newSessionTab, server: server, state: store.state,
@@ -109,6 +103,8 @@ public struct LiveWindow: View {
         Task { await model.load(state: store.state) }
     }
 
+    private var front: Bool { activeState == .key }
+
     private var viewingKey: String { (nav.selected ?? "") + (front ? "|front" : "|back") }
 
     private var selectedState: String {
@@ -120,7 +116,8 @@ public struct LiveWindow: View {
         guard let attention else { return }
         let session = nav.selected
         let front = front
-        Task { await attention.view(session: session, front: front) }
+        let window = windowID
+        Task { await attention.view(session: session, front: front, window: window) }
     }
 
     private func refreshCard() {
