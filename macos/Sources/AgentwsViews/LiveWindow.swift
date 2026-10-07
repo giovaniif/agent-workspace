@@ -57,8 +57,9 @@ public struct LiveWindow: View {
             newSession?.observe(store.state)
         }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
-        .onChange(of: router.shellSeq) {
+        .onChange(of: router.shellSeq, initial: true) {
             guard let shell = router.shell else { return }
+            router.shell = nil
             review = nil
             Task { await panes.openShell(session: shell.session, worktree: shell.worktree) }
         }
