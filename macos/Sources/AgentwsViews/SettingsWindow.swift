@@ -511,7 +511,7 @@ extension KeyCombo {
         case "return": .return
         case "tab": .tab
         case "escape": .escape
-        default: KeyEquivalent(Character(key))
+        default: KeyEquivalent(key.first ?? " ")
         }
     }
 

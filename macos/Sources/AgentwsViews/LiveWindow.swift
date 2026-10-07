@@ -170,7 +170,7 @@ public struct LiveWindow: View {
 
     @ViewBuilder
     private func bound(_ action: ShortcutAction, _ perform: @escaping () -> Void) -> some View {
-        if let combo = keys.combo(for: action) {
+        if let combo = keys.combo(for: action), combo.isBindable {
             Button("", action: perform).keyboardShortcut(combo.equivalent, modifiers: combo.eventModifiers)
         }
     }

@@ -20,6 +20,10 @@ public struct KeyCombo: Codable, Hashable, Sendable {
         self.modifiers = modifiers
     }
 
+    public static let namedKeys: Set<String> = ["space", "delete", "return", "escape", "tab"]
+
+    public var isBindable: Bool { Self.namedKeys.contains(key) || key.count == 1 }
+
     public var display: String {
         var text = ""
         if modifiers.contains(.control) { text += "⌃" }
@@ -138,9 +142,11 @@ public enum ShortcutAction: String, CaseIterable, Codable, CodingKeyRepresentabl
 public enum ShortcutRefusal: Error, Equatable, Sendable {
     case taken(by: String)
     case needsModifier
+    case unsupportedKey
 
     public func message(for combo: KeyCombo) -> String {
         switch self {
+        case .unsupportedKey: "\(combo.display) is not a key agentws can bind"
         case .taken(let holder): "\(combo.display) is already used by \(holder)"
         case .needsModifier: "\(combo.display) needs ⌘ or ⌃, so the terminal keeps plain keys"
         }
@@ -175,6 +181,7 @@ public struct Shortcuts: Codable, Equatable, Sendable {
             bindings[action] = .some(nil)
             return
         }
+        if !combo.isBindable { throw .unsupportedKey }
         if !combo.modifiers.contains(.command) && !combo.modifiers.contains(.control) { throw .needsModifier }
         if combo.modifiers == [.command], combo.key.count == 1, ("1"..."9").contains(combo.key) {
             throw .taken(by: Self.sessionJumps)

@@ -42,9 +42,12 @@ public struct LiveSettings: View {
             localError = nil
         }
         a.update = { settings in
-            let loginChanged = settings.general.openAtLogin != store.settings.general.openAtLogin
+            var settings = settings
+            let previous = store.settings.general.openAtLogin
+            if settings.general.openAtLogin != previous, !openAtLogin(settings.general.openAtLogin) {
+                settings.general.openAtLogin = previous
+            }
             store.settings = settings
-            if loginChanged { openAtLogin(settings.general.openAtLogin) }
         }
         a.assign = { action, combo in
             var shortcuts = store.settings.shortcuts
@@ -91,15 +94,17 @@ public struct LiveSettings: View {
         cliStatus = cli.status
     }
 
-    private func openAtLogin(_ on: Bool) {
+    private func openAtLogin(_ on: Bool) -> Bool {
         do {
             if on {
                 try SMAppService.mainApp.register()
             } else {
                 try SMAppService.mainApp.unregister()
             }
+            return true
         } catch {
             localError = "Open at login: \(error.localizedDescription)"
+            return false
         }
     }
 }

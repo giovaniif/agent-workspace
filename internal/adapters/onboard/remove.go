@@ -17,8 +17,10 @@ func (p Probe) Remove(_ context.Context, h domain.Harness) (domain.HarnessSetup,
 	if err != nil {
 		return domain.HarnessSetup{}, err
 	}
-	if !status().Installed {
-		s := status()
+	if s := status(); !s.Installed {
+		if s.Err != "" {
+			return domain.HarnessSetup{}, errors.New(s.Err)
+		}
 		s.Backup = ""
 		return s, nil
 	}
