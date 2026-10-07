@@ -69,6 +69,7 @@ public struct WindowActions {
     public var hunk: (FileKey, Int, HunkAction) -> Void = { _, _, _ in }
     public var openInNvim: () -> Void = {}
     public var dismissError: () -> Void = {}
+    public var newSession: () -> Void = {}
 
     public init() {}
 }
@@ -166,12 +167,16 @@ struct ToolbarStrip: View {
                 QuotaMeterView(meter: meter)
             }
             ServerChip(server: scene.server, connection: scene.connection)
-            Label("New", systemImage: "plus")
-                .font(.system(size: 12, weight: .medium))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 5).stroke(theme(.surface)))
-                .foregroundStyle(Toolbar.newEnabled ? theme(.text) : theme(.grey))
+            Button(action: actions.newSession) {
+                Label("New", systemImage: "plus")
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 5).stroke(theme(.surface)))
+                    .foregroundStyle(Toolbar.newEnabled ? theme(.text) : theme(.grey))
+            }
+            .buttonStyle(.plain)
+            .disabled(!Toolbar.newEnabled)
             Button(action: actions.toggleInspector) {
                 Image(systemName: "sidebar.right").foregroundStyle(scene.inspector ? theme(.blue) : theme(.subtext))
             }

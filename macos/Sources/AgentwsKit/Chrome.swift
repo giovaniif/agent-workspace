@@ -108,7 +108,7 @@ public enum Toolbar {
         ViewTab(title: "Shell", enabled: false),
         ViewTab(title: "nvim", enabled: false),
     ]
-    public static let newEnabled = false
+    public static let newEnabled = true
 }
 
 public struct ConnectionBanner: Sendable, Equatable {

@@ -78,6 +78,10 @@ func Run(ctx context.Context, home string) (err error) {
 	if err != nil {
 		log.Printf("launcher max_parallel ignored: %v", err)
 	}
+	startDefaults, err := LoadStartDefaults(filepath.Join(home, "config.toml"))
+	if err != nil {
+		log.Printf("new-session defaults ignored: %v", err)
+	}
 	self, err := os.Executable()
 	if err != nil {
 		return err
@@ -93,6 +97,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithHarnesses(host, claude.Adapter{}, codex.Adapter{}, omp.Adapter{}),
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithLauncher(maxParallel),
+		WithStartDefaults(startDefaults),
 		WithNotifier(banners, notify.New(), sounds),
 		WithWorktrees(gitadapter.Worktrees{}, &github.Finder{}),
 		WithTitles(app.TitleResolvers{linear.Client{Token: linearToken}, github.Titles{}}),
