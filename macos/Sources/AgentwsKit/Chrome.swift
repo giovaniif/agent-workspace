@@ -104,7 +104,7 @@ public struct ViewTab: Sendable, Equatable, Identifiable {
 public enum Toolbar {
     public static let views = [
         ViewTab(title: "Terminal", enabled: true),
-        ViewTab(title: "Review", enabled: false),
+        ViewTab(title: "Review", enabled: true),
         ViewTab(title: "Shell", enabled: false),
         ViewTab(title: "nvim", enabled: false),
     ]

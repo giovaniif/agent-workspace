@@ -207,6 +207,17 @@ public struct ReviewComment: Codable, Sendable, Equatable {
     public var removed: Bool?
     @NullAsEmpty public var code: [String]
     public var body: String
+
+    public init(id: String? = nil, worktree: String, path: String, start: Int, end: Int, removed: Bool? = nil, code: [String], body: String) {
+        self.id = id
+        self.worktree = worktree
+        self.path = path
+        self.start = start
+        self.end = end
+        self.removed = removed
+        self.code = code
+        self.body = body
+    }
 }
 
 public struct ReviewDraft: Codable, Sendable, Equatable {
@@ -216,9 +227,19 @@ public struct ReviewDraft: Codable, Sendable, Equatable {
     @NullAsEmpty public var comments: [ReviewComment]
     public var sentAt: String?
     @NullAsEmpty public var turns: [String]
+    public var note: String?
+
+    public init(id: String, session: String, status: String, comments: [ReviewComment], turns: [String] = [], note: String? = nil) {
+        self.id = id
+        self.session = session
+        self.status = status
+        self.comments = comments
+        self.turns = turns
+        self.note = note
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id, session, status, comments, sentAt = "sent_at", turns
+        case id, session, status, comments, sentAt = "sent_at", turns, note
     }
 }
 
