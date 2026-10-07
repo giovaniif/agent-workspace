@@ -123,8 +123,13 @@ public final class ServerSettings {
     public func refresh() async {
         await run {
             let status: AgentsStatus = try await self.caller.call("onboarding.status", params: [String: String]())
-            let list: WorkspaceListReply = try await self.caller.call("workspace.list", params: [String: String]())
             self.agents = status
+            let list: WorkspaceListReply
+            do {
+                list = try await self.caller.call("workspace.list", params: [String: String]())
+            } catch AgentwsError.rpc(let error) where error.kind == .unknownMethod {
+                list = WorkspaceListReply(workspaces: [], lastUsed: "")
+            }
             self.workspaces = list.workspaces
             self.lastUsed = list.lastUsed
         }

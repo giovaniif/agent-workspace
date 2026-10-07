@@ -156,6 +156,12 @@ public enum ShortcutRefusal: Error, Equatable, Sendable {
 public struct Shortcuts: Codable, Equatable, Sendable {
     public static let sessionJumps = "Jump to session N"
 
+    public static let fixed: [KeyCombo: String] = [
+        KeyCombo("s", [.control, .command]): "Show the sidebar in review",
+        KeyCombo("return", [.shift, .command]): "Send review",
+        KeyCombo(",", [.command]): "Settings",
+    ]
+
     public var passThrough = true
     private var bindings: [ShortcutAction: KeyCombo?]
 
@@ -186,6 +192,7 @@ public struct Shortcuts: Codable, Equatable, Sendable {
         if combo.modifiers == [.command], combo.key.count == 1, ("1"..."9").contains(combo.key) {
             throw .taken(by: Self.sessionJumps)
         }
+        if let fixed = Self.fixed[combo] { throw .taken(by: fixed) }
         if let holder = holder(of: combo), holder != action { throw .taken(by: holder.title) }
         bindings[action] = combo
     }
