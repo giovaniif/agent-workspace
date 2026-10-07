@@ -20,16 +20,18 @@ var Exec = ExecIn("/run/user")
 func ExecIn(runtimeRoot string) Runner {
 	return func(ctx context.Context, name string, args ...string) error {
 		cmd := exec.CommandContext(ctx, name, args...)
+		hint := ""
 		if os.Getenv("XDG_RUNTIME_DIR") == "" {
 			dir := filepath.Join(runtimeRoot, strconv.Itoa(os.Getuid()))
-			if info, err := os.Stat(dir); err != nil || !info.IsDir() {
-				return fmt.Errorf("%s %v: no user runtime dir %s, so systemd --user is not running without a login; run: sudo loginctl enable-linger $USER", name, args, dir)
+			if info, err := os.Stat(dir); err == nil && info.IsDir() {
+				cmd.Env = append(os.Environ(), "XDG_RUNTIME_DIR="+dir, "DBUS_SESSION_BUS_ADDRESS=unix:path="+dir+"/bus")
+			} else {
+				hint = "; no user runtime dir " + dir + ", so systemd --user needs linger: sudo loginctl enable-linger $USER"
 			}
-			cmd.Env = append(os.Environ(), "XDG_RUNTIME_DIR="+dir, "DBUS_SESSION_BUS_ADDRESS=unix:path="+dir+"/bus")
 		}
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("%s %v: %w: %s", name, args, err, bytes.TrimSpace(out))
+			return fmt.Errorf("%s %v: %w: %s%s", name, args, err, bytes.TrimSpace(out), hint)
 		}
 		return nil
 	}
