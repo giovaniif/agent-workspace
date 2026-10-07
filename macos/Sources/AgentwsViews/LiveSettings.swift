@@ -49,17 +49,8 @@ public struct LiveSettings: View {
             }
             store.settings = settings
         }
-        a.assign = { action, combo in
-            var shortcuts = store.settings.shortcuts
-            do throws(ShortcutRefusal) {
-                try shortcuts.assign(combo, to: action)
-                store.settings.shortcuts = shortcuts
-                refusal = nil
-            } catch {
-                refusal = combo.map { error.message(for: $0) }
-            }
-        }
-        a.restoreShortcut = { store.settings.shortcuts.restoreDefault($0) }
+        a.assign = { assign($0, $1) }
+        a.restoreShortcut = { assign($0, $0.defaultCombo) }
         a.restoreShortcuts = {
             store.settings.shortcuts.restoreDefaults()
             refusal = nil
@@ -73,6 +64,17 @@ public struct LiveSettings: View {
         a.removeWorkspace = { root in act { await $0.removeWorkspace(root) } }
         a.refresh = { act { await $0.refresh() } }
         return a
+    }
+
+    private func assign(_ action: ShortcutAction, _ combo: KeyCombo?) {
+        var shortcuts = store.settings.shortcuts
+        do throws(ShortcutRefusal) {
+            try shortcuts.assign(combo, to: action)
+            store.settings.shortcuts = shortcuts
+            refusal = nil
+        } catch {
+            refusal = combo.map { error.message(for: $0) }
+        }
     }
 
     private func act(_ body: @escaping @MainActor (ServerSettings) async -> Void) {
