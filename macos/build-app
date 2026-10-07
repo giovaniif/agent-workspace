@@ -2,12 +2,28 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 config="${1:-release}"
+version="${AGENTWS_APP_VERSION:-v0.0.0}"
+binaries="${AGENTWS_APP_BINARIES:-}"
 swift build -c "$config" --product AgentwsApp
 bin="$(swift build -c "$config" --show-bin-path)/AgentwsApp"
 app=build/agentws.app
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp Info.plist "$app/Contents/Info.plist"
+short="${version#v}"
+short="${short%%-*}"
+plutil -replace CFBundleShortVersionString -string "$short" "$app/Contents/Info.plist"
+plutil -replace CFBundleVersion -string "${AGENTWS_APP_BUILD:-0}" "$app/Contents/Info.plist"
+plutil -replace AgentwsVersion -string "$version" "$app/Contents/Info.plist"
 cp "$bin" "$app/Contents/MacOS/agentws"
-codesign --force --sign - "$app"
+if [ -n "$binaries" ]; then
+  for target in darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
+    src="$binaries/$target/agentws"
+    [ -f "$src" ] || { echo "missing $src" >&2; exit 1; }
+    mkdir -p "$app/Contents/Resources/bin/$target"
+    cp "$src" "$app/Contents/Resources/bin/$target/agentws"
+    chmod +x "$app/Contents/Resources/bin/$target/agentws"
+  done
+fi
+codesign --force --deep --sign - "$app"
 echo "$app"

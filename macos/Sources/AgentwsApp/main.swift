@@ -6,9 +6,20 @@ import SwiftUI
 
 enum Launch {
     static var binary: String {
-        if let path = ProcessInfo.processInfo.environment["AGENTWS_BINARY"], !path.isEmpty { return path }
-        if let bundled = Bundle.main.url(forAuxiliaryExecutable: "agentws-cli") { return bundled.path }
-        return "agentws"
+        Build.binary(
+            environment: ProcessInfo.processInfo.environment,
+            resources: Bundle.main.resourcePath,
+            arch: arch,
+            isExecutable: FileManager.default.isExecutableFile(atPath:)
+        )
+    }
+
+    static var arch: String {
+        #if arch(arm64)
+        "arm64"
+        #else
+        "x86_64"
+        #endif
     }
 
     static var demo: Bool { CommandLine.arguments.contains("--demo") }

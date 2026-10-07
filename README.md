@@ -37,6 +37,16 @@ Check the install:
 agentws version   # agentws v0.1.0-alpha.1 (commit abc1234)
 ```
 
+### Mac app
+
+Each release also has `agentws_<version>.dmg`, the native Mac app with the matching `agentws` builds inside. Open it and drag `agentws.app` to Applications. The app is ad-hoc signed and not notarized, so macOS blocks its first launch. Clear that once, either with:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/agentws.app
+```
+
+or by opening it, then System Settings › Privacy & Security › Open Anyway.
+
 ## Upgrade
 
 `agentws version` prints the installed version and, at most once a day, checks GitHub for a newer release (set `AGENTWS_NO_UPDATE_CHECK=1` to turn that off). It never updates itself. To upgrade, run the install script again, then stop the old daemon so the new binary starts its own:

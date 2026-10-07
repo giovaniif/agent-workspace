@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+out="${1:-build/agentws.dmg}"
+stage="$(mktemp -d)"
+trap 'rm -rf "$stage"' EXIT
+cp -R build/agentws.app "$stage/agentws.app"
+ln -s /Applications "$stage/Applications"
+rm -f "$out"
+hdiutil create -volname agentws -srcfolder "$stage" -fs HFS+ -format UDZO "$out"
+echo "$out"
