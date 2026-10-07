@@ -483,6 +483,30 @@ func TestDevicesPersistAndRevokedOnesAreDeleted(t *testing.T) {
 	}
 }
 
+func TestProjectsPersistAndRemovedOnesAreDeleted(t *testing.T) {
+	s, path := openTemp(t)
+	shop := domain.Project{Root: "/code/shop", Name: "shop", Setup: "make env"}
+	solo := domain.Project{Root: "/code/solo", Name: "solo"}
+	s.PutProject(shop)
+	s.PutProject(solo)
+	s = reopen(t, s, path)
+	snap, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(snap.Projects, []domain.Project{shop, solo}) {
+		t.Fatalf("projects %+v", snap.Projects)
+	}
+	s.DeleteProject(shop.Root)
+	snap, err = reopen(t, s, path).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(snap.Projects, []domain.Project{solo}) {
+		t.Fatalf("after remove %+v", snap.Projects)
+	}
+}
+
 func TestDevicePushSubscriptionPersistsWithItsDevice(t *testing.T) {
 	s, path := openTemp(t)
 	at := time.Date(2026, 10, 4, 9, 0, 0, 0, time.UTC)

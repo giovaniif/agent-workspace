@@ -13,6 +13,7 @@ type Snapshot struct {
 	Viewed     []domain.ViewedMark
 	Drafts     []domain.ReviewDraft
 	Devices    []domain.Device
+	Projects   []domain.Project
 }
 
 type Store interface {
@@ -29,6 +30,8 @@ type Store interface {
 	PutDraft(domain.ReviewDraft)
 	PutDevice(domain.Device)
 	DeleteDevice(id string)
+	PutProject(domain.Project)
+	DeleteProject(root string)
 	Load() (Snapshot, error)
 	Flush() error
 	Close() error

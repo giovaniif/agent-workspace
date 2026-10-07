@@ -21,6 +21,9 @@ const (
 	MethodWorkspaceList    = "workspace.list"
 	MethodWorkspaceRemove  = "workspace.remove"
 	MethodWorkspaceDirs    = "workspace.dirs"
+	MethodProjectAdd       = "project.add"
+	MethodProjectList      = "project.list"
+	MethodProjectRemove    = "project.remove"
 	MethodOpenClient       = "client.open"
 	MethodFocusMain        = "client.focus_main"
 	MethodDebugSeed        = "debug.seed"
@@ -417,6 +420,20 @@ type WorkspaceList struct {
 	LastUsed   string             `json:"last_used"`
 }
 
+type ProjectAddParams struct {
+	Path  string `json:"path"`
+	Name  string `json:"name,omitempty"`
+	Setup string `json:"setup,omitempty"`
+}
+
+type ProjectRemoveParams struct {
+	Root string `json:"root"`
+}
+
+type ProjectList struct {
+	Projects []domain.Project `json:"projects"`
+}
+
 type OpenClientParams struct {
 	Command  []string          `json:"command"`
 	Env      map[string]string `json:"env,omitempty"`
@@ -515,6 +532,7 @@ type State struct {
 	Subagents   []domain.Subagent     `json:"subagents"`
 	Queue       []domain.LaunchItem   `json:"queue"`
 	Drafts      []domain.ReviewDraft  `json:"drafts"`
+	Projects    []domain.Project      `json:"projects"`
 	Sends       []domain.QueuedSend   `json:"sends"`
 	Reclaimable Reclaimable           `json:"reclaimable"`
 }
@@ -530,6 +548,8 @@ type Diff struct {
 	RemovedWorktree  string                `json:"removed_worktree,omitempty"`
 	RemovedSession   string                `json:"removed_session,omitempty"`
 	RevokedDevice    string                `json:"revoked_device,omitempty"`
+	RemovedProject   string                `json:"removed_project,omitempty"`
+	Project          *domain.Project       `json:"project,omitempty"`
 	Workspace        *domain.Workspace     `json:"workspace,omitempty"`
 	Task             *domain.Task          `json:"task,omitempty"`
 	Worktree         *domain.Worktree      `json:"worktree,omitempty"`

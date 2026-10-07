@@ -1,0 +1,1 @@
+CREATE TABLE projects(root TEXT PRIMARY KEY, data TEXT NOT NULL);

@@ -132,6 +132,30 @@ func (s *memStore) DeleteDevice(id string) {
 	s.snap.Devices = kept
 }
 
+func (s *memStore) PutProject(p domain.Project) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, x := range s.snap.Projects {
+		if x.Root == p.Root {
+			s.snap.Projects[i] = p
+			return
+		}
+	}
+	s.snap.Projects = append(s.snap.Projects, p)
+}
+
+func (s *memStore) DeleteProject(root string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.snap.Projects[:0]
+	for _, p := range s.snap.Projects {
+		if p.Root != root {
+			kept = append(kept, p)
+		}
+	}
+	s.snap.Projects = kept
+}
+
 func (s *memStore) devices() []domain.Device {
 	s.mu.Lock()
 	defer s.mu.Unlock()

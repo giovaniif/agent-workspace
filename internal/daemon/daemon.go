@@ -126,6 +126,7 @@ type state struct {
 	pasteSend       func(session domain.Session, q domain.QueuedSend)
 	pairing         domain.Pairing
 	devices         map[string]domain.Device
+	projects        map[string]domain.Project
 	transcriptMoved func(sessionID, path string, gone bool)
 }
 
@@ -181,10 +182,14 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		inFlight:   map[string]sendFlight{},
 		booting:    map[string]bool{},
 		devices:    map[string]domain.Device{},
+		projects:   map[string]domain.Project{},
 		co:         domain.NewCoalescer(),
 		gate:       domain.NewPushGate(),
 		views:      map[*conn]domain.ViewReport{},
 		clients:    map[*conn]domain.ClientView{},
+	}
+	for _, p := range snap.Projects {
+		st.projects[p.Root] = p
 	}
 	for _, dev := range snap.Devices {
 		st.devices[dev.ID] = dev
@@ -547,7 +552,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.switchSession(req)
 	case rpc.MethodSessionRename, rpc.MethodSessionUnpin:
 		return d.pinName(req)
-	case rpc.MethodWorkspaceAdd, rpc.MethodWorkspaceList, rpc.MethodWorkspaceRemove, rpc.MethodWorkspaceDirs:
+	case rpc.MethodWorkspaceAdd, rpc.MethodWorkspaceList, rpc.MethodWorkspaceRemove, rpc.MethodWorkspaceDirs,
+		rpc.MethodProjectAdd, rpc.MethodProjectList, rpc.MethodProjectRemove:
 		if resp, ok, handled := d.workspaceMethod(req); handled {
 			return resp, ok
 		}
@@ -611,6 +617,7 @@ func (s *state) snapshot() rpc.State {
 		Subagents:   append([]domain.Subagent{}, s.subagents...),
 		Queue:       append([]domain.LaunchItem{}, s.queue...),
 		Drafts:      s.draftList(),
+		Projects:    sorted(s.projects),
 		Sends:       append([]domain.QueuedSend{}, s.sends...),
 		Reclaimable: s.reclaimable,
 	}
