@@ -45,6 +45,12 @@ struct ReviewControllerTests {
 
     var key: FileKey { FileKey(worktree: "/w/api-feat", path: "main.go") }
 
+    @Test func aNewReviewStartsInTheAppearanceDiffLayout() {
+        let defaults = AppSettings().appearance
+        #expect(ReviewController(session: "s1", caller: FakeCaller(), layout: defaults.diffLayout).screen.layout == .unified)
+        #expect(ReviewController(session: "s1", caller: FakeCaller(), layout: .split).screen.layout == .split)
+    }
+
     @Test func openAsksForTokensInTheChosenScope() async throws {
         let caller = FakeCaller()
         caller.replies["review.open"] = .success(openReply)
