@@ -949,3 +949,21 @@ func (h *fakeHost) die(pane app.PaneID) {
 		}
 	}
 }
+
+type fakeRunner struct {
+	mu   sync.Mutex
+	runs []string
+}
+
+func (r *fakeRunner) Run(_ context.Context, dir string, argv ...string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.runs = append(r.runs, dir+": "+strings.Join(argv, " "))
+	return nil
+}
+
+func (r *fakeRunner) ran() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.runs...)
+}

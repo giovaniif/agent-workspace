@@ -96,6 +96,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithWorkspaces(wsfs.FS{}, gitadapter.Inspector{}),
 		WithHarnesses(host, claude.Adapter{}, codex.Adapter{}, omp.Adapter{}),
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
+		WithProjectSetup(setup.Shell{Out: os.Stderr}),
 		WithLauncher(maxParallel),
 		WithStartDefaults(startDefaults),
 		WithConfig(filepath.Join(home, "config.toml")),

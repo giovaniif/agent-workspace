@@ -415,3 +415,13 @@ func (h *codexPickerHost) render() string {
 	b.WriteString("\n  Press enter to confirm or esc to go back")
 	return b.String()
 }
+
+type fakeRunner struct {
+	log *[]string
+	err error
+}
+
+func (r fakeRunner) Run(_ context.Context, dir string, argv ...string) error {
+	*r.log = append(*r.log, "run "+dir+" "+strings.Join(argv, " "))
+	return r.err
+}
