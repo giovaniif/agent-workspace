@@ -133,12 +133,7 @@ public struct DiskWindow: View {
                             Text(p.command).font(Metrics.mono).frame(maxWidth: .infinity, alignment: .leading)
                             Text(p.worktree).frame(maxWidth: .infinity, alignment: .leading)
                             Text(p.session).foregroundStyle(theme(.subtext)).frame(maxWidth: .infinity, alignment: .leading)
-                            Button("Kill…") {
-                                actions.perform(DiskAction(
-                                    kind: .killDevServers, title: "Kill dev servers", outcome: "Stops the dev server on :\(p.port).",
-                                    confirm: "Stop the dev server on :\(p.port) in \(p.worktree)?", params: nil, pgids: [p.pgid]
-                                ))
-                            }
+                            Button("Kill…") { actions.perform(DiskActions.kill(p)) }
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                         .font(.system(size: 12))

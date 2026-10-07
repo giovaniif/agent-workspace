@@ -213,6 +213,13 @@ public struct DiskAction: Sendable, Equatable, Identifiable {
 }
 
 public enum DiskActions {
+    public static func kill(_ port: DiskPortRow) -> DiskAction {
+        DiskAction(
+            kind: .killDevServers, title: "Kill…", outcome: "Stops the dev server on :\(port.port).",
+            confirm: "Stop the dev server on :\(port.port) in \(port.worktree)?", params: nil, pgids: [port.pgid]
+        )
+    }
+
     public static func `for`(_ row: DiskTableRow) -> [DiskAction] {
         var out: [DiskAction] = []
         if !row.sessionID.isEmpty {
