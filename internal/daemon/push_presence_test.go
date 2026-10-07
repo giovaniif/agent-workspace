@@ -169,6 +169,76 @@ func TestPushSkipsADeviceWhoseAppIsOnScreen(t *testing.T) {
 	}
 }
 
+func clientViewing(t *testing.T, c *rpc.Client, session string, front bool) {
+	t.Helper()
+	if err := c.Call(context.Background(), rpc.MethodClientViewing, rpc.ClientViewingParams{Session: session, Front: front}, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestClientViewingSuppressesTheBannerOfTheSessionInViewOnly(t *testing.T) {
+	r := newRig(t, &memStore{}, nil)
+	r.addRunning(t, "a", domain.HarnessClaude, "%1")
+	r.addRunning(t, "b", domain.HarnessClaude, "%2")
+	app := dial(t, r.path)
+	clientViewing(t, app, "a", true)
+	r.hook(t, "claude", "PermissionRequest", "%1", "")
+	r.hook(t, "claude", "PermissionRequest", "%2", "")
+	if got := r.banner(t); got.Group != "b" || got.State != domain.StatePermission {
+		t.Fatalf("banner %+v", got)
+	}
+	r.expectOnlySentinel(t)
+}
+
+func TestClientViewingStopsSuppressingInTheBackgroundOrOnClose(t *testing.T) {
+	r := newRig(t, &memStore{}, nil)
+	r.addRunning(t, "a", domain.HarnessClaude, "%1")
+	app := dial(t, r.path)
+	clientViewing(t, app, "a", true)
+	clientViewing(t, app, "a", false)
+	r.hook(t, "claude", "PermissionRequest", "%1", "")
+	if got := r.banner(t); got.State != domain.StatePermission {
+		t.Fatalf("background banner %+v", got)
+	}
+	r.addRunning(t, "b", domain.HarnessClaude, "%2")
+	other := dial(t, r.path)
+	clientViewing(t, other, "b", true)
+	if err := other.Close(); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		r.hook(t, "claude", "PermissionRequest", "%2", "")
+		select {
+		case b := <-r.n.banners:
+			if b.State == domain.StatePermission {
+				return
+			}
+		case <-time.After(100 * time.Millisecond):
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the closed client kept suppressing")
+		}
+		r.hook(t, "claude", "PostToolUse", "%2", "")
+	}
+}
+
+func TestPushHeldWhileTheAppIsInFrontGoesOutAfterItLeavesAndTheWindowPasses(t *testing.T) {
+	r := newPresenceRig(t, 50*time.Millisecond, time.Time{})
+	r.pairedDevice(t, "phone", "https://push.example/phone")
+	r.addRunning(t, "s1", domain.HarnessClaude, "%1")
+	app := dial(t, r.path)
+	clientViewing(t, app, "", true)
+	r.hook(t, "claude", "PermissionRequest", "%1", "")
+	time.Sleep(100 * time.Millisecond)
+	r.noPushFor(t)
+	clientViewing(t, app, "", false)
+	got := r.pushes(t, 1)
+	if got[0].msg.Tag != "s1" {
+		t.Fatalf("released %+v", got[0].msg)
+	}
+}
+
 func TestDeviceViewingNeedsAKnownDevice(t *testing.T) {
 	r := newPresenceRig(t, 2*time.Minute, time.Time{})
 	err := r.c.Call(context.Background(), rpc.MethodDeviceViewing, rpc.DeviceViewingParams{Device: "nosuchid", Visible: true}, nil)

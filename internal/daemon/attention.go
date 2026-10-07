@@ -101,7 +101,7 @@ func (s *state) announce(session domain.Session, effects []domain.Effect) {
 			Session: session, Name: name, Effect: e,
 			Worktrees: worktrees, Events: s.events[session.ID], Now: time.Now(),
 		})
-		if !ok || !s.co.Allow(session.ID, time.Now()) {
+		if !ok || domain.InView(s.clientViews(), session.ID) || !s.co.Allow(session.ID, time.Now()) {
 			continue
 		}
 		b.Group = session.ID
