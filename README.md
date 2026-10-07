@@ -143,6 +143,8 @@ agentws setup serve --remove
 
 On Linux it writes the systemd user unit `~/.config/systemd/user/agentws-serve.service`, on macOS the launchd agent `~/Library/LaunchAgents/dev.agentws.serve.plist`. Either starts at login with the `PATH` and `AGENTWS_HOME` of the shell that ran it, restarts if `serve` exits, and logs to `$AGENTWS_HOME/serve.log`. The same arguments again change nothing; different ones back up the old file as `.bak` and rewrite it; `--remove` stops the service and deletes the file. Re-run it after `agentws` moves, since the unit holds the binary's path. A systemd user service stops when your last session ends unless lingering is on, so on a Linux box you reach only over SSH run `loginctl enable-linger $USER` yourself once; `setup serve` does not do it.
 
+`agentws setup daemon [--remove | --check]` does the same for the daemon itself (`agentws-daemon.service` or `dev.agentws.daemon`), with your login shell's `PATH` rather than the caller's, so sessions get a full `PATH` even when it is run over a bare `ssh -T`. On Linux it warns when lingering is off and prints the `sudo loginctl enable-linger` command; `--check` prints `{"installed","running","linger"}` as JSON.
+
 **Do not expose `serve` to the internet unless a layer in front of it adds its own authentication.** Pairing protects the app from strangers on a network you already trust, not from the open internet: anyone who can reach the port can try pairing codes and probe the API. Use one of the setups below.
 
 ### Tailscale
