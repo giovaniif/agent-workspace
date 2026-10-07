@@ -64,6 +64,11 @@ public struct LiveWindow: View {
             newSession?.observe(store.state)
         }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
+        .onChange(of: router.newSessionRequested, initial: true) {
+            guard router.newSessionRequested else { return }
+            router.newSessionRequested = false
+            openNewSession(.session)
+        }
         .onChange(of: router.shellSeq, initial: true) {
             guard let shell = router.shell else { return }
             router.shell = nil

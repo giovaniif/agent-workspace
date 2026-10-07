@@ -76,7 +76,7 @@ public final class UserNotifier: NSObject, Notifier, UNUserNotificationCenterDel
         content.title = banner.title
         content.body = banner.body
         content.threadIdentifier = banner.id
-        content.sound = .default
+        content.sound = banner.sound ? .default : nil
         content.categoryIdentifier = switch banner.kind {
         case .permission: "permission"
         case .waiting: "waiting"

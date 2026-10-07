@@ -75,12 +75,14 @@ public struct BannerPost: Sendable, Equatable {
     public var title: String
     public var body: String
     public var kind: BannerKind
+    public var sound: Bool
 
-    public init(id: String, title: String, body: String, kind: BannerKind) {
+    public init(id: String, title: String, body: String, kind: BannerKind, sound: Bool = true) {
         self.id = id
         self.title = title
         self.body = body
         self.kind = kind
+        self.sound = sound
     }
 }
 
@@ -129,6 +131,8 @@ public final class Attention {
     public var message: String?
     public private(set) var viewing: String?
     public private(set) var front = false
+    public var preferences = NotificationSettings()
+    public var isMuted: @MainActor (String) -> Bool = { _ in false }
 
     private let caller: Caller
     private let notifier: Notifier
@@ -144,8 +148,13 @@ public final class Attention {
     public func receive(_ notice: Notice) {
         if let id = notice.remove, !id.isEmpty { notifier.withdraw(id) }
         guard let banner = notice.banner, !banner.group.isEmpty else { return }
-        if front && viewing == banner.group { return }
-        notifier.post(BannerPost(id: banner.group, title: banner.title, body: banner.body, kind: BannerKind(state: banner.state)))
+        if preferences.skipSessionInView && front && viewing == banner.group { return }
+        if !preferences.notifyMuted && isMuted(banner.group) { return }
+        let alert = preferences.alert(for: banner.state)
+        guard alert.banner else { return }
+        notifier.post(BannerPost(
+            id: banner.group, title: banner.title, body: banner.body, kind: BannerKind(state: banner.state), sound: alert.sound
+        ))
     }
 
     public func view(session: String?, front: Bool, window: String = "") async {
