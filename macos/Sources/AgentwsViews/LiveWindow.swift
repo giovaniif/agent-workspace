@@ -10,10 +10,12 @@ public struct LiveWindow: View {
     @State private var endedExpanded = false
     @State private var focusFilter = 0
     private let server: String
+    private let router: WindowRouter
 
-    public init(store: ViewStore, server: String) {
+    public init(store: ViewStore, server: String, router: WindowRouter = WindowRouter()) {
         _store = State(initialValue: store)
         self.server = server
+        self.router = router
     }
 
     public var body: some View {
@@ -28,6 +30,7 @@ public struct LiveWindow: View {
         .frame(minWidth: 900, minHeight: 560)
         .onAppear { store.start() }
         .onChange(of: store.state?.seq) { reconcile(filter: filter) }
+        .onChange(of: router.focusSeq) { if let id = router.focus { nav.select(id) } }
     }
 
     private var actions: WindowActions {

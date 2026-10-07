@@ -42,19 +42,32 @@ final class Launcher {
 
 struct AgentwsApp: App {
     @State private var launcher = Launcher()
+    @State private var router = WindowRouter()
 
     var body: some Scene {
-        WindowGroup("agentws") {
+        WindowGroup("agentws", id: "main") {
             if Launch.demo {
                 MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560)
             } else if let store = launcher.store {
-                LiveWindow(store: store, server: "This Mac")
+                LiveWindow(store: store, server: "This Mac", router: router)
             } else {
                 MainWindow(scene: WindowScene(state: nil, connection: .connecting, now: .now))
                     .frame(minWidth: 900, minHeight: 560)
                     .task { await launcher.load() }
             }
         }
+        Window("Worktrees and disk", id: "disk") {
+            if Launch.demo {
+                DiskWindow(scene: .seeded()).frame(minWidth: 820, minHeight: 480)
+            } else if let store = launcher.store {
+                LiveDiskWindow(store: store, router: router)
+            } else {
+                DiskWindow(scene: DiskScene(disk: nil, state: nil, now: .now))
+                    .frame(minWidth: 820, minHeight: 480)
+                    .task { await launcher.load() }
+            }
+        }
+        .keyboardShortcut("w", modifiers: [.command, .shift])
     }
 }
 
