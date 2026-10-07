@@ -82,6 +82,61 @@ func (r *repo) check(env ...string) (int, string) {
 	return code, string(out)
 }
 
+func (r *repo) checkRefs(base, head string) (int, string) {
+	r.t.Helper()
+	script, err := filepath.Abs(filepath.Join("..", "tdd-check"))
+	if err != nil {
+		r.t.Fatal(err)
+	}
+	cmd := exec.Command("bash", script, base, head)
+	cmd.Dir = r.dir
+	cmd.Env = append(os.Environ(), "TDD_PR_TITLE=feat: x")
+	out, err := cmd.CombinedOutput()
+	code := 0
+	if ee, ok := err.(*exec.ExitError); ok {
+		code = ee.ExitCode()
+	} else if err != nil {
+		r.t.Fatal(err)
+	}
+	return code, string(out)
+}
+
+func (r *repo) assertRestored(branch, sha string) {
+	r.t.Helper()
+	if got := r.git("rev-parse", "--abbrev-ref", "HEAD"); got != branch {
+		r.t.Fatalf("HEAD is %q after the check, want branch %q", got, branch)
+	}
+	if got := r.git("rev-parse", "HEAD"); got != sha {
+		r.t.Fatalf("HEAD at %s after the check, want %s", got, sha)
+	}
+	if st := r.git("status", "--porcelain"); st != "" {
+		r.t.Fatalf("worktree not clean after the check:\n%s", st)
+	}
+}
+
+func TestSymbolicHeadResolvesBeforeCheckout(t *testing.T) {
+	r := newRepo(t, map[string]string{"p/a.go": src("a"), "p/a_test.go": test("TestA", "a")})
+	r.commit("test: A returns b", map[string]string{"p/a_test.go": test("TestA", "b")})
+	r.commit("feat: A returns b", map[string]string{"p/a.go": src("b")})
+	branch := r.git("rev-parse", "--abbrev-ref", "HEAD")
+	sha := r.git("rev-parse", "HEAD")
+	if code, out := r.checkRefs(r.base, "HEAD"); code != 0 || !strings.Contains(out, "every new or changed test fails on base") {
+		t.Fatalf("exit %d, want 0 with the base run\n%s", code, out)
+	}
+	r.assertRestored(branch, sha)
+}
+
+func TestFailingCheckRestoresBranchAndIndex(t *testing.T) {
+	r := newRepo(t, map[string]string{"p/a.go": src("a"), "p/a_test.go": test("TestA", "a")})
+	r.commit("test: A again", map[string]string{"p/b_test.go": "package p\n\nimport \"testing\"\n\nfunc TestB(t *testing.T) { TestA(t) }\n"})
+	branch := r.git("rev-parse", "--abbrev-ref", "HEAD")
+	sha := r.git("rev-parse", "HEAD")
+	if code, out := r.checkRefs(r.base, sha); code != 1 {
+		t.Fatalf("exit %d, want 1\n%s", code, out)
+	}
+	r.assertRestored(branch, sha)
+}
+
 func src(ret string) string {
 	return "package p\n\nfunc A() string { return \"" + ret + "\" }\n"
 }
