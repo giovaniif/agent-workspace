@@ -10,7 +10,7 @@ extension Seed {
         let api = ReviewWorktree(id: "w3", repo: "api", path: "/w/api-billing-export", branch: "billing-export", pr: 43)
         let exportHunk = DiffHunk(header: "@@ -10,7 +10,9 @@ export function ExportButton()", lines: [
             spanned(.context, old: 10, new: 10, "export function ExportButton() {", [(0, 6, "keyword"), (7, 15, "keyword"), (16, 28, "function")]),
-            spanned(.context, old: 11, new: 11, "  const [busy, setBusy] = useState(false);", [(2, 7, "keyword"), (27, 35, "function"), (36, 41, "keyword")]),
+            spanned(.context, old: 11, new: 11, "  const [busy, setBusy] = useState(false);", [(2, 7, "keyword"), (26, 34, "function"), (35, 40, "keyword")]),
             spanned(.deleted, old: 12, "  const url = `/api/export`;", [(2, 7, "keyword"), (14, 27, "string")]),
             spanned(.added, new: 12, "  const url = `/api/billing/export?format=${format}`;", [(2, 7, "keyword"), (14, 52, "string")]),
             spanned(.added, new: 13, "  const format = props.format ?? \"csv\";", [(2, 7, "keyword"), (32, 37, "string")]),
