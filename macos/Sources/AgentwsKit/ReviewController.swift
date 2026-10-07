@@ -93,12 +93,13 @@ public final class ReviewController {
 
     public func send() async {
         guard screen.canSend else { return }
+        let note = screen.note
         do {
             let draft: ReviewDraft = try await caller.call(
-                "review.send", params: ReviewSendParams(session: screen.session, note: screen.note.trimmingCharacters(in: .whitespacesAndNewlines))
+                "review.send", params: ReviewSendParams(session: screen.session, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
             )
             screen.draft = draft
-            screen.note = ""
+            if screen.note == note { screen.note = "" }
             screen.error = nil
         } catch {
             screen.error = Self.message(error)

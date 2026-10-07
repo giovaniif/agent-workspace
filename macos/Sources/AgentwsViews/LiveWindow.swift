@@ -76,7 +76,7 @@ public struct LiveWindow: View {
         let line = review.screen.composer.flatMap { CommentAnchor(lines: $0.lines)?.start }
             ?? file.file.hunks.first?.lines.first { $0.new > 0 }?.new ?? 1
         Task {
-            if await review.openInNvim(file.key, line: line) { self.review = nil }
+            if await review.openInNvim(file.key, line: line), self.review === review { self.review = nil }
         }
     }
 
