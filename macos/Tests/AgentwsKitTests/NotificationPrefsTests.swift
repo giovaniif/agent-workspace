@@ -27,6 +27,16 @@ struct NotificationPrefsTests {
         #expect(notifier.posted.map(\.id) == ["s2"])
     }
 
+    @Test func aSuppressedBannerWithdrawsTheSessionsEarlierOne() throws {
+        var prefs = NotificationSettings()
+        prefs.waiting.banner = false
+        let (attention, notifier) = attention(prefs)
+        attention.receive(try noticeLine(bannerNotice(state: "permission")))
+        attention.receive(try noticeLine(bannerNotice(state: "waiting")))
+        #expect(notifier.posted.map(\.id) == ["s1"])
+        #expect(notifier.withdrawn == ["s1"])
+    }
+
     @Test func eachEventPlaysASoundOnlyWhenItsSoundIsOn() throws {
         var prefs = NotificationSettings()
         prefs.permission.sound = false

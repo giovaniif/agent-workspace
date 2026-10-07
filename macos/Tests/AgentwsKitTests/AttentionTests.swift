@@ -230,6 +230,16 @@ struct AttentionTests {
         #expect(caller.methods() == ["client.viewing", "client.viewing"])
     }
 
+    @Test func aViewingReportThatFailedIsSentAgainAfterAReconnect() async {
+        let (attention, caller, _) = attention()
+        caller.replies["client.viewing"] = nil
+        await attention.view(session: "s1", front: true)
+        caller.replies["client.viewing"] = .success("{}")
+        await attention.reconnected()
+        #expect(caller.methods() == ["client.viewing", "client.viewing"])
+        #expect(caller.calls.last?.params["session"] as? String == "s1")
+    }
+
     @Test func replySendsTheTextToTheSession() async throws {
         let (attention, caller, notifier) = attention()
         await attention.reply("s2", text: "use the staging db")
