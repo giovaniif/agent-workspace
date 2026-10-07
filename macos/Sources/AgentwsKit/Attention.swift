@@ -217,8 +217,11 @@ public final class Attention {
         let prompt: Prompt
         do {
             prompt = try await fetchPrompt(session)
-        } catch {
+        } catch let AgentwsError.rpc(error) where error.kind == .notFound {
             settle(session, message: Self.gone)
+            return
+        } catch {
+            message = Self.describe(error)
             return
         }
         guard let choice = always ? prompt.always : prompt.allow else {
