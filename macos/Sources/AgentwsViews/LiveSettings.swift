@@ -24,7 +24,8 @@ public struct LiveSettings: View {
     public var body: some View {
         let scene = SettingsScene(
             tab: tab, server: serverName, settings: store.settings, agents: server?.agents, workspaces: server?.workspaces ?? [],
-            cliLink: cliStatus, refusal: tab == .shortcuts ? refusal : nil,
+            cliLink: cliStatus, config: server?.config, harnesses: server?.harnesses ?? [], devices: server?.devices ?? [],
+            pairing: server?.pairing, refusal: tab == .shortcuts ? refusal : nil,
             notice: localNotice ?? server?.notice, error: localError ?? server?.error
         )
         SettingsView(scene: scene, actions: actions)
@@ -63,6 +64,9 @@ public struct LiveSettings: View {
         a.addWorkspace = { path in act { await $0.addWorkspace(path) } }
         a.removeWorkspace = { root in act { await $0.removeWorkspace(root) } }
         a.refresh = { act { await $0.refresh() } }
+        a.setConfig = { key, value in act { await $0.setConfig(key, to: value) } }
+        a.revokeDevice = { id in act { await $0.revokeDevice(id) } }
+        a.pairPhone = { act { await $0.pairPhone() } }
         return a
     }
 

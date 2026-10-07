@@ -32,6 +32,8 @@ const (
 	MethodNewSession       = "session.new"
 	MethodSessionResolve   = "session.resolve"
 	MethodSessionOptions   = "session.options"
+	MethodConfigGet        = "config.get"
+	MethodConfigSet        = "config.set"
 	MethodEndSession       = "session.end"
 	MethodResumeSession    = "session.resume"
 	MethodSessionRename    = "session.rename"
@@ -299,6 +301,16 @@ type HarnessOptions struct {
 type SessionOptions struct {
 	Harnesses   []HarnessOptions `json:"harnesses"`
 	MaxParallel int              `json:"max_parallel"`
+}
+
+type ConfigSetParams struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type ConfigValues struct {
+	Path   string            `json:"path"`
+	Values map[string]string `json:"values"`
 }
 
 type LauncherEnqueueParams struct {

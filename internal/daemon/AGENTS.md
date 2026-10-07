@@ -44,6 +44,14 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
 `go test ./... -run Launcher -tags integration` runs the domain, daemon and TUI launcher tests and the integration test (real repos and tmux, a fake Linear server; nothing reaches Linear). `L` calls `launcher.enqueue` (`{"workspace","input","harness","model","effort"}` → `{"queued","rejected"}`) with the Linear URLs in the input; `launcher.drop` (`{"id"}`) and `launcher.retarget` (`{"id","harness","model","effort"}`) edit a waiting item (`c` moves queued issues to Codex when offered, `X` clears the queue). The daemon holds the queue (`State.Queue`, `Diff.Queue`), drains it on a worker by `domain.DrainLauncher` with `[launcher] max_parallel` in `$AGENTWS_HOME/config.toml` (default 3) and starts each item through the `session.new` path; the sidebar lists it with the `OfferFallbacks` offer. See [ADR 0031](../../docs/adr/0031-linear-launcher.md).
 
+## Config
+
+`go test ./internal/domain/ ./internal/daemon/ -run 'Config|TOML'`. `WithConfig(path)` (`Run` passes `$AGENTWS_HOME/config.toml`) turns on `config.get` and `config.set` (protocol in [internal/rpc/](../rpc/AGENTS.md)). They run on the connection goroutine under one mutex, never on the loop.
+
+- **Editing.** `domain.SetTOMLValue` edits the text line by line: it replaces `key = …` inside `[table]`, adds the key at the end of that table, or appends the table, so the user's comments, order and unknown keys stay (a comment on the replaced line itself goes). An empty value removes the line. Before writing, the result is parsed again and must hold exactly the new value; a key set some other way (an inline table, dotted keys) is refused with a message to edit it by hand, and a file that does not parse is never touched.
+- **Backup.** A changed file is first copied to `config.toml.agentws-<UTC time>.bak` (mode 600), then replaced atomically with its old mode. Setting the value it already has writes nothing and makes no backup; a missing file is created without one.
+- **Live.** After a write the daemon reloads `[defaults.<harness>]`, `[launcher] max_parallel` and `[push] away_after` (only when presence runs; turning it on from `"0"` needs a restart). `[fallback]` and `[theme]` are read by the TUI when it starts.
+
 ## Codex fallback
 
 `go test ./... -run Fallback`. `[fallback]` in `$AGENTWS_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row the new-session dialog shows `domain.Advise`'s low-quota warning; `ctrl+s` takes the offer (switches to the other harness when it has reported limits). See [ADR 0027](../../docs/adr/0027-codex-fallback.md).

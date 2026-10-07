@@ -44,13 +44,16 @@ func LoadStartDefaults(path string) (map[domain.Harness]StartDefaults, error) {
 }
 
 func (d *Daemon) sessionOptions() rpc.SessionOptions {
-	out := rpc.SessionOptions{MaxParallel: cmp.Or(d.lc.maxParallel, domain.DefaultMaxParallel)}
+	var maxParallel int
+	var defaults map[domain.Harness]StartDefaults
+	d.query(func(*state) { maxParallel, defaults = d.lc.maxParallel, d.hs.defaults })
+	out := rpc.SessionOptions{MaxParallel: cmp.Or(maxParallel, domain.DefaultMaxParallel)}
 	for _, h := range domain.Harnesses() {
 		if _, ok := d.hs.adapters[h]; !ok {
 			continue
 		}
 		spec := domain.Spec(h)
-		def := d.hs.defaults[h]
+		def := defaults[h]
 		out.Harnesses = append(out.Harnesses, rpc.HarnessOptions{
 			Harness: string(h), Name: spec.Name, Tag: spec.Tag, Models: spec.Models, Efforts: spec.Efforts,
 			Model: def.Model, Effort: def.Effort,

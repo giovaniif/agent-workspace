@@ -41,6 +41,9 @@ struct ServerSettingsTests {
         let fake = SettingsCaller()
         fake.replies["onboarding.status"] = Self.status
         fake.replies["workspace.list"] = Self.workspaces
+        fake.replies["config.get"] = ServerConfigTests.config
+        fake.replies["session.options"] = ServerConfigTests.options
+        fake.replies["device.list"] = ServerConfigTests.devices
         return fake
     }
 

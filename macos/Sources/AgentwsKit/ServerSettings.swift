@@ -110,6 +110,10 @@ public final class ServerSettings {
     public private(set) var agents: AgentsStatus?
     public private(set) var workspaces: [WorkspaceInfo] = []
     public private(set) var lastUsed = ""
+    public private(set) var config: ServerConfig?
+    public private(set) var harnesses: [HarnessOptions] = []
+    public private(set) var devices: [PairedDevice] = []
+    public private(set) var pairing: PairingCode?
     public private(set) var error: String?
     public private(set) var notice: String?
     public private(set) var busy = false
@@ -124,6 +128,11 @@ public final class ServerSettings {
         await run {
             let status: AgentsStatus = try await self.caller.call("onboarding.status", params: [String: String]())
             self.agents = status
+            self.config = try await self.optional { try await self.caller.call("config.get", params: [String: String]()) }
+            let options: SessionOptions? = try await self.optional { try await self.caller.call("session.options", params: [String: String]()) }
+            self.harnesses = options?.harnesses ?? []
+            let phones: DeviceListReply? = try await self.optional { try await self.caller.call("device.list", params: [String: String]()) }
+            self.devices = phones?.devices ?? []
             let list: WorkspaceListReply
             do {
                 list = try await self.caller.call("workspace.list", params: [String: String]())
@@ -167,6 +176,35 @@ public final class ServerSettings {
         await change {
             let _: Empty = try await self.caller.call("workspace.remove", params: ["root": root])
             self.notice = "Removed \(root)"
+        }
+    }
+
+    public func setConfig(_ key: String, to value: String) async {
+        await run {
+            let config: ServerConfig = try await self.caller.call("config.set", params: ConfigSetParams(key: key, value: value))
+            self.config = config
+            self.notice = "Saved \(key) in \(config.path)"
+        }
+    }
+
+    public func revokeDevice(_ id: String) async {
+        await change {
+            let _: Empty = try await self.caller.call("device.revoke", params: ["id": id])
+            self.notice = "Phone revoked"
+        }
+    }
+
+    public func pairPhone() async {
+        await run {
+            self.pairing = try await self.caller.call("pair.code", params: [String: String]())
+        }
+    }
+
+    private func optional<Result>(_ body: @MainActor () async throws -> Result) async throws -> Result? {
+        do {
+            return try await body()
+        } catch AgentwsError.rpc(let error) where error.kind == .unknownMethod || error.kind == .unavailable {
+            return nil
         }
     }
 
