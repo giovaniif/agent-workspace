@@ -93,7 +93,7 @@ Tests are named `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `g
 
 ## Disk view
 
-`go test ./internal/daemon ./internal/app ./internal/domain -run 'Disk|Reclaimable|TotalSize|RemoveWorktree|CleanupWorktree|ShellToggle'`. `disk.view` returns `Cleanup.Plan` with a size per worktree (one status check per worktree, 4 at a time); `cleanup.worktree` runs `app.Cleanup.RemoveWorktree`. `AGENTWS_DEPS_STORE` names the shared deps store whose size the header shows (default: pnpm's store if present). See [ADR 0030](../../docs/adr/0030-worktrees-disk-view.md) and [internal/tui/](../tui/AGENTS.md).
+`go test ./internal/daemon ./internal/app ./internal/domain -run 'Disk|Reclaimable|TotalSize|RemoveWorktree|CleanupWorktree|ShellToggle'`. `disk.view` returns `Cleanup.Plan` with a size per worktree (one status check per worktree, 4 at a time), plus `reclaimable`/`reclaimable_pending` and `worktrees_size`/`worktrees_pending` (`domain.Reclaimable` and `domain.TotalSize`, so clients never re-add sizes); `cleanup.worktree` runs `app.Cleanup.RemoveWorktree`. `AGENTWS_DEPS_STORE` names the shared deps store whose size the header shows (default: pnpm's store if present). See [ADR 0030](../../docs/adr/0030-worktrees-disk-view.md) and [internal/tui/](../tui/AGENTS.md).
 
 ## Transcripts
 

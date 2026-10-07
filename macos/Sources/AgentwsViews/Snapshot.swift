@@ -6,7 +6,15 @@ import SwiftUI
 @MainActor
 public enum Snapshot {
     public static func render(_ scene: WindowScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
-        let root = MainWindow(scene: scene)
+        renderView(MainWindow(scene: scene), size: size, dark: dark)
+    }
+
+    public static func render(disk scene: DiskScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(DiskWindow(scene: scene), size: size, dark: dark)
+    }
+
+    static func renderView(_ content: some View, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        let root = content
             .environment(\.colorScheme, dark ? .dark : .light)
             .environment(\.agentwsAnimates, false)
             .frame(width: size.width, height: size.height)

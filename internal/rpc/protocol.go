@@ -143,12 +143,16 @@ type PushSubscribeParams struct {
 }
 
 type DiskView struct {
-	Free           uint64           `json:"free"`
-	Total          uint64           `json:"total"`
-	AutoCleanEvery time.Duration    `json:"auto_clean_every"`
-	DepsStore      *DepsStore       `json:"deps_store,omitempty"`
-	Rows           []domain.DiskRow `json:"rows"`
-	Recent         []RecentCleanup  `json:"recent"`
+	Free               uint64           `json:"free"`
+	Total              uint64           `json:"total"`
+	AutoCleanEvery     time.Duration    `json:"auto_clean_every"`
+	DepsStore          *DepsStore       `json:"deps_store,omitempty"`
+	Rows               []domain.DiskRow `json:"rows"`
+	Recent             []RecentCleanup  `json:"recent"`
+	Reclaimable        int64            `json:"reclaimable"`
+	ReclaimablePending int              `json:"reclaimable_pending"`
+	WorktreesSize      int64            `json:"worktrees_size"`
+	WorktreesPending   int              `json:"worktrees_pending"`
 }
 
 type DepsStore struct {
