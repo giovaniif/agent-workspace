@@ -208,6 +208,7 @@ func startWithClient(t *testing.T, inView string, sessions ...domain.Session) (s
 	store := &memStore{}
 	store.snap.Sessions = sessions
 	r := startSessions(t, store, nil)
+	r.host.waitListed(t)
 	clientHost := &fakeClientHost{}
 	r.d.SetClientHost(clientHost)
 	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
