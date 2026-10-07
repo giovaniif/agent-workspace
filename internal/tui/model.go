@@ -51,6 +51,7 @@ type Options struct {
 	NoMouse         bool
 	Redial          func(context.Context) (Connection, error)
 	CanRestart      bool
+	Project         string
 }
 
 type Caller interface {
@@ -93,6 +94,8 @@ type Model struct {
 	height int
 
 	workspaces map[string]domain.Workspace
+	projects   map[string]domain.Project
+	proj       *projectsPanel
 	tasks      map[string]domain.Task
 	taskOrder  []string
 	worktrees  map[string]domain.Worktree
@@ -148,6 +151,7 @@ func New(opts Options) Model {
 		width:      40,
 		height:     24,
 		workspaces: map[string]domain.Workspace{},
+		projects:   map[string]domain.Project{},
 		drafts:     map[string]domain.ReviewDraft{},
 		tasks:      map[string]domain.Task{},
 		worktrees:  map[string]domain.Worktree{},
@@ -207,7 +211,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case onboardStatusMsg, onboardInstalledMsg, onboardFinishedMsg, onboardNvimMsg, setupPopupFailedMsg, setupPopupRetryMsg:
 		return m.onboardMsg(msg)
 	case popupFailedMsg:
-		return m.openDialog(), nil
+		return m.openDialogIn(msg.project), nil
+	case projectAddedMsg:
+		m = m.projectAddDone(msg.seq, nil)
+	case projectAddFailedMsg:
+		m = m.projectAddDone(msg.seq, msg.err)
 	case showFailedMsg:
 		if m.dialog != nil {
 			d := m.own()
@@ -263,6 +271,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.rv.open {
 			return m.reviewKey(msg)
 		}
+		if m.proj != nil {
+			return m.projectsKey(msg)
+		}
 		if m.launching != nil {
 			return m.launcherKey(msg)
 		}
@@ -281,6 +292,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.PasteMsg:
 		if m.dialog != nil {
 			return m.dialogPaste(msg.Content)
+		}
+		if m.proj != nil {
+			return m.projectPaste(msg.Content), nil
 		}
 		if m.launching != nil {
 			return m.launcherPaste(msg.Content), nil
@@ -325,6 +339,10 @@ func (m *Model) load(st rpc.State) {
 	m.workspaces = map[string]domain.Workspace{}
 	for _, w := range st.Workspaces {
 		m.workspaces[w.Root] = w
+	}
+	m.projects = map[string]domain.Project{}
+	for _, p := range st.Projects {
+		m.projects[p.Root] = p
 	}
 	m.tasks = map[string]domain.Task{}
 	m.worktrees = map[string]domain.Worktree{}
@@ -376,6 +394,12 @@ func (m *Model) apply(d rpc.Diff) {
 		return
 	case d.RemovedWorkspace != "":
 		delete(m.workspaces, d.RemovedWorkspace)
+		return
+	case d.Project != nil:
+		m.projects[d.Project.Root] = *d.Project
+		return
+	case d.RemovedProject != "":
+		delete(m.projects, d.RemovedProject)
 		return
 	case d.Task != nil:
 		m.putTask(*d.Task)
@@ -531,6 +555,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "L":
 		if m.opts.Calls != nil {
 			return m.openLauncher(), nil
+		}
+	case "P":
+		if m.opts.Calls != nil {
+			return m.openProjects(), nil
 		}
 	case "c":
 		return m, m.takeQueueOffers()

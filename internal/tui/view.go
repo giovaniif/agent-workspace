@@ -135,6 +135,9 @@ func (m Model) mainScreen() (lines, owners []string) {
 	lines = append(lines, m.limitLines()...)
 	lines = append(lines, m.banner()...)
 	lines = append(lines, "")
+	projectAt := len(lines)
+	projectLines, projectOwners := m.projectSection()
+	lines = append(lines, projectLines...)
 
 	need := 0
 	for _, e := range m.entries {
@@ -160,7 +163,8 @@ func (m Model) mainScreen() (lines, owners []string) {
 	if len(body) > room {
 		body, bodyOwners = body[:room], bodyOwners[:room]
 	}
-	owners = make([]string, len(lines), m.height)
+	owners = make([]string, len(lines), max(m.height, len(lines)))
+	copy(owners[projectAt:], projectOwners)
 	lines = append(lines, body...)
 	owners = append(owners, bodyOwners...)
 	for len(lines)+len(footer) < m.height {
@@ -191,7 +195,8 @@ func (m Model) listOffset(selRow, rows, room int) int {
 }
 
 func (m Model) listGeometry() (owners []string, off int) {
-	top := 1 + len(m.limitLines()) + len(m.banner()) + 2
+	projectLines, _ := m.projectSection()
+	top := 1 + len(m.limitLines()) + len(m.banner()) + 2 + len(projectLines)
 	body, selRow, owners := m.body()
 	room := max(m.height-top-len(m.footer()), 0)
 	return owners, m.listOffset(selRow, len(body), room)
@@ -226,6 +231,9 @@ func (m Model) body() ([]string, int, []string) {
 	s := m.styles
 	if m.dialog != nil {
 		return m.dialogLines()
+	}
+	if m.proj != nil {
+		return m.projectPanelLines(), m.projectPanelSelRow(), nil
 	}
 	if m.launching != nil {
 		return m.launcherLines(), 0, nil
@@ -353,6 +361,7 @@ func (m Model) helpLines() []string {
 		{`ctrl+\`, "in an agent pane: back to the sidebar"},
 		{"n", "new session"},
 		{"L", "launch Linear issues"},
+		{"P", "projects: open, add, remove"},
 		{"c", "queued issues to codex"},
 		{"X", "clear the queue"},
 		{"S", "set up Claude, Codex and nvim"},

@@ -73,7 +73,7 @@ func (d *Daemon) cleanupInputs() ([]domain.Worktree, func(domain.Worktree) app.S
 		projects := sorted(s.projects)
 		for _, w := range wts {
 			var a app.SessionActivity
-			if p, found := projectHolding(projects, w); found {
+			if p, found := domain.ProjectOfWorktree(projects, w); found {
 				a.Project = p.Name
 			}
 			if x, found := s.sessions[w.SessionID]; found && w.SessionID != "" {
@@ -123,11 +123,4 @@ func (d *Daemon) cleanupMethod(req rpc.Request) (*rpc.Response, bool) {
 		items = append(items, rpc.CleanupItem{Path: w.Path, Branch: w.Branch, Action: r.Decision.Action, Reason: r.Decision.Reason, Outcome: r.Outcome})
 	}
 	return result(req.ID, items), ok
-}
-
-func projectHolding(projects []domain.Project, w domain.Worktree) (domain.Project, bool) {
-	if p, found := domain.ProjectOf(projects, w.Repo); found {
-		return p, true
-	}
-	return domain.ProjectOf(projects, w.Path)
 }

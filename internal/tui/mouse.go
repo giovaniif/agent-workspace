@@ -82,7 +82,7 @@ func (m Model) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) wheel(delta int) (tea.Model, tea.Cmd) {
 	switch {
-	case m.ob != nil, m.dialog != nil, m.launching != nil, m.renaming != nil, m.help:
+	case m.ob != nil, m.dialog != nil, m.launching != nil, m.proj != nil, m.renaming != nil, m.help:
 	case m.rv.open:
 		if !m.rv.typing {
 			m.moveLine(delta * reviewWheelStep)
@@ -156,6 +156,8 @@ func (m Model) clickOwner(owner string, x int) (tea.Model, tea.Cmd) {
 	case strings.HasPrefix(owner, ownSession), strings.HasPrefix(owner, ownHeader):
 		m.selectInPlace(owner[len(ownSession):])
 		return m, m.focus()
+	case strings.HasPrefix(owner, ownProject):
+		return m.openProject(strings.TrimPrefix(owner, ownProject))
 	case strings.HasPrefix(owner, ownPick):
 		i, _ := strconv.Atoi(strings.TrimPrefix(owner, ownPick))
 		shown := m.picker.shown()
@@ -198,7 +200,7 @@ func (m Model) hintRow(lines []string, y int) bool {
 }
 
 func (m Model) typing() bool {
-	return m.dialog != nil || m.launching != nil || m.renaming != nil || m.rv.typing
+	return m.dialog != nil || m.launching != nil || m.renaming != nil || m.rv.typing || (m.proj != nil && m.proj.adding != nil)
 }
 
 func printable(k tea.KeyPressMsg) bool { return k.Text != "" && k.Text != " " }

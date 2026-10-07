@@ -24,6 +24,34 @@ func TestNewProjectRejectsAFolderWithoutRepos(t *testing.T) {
 	}
 }
 
+func TestProjectRowsCountTheWorktreesEachProjectHolds(t *testing.T) {
+	projects := []Project{
+		{Root: "/code/web", Name: "web"},
+		{Root: "/code/shop", Name: "Shop"},
+		{Root: "/code/api", Name: "api"},
+	}
+	worktrees := []Worktree{
+		{ID: "/h/api/a", Repo: "/code/api", Path: "/h/api/a"},
+		{ID: "/h/api/b", Repo: "/code/api", Path: "/h/api/b"},
+		{ID: "/code/shop/web/.claude/worktrees/x", Path: "/code/shop/web/.claude/worktrees/x"},
+		{ID: "/h/other/c", Repo: "/code/other", Path: "/h/other/c"},
+	}
+	got := ProjectRows(projects, worktrees)
+	want := []ProjectRow{
+		{Project: projects[2], Worktrees: 2},
+		{Project: projects[1], Worktrees: 1},
+		{Project: projects[0], Worktrees: 0},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("rows %+v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("row %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
+
 func TestProjectOfPicksTheProjectHoldingAPath(t *testing.T) {
 	projects := []Project{
 		{Root: "/code/shop", Name: "shop"},

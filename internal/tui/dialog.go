@@ -105,14 +105,19 @@ type startFailedMsg struct {
 	err error
 }
 
-func (m Model) openDialog() Model {
+func (m Model) openDialog() Model { return m.openDialogIn(m.opts.Project) }
+
+func (m Model) openDialogIn(project string) Model {
 	m.dialogs++
 	d := &dialog{seq: m.dialogs, defaults: m.opts.Defaults, modelLists: m.opts.ModelChoices, efforts: effortsFor(domain.Harness(harnessChoices[0]))}
 	start := m.opts.Defaults[domain.HarnessClaude]
 	d.model, d.effort = start.Model, effortIndex(d.efforts, start.Effort)
 	all := sorted(m.workspaces)
 	d.spaces = all
-	if last, found := domain.LastCreatedSession(sessionsOf(m.sessions)); found {
+	if project != "" {
+		d.startIn(project)
+		d.selectWorkspace(project)
+	} else if last, found := domain.LastCreatedSession(sessionsOf(m.sessions)); found {
 		d.seedCreated(last)
 		if d.last == "" {
 			if used, found := domain.LastUsedWorkspace(all); found {
@@ -744,15 +749,17 @@ func (m Model) showNewAndQuit(id string) tea.Cmd {
 
 type showFailedMsg struct{ err error }
 
-type popupFailedMsg struct{}
+type popupFailedMsg struct{ project string }
 
-func (m Model) openPopup() tea.Cmd {
-	c, p := m.opts.Calls, m.opts.DialogPopup
+func (m Model) openPopup() tea.Cmd { return m.popup(m.opts.DialogPopup, "") }
+
+func (m Model) popup(p rpc.ClientPopupParams, project string) tea.Cmd {
+	c := m.opts.Calls
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 		defer cancel()
 		if err := c.Call(ctx, rpc.MethodClientPopup, p, nil); err != nil {
-			return popupFailedMsg{}
+			return popupFailedMsg{project: project}
 		}
 		return nil
 	}
