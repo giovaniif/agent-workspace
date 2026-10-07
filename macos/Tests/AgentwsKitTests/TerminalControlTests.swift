@@ -124,7 +124,7 @@ struct TerminalControlTests {
         let argv = ["tmux", "-L", "agentws", "-C", "attach", "-t", "agentws-native-1-2"]
         #expect(Endpoint.local(binary: "agentws").terminalArgv(argv) == argv)
         #expect(Endpoint.ssh(host: "box", remoteBinary: "agentws").terminalArgv(argv) == [
-            "ssh", "-T", "-o", "BatchMode=yes", "-o", "ServerAliveInterval=15", "box", "--",
+            "ssh", "-T", "-o", "BatchMode=yes", "-o", "RemoteCommand=none", "-o", "RequestTTY=no", "-o", "ServerAliveInterval=15", "box", "--",
             "'tmux' '-L' 'agentws' '-C' 'attach' '-t' 'agentws-native-1-2'",
         ])
         #expect(Endpoint.ssh(host: "box", remoteBinary: "agentws").terminalArgv(["it's"]).last == #"'it'\''s'"#)
