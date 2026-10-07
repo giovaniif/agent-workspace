@@ -111,6 +111,9 @@ func daemonService(env func(string) string, self, userHome string, uid int, goos
 	if home == "" {
 		home = filepath.Join(userHome, ".agentws")
 	}
+	if abs, err := filepath.Abs(home); err == nil {
+		home = abs
+	}
 	program := []string{self, "daemon"}
 	svcEnv := map[string]string{"AGENTWS_HOME": home}
 	log := filepath.Join(home, "daemon-service.log")
