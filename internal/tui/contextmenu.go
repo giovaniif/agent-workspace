@@ -49,7 +49,8 @@ func (m Model) menuClick(x, y int) (tea.Model, tea.Cmd) {
 	_, owners := m.mainScreen()
 	menu := m.menu
 	m.menu = nil
-	if y < 0 || y >= len(owners) || !strings.HasPrefix(owners[y], ownMenu) || x < sessionMenuCol {
+	if y < 0 || y >= len(owners) || !strings.HasPrefix(owners[y], ownMenu) ||
+		x <= sessionMenuCol || x > sessionMenuCol+sessionMenuInner() {
 		return m, nil
 	}
 	i, _ := strconv.Atoi(strings.TrimPrefix(owners[y], ownMenu))
@@ -93,12 +94,10 @@ func (m Model) overlaySessionMenu(lines, owners []string) ([]string, []string) {
 		return lines, owners
 	}
 	labels := make([]string, len(sessionMenuActions))
-	inner := 0
 	for i, a := range sessionMenuActions {
 		labels[i] = a.label
-		inner = max(inner, ansi.StringWidth(a.label)+3)
 	}
-	box := m.menuBox(labels, m.menu.cursor, inner)
+	box := m.menuBox(labels, m.menu.cursor, sessionMenuInner())
 	row := placeMenu(anchor+1, len(box), len(lines))
 	for i, b := range box {
 		at := row + i
@@ -112,4 +111,12 @@ func (m Model) overlaySessionMenu(lines, owners []string) ([]string, []string) {
 		}
 	}
 	return lines, owners
+}
+
+func sessionMenuInner() int {
+	inner := 0
+	for _, a := range sessionMenuActions {
+		inner = max(inner, ansi.StringWidth(a.label)+3)
+	}
+	return inner
 }
