@@ -212,40 +212,42 @@ public struct ProcessShell: ServerShell {
     public func run(_ script: String, input: Data?) async throws -> RunResult {
         let argv = argv(script)
         let environment = environment
-        return try await Task.detached {
-            let process = Process()
-            let stdin = Pipe()
-            let stdout = Pipe()
-            let stderr = Pipe()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-            process.arguments = argv
-            if let environment { process.environment = environment }
-            process.standardInput = stdin
-            process.standardOutput = stdout
-            process.standardError = stderr
-            signal(SIGPIPE, SIG_IGN)
-            try process.run()
-            let writer = stdin.fileHandleForWriting
-            Thread.detachNewThread {
-                if let input { try? writer.write(contentsOf: input) }
-                try? writer.close()
-            }
-            let errors = Mutexed()
-            let reader = stderr.fileHandleForReading
-            let done = DispatchSemaphore(value: 0)
-            Thread.detachNewThread {
-                errors.set(reader.readDataToEndOfFile())
-                done.signal()
-            }
-            let output = stdout.fileHandleForReading.readDataToEndOfFile()
-            done.wait()
-            process.waitUntilExit()
-            return RunResult(
-                status: process.terminationStatus,
-                output: String(decoding: output, as: UTF8.self),
-                error: String(decoding: errors.get(), as: UTF8.self)
-            )
-        }.value
+        return try await Task.detached { try Self.execute(argv, environment, input) }.value
+    }
+
+    private static func execute(_ argv: [String], _ environment: [String: String]?, _ input: Data?) throws -> RunResult {
+        let process = Process()
+        let stdin = Pipe()
+        let stdout = Pipe()
+        let stderr = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = argv
+        if let environment { process.environment = environment }
+        process.standardInput = stdin
+        process.standardOutput = stdout
+        process.standardError = stderr
+        signal(SIGPIPE, SIG_IGN)
+        try process.run()
+        let writer = stdin.fileHandleForWriting
+        Thread.detachNewThread {
+            if let input { try? writer.write(contentsOf: input) }
+            try? writer.close()
+        }
+        let errors = Mutexed()
+        let reader = stderr.fileHandleForReading
+        let done = DispatchSemaphore(value: 0)
+        Thread.detachNewThread {
+            errors.set(reader.readDataToEndOfFile())
+            done.signal()
+        }
+        let output = stdout.fileHandleForReading.readDataToEndOfFile()
+        done.wait()
+        process.waitUntilExit()
+        return RunResult(
+            status: process.terminationStatus,
+            output: String(decoding: output, as: UTF8.self),
+            error: String(decoding: errors.get(), as: UTF8.self)
+        )
     }
 }
 
