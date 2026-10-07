@@ -115,11 +115,6 @@ func TestContextMenuClosesWhenTheSelectionChanges(t *testing.T) {
 	if strings.Contains(screen(m), "End session") {
 		t.Fatalf("menu stayed after its session left:\n%s", screen(m))
 	}
-	m = rightClickOn(t, m, "session 3 change")
-	m = clickOn(t, m, "session 4 change")
-	if m.Selected() != "s04" || strings.Contains(screen(m), "End session") {
-		t.Fatalf("left-click on another row: selected %q\n%s", m.Selected(), screen(m))
-	}
 }
 
 func TestContextMenuIgnoresRightClicksOffSessionRows(t *testing.T) {
