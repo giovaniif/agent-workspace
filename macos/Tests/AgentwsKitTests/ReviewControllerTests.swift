@@ -181,8 +181,8 @@ struct ReviewControllerTests {
     @Test func openInNvimNamesTheWorktreeFileAndLine() async throws {
         let (controller, caller) = await opened()
         caller.replies["nvim.open"] = .success(#"{"pane":"%9","socket":"/tmp/s.sock","shown":true}"#)
-        let opened = await controller.openInNvim(key, line: 2)
-        #expect(opened)
+        let pane = await controller.openInNvim(key, line: 2)
+        #expect(pane == "%9")
         let params = try #require(caller.calls.last?.params)
         #expect(caller.calls.last?.method == "nvim.open")
         #expect(params["session"] as? String == "s1")
