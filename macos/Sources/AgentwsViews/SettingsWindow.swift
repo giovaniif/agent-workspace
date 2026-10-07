@@ -17,6 +17,9 @@ public struct SettingsActions {
     public var addWorkspace: (String) -> Void = { _ in }
     public var removeWorkspace: (String) -> Void = { _ in }
     public var refresh: () -> Void = {}
+    public var setConfig: (String, String) -> Void = { _, _ in }
+    public var revokeDevice: (String) -> Void = { _ in }
+    public var pairPhone: () -> Void = {}
 
     public init() {}
 }
@@ -208,7 +211,74 @@ struct WorkspacesPane: View {
                     .disabled(path.isEmpty)
                 }
             }
+            ServerConfigGroup(title: "Worktrees and launcher", scene: scene, actions: actions, fields: ConfigFields.workspaces) {
+                if let config = scene.config {
+                    LabeledContent("Worktree location") { Text(config.worktreeLocation).font(Metrics.mono) }
+                    LabeledContent("Auto-cleanup") { Text("Every 10 minutes and when a PR merges") }
+                }
+            }
         }
+    }
+}
+
+struct ServerConfigGroup<Extra: View>: View {
+    let title: String
+    let scene: SettingsScene
+    let actions: SettingsActions
+    let fields: [ConfigField]
+    @ViewBuilder var extra: Extra
+
+    init(title: String, scene: SettingsScene, actions: SettingsActions, fields: [ConfigField], @ViewBuilder extra: () -> Extra = { EmptyView() }) {
+        self.title = title
+        self.scene = scene
+        self.actions = actions
+        self.fields = fields
+        self.extra = extra()
+    }
+
+    var body: some View {
+        SettingsGroup(title: title) {
+            extra
+            if let config = scene.config {
+                ForEach(fields) { field in
+                    ConfigFieldRow(field: field, value: config.value(field.key)) { actions.setConfig(field.key, $0) }
+                }
+                Text("Saved to \(config.path); the old file is backed up first.").font(.system(size: 11)).foregroundStyle(.secondary)
+            } else {
+                Text("This server's agentws cannot change config.toml yet. Update it to edit these here.").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+struct ConfigFieldRow: View {
+    let field: ConfigField
+    let value: String
+    let save: (String) -> Void
+    @State private var text = ""
+
+    var body: some View {
+        if field.choices.isEmpty {
+            HStack {
+                Text(field.title)
+                Spacer()
+                TextField(field.placeholder, text: $text)
+                    .font(Metrics.mono)
+                    .frame(width: 140)
+                    .onSubmit { if text != value { save(text) } }
+                    .onAppear { text = value }
+                    .onChange(of: value) { _, new in text = new }
+            }
+        } else {
+            Picker(field.title, selection: Binding(get: { value }, set: { if $0 != value { save($0) } })) {
+                Text(field.placeholder).tag("")
+                ForEach(choices, id: \.self) { Text($0).tag($0) }
+            }
+        }
+    }
+
+    private var choices: [String] {
+        field.choices.contains(value) || value.isEmpty ? field.choices : field.choices + [value]
     }
 }
 
@@ -241,6 +311,12 @@ struct AgentsPane: View {
                     harness("Claude Code", "claude", agents.harnesses["claude"])
                     harness("Codex", "codex", agents.harnesses["codex"])
                 }
+                ForEach(scene.harnesses.filter { $0.harness != "omp" }, id: \.harness) { h in
+                    ServerConfigGroup(title: "\(h.name) new sessions", scene: scene, actions: actions, fields: ConfigFields.defaults(for: h.harness, models: h.models, efforts: h.efforts))
+                }
+                ServerConfigGroup(title: "Quota", scene: scene, actions: actions, fields: ConfigFields.agents) {
+                    LabeledContent("Limits count as stale after") { Text("15 minutes") }
+                }
                 SettingsGroup(title: "nvim") {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -266,6 +342,9 @@ struct AgentsPane: View {
                 Text(title)
                 if let setup {
                     Text(setup.installed ? "Installed in \(setup.file)" : "Not installed").font(.system(size: 11)).foregroundStyle(.secondary)
+                    if key == "codex", setup.installed {
+                        Text("Codex runs a hook only after you trust it: accept the review prompt, or open /hooks.").font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
                     if let err = setup.err, !err.isEmpty {
                         Text(err).font(.system(size: 11)).foregroundStyle(.red)
                     }
@@ -303,6 +382,29 @@ struct NotificationsPane: View {
             SettingsGroup(title: "When") {
                 Toggle("Skip the session in view while the app is frontmost", isOn: binding(scene, actions, \.notifications.skipSessionInView))
                 Toggle("Notify for muted sessions", isOn: binding(scene, actions, \.notifications.notifyMuted))
+            }
+            ServerConfigGroup(title: "Phones on \(scene.server)", scene: scene, actions: actions, fields: ConfigFields.notifications) {
+                if scene.devices.isEmpty {
+                    Text("No phones paired").foregroundStyle(.secondary)
+                }
+                ForEach(scene.devices) { device in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(device.name)
+                            Text("Paired \(device.createdAt.prefix(10)) · last seen \(device.lastSeen.prefix(10))").font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Revoke") { actions.revokeDevice(device.id) }
+                    }
+                }
+                HStack {
+                    if let pairing = scene.pairing {
+                        Text("Code \(pairing.code)").font(Metrics.mono)
+                        Text("Type it on the agentws page on your phone before \(pairing.expiresAt.dropFirst(11).prefix(5)) UTC").font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Pair a phone", action: actions.pairPhone)
+                }
             }
         }
     }
@@ -351,6 +453,7 @@ struct AppearancePane: View {
                 .pickerStyle(.segmented)
                 Toggle("Cursor blinks", isOn: binding(scene, actions, \.appearance.cursorBlinks))
             }
+            ServerConfigGroup(title: "TUI [theme] overrides on \(scene.server)", scene: scene, actions: actions, fields: ConfigFields.theme)
         }
     }
 }
