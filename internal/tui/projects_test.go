@@ -105,7 +105,7 @@ func TestProjectsPanelRemovesTheChosenProjectAfterYes(t *testing.T) {
 	if out := screen(m); !strings.Contains(out, "remove project shop? y/n") {
 		t.Fatalf("no confirmation:\n%s", out)
 	}
-	m = pressCmd(m, key("y"))
+	pressCmd(m, key("y"))
 	if got := c.methods(); !slices.Equal(got, []string{rpc.MethodProjectRemove}) {
 		t.Fatalf("calls %v", got)
 	}
@@ -117,7 +117,7 @@ func TestProjectsPanelRemovesTheChosenProjectAfterYes(t *testing.T) {
 func TestProjectsPanelRemoveAnsweredNoKeepsTheProject(t *testing.T) {
 	m, c := projectsModel(t, withProjects(rpc.State{}), tui.Options{})
 	m = press(m, "P", "d")
-	m = pressCmd(m, key("n"))
+	pressCmd(m, key("n"))
 	if len(c.methods()) != 0 {
 		t.Fatalf("calls %v", c.methods())
 	}
@@ -131,7 +131,7 @@ func TestOpeningAProjectStartsTheNewSessionDialogInIt(t *testing.T) {
 		t.Fatalf("the dialog is not open in the project:\n%s", out)
 	}
 	m = typeText(m, "fix login")
-	m = pressCmd(m, keyEnter)
+	pressCmd(m, keyEnter)
 	if len(c.calls) == 0 || c.calls[0].params.(rpc.NewSessionParams).Workspace != "/src/api" {
 		t.Fatalf("calls %+v", c.calls)
 	}
