@@ -8,7 +8,13 @@ make -C "$root" build >/dev/null
 freeze="$(command -v freeze || echo "$(go env GOPATH)/bin/freeze")"
 home="$(mktemp -d /tmp/aws-shot.XXXXXX)"
 sock="aws-shot-$$"
+real_home="$HOME"
+shot_home="$home/home"
+mkdir -p "$shot_home/.config" "$shot_home/.local/share" "$shot_home/.claude" "$shot_home/.codex"
+touch "$home/onboarded"
 export AGENTWS_HOME="$home" AGENTWS_TMUX_SOCKET="$sock-agents"
+export HOME="$shot_home" XDG_CONFIG_HOME="$shot_home/.config" XDG_DATA_HOME="$shot_home/.local/share"
+export CLAUDE_CONFIG_DIR="$shot_home/.claude" CODEX_HOME="$shot_home/.codex"
 trap '{ tmux -L "$sock" kill-server; "$bin" daemon stop; tmux -L "$sock-agents" kill-server; rm -rf "$home"; } >/dev/null 2>&1 || true' EXIT
 "$bin" daemon start >/dev/null
 tmux -L "$sock" -f /dev/null new-session -d -s shot -x "${size%x*}" -y "${size#*x}" -c "$PWD"
@@ -25,9 +31,15 @@ started=0
 start() {
   local words=() w
   for w in "$@"; do
+    case "$w" in
+    *="$real_home" | *="$real_home"/*)
+      echo "screenshot: refusing a step that points at the real HOME: $w" >&2
+      exit 2
+      ;;
+    esac
     if [ "$w" = agentws ]; then words+=("$bin"); else words+=("$w"); fi
   done
-  tmux -L "$sock" send-keys -t shot "$(printf '%q ' env COLORTERM=truecolor "AGENTWS_HOME=$home" "AGENTWS_TMUX_SOCKET=$sock-agents" "AGENTWS_LAUNCH_DIR=$PWD" "${words[@]}")" Enter
+  tmux -L "$sock" send-keys -t shot "$(printf '%q ' env COLORTERM=truecolor "HOME=$HOME" "XDG_CONFIG_HOME=$XDG_CONFIG_HOME" "XDG_DATA_HOME=$XDG_DATA_HOME" "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR" "CODEX_HOME=$CODEX_HOME" "AGENTWS_HOME=$home" "AGENTWS_TMUX_SOCKET=$sock-agents" "AGENTWS_LAUNCH_DIR=$PWD" "${words[@]}")" Enter
   started=1
   sleep 1.5
 }
