@@ -3,7 +3,7 @@ import Testing
 @testable import AgentwsKit
 
 @MainActor
-final class FakeCaller: RPCCalling {
+final class SettingsCaller: Caller {
     var replies: [String: String] = [:]
     var failures: [String: AgentwsError] = [:]
     private(set) var calls: [(method: String, params: String)] = []
@@ -37,8 +37,8 @@ struct ServerSettingsTests {
      "last_used":"/u/code/platform"}
     """#
 
-    func caller() -> FakeCaller {
-        let fake = FakeCaller()
+    func caller() -> SettingsCaller {
+        let fake = SettingsCaller()
         fake.replies["onboarding.status"] = Self.status
         fake.replies["workspace.list"] = Self.workspaces
         return fake

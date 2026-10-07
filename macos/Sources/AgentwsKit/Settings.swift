@@ -161,10 +161,7 @@ public enum Density: String, Codable, CaseIterable, Sendable {
     case compact
 }
 
-public enum DiffLayout: String, Codable, CaseIterable, Sendable {
-    case unified
-    case split
-}
+extension DiffLayout: Codable {}
 
 public struct Appearance: Codable, Equatable, Sendable {
     public static let fontSizes = 9.0...24.0

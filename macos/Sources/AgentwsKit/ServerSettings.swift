@@ -1,13 +1,6 @@
 import Foundation
 import Observation
 
-@MainActor
-public protocol RPCCalling: AnyObject {
-    func call<Params: Encodable & Sendable, Result: Decodable & Sendable>(_ method: String, params: Params) async throws -> Result
-}
-
-extension ViewStore: RPCCalling {}
-
 public struct HarnessSetup: Codable, Equatable, Sendable {
     public var installed: Bool
     public var file: String
@@ -110,7 +103,6 @@ struct WorkspaceListReply: Decodable, Sendable {
     }
 }
 
-struct Empty: Codable, Sendable {}
 
 @MainActor
 @Observable
@@ -122,16 +114,16 @@ public final class ServerSettings {
     public private(set) var notice: String?
     public private(set) var busy = false
 
-    @ObservationIgnored private let caller: any RPCCalling
+    @ObservationIgnored private let caller: any Caller
 
-    public init(caller: any RPCCalling) {
+    public init(caller: any Caller) {
         self.caller = caller
     }
 
     public func refresh() async {
         await run {
-            let status: AgentsStatus = try await self.caller.call("onboarding.status", params: Empty())
-            let list: WorkspaceListReply = try await self.caller.call("workspace.list", params: Empty())
+            let status: AgentsStatus = try await self.caller.call("onboarding.status", params: [String: String]())
+            let list: WorkspaceListReply = try await self.caller.call("workspace.list", params: [String: String]())
             self.agents = status
             self.workspaces = list.workspaces
             self.lastUsed = list.lastUsed
@@ -154,7 +146,7 @@ public final class ServerSettings {
 
     public func installNvim() async {
         await change {
-            let _: NvimSetup = try await self.caller.call("onboarding.nvim", params: Empty())
+            let _: NvimSetup = try await self.caller.call("onboarding.nvim", params: [String: String]())
             self.notice = "nvim plugin set up"
         }
     }
