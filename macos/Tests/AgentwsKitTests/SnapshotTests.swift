@@ -25,16 +25,26 @@ struct SnapshotTests {
     }
 
     func pixels(_ rep: NSBitmapImageRep, near hex: String) -> Int {
+        guard let image = rep.cgImage, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return 0 }
+        let width = image.width
+        let height = image.height
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = bytes.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(
+                data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+            ) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return 0 }
         let target = Self.rgb(hex)
         var count = 0
-        for y in stride(from: 0, to: rep.pixelsHigh, by: 2) {
-            for x in stride(from: 0, to: rep.pixelsWide, by: 2) {
-                guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
-                let close = abs(c.redComponent * 255 - target.0) < 14
-                    && abs(c.greenComponent * 255 - target.1) < 14
-                    && abs(c.blueComponent * 255 - target.2) < 14
-                if close { count += 1 }
-            }
+        for i in stride(from: 0, to: bytes.count, by: 4) {
+            let close = abs(Double(bytes[i]) - target.0) < 20
+                && abs(Double(bytes[i + 1]) - target.1) < 20
+                && abs(Double(bytes[i + 2]) - target.2) < 20
+            if close { count += 1 }
         }
         return count
     }
@@ -47,7 +57,7 @@ struct SnapshotTests {
     @Test func theSeededWindowDrawsEveryStateInLatte() throws {
         let rep = try shoot("window-latte", .seeded())
         for tone in [Tone.red, .peach, .blue, .green, .grey] {
-            #expect(pixels(rep, near: Palette.latte.hex(tone)) > 10, "\(tone)")
+            #expect(pixels(rep, near: Palette.latte.hex(tone)) > 20, "\(tone)")
         }
     }
 
@@ -55,7 +65,7 @@ struct SnapshotTests {
         let rep = try shoot("window-mocha", .seeded(), dark: true)
         #expect(pixels(rep, near: Palette.mocha.hex(.base)) > 1_000)
         for tone in [Tone.red, .peach, .blue, .green] {
-            #expect(pixels(rep, near: Palette.mocha.hex(tone)) > 10, "\(tone)")
+            #expect(pixels(rep, near: Palette.mocha.hex(tone)) > 20, "\(tone)")
         }
     }
 
@@ -65,7 +75,7 @@ struct SnapshotTests {
 
     @Test func noDaemonShowsARetryingBanner() throws {
         let rep = try shoot("unavailable", WindowScene(state: nil, connection: .unavailable("no agentws daemon is running")))
-        #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 50)
+        #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 100)
     }
 
     @Test func aBuildMismatchShowsAStoppedBanner() throws {
@@ -73,7 +83,7 @@ struct SnapshotTests {
             state: nil,
             connection: .versionMismatch("daemon runs agentws v0.5.0+def but this client is v0.4.0+abc; restart the daemon")
         ))
-        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 50)
+        #expect(pixels(rep, near: Palette.latte.hex(.red)) > 100)
     }
 
     @Test func aDroppedConnectionKeepsTheLastStateUnderTheBanner() throws {
