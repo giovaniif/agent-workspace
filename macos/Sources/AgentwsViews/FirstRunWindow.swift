@@ -266,14 +266,17 @@ public struct FirstRunView: View {
                 linkNote = "\(error.localizedDescription). To link it yourself: sudo ln -sf '\(cli.target)' \(cli.path)"
             }
         }
+        let kind = flow.kind
         Task {
             await setup.setUp()
-            guard setup.error == nil else { return }
-            let store = ViewStore(endpoint: flow.kind.endpoint(localBinary: localBinary), build: appBuild)
+            guard setup.error == nil, self.setup === setup, flow.kind == kind else { return }
+            self.store?.stop()
+            let store = ViewStore(endpoint: kind.endpoint(localBinary: localBinary), build: appBuild)
             let settings = ServerSettings(caller: store)
             self.store = store
             self.settings = settings
             await settings.refresh()
+            guard self.settings === settings else { return }
             if path.isEmpty, let home = setup.probe?.home { path = home }
         }
     }

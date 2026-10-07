@@ -45,7 +45,7 @@ public struct LiveSettings: View {
             .task { cliStatus = cli.status }
             .task(id: tab) {
                 if tab.perServer { await server?.refresh() }
-                if tab == .servers { await setup?.check() }
+                if tab == .servers, setup?.busy != true { await setup?.check() }
             }
     }
 

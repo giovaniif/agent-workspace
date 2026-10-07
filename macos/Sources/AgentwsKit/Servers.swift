@@ -151,7 +151,7 @@ public enum Checklist {
                 ? CheckItem(id: tool, title: tool, state: .ok, detail: "found")
                 : CheckItem(id: tool, title: tool, state: .failed, detail: "not found on PATH; install it with the system's package manager"))
         }
-        let login = server.isRemote ? "ssh -t \(server.name) gh auth login" : "gh auth login"
+        let login = server.isRemote ? "ssh -t \(shellQuote(server.name)) gh auth login" : "gh auth login"
         if !probe.tools.contains("gh") {
             items.append(CheckItem(id: "gh", title: "gh", state: .warning, detail: "not installed; pull request status needs it"))
         } else if !probe.ghSignedIn {
@@ -394,6 +394,7 @@ public final class ServerSetup {
     }
 
     private func run(_ body: @MainActor () async throws -> Void) async {
+        guard !busy else { return }
         busy = true
         defer { busy = false }
         error = nil

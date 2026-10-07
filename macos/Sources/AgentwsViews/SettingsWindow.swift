@@ -222,6 +222,7 @@ struct ServersPane: View {
                             actions.setUpServer()
                         }
                     }
+                    .disabled(scene.serverBusy && item.command == nil)
                 }
                 HStack {
                     Button("Check again", action: actions.checkServer)
