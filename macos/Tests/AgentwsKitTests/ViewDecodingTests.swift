@@ -56,6 +56,7 @@ struct ViewDecodingTests {
         let state = try Goldens.state()
         #expect(state.seq == 10)
         #expect(state.workspaces.map(\.root) == ["/w/api"])
+        #expect(state.projects == [Project(root: "/w/api", name: "api", setup: "make deps")])
         #expect(state.tasks.map(\.text) == ["add login", "fix retry"])
         #expect(state.worktrees.first?.ports?.first?.port == 3000)
         #expect(state.sessions.map(\.id) == ["s1", "s2", "s3"])
@@ -68,13 +69,15 @@ struct ViewDecodingTests {
 
     @Test func decodesTheGoGoldenDiffs() throws {
         let diffs = try Goldens.diffs()
-        #expect(diffs.count == 10)
+        #expect(diffs.count == 12)
         #expect(diffs[0].worktree?.pr?.failing.first?.name == "test")
         #expect(diffs[1].session?.board.first?.blockers == ["checks failing"])
         #expect(diffs[1].session?.board.first?.failingChecks.first?.url == "https://ci/1")
         #expect(diffs[2].event?.text == "Retry added.")
         #expect(diffs[6].subagent?.state == "stopped")
         #expect(diffs[7].removedSession == "s3")
+        #expect(diffs[10].project == Project(root: "/w/web", name: "web", setup: ""))
+        #expect(diffs[11].removedProject == "/w/api")
     }
 
     @Test func everyGoldenStateFieldRoundTrips() throws {

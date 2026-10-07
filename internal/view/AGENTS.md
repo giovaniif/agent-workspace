@@ -12,8 +12,8 @@ depguard: imports only `rpc` and `domain` from `internal/`, never `os/exec`. No 
 
 - `New(rpc.State) (*View, *State)` and `(*View).Apply(rpc.Diff) []*Diff`: the phone's shapes (`serve` aliases them as `StreamState`, `StreamDiff`, `StreamSession`, `StreamQuota`). Worktrees without `Ports`; events, subagents, drafts and comments dropped. The JSON is pinned by `internal/serve/testdata`.
 - `NewNative(rpc.State) (*View, *NativeState)` and `(*View).ApplyNative(rpc.Diff) []*NativeDiff`: the superset `view.subscribe` sends.
-  - State: `seq`, `workspaces`, `tasks`, `worktrees` (with `Ports`), `sessions`, `limits`, `queue`, `sends`, `events`, `subagents`, `drafts`, `reclaimable` (`{"size","pending"}`, the disk the next cleanups free, as of the last `disk.view`; zero until one ran; a diff sets it when it changes).
-  - A diff sets `seq` and one or more of the phone diff's fields, plus `event`, `subagent`, `draft` or `comment` as the daemon sent them.
+  - State: `seq`, `workspaces`, `projects`, `tasks`, `worktrees` (with `Ports`), `sessions`, `limits`, `queue`, `sends`, `events`, `subagents`, `drafts`, `reclaimable` (`{"size","pending"}`, the disk the next cleanups free, as of the last `disk.view`; zero until one ran; a diff sets it when it changes).
+  - A diff sets `seq` and one or more of the phone diff's fields, plus `project`, `removed_project`, `event`, `subagent`, `draft` or `comment` as the daemon sent them. The phone stream drops projects.
   - A session is the phone's (`name`, `where`, `banner`, `since`) plus `order` and `board`.
   - `order`: its index in `domain.Sidebar`'s rule over one flat list (sessions that need you first, then the rest in the daemon's order); `-1` for an ended session.
   - `board`: the PRs on its worktrees, one per number, in the shape of `agentws pr --json`'s `prs` (ADR 0024); `[]` when there are none.
