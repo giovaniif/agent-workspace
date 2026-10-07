@@ -69,6 +69,7 @@ struct AgentwsApp: App {
                     .task { await launcher.load() }
             }
         }
+        .commands { CommandGroup(replacing: .newItem) {} }
         Window("Worktrees and disk", id: "disk") {
             if Launch.demo {
                 DiskWindow(scene: .seeded()).frame(minWidth: 820, minHeight: 480)
