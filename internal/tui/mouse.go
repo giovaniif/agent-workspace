@@ -18,6 +18,8 @@ import (
 
 const (
 	ownSession      = "s:"
+	ownHeader       = "h:"
+	ownMenu         = "m:"
 	ownPick         = "p:"
 	ownResume       = "r:"
 	ownField        = "f:"
@@ -60,8 +62,13 @@ func (m Model) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			return m.wheel(-1)
 		}
 	case tea.MouseClickMsg:
-		if ev.Button == tea.MouseLeft {
+		switch {
+		case m.menu != nil:
+			return m.menuClick(ev.X, ev.Y)
+		case ev.Button == tea.MouseLeft:
 			return m.click(ev.X, ev.Y)
+		case ev.Button == tea.MouseRight:
+			return m.rightClick(ev.Y)
 		}
 	case tea.MouseMotionMsg:
 		if m.rv.open && m.rv.dragging {
@@ -146,8 +153,8 @@ func (m Model) click(x, y int) (tea.Model, tea.Cmd) {
 
 func (m Model) clickOwner(owner string, x int) (tea.Model, tea.Cmd) {
 	switch {
-	case strings.HasPrefix(owner, ownSession):
-		m.selectInPlace(strings.TrimPrefix(owner, ownSession))
+	case strings.HasPrefix(owner, ownSession), strings.HasPrefix(owner, ownHeader):
+		m.selectInPlace(owner[len(ownSession):])
 		return m, m.focus()
 	case strings.HasPrefix(owner, ownProject):
 		return m.openProject(strings.TrimPrefix(owner, ownProject))
