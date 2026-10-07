@@ -120,6 +120,7 @@ func tuiIn(home string, newSession, setup bool) error {
 	}
 	if newSession {
 		opts.LaunchDir = launchDir()
+		opts.Project = os.Getenv("AGENTWS_PROJECT")
 	} else {
 		opts.LaunchDir = os.Getenv("AGENTWS_LAUNCH_DIR")
 	}

@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -40,4 +41,37 @@ func ProjectOf(projects []Project, path string) (Project, bool) {
 		}
 	}
 	return best, found
+}
+
+type ProjectRow struct {
+	Project   Project
+	Worktrees int
+}
+
+func ProjectOfWorktree(projects []Project, w Worktree) (Project, bool) {
+	if p, found := ProjectOf(projects, w.Repo); found {
+		return p, true
+	}
+	return ProjectOf(projects, w.Path)
+}
+
+func ProjectRows(projects []Project, worktrees []Worktree) []ProjectRow {
+	held := map[string]int{}
+	for _, w := range worktrees {
+		if p, found := ProjectOfWorktree(projects, w); found {
+			held[p.Root]++
+		}
+	}
+	rows := make([]ProjectRow, 0, len(projects))
+	for _, p := range projects {
+		rows = append(rows, ProjectRow{Project: p, Worktrees: held[p.Root]})
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		a, b := strings.ToLower(rows[i].Project.Name), strings.ToLower(rows[j].Project.Name)
+		if a != b {
+			return a < b
+		}
+		return rows[i].Project.Root < rows[j].Project.Root
+	})
+	return rows
 }
