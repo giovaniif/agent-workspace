@@ -218,3 +218,48 @@ func TestDiskViewCarriesTheReclaimableAndWorktreeTotalsWithPendingCounts(t *test
 		t.Errorf("after du: reclaimable %d (%d pending), worktrees %d (%d pending)", view.Reclaimable, view.ReclaimablePending, view.WorktreesSize, view.WorktreesPending)
 	}
 }
+
+func TestDiskViewPublishesTheReclaimableTotalToSubscribers(t *testing.T) {
+	env := startDisk(t, mergedWT("a", 1), domain.Worktree{ID: "/solo-b", Repo: "/solo", Path: "/solo-b", Branch: "b"}, mergedWT("c", 3))
+	env.world.dirty["/solo-c"] = 2
+	c := dial(t, env.path)
+	if _, err := c.DiskView(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	close(env.sizer.open)
+	env.sizes.Wait()
+	sub, err := c.Subscribe(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.DiskView(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	want := rpc.Reclaimable{Size: 340}
+	for {
+		diff := next(t, sub.Diffs)
+		if diff.Reclaimable != nil && *diff.Reclaimable == want {
+			break
+		}
+	}
+	again, err := c.Subscribe(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.State.Reclaimable != want {
+		t.Errorf("snapshot reclaimable = %+v, want %+v", again.State.Reclaimable, want)
+	}
+}
+
+func TestDiskViewSaysWhenTheNextCleanupRuns(t *testing.T) {
+	before := time.Now()
+	env := startDisk(t, mergedWT("a", 1))
+	view, err := dial(t, env.path).DiskView(context.Background())
+	after := time.Now()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.NextCleanup == nil || view.NextCleanup.Before(before.Add(time.Hour)) || view.NextCleanup.After(after.Add(time.Hour)) {
+		t.Errorf("next cleanup = %v, want an hour after the daemon started at %v", view.NextCleanup, before)
+	}
+}

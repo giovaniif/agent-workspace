@@ -66,6 +66,16 @@ struct SidebarTests {
         #expect(Sidebar(state: Seed.state(sessions: [SeedSession(id: "s1", name: "a", state: "idle")])).footer == "1 session")
     }
 
+    @Test func theFooterEndsWithTheReclaimableDisk() {
+        var state = Seed.state(sessions: [SeedSession(id: "s1", name: "a", state: "idle")])
+        state.reclaimable = Reclaimable(size: 1_200_000_000, pending: 0)
+        #expect(Sidebar(state: state).footer == "1 session · 1.2 GB reclaimable")
+        state.reclaimable = Reclaimable(size: 1_200_000_000, pending: 2)
+        #expect(Sidebar(state: state).footer == "1 session · 1.2 GB+ reclaimable")
+        state.reclaimable = Reclaimable(size: 0, pending: 0)
+        #expect(Sidebar(state: state).footer == "1 session")
+    }
+
     @Test func theFilterMatchesNameAndWhereIgnoringCase() {
         let state = Seed.state(sessions: [
             SeedSession(id: "s1", name: "Fix login", state: "idle", where: "api@feat"),

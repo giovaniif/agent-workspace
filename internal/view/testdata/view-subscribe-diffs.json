@@ -315,5 +315,12 @@
         }
       ]
     }
+  },
+  {
+    "seq": 16,
+    "reclaimable": {
+      "size": 4096,
+      "pending": 0
+    }
   }
 ]

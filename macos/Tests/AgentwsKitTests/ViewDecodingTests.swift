@@ -68,7 +68,7 @@ struct ViewDecodingTests {
 
     @Test func decodesTheGoGoldenDiffs() throws {
         let diffs = try Goldens.diffs()
-        #expect(diffs.count == 9)
+        #expect(diffs.count == 10)
         #expect(diffs[0].worktree?.pr?.failing.first?.name == "test")
         #expect(diffs[1].session?.board.first?.blockers == ["checks failing"])
         #expect(diffs[1].session?.board.first?.failingChecks.first?.url == "https://ci/1")

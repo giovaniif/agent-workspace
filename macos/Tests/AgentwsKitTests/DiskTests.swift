@@ -5,8 +5,9 @@ import AgentwsKit
 struct DiskTests {
     let now = Date(timeIntervalSince1970: 1_800_000_000)
 
-    func view(_ rows: [[String: Any]], reclaimable: Int64 = 0, reclaimablePending: Int = 0, total: Int64 = 0, totalPending: Int = 0, deps: Any = NSNull(), recent: [[String: Any]] = []) throws -> DiskView {
+    func view(_ rows: [[String: Any]], reclaimable: Int64 = 0, reclaimablePending: Int = 0, total: Int64 = 0, totalPending: Int = 0, deps: Any = NSNull(), recent: [[String: Any]] = [], nextCleanup: Any = NSNull()) throws -> DiskView {
         let object: [String: Any] = [
+            "next_cleanup": nextCleanup,
             "free": 42_000_000_000, "total": 500_000_000_000, "auto_clean_every": 600_000_000_000,
             "deps_store": deps, "rows": rows, "recent": recent,
             "reclaimable": reclaimable, "reclaimable_pending": reclaimablePending,
@@ -72,6 +73,12 @@ struct DiskTests {
         #expect(rows[2].plan == "back up then ask")
         #expect(rows[3].worktree == "gone")
         #expect(rows[3].status == "No PR")
+    }
+
+    @Test func aMergedCleanRowSaysWhenTheNextCleanupRemovesIt() throws {
+        let v = try view([row("w4", size: 1, action: "remove", reason: "merged")], nextCleanup: "2026-10-01T14:30:05.123456789Z")
+        let rows = DiskTable.rows(v, state: Seed.window, timeZone: TimeZone(identifier: "UTC")!)
+        #expect(rows[0].plan == "removes at 14:30")
     }
 
     @Test func aDetachedWorktreeIsBackedUpToABranchFirst() throws {
