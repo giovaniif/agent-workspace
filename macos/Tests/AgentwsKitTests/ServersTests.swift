@@ -243,4 +243,24 @@ struct ServersTests {
         #expect(ServerKind.ssh(host: "box").name == "box")
         #expect(ServerKind.thisMac.name == "This Mac")
     }
+
+    @Test func theProbeKnowsTheRemoteHomeForBrowsing() {
+        #expect(Probe.parse("home=/home/me\n").home == "/home/me")
+    }
+
+    @Test func browsingAFolderListsItsSubfoldersWithoutRegisteringIt() async throws {
+        let caller = SettingsCaller()
+        caller.replies["workspace.dirs"] = #"{"dirs":[{"Name":"api","Path":"/u/code/api","Git":1},{"Name":"notes","Path":"/u/code/notes","Git":0}]}"#
+        let settings = ServerSettings(caller: caller)
+        let dirs = await settings.dirs("/u/code")
+        #expect(dirs == ["/u/code/api", "/u/code/notes"])
+        #expect(caller.calls.map(\.method) == ["workspace.dirs"])
+        #expect(caller.calls.first?.params == #"{"path":"\/u\/code"}"#)
+    }
+
+    @Test func settingsHaveAServersTabThatIsNotPerServer() {
+        #expect(SettingsTab.allCases.contains(.servers))
+        #expect(SettingsTab.servers.title == "Servers")
+        #expect(!SettingsTab.servers.perServer)
+    }
 }
