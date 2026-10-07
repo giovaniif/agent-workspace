@@ -65,6 +65,18 @@ struct NotificationPrefsTests {
         #expect(notifier.posted.map(\.id) == ["s1"])
     }
 
+    @Test func turningSkippingOnWithdrawsTheBannerOfTheSessionInView() async throws {
+        var prefs = NotificationSettings()
+        prefs.skipSessionInView = false
+        let (attention, notifier) = attention(prefs)
+        await attention.view(session: "s1", front: true)
+        attention.receive(try noticeLine(bannerNotice(state: "waiting")))
+        attention.preferences.skipSessionInView = true
+        attention.receive(try noticeLine(bannerNotice(state: "done")))
+        #expect(notifier.posted.map(\.id) == ["s1"])
+        #expect(notifier.withdrawn == ["s1", "s1"])
+    }
+
     @Test func theSessionInViewIsSkippedByDefault() async throws {
         let (attention, notifier) = attention(NotificationSettings())
         await attention.view(session: "s1", front: true)
