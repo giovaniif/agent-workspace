@@ -56,8 +56,7 @@ public struct SettingsView: View {
                     .padding(20)
             }
         }
-        .background(theme(.base))
-        .foregroundStyle(theme(.text))
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private func tabs(_ theme: Theme) -> some View {
@@ -69,15 +68,15 @@ public struct SettingsView: View {
                         Text(tab.title).font(.system(size: 11))
                     }
                     .frame(width: 92, height: 50)
-                    .background(tab == scene.tab ? theme(.surface) : .clear, in: RoundedRectangle(cornerRadius: Metrics.corner))
-                    .foregroundStyle(tab == scene.tab ? theme(.blue) : theme(.subtext))
+                    .background(tab == scene.tab ? Color.primary.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                    .foregroundStyle(tab == scene.tab ? Color.accentColor : Color.secondary)
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(theme(.mantle))
+        .background(.bar)
     }
 
     private func banner(_ text: String, tone: Tone, _ theme: Theme) -> some View {
@@ -119,15 +118,14 @@ func binding<Value>(_ scene: SettingsScene, _ actions: SettingsActions, _ path: 
 struct SettingsGroup<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
-    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme(scheme)(.subtext))
+        GroupBox {
             VStack(alignment: .leading, spacing: 8) { content }
-                .padding(12)
+                .padding(6)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme(scheme)(.mantle), in: RoundedRectangle(cornerRadius: Metrics.corner))
+        } label: {
+            Text(title).font(.headline)
         }
         .padding(.bottom, 14)
     }

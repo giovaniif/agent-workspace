@@ -435,6 +435,24 @@ public struct FirstRunFlow: Equatable, Sendable {
 
     public init() {}
 
+    public var steps: [FirstRunStep] {
+        FirstRunStep.allCases.filter { $0 != .host || kind.isRemote }
+    }
+
+    public var canGoBack: Bool { step != .welcome }
+
+    public var primaryTitle: String {
+        switch step {
+        case .welcome: "Get started"
+        case .done: "Open agentws"
+        default: "Continue"
+        }
+    }
+
+    public func isComplete(_ other: FirstRunStep) -> Bool {
+        other.rawValue < step.rawValue
+    }
+
     public mutating func next() {
         switch step {
         case .welcome: step = .location

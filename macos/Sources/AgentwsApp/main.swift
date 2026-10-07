@@ -240,7 +240,8 @@ struct FirstRunHost: View {
     var body: some View {
         FirstRunView(
             appBuild: build, localBinary: Launch.binary, bundled: Launch.bundled, hosts: Launch.sshHosts,
-            cli: CLILink(target: Launch.binary)
+            cli: CLILink(target: Launch.binary),
+            cancel: { launcher.needsFirstRun ? NSApplication.shared.terminate(nil) : dismissWindow(id: "setup") }
         ) { server in
             launcher.added(server)
             dismissWindow(id: "setup")
@@ -277,7 +278,7 @@ struct AgentwsApp: App {
             if let build = launcher.build {
                 FirstRunHost(launcher: launcher, build: build).preferredColorScheme(launcher.colorScheme)
             } else {
-                ProgressView().frame(width: 640, height: 520).task { await launcher.load() }
+                ProgressView().frame(minWidth: 760, idealWidth: 860, minHeight: 520, idealHeight: 600).task { await launcher.load() }
             }
         }
         .windowResizability(.contentSize)
