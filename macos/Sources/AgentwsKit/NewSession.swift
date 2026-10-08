@@ -14,9 +14,10 @@ public struct HarnessOptions: Codable, Sendable, Equatable {
 public struct SessionOptions: Codable, Sendable, Equatable {
     @NullAsEmpty public var harnesses: [HarnessOptions]
     public var maxParallel: Int
+    public var home: String?
 
     enum CodingKeys: String, CodingKey {
-        case harnesses, maxParallel = "max_parallel"
+        case harnesses, maxParallel = "max_parallel", home
     }
 }
 
@@ -98,6 +99,12 @@ public struct WorkspaceChoice: Sendable, Equatable, Identifiable {
         root = workspace.root
         name = URL(fileURLWithPath: workspace.root).lastPathComponent
         detail = workspace.kind == "orchestration" ? "orchestration root · \(workspace.repos.count) repos" : "single repo"
+    }
+
+    init(_ workspace: WorkspaceInfo) {
+        root = workspace.root
+        name = URL(fileURLWithPath: workspace.root).lastPathComponent
+        detail = workspace.summary
     }
 }
 
@@ -200,7 +207,17 @@ public struct NewSessionForm: Sendable, Equatable {
 
     public var trimmedWorkItem: String { workItem.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-    public var canStart: Bool { !trimmedWorkItem.isEmpty && !harness.isEmpty }
+    public var canStart: Bool { !trimmedWorkItem.isEmpty && !harness.isEmpty && !workspace.isEmpty }
+
+    public var emptyMessage: String? {
+        workspaces.isEmpty ? "No workspaces on this server yet. Add one to start a session." : nil
+    }
+
+    public mutating func adopt(_ added: WorkspaceInfo) {
+        workspaces.removeAll { $0.root == added.root }
+        workspaces.insert(WorkspaceChoice(added), at: 0)
+        workspace = added.root
+    }
 
     public var newSession: NewSessionParams {
         NewSessionParams(workspace: workspace, workItem: trimmedWorkItem, harness: harness, model: model, effort: effort)
@@ -240,11 +257,32 @@ public final class NewSession: Identifiable {
     public private(set) var starting = false
     public private(set) var launchNote: String?
     public private(set) var loadError: String?
+    public private(set) var addError: String?
+    public private(set) var adding = false
+    public let path: WorkspacePathInput
 
     private let caller: Caller
 
     public init(caller: Caller) {
         self.caller = caller
+        path = WorkspacePathInput(caller: caller)
+    }
+
+    public func addWorkspace() async -> Bool {
+        let target = path.resolved
+        guard !target.isEmpty, !adding else { return false }
+        adding = true
+        defer { adding = false }
+        do {
+            let added: WorkspaceInfo = try await caller.call("workspace.add", params: ["path": target])
+            form.adopt(added)
+            addError = nil
+            path.text = ""
+            return true
+        } catch {
+            addError = Self.message(error)
+            return false
+        }
     }
 
     public var warning: QuotaWarning? { form.warning(limits: limits) }
@@ -257,6 +295,7 @@ public final class NewSession: Identifiable {
             loaded.launchInput = form.launchInput
             form = loaded
             maxParallel = options.maxParallel
+            if let home = options.home, !home.isEmpty { path.home = home }
             observe(state)
             loadError = nil
         } catch {
@@ -355,7 +394,7 @@ extension Seed {
     """
 
     @MainActor
-    public static func newSession(failure: String? = nil) -> NewSession {
+    public static func newSession(failure: String? = nil, workspaces present: Bool = true) -> NewSession {
         let workspaces = """
         [{"Root":"/Users/me/src/acme","Kind":"orchestration","Repos":[{},{},{},{},{},{},{},{},{},{},{},{},{},{}],"LastUsed":"2026-10-05T09:00:00Z"},
          {"Root":"/Users/me/src/api","Kind":"single","Repos":null,"LastUsed":"2026-10-01T09:00:00Z"}]
@@ -367,13 +406,13 @@ extension Seed {
                            efforts: ["low", "medium", "high"], model: "gpt-6-sol", effort: "high"),
         ], maxParallel: 3)
         let decoded = (try? JSONDecoder().decode([Workspace].self, from: Data(workspaces.utf8))) ?? []
-        var form = NewSessionForm(workspaces: decoded, options: options)
+        var form = NewSessionForm(workspaces: present ? decoded : [], options: options)
         form.workItem = "https://linear.app/acme/issue/ENG-212/login-redirect-loop"
         form.launchInput = "https://linear.app/acme/issue/ENG-214/rate-limit-headers\nhttps://linear.app/acme/issue/ENG-215/audit-log-export"
         let quota = { (harness: String, label: String, left: Int) -> JSONValue in
             .object(["Harness": .string(harness), "label": .string(label), "LeftPercent": .number(Double(left)), "low": .bool(left < 20)])
         }
-        return NewSession.preview(
+        let model = NewSession.preview(
             form: form, maxParallel: 3,
             limits: [quota("claude", "5h", 12), quota("claude", "7d", 48), quota("codex", "7d", 71)],
             queue: [
@@ -384,5 +423,10 @@ extension Seed {
             card: WorkItemCard(source: "Linear ENG-212", title: "Fix the login redirect loop", branch: "eng-212", existing: nil),
             failure: failure, launchNote: nil
         )
+        if !present {
+            model.path.home = "/Users/me"
+            model.path.text = "~/src/"
+        }
+        return model
     }
 }

@@ -104,15 +104,7 @@ struct WorkspaceListReply: Decodable, Sendable {
 }
 
 struct DirsReply: Decodable, Sendable {
-    struct Child: Codable, Equatable, Sendable {
-        var path: String
-
-        enum CodingKeys: String, CodingKey {
-            case path = "Path"
-        }
-    }
-
-    @NullAsEmpty var dirs: [Child]
+    @NullAsEmpty var dirs: [DirChild]
 }
 
 @MainActor
@@ -128,11 +120,13 @@ public final class ServerSettings {
     public private(set) var error: String?
     public private(set) var notice: String?
     public private(set) var busy = false
+    public let path: WorkspacePathInput
 
     @ObservationIgnored private let caller: any Caller
 
     public init(caller: any Caller) {
         self.caller = caller
+        path = WorkspacePathInput(caller: caller)
     }
 
     public func refresh() async {
@@ -142,6 +136,7 @@ public final class ServerSettings {
             self.config = try await self.optional { try await self.caller.call("config.get", params: [String: String]()) }
             let options: SessionOptions? = try await self.optional { try await self.caller.call("session.options", params: [String: String]()) }
             self.harnesses = options?.harnesses ?? []
+            if let home = options?.home, !home.isEmpty { self.path.home = home }
             let phones: DeviceListReply? = try await self.optional { try await self.caller.call("device.list", params: [String: String]()) }
             self.devices = phones?.devices ?? []
             let list: WorkspaceListReply
@@ -180,6 +175,7 @@ public final class ServerSettings {
         await change {
             let added: WorkspaceInfo = try await self.caller.call("workspace.add", params: ["path": path])
             self.notice = "Added \(added.root) (\(added.summary))"
+            if path == self.path.resolved { self.path.text = "" }
         }
     }
 

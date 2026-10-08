@@ -16,6 +16,7 @@ public struct SettingsActions {
     public var installNvim: () -> Void = {}
     public var addWorkspace: (String) -> Void = { _ in }
     public var removeWorkspace: (String) -> Void = { _ in }
+    public var workspacePath = WorkspacePathInput()
     public var refresh: () -> Void = {}
     public var setConfig: (String, String) -> Void = { _, _ in }
     public var revokeDevice: (String) -> Void = { _ in }
@@ -287,7 +288,6 @@ struct CheckRow: View {
 struct WorkspacesPane: View {
     let scene: SettingsScene
     let actions: SettingsActions
-    @State private var path = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -309,13 +309,8 @@ struct WorkspacesPane: View {
                         Button("Remove") { actions.removeWorkspace(workspace.root) }
                     }
                 }
-                HStack {
-                    TextField("Path on the server", text: $path).font(Metrics.mono)
-                    Button("Add") {
-                        actions.addWorkspace(path)
-                        path = ""
-                    }
-                    .disabled(path.isEmpty)
+                WorkspacePathField(input: actions.workspacePath) {
+                    actions.addWorkspace(actions.workspacePath.resolved)
                 }
             }
             ServerConfigGroup(title: "Worktrees and launcher", scene: scene, actions: actions, fields: ConfigFields.workspaces) {
