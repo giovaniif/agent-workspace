@@ -282,7 +282,10 @@ func (m Model) body() ([]string, int, []string) {
 		}
 		card := m.sessionLines(e, sel)
 		out = append(out, card...)
-		_, tabbed := m.tabsOf(e.session.ID)
+		tabbed := false
+		if sel {
+			_, tabbed = m.tabsOf(e.session.ID)
+		}
 		for i := range card {
 			if sel && tabbed && i == 2 {
 				owners = append(owners, ownTab+e.session.ID)

@@ -72,13 +72,15 @@ func (m Model) tabsOf(sessionID string) (tabStrip, bool) {
 	return strip, true
 }
 
-func (t tabStrip) shown() (domain.Tab, int) {
-	for i, tab := range t.tabs {
-		if tab.ID == t.active {
-			return tab, i
+func (t tabStrip) shown(selected string) (domain.Tab, int, bool) {
+	for _, id := range []string{t.active, selected} {
+		for i, tab := range t.tabs {
+			if id != "" && tab.ID == id {
+				return tab, i, true
+			}
 		}
 	}
-	return t.tabs[0], 0
+	return domain.Tab{}, 0, false
 }
 
 func (t tabStrip) chips() []string {
@@ -146,7 +148,10 @@ func (m Model) tabKey(k string) (Model, tea.Cmd, bool) {
 		m.tabNew = m.newTabChooser(strip.home)
 		return m, nil, true
 	case "-":
-		tab, i := strip.shown()
+		tab, i, known := strip.shown(m.selected)
+		if !known {
+			return m, nil, true
+		}
 		m.closingTab = &tabClose{session: m.selected, tab: tab.ID}
 		m.status = "close tab " + strconv.Itoa(i+1) + " " + tab.Label + "? y/n"
 		return m, nil, true
