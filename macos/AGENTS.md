@@ -15,7 +15,8 @@ The native Mac app ([ADR 0049](../docs/adr/0049-macos-app.md), UX in [docs/macos
   - `AGENTWS_APP_VERSION` (default `v0.0.0`) is the release tag. Its numeric part becomes `CFBundleShortVersionString`, and the full tag becomes `AgentwsVersion`.
   - `AGENTWS_APP_BUILD` (default `0`, the workflow run number in CI) is `CFBundleVersion`.
   - `AGENTWS_APP_BINARIES` points to a directory with `<os>_<arch>/agentws` for `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`. `build-app` copies them into `Contents/Resources/bin/<os>_<arch>/agentws`. Without it, the app has no bundled `agentws`. This is correct for local UI work.
-- `build-dmg [out]`: wraps `build/agentws.app` and an `/Applications` link into an unsigned DMG (default `build/agentws.dmg`).
+- App icon: `AppIcon.png` (1024 px) comes from `web/public/icon.svg`. `npm run icons` in `web/` makes it again. `build-app` makes `Contents/Resources/AppIcon.icns` from it with `sips` and `iconutil` (16 px to 1024 px, with `@2x`). `CFBundleIconFile` in `Info.plist` points to it.
+- `build-dmg [out]`: wraps `build/agentws.app` and an `/Applications` link into an unsigned DMG (default `build/agentws.dmg`). The DMG uses the same icon as its volume icon (`.VolumeIcon.icns`).
 
 ## Release
 

@@ -3,9 +3,16 @@ set -euo pipefail
 cd "$(dirname "$0")"
 out="${1:-build/agentws.dmg}"
 stage="$(mktemp -d)"
-trap 'rm -rf "$stage"' EXIT
+work="$(mktemp -d)"
+trap 'rm -rf "$stage" "$work"' EXIT
 cp -R build/agentws.app "$stage/agentws.app"
 ln -s /Applications "$stage/Applications"
+cp build/agentws.app/Contents/Resources/AppIcon.icns "$stage/.VolumeIcon.icns"
+hdiutil create -volname agentws -srcfolder "$stage" -fs HFS+ -format UDRW "$work/rw.dmg"
+mkdir "$work/mnt"
+hdiutil attach "$work/rw.dmg" -mountpoint "$work/mnt" -nobrowse -noautoopen
+SetFile -a C "$work/mnt"
+hdiutil detach "$work/mnt"
 rm -f "$out"
-hdiutil create -volname agentws -srcfolder "$stage" -fs HFS+ -format UDZO "$out"
+hdiutil convert "$work/rw.dmg" -format UDZO -o "$out"
 echo "$out"
