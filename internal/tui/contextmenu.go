@@ -19,16 +19,24 @@ type sessionMenu struct {
 type menuAction struct {
 	label string
 	key   tea.KeyPressMsg
+	tabs  bool
 }
 
 var sessionMenuActions = []menuAction{
 	{label: "End session", key: tea.KeyPressMsg{Code: 'x', Text: "x"}},
+	{label: "New tab", key: tea.KeyPressMsg{Code: '+', Text: "+"}, tabs: true},
+	{label: "Close tab", key: tea.KeyPressMsg{Code: '-', Text: "-"}, tabs: true},
+}
+
+func (m Model) menuActions(session string) []menuAction {
+	_, tabbed := m.tabsOf(session)
+	return slices.DeleteFunc(slices.Clone(sessionMenuActions), func(a menuAction) bool { return a.tabs && !tabbed })
 }
 
 func (m Model) menuOpenable() bool {
 	return m.ob == nil && !m.opts.NewSessionOnly && !m.rv.open && !m.dk.open && m.dialog == nil &&
 		m.launching == nil && m.renaming == nil && m.picker == nil && m.resuming == nil && !m.help &&
-		m.confirm == nil && m.ending == ""
+		m.confirm == nil && m.ending == "" && m.tabNew == nil && m.closingTab == nil
 }
 
 func (m Model) rightClick(y int) (tea.Model, tea.Cmd) {
@@ -63,7 +71,7 @@ func (m Model) menuKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "up", "k":
 		menu.cursor = max(menu.cursor-1, 0)
 	case "down", "j":
-		menu.cursor = min(menu.cursor+1, len(sessionMenuActions)-1)
+		menu.cursor = min(menu.cursor+1, len(m.menuActions(menu.session))-1)
 	case "enter":
 		m.menu = nil
 		return m.runMenuAction(menu.session, menu.cursor)
@@ -79,10 +87,11 @@ func (m Model) menuKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) runMenuAction(session string, i int) (tea.Model, tea.Cmd) {
-	if i < 0 || i >= len(sessionMenuActions) || session != m.selected {
+	actions := m.menuActions(session)
+	if i < 0 || i >= len(actions) || session != m.selected {
 		return m, nil
 	}
-	return m.key(sessionMenuActions[i].key)
+	return m.key(actions[i].key)
 }
 
 func (m *Model) closeStaleMenu() {
@@ -96,8 +105,9 @@ func (m Model) overlaySessionMenu(lines, owners []string) ([]string, []string) {
 	if anchor < 0 {
 		return lines, owners
 	}
-	labels := make([]string, len(sessionMenuActions))
-	for i, a := range sessionMenuActions {
+	actions := m.menuActions(m.menu.session)
+	labels := make([]string, len(actions))
+	for i, a := range actions {
 		labels[i] = a.label
 	}
 	box := m.menuBox(labels, m.menu.cursor, sessionMenuInner())

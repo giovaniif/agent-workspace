@@ -235,6 +235,9 @@ func (m Model) body() ([]string, int, []string) {
 	if m.proj != nil {
 		return m.projectPanelLines(), m.projectPanelSelRow(), nil
 	}
+	if m.tabNew != nil {
+		return m.tabChooserLines(), 3 + m.tabNew.row, nil
+	}
 	if m.launching != nil {
 		return m.launcherLines(), 0, nil
 	}
@@ -279,7 +282,15 @@ func (m Model) body() ([]string, int, []string) {
 		}
 		card := m.sessionLines(e, sel)
 		out = append(out, card...)
-		for range card {
+		tabbed := false
+		if sel {
+			_, tabbed = m.tabsOf(e.session.ID)
+		}
+		for i := range card {
+			if sel && tabbed && i == 2 {
+				owners = append(owners, ownTab+e.session.ID)
+				continue
+			}
 			owners = append(owners, own)
 		}
 	}
@@ -312,6 +323,9 @@ func (m Model) sessionLines(e entry, sel bool) []string {
 		}
 		facts := slices.DeleteFunc([]string{x.Model, x.Effort, trees}, func(f string) bool { return f == "" })
 		out = append(out, m.line(sel, []piece{bar, {s.dim, "    " + strings.Join(facts, " · ")}}, m.switchMarks(x)))
+		if tabs, ok := m.tabLine(x.ID, sel, bar); ok {
+			out = append(out, tabs)
+		}
 	}
 	if m.collapsed[x.ID] {
 		return out
@@ -357,6 +371,8 @@ func (m Model) helpLines() []string {
 		{"s", "type in the shell (ctrl+\\ back)"},
 		{"e", "nvim (o in a review opens the line)"},
 		{"M / E", "switch model / effort"},
+		{"[ / ]", "previous / next tab (projects)"},
+		{"+ / -", "new tab / close tab (projects)"},
 		{"enter", "focus agent pane"},
 		{`ctrl+\`, "in an agent pane: back to the sidebar"},
 		{"n", "new session"},
