@@ -181,12 +181,14 @@ func TestNotifyUnmuteRestoresBanners(t *testing.T) {
 func TestNotifyBurstOfTwentyEventsIsOneBanner(t *testing.T) {
 	r := newRig(t, &memStore{}, nil)
 	r.addRunning(t, "a", domain.HarnessClaude, "%1")
-	for range 20 {
-		r.hook(t, "claude", "PermissionRequest", "%1", "")
-		r.hook(t, "claude", "PostToolUse", "%1", "")
-	}
+	r.hook(t, "claude", "PermissionRequest", "%1", "")
 	if got := r.banner(t); got.State != domain.StatePermission {
 		t.Fatalf("banner %+v", got)
+	}
+	r.hook(t, "claude", "PostToolUse", "%1", "")
+	for range 19 {
+		r.hook(t, "claude", "PermissionRequest", "%1", "")
+		r.hook(t, "claude", "PostToolUse", "%1", "")
 	}
 	r.expectOnlySentinel(t)
 }
