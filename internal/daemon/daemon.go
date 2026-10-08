@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"maps"
 	"net"
 	"slices"
 	"sort"
@@ -127,6 +128,9 @@ type state struct {
 	pairing         domain.Pairing
 	devices         map[string]domain.Device
 	projects        map[string]domain.Project
+	shellTabs       map[string]domain.ShellTab
+	activeTabs      map[string]string
+	orphanPanes     []app.PaneID
 	transcriptMoved func(sessionID, path string, gone bool)
 }
 
@@ -183,6 +187,8 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		booting:    map[string]bool{},
 		devices:    map[string]domain.Device{},
 		projects:   map[string]domain.Project{},
+		shellTabs:  map[string]domain.ShellTab{},
+		activeTabs: map[string]string{},
 		co:         domain.NewCoalescer(),
 		gate:       domain.NewPushGate(),
 		views:      map[*conn]domain.ViewReport{},
@@ -568,6 +574,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.dispatchClient(req), true
 	case rpc.MethodClientNative:
 		return d.nativeClient(req)
+	case rpc.MethodTabNew, rpc.MethodTabShow, rpc.MethodTabStep, rpc.MethodTabClose:
+		return d.tabMethod(req)
 	case rpc.MethodDebugSeed:
 		var p rpc.DebugSeedParams
 		if err := json.Unmarshal(req.Params, &p); err != nil || p.Count < 1 {
@@ -620,6 +628,8 @@ func (s *state) snapshot() rpc.State {
 		Projects:    sorted(s.projects),
 		Sends:       append([]domain.QueuedSend{}, s.sends...),
 		Reclaimable: s.reclaimable,
+		ShellTabs:   sorted(s.shellTabs),
+		ActiveTabs:  maps.Clone(s.activeTabs),
 	}
 }
 

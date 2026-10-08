@@ -535,6 +535,8 @@ type State struct {
 	Projects    []domain.Project      `json:"projects"`
 	Sends       []domain.QueuedSend   `json:"sends"`
 	Reclaimable Reclaimable           `json:"reclaimable"`
+	ShellTabs   []domain.ShellTab     `json:"shell_tabs,omitempty"`
+	ActiveTabs  map[string]string     `json:"active_tabs,omitempty"`
 }
 
 type Reclaimable struct {
@@ -561,6 +563,9 @@ type Diff struct {
 	Comment          *domain.ReviewComment `json:"comment,omitempty"`
 	Sends            *[]domain.QueuedSend  `json:"sends,omitempty"`
 	Reclaimable      *Reclaimable          `json:"reclaimable,omitempty"`
+	ShellTab         *domain.ShellTab      `json:"shell_tab,omitempty"`
+	RemovedShellTab  string                `json:"removed_shell_tab,omitempty"`
+	ActiveTab        *ActiveTab            `json:"active_tab,omitempty"`
 }
 
 func Home() (string, error) {
