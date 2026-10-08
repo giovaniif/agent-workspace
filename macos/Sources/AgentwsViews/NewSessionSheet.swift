@@ -11,6 +11,7 @@ public struct NewSessionSheet: View {
     let started: (String) -> Void
     let cancel: () -> Void
     @Environment(\.colorScheme) private var scheme
+    @State private var addingWorkspace = false
 
     public init(
         model: NewSession, tab: Binding<NewSessionTab>, server: String, state: ViewState?, live: Bool = true,
@@ -102,12 +103,39 @@ public struct NewSessionSheet: View {
     }
 
     private var workspacePicker: some View {
-        Picker("", selection: $model.form.workspace) {
-            ForEach(model.form.workspaces) { ws in
-                Text("\(ws.name) — \(ws.detail)").tag(ws.root)
+        let theme = Theme(scheme)
+        let empty = model.form.emptyMessage
+        return VStack(alignment: .leading, spacing: 8) {
+            if let empty {
+                HStack(spacing: 8) {
+                    Image(systemName: "folder.badge.plus").foregroundStyle(theme(.peach))
+                    Text(empty).font(.system(size: 12))
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: Metrics.corner).fill(theme(.peach).opacity(0.14)))
+            } else {
+                HStack {
+                    Picker("", selection: $model.form.workspace) {
+                        ForEach(model.form.workspaces) { ws in
+                            Text("\(ws.name) — \(ws.detail)").tag(ws.root)
+                        }
+                    }
+                    .labelsHidden()
+                    Button(addingWorkspace ? "Done" : "Add workspace…") { addingWorkspace.toggle() }
+                }
+            }
+            if empty != nil || addingWorkspace {
+                WorkspacePathField(input: model.path, busy: model.adding, enabled: live || empty != nil) {
+                    Task {
+                        if await model.addWorkspace() { addingWorkspace = false }
+                    }
+                }
+                if let error = model.addError {
+                    Text(error).font(.system(size: 11)).foregroundStyle(theme(.red))
+                }
             }
         }
-        .labelsHidden()
     }
 
     private func workItem(_ theme: Theme) -> some View {

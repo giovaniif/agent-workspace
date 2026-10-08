@@ -78,6 +78,7 @@ public struct LiveSettings: View {
         a.installNvim = { act { await $0.installNvim() } }
         a.addWorkspace = { path in act { await $0.addWorkspace(path) } }
         a.removeWorkspace = { root in act { await $0.removeWorkspace(root) } }
+        if let server { a.workspacePath = server.path }
         a.refresh = { act { await $0.refresh() } }
         a.setConfig = { key, value in act { await $0.setConfig(key, to: value) } }
         a.revokeDevice = { id in act { await $0.revokeDevice(id) } }

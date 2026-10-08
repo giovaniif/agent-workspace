@@ -19,9 +19,6 @@ public struct FirstRunView: View {
     @State private var setup: ServerSetup?
     @State private var settings: ServerSettings?
     @State private var store: ViewStore?
-    @State private var path = ""
-    @State private var dirs: [String] = []
-    @State private var browsing = ""
     @State private var linkNote: String?
     @State private var notifications: String?
 
@@ -306,7 +303,8 @@ public struct FirstRunView: View {
             self.settings = settings
             await settings.refresh()
             guard self.settings === settings else { return }
-            if path.isEmpty, let home = setup.probe?.home { path = home }
+            if settings.path.home.isEmpty, let home = setup.probe?.home { settings.path.home = home }
+            if settings.path.text.isEmpty { settings.path.text = "~/" }
         }
     }
 
@@ -315,23 +313,12 @@ public struct FirstRunView: View {
             Text("Add a workspace").font(.title2.weight(.semibold))
             Text("A folder on \(flow.kind.name): one repo, or a folder of repos (an orchestration root). Worktrees that already exist are adopted.")
                 .font(.callout).foregroundStyle(.secondary)
-            HStack {
-                TextField("Absolute path on the server", text: $path).textFieldStyle(.roundedBorder)
-                Button("Browse") { browse(path) }.disabled(path.isEmpty || settings == nil)
-                Button("Add") { Task { await settings?.addWorkspace(path) } }.disabled(path.isEmpty || settings == nil)
-            }
-            if !dirs.isEmpty {
-                SettingsGroup(title: "Folders in \(browsing)") {
-                    ForEach(dirs, id: \.self) { dir in
-                        Button {
-                            path = dir
-                            browse(dir)
-                        } label: {
-                            Label((dir as NSString).lastPathComponent, systemImage: "folder").frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-                    }
+            if let settings {
+                WorkspacePathField(input: settings.path, busy: settings.busy) {
+                    Task { await settings.addWorkspace(settings.path.resolved) }
                 }
+            } else {
+                WorkspacePathField(input: WorkspacePathInput(), enabled: false) {}
             }
             if let settings {
                 if let error = settings.error {
@@ -346,15 +333,6 @@ public struct FirstRunView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func browse(_ folder: String) {
-        guard let settings else { return }
-        browsing = folder
-        Task {
-            let found = await settings.dirs(folder)
-            if browsing == folder { dirs = found }
         }
     }
 
