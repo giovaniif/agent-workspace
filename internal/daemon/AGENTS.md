@@ -1,6 +1,6 @@
 # internal/daemon
 
-Socket server, event loop and workers. This package connects the adapters to `app`. It must not exec: tests here use fakes, and `test/integration` runs it with real adapters. Only this package can import `internal/adapters/tmux`. The wire protocol is in [internal/rpc/](../rpc/AGENTS.md).
+Socket server, event loop and workers. This package connects the adapters to `app`. Do not exec in this package: tests here use fakes, and `test/integration` runs it with real adapters. Do not import `internal/adapters/tmux` from any other package. The wire protocol is in [internal/rpc/](../rpc/AGENTS.md).
 
 ## Process
 
