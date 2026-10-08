@@ -32,6 +32,13 @@ type Tab struct {
 
 func (s Session) IsTab() bool { return s.Tab != "" }
 
+func (s Session) WorksIn() []string {
+	if s.IsTab() {
+		return []string{s.Tab}
+	}
+	return s.WorktreeIDs
+}
+
 func TabHome(s Session, worktrees []Worktree, projects []Project) (string, bool) {
 	ids := s.WorktreeIDs
 	if s.IsTab() {

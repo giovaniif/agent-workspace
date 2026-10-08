@@ -2,6 +2,7 @@ package daemon_test
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -255,6 +256,48 @@ func TestTabShellsGoWithTheirRemovedWorktree(t *testing.T) {
 		t.Error("the removed worktree kept an active tab")
 	}
 	waitFor(t, func() bool { return len(term.killedPanes()) == 1 && term.killedPanes()[0] == app.PaneID(tab.Pane) })
+}
+
+func TestTabAgentsBannerNamesItsWorktree(t *testing.T) {
+	store := &memStore{}
+	store.snap.Worktrees = []domain.Worktree{tabWT}
+	r := newRig(t, store, nil)
+	r.d.Post(daemon.SessionChanged{Session: domain.Session{ID: "tab", Harness: domain.HarnessCodex, Pane: "%9", State: domain.StateRunning, Tab: tabWT.ID}})
+	next(t, r.sub.Diffs)
+	r.hook(t, "claude", "Stop", "%9", "")
+	if b := r.banner(t); !strings.Contains(b.Title, "api@x") {
+		t.Fatalf("banner title %q; want the tab's worktree", b.Title)
+	}
+}
+
+func TestTabAgentsTurnsSnapshotTheWorktreeItIsATabOf(t *testing.T) {
+	env := reviewEnv{store: &memStore{}, git: newFakeReviewGit(), lister: &fakeLister{listings: map[string]domain.RepoListing{}}}
+	env.store.snap.Workspaces = []domain.Workspace{{Root: "/solo", Kind: domain.WorkspaceSingle, Repos: []domain.Repo{{Name: "solo", Path: "/solo", DefaultBranch: "main"}}}}
+	env.store.snap.Sessions = []domain.Session{
+		{ID: "s1", Pane: "%1", State: domain.StateIdle, WorktreeIDs: []string{"/solo-feat"}},
+		{ID: "tab", Pane: "%9", State: domain.StateIdle, Tab: "/solo-feat"},
+	}
+	env.store.snap.Worktrees = []domain.Worktree{{ID: "/solo-feat", Repo: "/solo", Path: "/solo-feat", Branch: "feat", SessionID: "s1"}}
+	env.git.trees["/solo-feat"] = "t1"
+	env.lister.set("/solo", domain.ListedWorktree{Path: "/solo-feat", Branch: "feat"})
+	_, env.path = start(t, env.store,
+		daemon.WithWorkspaces(soloFS, fakeGit{}),
+		daemon.WithRefreshInterval(0),
+		daemon.WithWorktrees(env.lister, &fakeFinder{prs: map[string][]domain.PullRequest{}}),
+		daemon.WithWorktreePoll(time.Hour, time.Hour),
+		daemon.WithReview(env.git),
+	)
+	payload, _ := json.Marshal(map[string]any{"cwd": "/solo-feat/web", "prompt": "go"})
+	h := rpc.Hook{Harness: "claude", Event: "UserPromptSubmit", Pane: "%9", At: time.Now(), Payload: payload}
+	if err := dial(t, env.path).Call(context.Background(), rpc.MethodHook, h, nil); err != nil {
+		t.Fatal(err)
+	}
+	ref := domain.TurnRef("tab", "/solo-feat", 1)
+	waitUntil(t, "the tab's turn snapshot of its worktree", func() bool { return env.git.refsOf("/solo-feat")[ref] == "t1" })
+	st := snapshot(t, env.path)
+	if w, _ := worktree(st, "/solo-feat"); w.SessionID != "s1" {
+		t.Errorf("the worktree moved to %q", w.SessionID)
+	}
 }
 
 func TestTabSessionsLeaveTheWorktreesTheyTouchUnassigned(t *testing.T) {

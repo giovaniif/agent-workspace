@@ -91,7 +91,7 @@ func (s *state) announce(session domain.Session, effects []domain.Effect) {
 	}
 	name := s.sessionName(session)
 	var worktrees []domain.Worktree
-	for _, id := range session.WorktreeIDs {
+	for _, id := range session.WorksIn() {
 		if w, ok := s.worktrees[id]; ok {
 			worktrees = append(worktrees, w)
 		}
