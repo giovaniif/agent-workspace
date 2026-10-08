@@ -78,6 +78,10 @@ public struct LiveWindow: View {
         self.confirmEnd = confirmEnd
     }
 
+    private var windowMessage: String? {
+        explanation ?? attention?.message ?? commands.message
+    }
+
     public var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let scene = WindowScene(
@@ -85,7 +89,7 @@ public struct LiveWindow: View {
                 inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
                 review: reviewScreen, view: panes.view,
                 pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error, card: attention?.card, message: explanation ?? attention?.message ?? commands.message, servers: servers
+                popup: panes.popup, paneError: panes.error, card: attention?.card, message: windowMessage, servers: servers
             )
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
@@ -102,7 +106,6 @@ public struct LiveWindow: View {
             newSession?.observe(store.state)
         }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
-        .onChange(of: nav.selected) { explanation = nil }
         .onChange(of: router.newSessionRequested, initial: true) {
             guard router.newSessionRequested else { return }
             router.newSessionRequested = false
@@ -115,6 +118,7 @@ public struct LiveWindow: View {
             Task { await panes.openShell(session: shell.session, worktree: shell.worktree) }
         }
         .onChange(of: nav.selected) {
+            explanation = nil
             choiceRequest += 1
             panes.close()
             if review != nil { openReview() }
