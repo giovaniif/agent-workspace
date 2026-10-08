@@ -102,6 +102,7 @@ public struct LiveWindow: View {
             newSession?.observe(store.state)
         }
         .onChange(of: router.focusSeq, initial: true) { if let id = router.focus { nav.select(id) } }
+        .onChange(of: nav.selected) { explanation = nil }
         .onChange(of: router.newSessionRequested, initial: true) {
             guard router.newSessionRequested else { return }
             router.newSessionRequested = false
@@ -338,10 +339,7 @@ public struct LiveWindow: View {
         var a = WindowActions()
         a.switchServer = switchServer
         a.addServer = { openWindow(id: "setup") }
-        a.select = {
-            explanation = nil
-            nav.select($0)
-        }
+        a.select = { nav.select($0) }
         a.filter = { value in
             filter = value
             reconcile(filter: value)
