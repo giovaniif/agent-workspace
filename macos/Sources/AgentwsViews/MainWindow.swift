@@ -81,6 +81,7 @@ public enum SessionMenuItem: Sendable {
 
 @MainActor
 public struct WindowActions {
+    public var explain: (String) -> Void = { _ in }
     public var select: (String) -> Void = { _ in }
     public var filter: (String) -> Void = { _ in }
     public var toggleInspector: () -> Void = {}
@@ -188,10 +189,14 @@ struct ToolbarStrip: View {
             }
             .frame(minWidth: 160, alignment: .leading)
             HStack(spacing: 2) {
-                ForEach(Toolbar.views) { tab in
-                    let active = tab.title == (scene.review == nil ? scene.view.rawValue : MainView.review.rawValue)
+                ForEach(Toolbar.views(session: scene.session != nil)) { tab in
+                    let active = scene.session != nil && tab.title == (scene.review == nil ? scene.view.rawValue : MainView.review.rawValue)
                     Button {
-                        if tab.enabled, !active, let view = MainView(rawValue: tab.title) { actions.showView(view) }
+                        if let help = tab.help, !tab.enabled {
+                            actions.explain(help)
+                        } else if !active, let view = MainView(rawValue: tab.title) {
+                            actions.showView(view)
+                        }
                     } label: {
                         Text(tab.title)
                             .font(.system(size: 12, weight: active ? .semibold : .regular))
@@ -201,7 +206,8 @@ struct ToolbarStrip: View {
                             .foregroundStyle(tab.enabled ? theme(.text) : theme(.grey))
                     }
                     .buttonStyle(.plain)
-                    .disabled(!tab.enabled)
+                    .help(tab.help ?? "")
+                    .accessibilityHint(tab.help ?? "")
                 }
             }
             .padding(2)

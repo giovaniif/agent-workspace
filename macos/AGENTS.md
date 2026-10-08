@@ -141,6 +141,8 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - You cannot set the cleanup interval, stale-limit age, worktree location and setup recipes. They are fixed in the daemon, or they are in the `.agentws.toml` of each repo.
 - Shell and nvim views (`ShellNvim.swift`):
   - `MainView` is the view switcher (Terminal, Review, Shell, nvim).
+  - `Toolbar.views(session:)` gives the tabs. With no selected session, Review, Shell and nvim are grey and have a tooltip (`Toolbar.needsSession`). A click on one, or its shortcut, shows that text as the window message. Thus a click never does nothing.
+  - `EmptyMain` is the main column with no session: "Waiting for the daemon", "No sessions yet" or "Select a session", with a New session button.
   - `ShellNvim` (main actor, over `Caller`) calls `shell.focus` for ⌘T and ⇧⌘T. ⌘T is for the selected session: the daemon selects its first worktree, else the root of the session. ⇧⌘T shows the same shell as a popup over the current view.
   - Outside review, ⌘E calls `nvim.toggle`. In review, ⌘E calls `nvim.open` on the top visible line and shows the returned pane in the nvim view.
   - It keeps the shell and nvim pane of each session. Thus the main column draws that pane instead of the pane of the agent.

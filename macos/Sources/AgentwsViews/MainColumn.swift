@@ -81,13 +81,34 @@ struct MainColumn: View {
                 .frame(height: 26)
                 .background(theme(.mantle))
             } else {
+                let empty = EmptyMain(connected: scene.state != nil, sessions: scene.state?.sessions.count ?? 0)
                 VStack(spacing: 8) {
                     Image(systemName: "rectangle.stack").font(.system(size: 28)).foregroundStyle(theme(.grey))
-                    Text(scene.state == nil ? "Waiting for the daemon" : "Select a session")
-                        .font(.system(size: 13))
+                    Text(empty.title)
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(theme(.subtext))
+                    if let detail = empty.detail {
+                        Text(detail)
+                            .font(.system(size: 12))
+                            .foregroundStyle(theme(.subtext))
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 360)
+                    }
+                    if empty.offersNew {
+                        Button(action: actions.newSession) {
+                            Label("New session", systemImage: "plus")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(theme(.blue))
+                        .padding(.top, 4)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    if let message = scene.message {
+                        AttentionMessage(text: message, dismiss: actions.dismissMessage).padding(Metrics.gutter)
+                    }
+                }
             }
         }
     }
