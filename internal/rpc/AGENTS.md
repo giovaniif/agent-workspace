@@ -135,6 +135,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - Clients keep messages by `id` and **replace by `id`**. A tool call comes first as `running`. When its result is written, the same `id` comes again with its final status and text and the original `cursor` of the call. Thus it can arrive after messages with larger cursors.
   - Paging pairs a call with a result on a newer page (up to 1 MiB ahead), so pages never repeat an `id`. A result whose call is on an older page is not a separate message.
   - `turn` can be empty for messages before the user message of their turn, when the page starts in the middle of a turn.
+- Tabs of a project worktree: `tab.new`, `tab.show`, `tab.step` and `tab.close` (`rpc.TabParams` → `domain.Tab`). See [internal/daemon/](../daemon/AGENTS.md#tabs). `State.shell_tabs` and `State.active_tabs` (worktree → tab ID) carry them to late subscribers. A diff sets `shell_tab`, `removed_shell_tab` (an ID) or `active_tab` (`{"worktree","tab"}`).
 - `debug.seed` `{"count":N}` adds N fake sessions for manual tests. `agentws debug seed N` calls it.
 - Error codes:
   - `unsupported_version`: a missing or different `v`.

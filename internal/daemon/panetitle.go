@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"path"
 	"slices"
 	"strings"
 	"time"
@@ -34,6 +35,8 @@ func (d *Daemon) paneTitles(ctx context.Context) {
 		}
 		var inputs []titleInput
 		var wts []domain.Worktree
+		var projects []domain.Project
+		var shells []domain.ShellTab
 		changed := false
 		ok := d.query(func(s *state) {
 			if !stale && s.seq == seen {
@@ -54,14 +57,28 @@ func (d *Daemon) paneTitles(ctx context.Context) {
 				}
 				wts = append(wts, w)
 			}
+			projects = sorted(s.projects)
+			shells = sorted(s.shellTabs)
 		})
 		if !ok || !changed {
 			continue
 		}
 		slices.SortFunc(wts, func(a, b domain.Worktree) int { return strings.Compare(a.ID, b.ID) })
 		want := make(map[app.PaneID]string, len(inputs))
+		live := make([]domain.Session, 0, len(inputs))
 		for _, in := range inputs {
-			want[app.PaneID(in.session.Pane)] = domain.AgentTitle(in.session, wts, in.cwd)
+			live = append(live, in.session)
+		}
+		for _, in := range inputs {
+			title := domain.AgentTitle(in.session, wts, in.cwd)
+			if home, ok := domain.TabHome(in.session, wts, projects); ok {
+				title = domain.TabbedTitle(domain.TabStrip(domain.WorktreeTabs(home, live, shells), in.session.ID), title)
+			}
+			want[app.PaneID(in.session.Pane)] = title
+		}
+		for _, sh := range shells {
+			strip := domain.TabStrip(domain.WorktreeTabs(sh.Worktree, live, shells), sh.ID)
+			want[app.PaneID(sh.Pane)] = domain.TabbedTitle(strip, "shell · "+path.Base(sh.Worktree))
 		}
 		for pane, title := range want {
 			if set[pane] == title {

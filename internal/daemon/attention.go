@@ -240,4 +240,5 @@ func (s *state) focus(session domain.Session) {
 	if !session.Focused || session.Unread {
 		s.emit(SessionChanged{Session: session.Focus()})
 	}
+	s.noteActiveTab(session)
 }
