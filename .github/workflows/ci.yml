@@ -60,6 +60,8 @@ jobs:
           if-no-files-found: warn
       - run: macos/build-app
       - run: codesign --verify --verbose macos/build/agentws.app
+      - run: test -f macos/build/agentws.app/Contents/Resources/AppIcon.icns
+      - run: '[ "$(plutil -extract CFBundleIconFile raw macos/build/agentws.app/Contents/Info.plist)" = AppIcon ]'
 
   tdd:
     if: github.event_name == 'pull_request'
