@@ -206,6 +206,11 @@ struct SnapshotTests {
         #expect(pixels(rep, near: Palette.latte.hex(.red)) > 20)
     }
 
+    @Test func aServerWithNoWorkspacesOffersToAddOneInTheSheet() throws {
+        let rep = try save("new-session-no-workspaces", Snapshot.renderNewSession(Seed.newSession(workspaces: false), tab: .session, size: Self.sheet, dark: false), size: Self.sheet)
+        #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
+    }
+
     static let firstRun = CGSize(width: 860, height: 600)
 
     @Test func theFirstRunWindowFillsTheWindowWithASidebarOfSteps() throws {

@@ -30,7 +30,7 @@ enum NewSessionFixtures {
     {"harnesses":[
       {"harness":"claude","name":"Claude Code","tag":"CC","models":["opus","sonnet","haiku"],"efforts":["low","medium","high","xhigh","max"],"model":"opus","effort":"xhigh"},
       {"harness":"codex","name":"Codex","tag":"CX","models":["gpt-6-sol","gpt-5.5"],"efforts":["low","medium","high"],"model":"gpt-6-sol","effort":"high"}
-    ],"max_parallel":4}
+    ],"max_parallel":4,"home":"/src"}
     """
 
     static func workspaces() throws -> [Workspace] {
@@ -222,5 +222,45 @@ struct NewSessionTests {
             LaunchRow(id: "q2", ref: "ENG-2", harness: "CX", status: "queued"),
             LaunchRow(id: "q3", ref: "ENG-3", harness: "CC", status: "failed: no such issue"),
         ])
+    }
+
+    @Test func aServerWithNoWorkspacesSaysSoAndCannotStart() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        await model.load(state: Seed.state(sessions: []))
+        model.form.workItem = "fix the login redirect"
+        #expect(model.form.workspaces.isEmpty)
+        #expect(model.form.emptyMessage == "No workspaces on this server yet. Add one to start a session.")
+        #expect(!model.form.canStart)
+        #expect(model.path.home == "/src")
+    }
+
+    @Test func aWorkspaceAddedFromTheSheetIsSelected() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .success(#"{"Root":"/src/new","Kind":"orchestration","Repos":[{"Name":"a","Path":"/src/new/a","Branch":"main"}]}"#)
+        model.path.text = "~/new/"
+        let added = await model.addWorkspace()
+        #expect(added)
+        #expect(caller.params("workspace.add") == .object(["path": .string("/src/new")]))
+        #expect(model.form.workspace == "/src/new")
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api", "/src/web"])
+        #expect(model.form.workspaces.first?.detail == "orchestration root · 1 repos")
+        #expect(model.form.emptyMessage == nil)
+        #expect(model.addError == nil)
+        #expect(model.path.text == "")
+    }
+
+    @Test func aRefusedWorkspaceKeepsTheSelectionAndShowsWhy() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .failure(RPCError(code: "bad_request", message: "/nope is not a git repo or a folder of repos"))
+        model.path.text = "/nope"
+        let added = await model.addWorkspace()
+        #expect(!added)
+        #expect(model.form.workspace == "/src/acme")
+        #expect(model.addError == "/nope is not a git repo or a folder of repos")
+        #expect(model.path.text == "/nope")
     }
 }
