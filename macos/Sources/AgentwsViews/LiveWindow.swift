@@ -271,7 +271,12 @@ public struct LiveWindow: View {
     }
 
     private func toggleReview() {
+        guard nav.selected != nil || review != nil else { return explain(.review) }
         if review == nil { openReview() } else { review = nil }
+    }
+
+    private func explain(_ view: MainView) {
+        commands.message = Toolbar.needsSession(view)
     }
 
     private func reviewTask(_ work: @escaping @MainActor (ReviewController) async -> Void) {
@@ -291,7 +296,7 @@ public struct LiveWindow: View {
     }
 
     private func toggleShell(popup: Bool) {
-        guard let id = nav.selected else { return }
+        guard let id = nav.selected else { return explain(.shell) }
         if !popup { review = nil }
         Task { await panes.toggleShell(session: id, popup: popup) }
     }
@@ -301,7 +306,7 @@ public struct LiveWindow: View {
             openInNvim()
             return
         }
-        guard let id = nav.selected else { return }
+        guard let id = nav.selected else { return explain(.nvim) }
         Task { await panes.toggleNvim(session: id) }
     }
 
@@ -380,6 +385,7 @@ public struct LiveWindow: View {
             if let attention { Task { await attention.answer(choice: choice) } }
         }
         a.hideCard = { attention?.hideCard() }
+        a.explain = { commands.message = $0 }
         a.dismissMessage = {
             attention?.message = nil
             commands.message = nil

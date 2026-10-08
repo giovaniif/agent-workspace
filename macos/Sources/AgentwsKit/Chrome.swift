@@ -99,16 +99,49 @@ public struct ViewTab: Sendable, Equatable, Identifiable {
     public var id: String { title }
     public var title: String
     public var enabled: Bool
+    public var help: String?
 }
 
 public enum Toolbar {
-    public static let views = [
-        ViewTab(title: "Terminal", enabled: true),
-        ViewTab(title: "Review", enabled: true),
-        ViewTab(title: "Shell", enabled: true),
-        ViewTab(title: "nvim", enabled: true),
-    ]
+    public static func views(session: Bool) -> [ViewTab] {
+        MainView.allCases.map { view in
+            let needs = view == .terminal ? nil : needsSession(view)
+            return ViewTab(title: view.rawValue, enabled: session || needs == nil, help: session ? nil : needs)
+        }
+    }
+
+    public static func needsSession(_ view: MainView) -> String {
+        switch view {
+        case .terminal: "Start or select a session to see its terminal"
+        case .review: "Start or select a session to review its changes"
+        case .shell: "Start or select a session to open a shell in its worktree"
+        case .nvim: "Start or select a session to open nvim in its worktree"
+        }
+    }
+
     public static let newEnabled = true
+}
+
+public struct EmptyMain: Sendable, Equatable {
+    public var title: String
+    public var detail: String?
+    public var offersNew: Bool
+
+    public init(title: String, detail: String?, offersNew: Bool) {
+        self.title = title
+        self.detail = detail
+        self.offersNew = offersNew
+    }
+
+    public init(connected: Bool, sessions: Int) {
+        if !connected {
+            self.init(title: "Waiting for the daemon", detail: nil, offersNew: false)
+        } else if sessions == 0 {
+            self.init(title: "No sessions yet", detail: "Start a session to see its terminal, review its changes, or open a shell or nvim.", offersNew: true)
+        } else {
+            self.init(title: "Select a session", detail: "Pick one in the sidebar (⌘1–9) to see its terminal, review, shell or nvim.", offersNew: true)
+        }
+    }
 }
 
 public struct ConnectionBanner: Sendable, Equatable {
