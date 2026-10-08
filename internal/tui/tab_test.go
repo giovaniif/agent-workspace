@@ -141,6 +141,26 @@ func TestTabCloseAsksThenClosesTheShownTab(t *testing.T) {
 	}
 }
 
+func TestTabCloseWithoutAKnownActiveTabClosesTheSelectedAgentsTab(t *testing.T) {
+	c := &fakeCaller{}
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c})
+	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 40})
+	st := tabsState()
+	st.ActiveTabs = nil
+	m = update(m, tui.StateMsg(st))
+	if m.Selected() != "s03" {
+		t.Fatalf("selected %s, want s03 first", m.Selected())
+	}
+	m = pressCmd(m, key("-"))
+	if !strings.Contains(screen(m), "close tab 3 codex? y/n") {
+		t.Fatalf("- asked about another tab:\n%s", screen(m))
+	}
+	pressCmd(m, key("y"))
+	if len(c.calls) != 1 || !reflect.DeepEqual(c.calls[0].params, rpc.TabParams{Session: "s03", Tab: "s03"}) {
+		t.Fatalf("calls %+v", c.calls)
+	}
+}
+
 func TestTabNewOpensAShell(t *testing.T) {
 	m, c := tabsModel(t, "s01")
 	m = pressCmd(m, key("+"))
