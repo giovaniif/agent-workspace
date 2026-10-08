@@ -45,7 +45,7 @@ public final class UserNotifier: NSObject, Notifier, UNUserNotificationCenterDel
             UNNotificationCategory(identifier: "other", actions: [open], intentIdentifiers: []),
         ])
         asking = true
-        center.requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
+        center.requestAuthorization(options: [.alert, .sound]) { @Sendable [weak self] granted, error in
             let reason = error?.localizedDescription
             Task { @MainActor in self?.authorize(granted, reason) }
         }
@@ -82,7 +82,7 @@ public final class UserNotifier: NSObject, Notifier, UNUserNotificationCenterDel
         case .waiting: "waiting"
         case .other: "other"
         }
-        center.add(UNNotificationRequest(identifier: banner.id, content: content, trigger: nil)) { _ in }
+        center.add(UNNotificationRequest(identifier: banner.id, content: content, trigger: nil)) { @Sendable _ in }
     }
 
     public func withdraw(_ id: String) {

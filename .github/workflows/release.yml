@@ -73,11 +73,23 @@ jobs:
           app=macos/build/agentws.app
           codesign --verify --deep --strict --verbose "$app"
           [ "$(plutil -extract AgentwsVersion raw "$app/Contents/Info.plist")" = "$VERSION" ]
+          [ "$(plutil -extract CFBundleIconFile raw "$app/Contents/Info.plist")" = "AppIcon" ]
+          iconutil -c iconset "$app/Contents/Resources/AppIcon.icns" -o "$RUNNER_TEMP/check.iconset"
+          [ "$(sips -g pixelWidth "$RUNNER_TEMP/check.iconset/icon_512x512@2x.png" | awk '/pixelWidth/{print $2}')" = 1024 ]
           [ "$("$app/Contents/Resources/bin/darwin_$(uname -m | sed 's/x86_64/amd64/')/agentws" version | awk '{print $2}')" = "$VERSION" ]
         env:
           AGENTWS_NO_UPDATE_CHECK: "1"
           VERSION: ${{ needs.goreleaser.outputs.version }}
       - run: macos/build-dmg "build/agentws_${VERSION}.dmg"
+        env:
+          VERSION: ${{ needs.goreleaser.outputs.version }}
+      - name: Check the DMG volume icon
+        run: |
+          mount="$(mktemp -d)"
+          hdiutil attach "macos/build/agentws_${VERSION}.dmg" -mountpoint "$mount" -nobrowse -readonly
+          test -f "$mount/.VolumeIcon.icns"
+          GetFileInfo -a "$mount" | grep -q C
+          hdiutil detach "$mount"
         env:
           VERSION: ${{ needs.goreleaser.outputs.version }}
       - uses: actions/upload-artifact@v4

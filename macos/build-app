@@ -16,6 +16,15 @@ plutil -replace CFBundleShortVersionString -string "$short" "$app/Contents/Info.
 plutil -replace CFBundleVersion -string "${AGENTWS_APP_BUILD:-0}" "$app/Contents/Info.plist"
 plutil -replace AgentwsVersion -string "$version" "$app/Contents/Info.plist"
 cp "$bin" "$app/Contents/MacOS/agentws"
+iconset="$(mktemp -d)/AppIcon.iconset"
+mkdir -p "$iconset"
+for size in 16 32 128 256 512; do
+  sips -z "$size" "$size" AppIcon.png --out "$iconset/icon_${size}x${size}.png" >/dev/null
+  double=$((size * 2))
+  sips -z "$double" "$double" AppIcon.png --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
+rm -rf "$(dirname "$iconset")"
 if [ -n "$binaries" ]; then
   for target in darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
     src="$binaries/$target/agentws"
