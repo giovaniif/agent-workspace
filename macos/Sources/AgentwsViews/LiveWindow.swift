@@ -33,6 +33,7 @@ public struct LiveWindow: View {
     @State private var panes: ShellNvim
     @State private var windowID = UUID().uuidString
     @State private var commands: SessionCommands
+    @State private var explanation: String?
     @State private var prompt: SessionPrompt?
     @State private var renameText = ""
     @State private var choiceRequest = 0
@@ -84,7 +85,7 @@ public struct LiveWindow: View {
                 inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
                 review: reviewScreen, view: panes.view,
                 pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error, card: attention?.card, message: attention?.message ?? commands.message, servers: servers
+                popup: panes.popup, paneError: panes.error, card: attention?.card, message: explanation ?? attention?.message ?? commands.message, servers: servers
             )
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
@@ -276,7 +277,7 @@ public struct LiveWindow: View {
     }
 
     private func explain(_ view: MainView) {
-        commands.message = Toolbar.needsSession(view)
+        explanation = Toolbar.needsSession(view)
     }
 
     private func reviewTask(_ work: @escaping @MainActor (ReviewController) async -> Void) {
@@ -337,7 +338,10 @@ public struct LiveWindow: View {
         var a = WindowActions()
         a.switchServer = switchServer
         a.addServer = { openWindow(id: "setup") }
-        a.select = { nav.select($0) }
+        a.select = {
+            explanation = nil
+            nav.select($0)
+        }
         a.filter = { value in
             filter = value
             reconcile(filter: value)
@@ -385,8 +389,12 @@ public struct LiveWindow: View {
             if let attention { Task { await attention.answer(choice: choice) } }
         }
         a.hideCard = { attention?.hideCard() }
-        a.explain = { commands.message = $0 }
+        a.explain = { explanation = $0 }
         a.dismissMessage = {
+            if explanation != nil {
+                explanation = nil
+                return
+            }
             attention?.message = nil
             commands.message = nil
         }
