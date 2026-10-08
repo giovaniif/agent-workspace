@@ -10,6 +10,8 @@ struct WorkspacePathField: View {
     let add: () -> Void
     @Environment(\.colorScheme) private var scheme
 
+    private var canAdd: Bool { !input.text.isEmpty && !busy && enabled }
+
     var body: some View {
         let theme = Theme(scheme)
         VStack(alignment: .leading, spacing: 6) {
@@ -27,9 +29,9 @@ struct WorkspacePathField: View {
                     }
                     .onKeyPress(.tab) { input.accept() ? .handled : .ignored }
                     .onKeyPress(.rightArrow) { input.suggestions.isEmpty ? .ignored : (input.accept() ? .handled : .ignored) }
-                    .onSubmit { if !input.text.isEmpty { add() } }
+                    .onSubmit { if canAdd { add() } }
                 Button(busy ? "Adding…" : "Add", action: add)
-                    .disabled(input.text.isEmpty || busy || !enabled)
+                    .disabled(!canAdd)
             }
             .disabled(!enabled)
             let suggestions = Array(input.suggestions.prefix(8).enumerated())
