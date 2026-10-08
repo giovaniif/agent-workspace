@@ -256,6 +256,8 @@ func TestTabShellsGoWithTheirRemovedWorktree(t *testing.T) {
 		t.Error("the removed worktree kept an active tab")
 	}
 	waitFor(t, func() bool { return len(term.killedPanes()) == 1 && term.killedPanes()[0] == app.PaneID(tab.Pane) })
+}
+
 func TestTabAgentsBannerNamesItsWorktree(t *testing.T) {
 	store := &memStore{}
 	store.snap.Worktrees = []domain.Worktree{tabWT}
