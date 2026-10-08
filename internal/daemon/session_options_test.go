@@ -26,6 +26,7 @@ func sessionOptions(t *testing.T, opts ...daemon.Option) rpc.SessionOptions {
 }
 
 func TestSessionOptionsListTheHarnessesWithTheirConfiguredDefaults(t *testing.T) {
+	t.Setenv("HOME", "/srv/me")
 	got := sessionOptions(t,
 		daemon.WithLauncher(5),
 		daemon.WithStartDefaults(map[domain.Harness]daemon.StartDefaults{domain.HarnessCodex: {Model: "gpt-6-sol", Effort: "high"}}))
@@ -36,9 +37,17 @@ func TestSessionOptionsListTheHarnessesWithTheirConfiguredDefaults(t *testing.T)
 			{Harness: "codex", Name: codexSpec.Name, Tag: codexSpec.Tag, Models: codexSpec.Models, Efforts: codexSpec.Efforts, Model: "gpt-6-sol", Effort: "high"},
 		},
 		MaxParallel: 5,
+		Home:        "/srv/me",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v\nwant %+v", got, want)
+	}
+}
+
+func TestSessionOptionsNameTheServersHomeForTypedPaths(t *testing.T) {
+	t.Setenv("HOME", "/srv/me")
+	if got := sessionOptions(t).Home; got != "/srv/me" {
+		t.Fatalf("home = %q, want /srv/me", got)
 	}
 }
 

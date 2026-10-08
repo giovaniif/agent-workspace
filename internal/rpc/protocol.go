@@ -304,6 +304,7 @@ type HarnessOptions struct {
 type SessionOptions struct {
 	Harnesses   []HarnessOptions `json:"harnesses"`
 	MaxParallel int              `json:"max_parallel"`
+	Home        string           `json:"home"`
 }
 
 type ConfigSetParams struct {

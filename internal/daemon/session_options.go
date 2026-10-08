@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 
 	"github.com/BurntSushi/toml"
 
@@ -47,7 +48,8 @@ func (d *Daemon) sessionOptions() rpc.SessionOptions {
 	var maxParallel int
 	var defaults map[domain.Harness]StartDefaults
 	d.query(func(*state) { maxParallel, defaults = d.lc.maxParallel, d.hs.defaults })
-	out := rpc.SessionOptions{MaxParallel: cmp.Or(maxParallel, domain.DefaultMaxParallel)}
+	home, _ := os.UserHomeDir()
+	out := rpc.SessionOptions{MaxParallel: cmp.Or(maxParallel, domain.DefaultMaxParallel), Home: home}
 	for _, h := range domain.Harnesses() {
 		if _, ok := d.hs.adapters[h]; !ok {
 			continue

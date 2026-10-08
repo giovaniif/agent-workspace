@@ -70,7 +70,14 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `warning` reads the `limits` of the view: the lowest `low` quota of the selected harness. It shows a switch button only when a different harness has reported limits and none of them is low (the rule of `domain.OfferFallback`).
   - Start (⌘↩) calls `session.new`, then `session.focus`, and the window selects the new session. A failure, for example the output of a setup recipe, stays in the sheet.
   - The launcher sends `launcher.enqueue` and lists the `queue` of the view (`LaunchRow`).
+  - When the server has no workspaces, the sheet shows "No workspaces on this server yet" and the workspace path field. Else, "Add workspace…" shows the field. `NewSession.addWorkspace` calls `workspace.add` and selects the new workspace. Start stays disabled while no workspace is selected.
   - Tests: `swift test --filter NewSession` with a fake `Caller`.
+- Workspace path field (`WorkspacePath.swift`, view `WorkspacePathField`): one field for Settings › Workspaces, the first-run Workspace step and the new-session sheet (ADR 0047 in the Mac app).
+  - `ParsedPath.parse` reads `~`, `~/x`, `x`, `./x`, `../x` and `/abs` against the home of the server (`home` from `session.options`).
+  - `WorkspacePathInput.refresh` calls `workspace.dirs` one time for each folder that the input points into. `suggestions` filters the folders by the last segment (case-insensitive prefix, hidden folders only for a `.` prefix) and marks each `repo` or `worktree`.
+  - ↑/↓ move the highlight. ⇥ or → opens the highlighted folder (it appends `name/`). ↩ adds the workspace.
+  - `status` is the line under the box: the resolved path and `single repo`, `orchestration root · N repos`, `worktree`, `folder` or `no such folder`.
+  - Test: `swift test --filter WorkspacePath`.
 - Build (`Build.swift`): `Build.read(binary:)` runs `<binary> version --build`. The result is the exact string that the daemon compares in the handshake. The app reads it from the `agentws` that it talks to, in this order:
   1. `$AGENTWS_BINARY`
   2. the bundled `Contents/Resources/bin/darwin_<arch>/agentws` (`Build.binary`)
@@ -182,7 +189,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     3. It runs `agentws setup daemon`.
     4. If it replaced the binary of a running daemon, it restarts the service (`systemctl --user restart agentws-daemon.service`, or `launchctl kickstart -k` on a Mac). It never stops the service, so tmux sessions continue.
   - `Checklist.items` changes the probe into the rows of the Servers tab, with fix-its: Set up, Update server, the linger command `sudo loginctl enable-linger <user>`, `ssh -t <host> gh auth login`.
-  - Hooks and the workspace step use `ServerSettings` over the `ViewStore` of the new server. `ServerSettings.dirs` browses with `workspace.dirs`.
+  - Hooks and the workspace step use `ServerSettings` over the `ViewStore` of the new server. The workspace step uses the workspace path field (`ServerSettings.path`).
   - `swift test --filter Servers` runs the suite. Its fake `ssh`, `uname` and `systemctl` scripts run the remote side locally against a temp home.
 - Tests decode `internal/view/testdata/view-subscribe-*.json` (the Go goldens) and check that each non-null field round-trips. Transport tests put fake `agentws` and `ssh` scripts on `PATH`. The fake `ssh` blocks on `/dev/tty` if it does not get `BatchMode=yes`.
 
