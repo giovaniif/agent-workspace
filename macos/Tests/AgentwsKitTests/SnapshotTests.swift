@@ -184,6 +184,11 @@ struct SnapshotTests {
         #expect(pixels(rep, near: Palette.latte.hex(.red)) > 50)
     }
 
+    @Test func withoutASessionTheMainColumnOffersANewSession() throws {
+        let rep = try shoot("no-session", .seeded(selected: ""))
+        #expect(pixels(rep, near: Palette.latte.hex(.blue)) > 20)
+    }
+
     static let sheet = CGSize(width: 600, height: 640)
 
     @Test func theNewSessionSheetShowsTheWorkItemCardAndTheQuotaWarning() throws {
