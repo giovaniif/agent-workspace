@@ -56,7 +56,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `DiskTiles` reads the totals that the daemon sends. While it measures sizes, it shows `…` or a trailing `+`.
   - `DiskTable` joins rows with the worktrees and sessions of `view.subscribe`. It gives the state (Open, Merged · clean, Merged · dirty, Detached, No PR) and what cleanup will do ("removes at 14:30" from `next_cleanup`, in local time).
   - The sidebar footer ends with `ViewState.reclaimable` ("1.2 GB reclaimable").
-  - `DiskActions` lists the actions of the action bar, each with an outcome sentence. A `backup_then_ask` row only offers Back up and remove. A `keep` row offers no removal. Each destructive action has a confirmation.
+  - `DiskActions` lists the actions of the action bar, each with an outcome sentence. For a `backup_then_ask` row, Back up and remove is the only removal action. A `keep` row offers no removal. Each destructive action has a confirmation.
   - `DiskPorts` and `DiskRecent` fill the other two tabs.
   - `LiveDiskWindow` polls `disk.view` (every 2 s while sizes are pending, else every 10 s). It calls `cleanup.worktree` and `ports.kill`.
   - Go to session and Open shell go through `WindowRouter` to the main window. The main window selects the session and shows the shell of the worktree. The shell of a worktree with no owner has no session to show under, so it still calls `shell.toggle` and reports it.
