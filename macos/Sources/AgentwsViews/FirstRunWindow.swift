@@ -299,6 +299,7 @@ public struct FirstRunView: View {
             guard setup.error == nil, self.setup === setup, flow.kind == kind else { return }
             self.store?.stop()
             let store = ViewStore(endpoint: kind.endpoint(localBinary: localBinary), build: appBuild)
+            store.start()
             let settings = ServerSettings(caller: store)
             self.store = store
             self.settings = settings
