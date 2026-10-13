@@ -117,6 +117,11 @@ struct WorkspacePathTests {
         #expect(input.status == "/home/me/code/zz · no such folder")
     }
 
+    @Test func enterBeforeTheFolderIsListedDoesNothing() {
+        let (input, _) = input("~/code/web")
+        #expect(!input.submit())
+    }
+
     @Test func enterInAMissingFolderDoesNothing() async {
         let (input, caller) = input("~/nope/x")
         caller.replies["workspace.dirs"] = .failure(RPCError(code: "not_found", message: "no such file"))
