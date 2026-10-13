@@ -508,7 +508,7 @@ func workspaceKind(w domain.Workspace) string {
 
 func workItemPreview(input string) string {
 	if strings.TrimSpace(input) == "" {
-		return "groups sessions and names them; empty: named from the first prompt"
+		return "empty: the first prompt names it"
 	}
 	t := domain.ParseWorkItem(input)
 	switch t.Source {

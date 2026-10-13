@@ -146,6 +146,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
             aria-describedby="resolution"
           />
         </label>
+        <p className="muted">Groups sessions and names them. Empty: the first prompt names the session.</p>
         <div id="resolution" className="resolution">
           {resolution.state === "checking" ? <p className="muted">Checking…</p> : null}
           {resolution.state === "ok" ? (
