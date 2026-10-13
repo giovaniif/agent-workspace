@@ -81,6 +81,8 @@ func (s *Server) routes() []route {
 	return []route{
 		{"GET /api/v1/workspaces", s.workspaces},
 		{"GET /api/v1/session-options", sessionOptions},
+		{"GET /api/v1/automations", listAutomations},
+		{"POST /api/v1/automations/{name}/run", runAutomation},
 		{"POST /api/v1/sessions", newSession},
 		{"GET /api/v1/work-items/resolve", resolveWorkItem},
 		{"GET /api/v1/sessions/{id}/messages", messages},
