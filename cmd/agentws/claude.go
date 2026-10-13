@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
+	"github.com/giovaniif/agent-workspace/internal/adapters/skill"
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
@@ -52,13 +53,29 @@ func setupClaude(path, self string, remove bool, stdout io.Writer) error {
 			return err
 		}
 		fmt.Fprintf(stdout, "removed agentws hooks and status line from %s\n", path)
-		return nil
+		return removeSkill(filepath.Dir(path), stdout)
 	}
 	if err := claude.Setup(path, self); err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "merged agentws hooks and status line into %s (backup: %s)\n", path, claude.BackupPath(path))
-	return nil
+	return installSkill(filepath.Dir(path), stdout)
+}
+
+func installSkill(dir string, stdout io.Writer) error {
+	changed, err := skill.Install(dir)
+	if changed {
+		fmt.Fprintf(stdout, "installed the agentws browser skill in %s\n", skill.Path(dir))
+	}
+	return err
+}
+
+func removeSkill(dir string, stdout io.Writer) error {
+	changed, err := skill.Remove(dir)
+	if changed {
+		fmt.Fprintf(stdout, "removed the agentws browser skill from %s\n", skill.Path(dir))
+	}
+	return err
 }
 
 func runStatusLine(args []string, stdin io.Reader, stdout io.Writer, home, pane string) int {
