@@ -163,7 +163,7 @@ public final class WorkspacePathInput {
     public func submit() -> Bool {
         guard !text.isEmpty else { return false }
         let p = parsed
-        guard listed == p.dir else { return true }
+        guard listed == p.dir else { return false }
         if missing { return false }
         if p.prefix.isEmpty { return true }
         let list = suggestions
