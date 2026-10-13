@@ -85,6 +85,45 @@ struct WorkspacePathTests {
         #expect(input.suggestions.isEmpty)
     }
 
+    @Test func enterCompletesTheHighlightedSuggestionAndAddsIt() async {
+        let (input, _) = input("~/code/a")
+        await input.refresh()
+        input.moveDown()
+        #expect(input.submit())
+        #expect(input.text == "~/code/api-eng-1")
+        #expect(input.resolved == "/home/me/code/api-eng-1")
+    }
+
+    @Test func enterOnAPartialNameAddsTheFirstSuggestion() async {
+        let (input, _) = input("~/code/we")
+        await input.refresh()
+        #expect(input.submit())
+        #expect(input.resolved == "/home/me/code/web")
+    }
+
+    @Test func enterOnAFolderWithATrailingSlashAddsThatFolder() async {
+        let (input, _) = input("~/code/")
+        await input.refresh()
+        #expect(input.submit())
+        #expect(input.text == "~/code/")
+        #expect(input.resolved == "/home/me/code")
+    }
+
+    @Test func enterWithNoSuggestionOnAMissingPathDoesNothing() async {
+        let (input, _) = input("~/code/zz")
+        await input.refresh()
+        #expect(!input.submit())
+        #expect(input.text == "~/code/zz")
+        #expect(input.status == "/home/me/code/zz · no such folder")
+    }
+
+    @Test func enterInAMissingFolderDoesNothing() async {
+        let (input, caller) = input("~/nope/x")
+        caller.replies["workspace.dirs"] = .failure(RPCError(code: "not_found", message: "no such file"))
+        await input.refresh()
+        #expect(!input.submit())
+    }
+
     @Test func anEmptyInputShowsNothing() async {
         let (input, caller) = input("")
         await input.refresh()
