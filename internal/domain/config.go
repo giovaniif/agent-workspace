@@ -18,7 +18,7 @@ var (
 )
 
 func ConfigKeys() []string {
-	keys := []string{"launcher.max_parallel", "fallback.threshold", "push.away_after"}
+	keys := []string{"fallback.threshold", "push.away_after"}
 	for _, h := range Harnesses() {
 		keys = append(keys, "defaults."+string(h)+".model", "defaults."+string(h)+".effort")
 	}
@@ -36,8 +36,6 @@ func ConfigLiteral(key, value string) (string, error) {
 		return "", nil
 	}
 	switch {
-	case key == "launcher.max_parallel":
-		return intLiteral(key, value, 1, 64)
 	case key == "fallback.threshold":
 		return intLiteral(key, value, 0, 100)
 	case key == "push.away_after":

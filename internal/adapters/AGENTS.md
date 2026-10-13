@@ -53,7 +53,6 @@ Implementations of the `app` ports. All exec, disk and network calls are here. g
   - The trash and `AuditLog`.
   - `Transcripts` (`app.TranscriptFiles` and `app.TranscriptWatcher`): size and ranged reads of a transcript, and an fsnotify watch of the file. Until the file exists, it watches the directory of the file. Test: `go test ./internal/adapters/fs/ -run Transcript`.
 - **github**: one read-only `gh api graphql` request for all repos in each poll. Tests use a fake `gh`, and nothing gets to GitHub. GraphQL POSTs cannot use ETags ([ADR 0024](../../docs/adr/0024-pr-board.md)). It also gets `gh pr view` titles for naming.
-- **linear**: issue titles through the Linear API, tested against a mocked API.
 - **sqlite**: `modernc.org/sqlite` (no cgo), embedded migrations, write-behind. The file is `$AGENTWS_HOME/state.db`. See [ADR 0004](../../docs/adr/0004-sqlite-store.md).
 - **loginshell**: `Path` runs `$SHELL -l -c` (else `/bin/sh`) and reads its PATH after a marker. Thus it ignores profile output. Tests use a temp `HOME` with its own `.profile`: `go test ./internal/adapters/loginshell/`.
 - **nvim**: controls the nvim of each session through `nvim --listen`. `Installed` is `exec.LookPath`.

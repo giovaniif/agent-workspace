@@ -123,7 +123,7 @@ public enum Seed {
         }
         let object: [String: Any] = [
             "seq": 1, "workspaces": [] as [Any], "projects": [] as [Any], "tasks": [] as [Any], "worktrees": worktrees, "sessions": out,
-            "limits": quotas, "queue": [] as [Any], "sends": [] as [Any], "events": [] as [Any],
+            "limits": quotas, "sends": [] as [Any], "events": [] as [Any],
             "subagents": [] as [Any], "drafts": [] as [Any],
         ]
         do {

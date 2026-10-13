@@ -41,9 +41,6 @@ const (
 	MethodResumeSession    = "session.resume"
 	MethodSessionRename    = "session.rename"
 	MethodSessionUnpin     = "session.unpin"
-	MethodLauncherEnqueue  = "launcher.enqueue"
-	MethodLauncherDrop     = "launcher.drop"
-	MethodLauncherRetarget = "launcher.retarget"
 	MethodPortsKill        = "ports.kill"
 	MethodReviewOpen       = "review.open"
 	MethodReviewViewed     = "review.viewed"
@@ -302,9 +299,8 @@ type HarnessOptions struct {
 }
 
 type SessionOptions struct {
-	Harnesses   []HarnessOptions `json:"harnesses"`
-	MaxParallel int              `json:"max_parallel"`
-	Home        string           `json:"home"`
+	Harnesses []HarnessOptions `json:"harnesses"`
+	Home      string           `json:"home"`
 }
 
 type ConfigSetParams struct {
@@ -315,30 +311,6 @@ type ConfigSetParams struct {
 type ConfigValues struct {
 	Path   string            `json:"path"`
 	Values map[string]string `json:"values"`
-}
-
-type LauncherEnqueueParams struct {
-	Workspace string `json:"workspace,omitempty"`
-	Input     string `json:"input"`
-	Harness   string `json:"harness"`
-	Model     string `json:"model,omitempty"`
-	Effort    string `json:"effort,omitempty"`
-}
-
-type LauncherEnqueued struct {
-	Queued   []string `json:"queued"`
-	Rejected []string `json:"rejected"`
-}
-
-type LauncherItemRef struct {
-	ID string `json:"id"`
-}
-
-type LauncherRetargetParams struct {
-	ID      string `json:"id"`
-	Harness string `json:"harness"`
-	Model   string `json:"model,omitempty"`
-	Effort  string `json:"effort,omitempty"`
 }
 
 type SessionRef struct {
@@ -531,7 +503,6 @@ type State struct {
 	Sessions    []domain.Session      `json:"sessions"`
 	Events      []domain.SessionEvent `json:"events"`
 	Subagents   []domain.Subagent     `json:"subagents"`
-	Queue       []domain.LaunchItem   `json:"queue"`
 	Drafts      []domain.ReviewDraft  `json:"drafts"`
 	Projects    []domain.Project      `json:"projects"`
 	Sends       []domain.QueuedSend   `json:"sends"`
@@ -559,7 +530,6 @@ type Diff struct {
 	Session          *domain.Session       `json:"session,omitempty"`
 	Event            *domain.SessionEvent  `json:"event,omitempty"`
 	Subagent         *domain.Subagent      `json:"subagent,omitempty"`
-	Queue            *[]domain.LaunchItem  `json:"queue,omitempty"`
 	Draft            *domain.ReviewDraft   `json:"draft,omitempty"`
 	Comment          *domain.ReviewComment `json:"comment,omitempty"`
 	Sends            *[]domain.QueuedSend  `json:"sends,omitempty"`

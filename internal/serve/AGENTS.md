@@ -94,8 +94,8 @@ The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`. `Handler(nil)` s
 - The first client frame must be `{"token":"<device token>"}`, within 5 s (`Config.AuthTimeout`).
   - If the first frame is late, is not JSON or has no token, serve closes the socket with 4400 (`CloseBadHandshake`). The client tries again. A phone that wakes up, or a slow link, must not lose its pairing.
   - serve closes with 4401 only for a token that `device.check` refuses, or for a revoked device.
-- Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","queue","sends"}}`. It sends one `{"diff":{...}}` for each change to these items.
-  - A diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `queue` (whole list), `sends` (whole list), `removed_workspace`, `removed_worktree`, `removed_session`.
+- Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","sends"}}`. It sends one `{"diff":{...}}` for each change to these items.
+  - A diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `sends` (whole list), `removed_workspace`, `removed_worktree`, `removed_session`.
   - serve drops events, subagents, review drafts and comments, so `seq` has gaps. Worktrees come without `Ports`.
 - Each stream keeps a `view.View` ([internal/view/](../view/AGENTS.md)) of tasks, worktrees, sessions and their last `domain.SessionEventsKept` events. Thus serve sends a session as a `StreamSession`: the Go fields and these fields:
   - `name`: `domain.NameFor` with the PRs of its worktrees.

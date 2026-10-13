@@ -42,7 +42,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `LineProcess` sends and receives newline-delimited lines on the stdio of the process. It keeps stdin open until `close()`.
   - `RPCClient` matches replies to calls by `id`. A reply with `id` 0 fails all calls. The bridge sends this reply (`unavailable`) when no daemon listens. If the process stops, all calls fail with `AgentwsError.disconnected`.
 - Live state (`LiveState.swift`, `ViewStore.swift`):
-  - `ViewState.apply(_:)` applies a diff as the TUI does: replace by key, removals, whole-list `limits`/`queue`/`sends`, and the last 20 events for each session.
+  - `ViewState.apply(_:)` applies a diff as the TUI does: replace by key, removals, whole-list `limits`/`sends`, and the last 20 events for each session.
   - `ViewStore` (`@Observable`, main actor) keeps one process for `view.subscribe` and a different one for `call`. Thus diffs never delay a call.
   - After a drop, it waits by `Backoff` (1 s, doubled each time to 30 s, reset by each new state). Then it subscribes again from the start.
   - `connection` is `live`, `connecting`, `reconnecting(in:)`, `unavailable(message)` (it continues to try) or `versionMismatch(message)` (it stops until `start()` runs again).
@@ -63,13 +63,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - Go to session and Open shell go through `WindowRouter` to the main window. The main window selects the session and shows the shell of the worktree. The shell of a worktree with no owner has no session to show under, so it still calls `shell.toggle` and reports it.
   - `Seed.disk` is the seeded view for snapshots and `--demo`.
 - New session (`NewSession.swift`, view `NewSessionSheet`):
-  - ⌘N opens the sheet. ⇧⌘N opens its Linear launcher tab. The New button of the toolbar also opens it.
-  - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, the `[defaults.<harness>]` model and effort, and `max_parallel`. The app cannot read a remote `config.toml`.
+  - ⌘N opens the sheet. The New button of the toolbar also opens it.
+  - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, and the `[defaults.<harness>]` model and effort. The app cannot read a remote `config.toml`.
   - `NewSessionForm` preselects the workspace with the newest `LastUsed`. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
   - 300 ms after the last edit, `session.resolve` resolves the work item into a `WorkItemCard`: source, title, branch, and the path of an existing worktree on that branch. The form ignores a reply for an older text.
   - `warning` reads the `limits` of the view: the lowest `low` quota of the selected harness. It shows a switch button only when a different harness has reported limits and none of them is low (the rule of `domain.OfferFallback`).
   - Start (⌘↩) calls `session.new`, then `session.focus`, and the window selects the new session. A failure, for example the output of a setup recipe, stays in the sheet.
-  - The launcher sends `launcher.enqueue` and lists the `queue` of the view (`LaunchRow`).
   - When the server has no workspaces, the sheet shows "No workspaces on this server yet" and the workspace path field. Else, "Add workspace…" shows the field. `NewSession.addWorkspace` calls `workspace.add` and selects the new workspace. Start stays disabled while no workspace is selected.
   - Tests: `swift test --filter NewSession` with a fake `Caller`.
 - Workspace path field (`WorkspacePath.swift`, view `WorkspacePathField`): one field for Settings › Workspaces, the first-run Workspace step and the new-session sheet (ADR 0047 in the Mac app).
@@ -133,7 +132,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `CLILink` links `/usr/local/bin/agentws` to the `agentws` of the app. It never replaces or removes a file that it did not make.
   - Workspaces and Agents are for each server. `ServerSettings` calls `workspace.list/add/remove` and `onboarding.status/install/remove/nvim` through `Caller` (the protocol that `ReviewController` uses, and `ViewStore` conforms to). `onboarding.remove` first copies the hook file to a backup.
   - The `config.toml` settings of the server (`ServerConfig.swift`) come from `config.get`. `config.set` saves them one key at a time. It backs up the file and keeps the comments of the user (see [internal/daemon/](../internal/daemon/AGENTS.md#config)). `ConfigFields` lists them for each tab:
-    - Workspaces: `launcher.max_parallel`, and the read-only worktree location beside `config.toml` and the cleanup schedule.
+    - Workspaces: the read-only worktree location beside `config.toml` and the cleanup schedule.
     - Agents: the `[defaults.<harness>]` model and effort as pickers from `session.options`, and `fallback.threshold`.
     - Notifications: `push.away_after` and the phones (`device.list`, `device.revoke`, `pair.code`).
     - Appearance: the `[theme]` overrides.

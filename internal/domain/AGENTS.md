@@ -15,14 +15,14 @@ Pure types and rules. This package does no IO and does not import other `interna
   - Subagent events count as progress in the turn, as tool events do.
   - Tool, permission and waiting events that arrive while `idle` or `done` are stale. `Apply` ignores them.
   - `done` marks the session unread only when it does not have focus. `Focus()` clears the mark.
-- `NameFor(task, prs)`: naming precedence (pin, PR, Linear title, prompt summary), with `SummarizeText`, `PinName` and `WithTitle`. See [ADR 0026](../../docs/adr/0026-session-naming.md).
+- `NameFor(task, prs)`: naming precedence (pin, PR title, prompt summary), with `SummarizeText`, `PinName` and `WithTitle`. See [ADR 0026](../../docs/adr/0026-session-naming.md).
 - `BannerFor(session, name, effect)` and `Coalescer`: which notify effects become a banner (not for muted sessions), and the rule of one banner every 10 s for each session.
 - `PlanCleanup(worktree, facts, now)`: the cleanup decision (`remove`, `backup_then_ask` or `keep` with a reason). See [ADR 0021](../../docs/adr/0021-worktree-cleanup.md).
 - `StateSince(session, events)`: when a session went into its state. It finds this when it applies the events of the session through `Apply` again.
 - `WorktreeLabel(worktrees)`: `repo@branch +N`, as banner titles and the phone show it.
 - `Quotas(sessions)`, `Quota.Low`/`Stale`, `Advise(quotas, harness)`: the usage bar and the low-quota warning. See [ADR 0017](../../docs/adr/0017-usage-and-limits-bar.md).
-- `OfferFallback(quotas, cfg, request)` and `OfferFallbacks(quotas, cfg, queue)`: a mapped Codex start instead of a Claude start, when the shortest window of Claude is under the configured threshold. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).
-- `ParseWorkItem`, `PlanSessionStart`, `NextInView`, `AgentTitle`, `DrainLauncher`, `Sidebar`, `BuildSessionCard`, `SubagentTree`: session start, end, title strips, launcher and sidebar rules (see [internal/daemon/](../daemon/AGENTS.md) and [internal/tui/](../tui/AGENTS.md)).
+- `OfferFallback(quotas, cfg, request)`: a mapped Codex start instead of a Claude start, when the shortest window of Claude is under the configured threshold. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).
+- `ParseWorkItem`, `PlanSessionStart`, `NextInView`, `AgentTitle`, `Sidebar`, `BuildSessionCard`, `SubagentTree`: session start, end, title strips and sidebar rules (see [internal/daemon/](../daemon/AGENTS.md) and [internal/tui/](../tui/AGENTS.md)).
 - `Recipe.Validate`, `PlanDeps`, `InstallCommand`: setup recipes (see [internal/adapters/setup/](../adapters/setup/AGENTS.md)).
 - `OnboardSteps`, `NextOnboardStep`, `DefaultOnboardPicks`, `HarnessOffer`, `NvimOfferFor`, `OnboardingNeeded`, the `CodexTrustStep` text: the first-run walkthrough (see [ADR 0040](../../docs/adr/0040-first-run-walkthrough.md)).
 - `SendableText`, `NextSend`, `Unsend`, `DropSends`, `RequeueSend`: the `session.send` queue (see [internal/daemon/](../daemon/AGENTS.md)).

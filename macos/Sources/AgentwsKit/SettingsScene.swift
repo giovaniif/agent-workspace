@@ -66,7 +66,7 @@ public struct SettingsScene: Sendable, Equatable {
             ],
             cliLink: .linked,
             config: ServerConfig(path: "~/.agentws/config.toml", values: [
-                "launcher.max_parallel": "4", "fallback.threshold": "20", "push.away_after": "2m",
+                "fallback.threshold": "20", "push.away_after": "2m",
                 "defaults.claude.model": "opus", "defaults.claude.effort": "high", "theme.blue": "#1e66f5",
             ]),
             harnesses: [

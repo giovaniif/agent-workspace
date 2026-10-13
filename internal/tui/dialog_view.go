@@ -138,7 +138,7 @@ func (m Model) dialogLines() ([]string, int, []string) {
 	if d.field == fieldWorkItem {
 		item = append(item, piece{s.bar, "▏"})
 	} else if d.workItem == "" {
-		item = []piece{{s.dim, "a Linear issue, a GitHub PR or a few words"}}
+		item = []piece{{s.dim, "a GitHub PR or a few words"}}
 	}
 	add(fieldWorkItem, append([]string{m.label(fieldWorkItem, "Work item")}, m.box(w, item, d.field == fieldWorkItem)...)...)
 	out = append(out, m.line(false, []piece{{s.sub, " " + workItemPreview(d.workItem)}}, nil), "")
@@ -512,12 +512,6 @@ func workItemPreview(input string) string {
 	}
 	t := domain.ParseWorkItem(input)
 	switch t.Source {
-	case domain.TaskLinear:
-		title := t.IssueTitle
-		if title == "" {
-			title = "title from Linear"
-		}
-		return t.Ref + " · " + title + " · session will be named after it"
 	case domain.TaskPR:
 		return t.Ref + " · session will be named after the PR"
 	}

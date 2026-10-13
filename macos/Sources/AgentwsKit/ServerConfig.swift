@@ -34,9 +34,7 @@ public struct ConfigField: Equatable, Sendable, Identifiable {
 }
 
 public enum ConfigFields {
-    public static let workspaces = [
-        ConfigField(key: "launcher.max_parallel", title: "Launcher: sessions started at once", placeholder: "3"),
-    ]
+    public static let workspaces: [ConfigField] = []
 
     public static let agents = [
         ConfigField(key: "fallback.threshold", title: "Offer Codex when Claude's quota is under (%)", placeholder: "20"),

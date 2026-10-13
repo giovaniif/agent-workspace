@@ -82,7 +82,7 @@ func (m Model) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) wheel(delta int) (tea.Model, tea.Cmd) {
 	switch {
-	case m.ob != nil, m.dialog != nil, m.launching != nil, m.proj != nil, m.tabNew != nil, m.renaming != nil, m.help:
+	case m.ob != nil, m.dialog != nil, m.proj != nil, m.tabNew != nil, m.renaming != nil, m.help:
 	case m.rv.open:
 		if !m.rv.typing {
 			m.moveLine(delta * reviewWheelStep)
@@ -202,7 +202,7 @@ func (m Model) hintRow(lines []string, y int) bool {
 }
 
 func (m Model) typing() bool {
-	return m.dialog != nil || m.launching != nil || m.renaming != nil || m.rv.typing || (m.proj != nil && m.proj.adding != nil)
+	return m.dialog != nil || m.renaming != nil || m.rv.typing || (m.proj != nil && m.proj.adding != nil)
 }
 
 func printable(k tea.KeyPressMsg) bool { return k.Text != "" && k.Text != " " }

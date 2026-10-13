@@ -27,9 +27,8 @@ type Repo struct {
 type TaskSource string
 
 const (
-	TaskLinear TaskSource = "linear"
-	TaskPR     TaskSource = "pr"
-	TaskText   TaskSource = "text"
+	TaskPR   TaskSource = "pr"
+	TaskText TaskSource = "text"
 )
 
 type Task struct {
