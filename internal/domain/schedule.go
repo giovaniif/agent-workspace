@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -230,7 +231,7 @@ func ScheduleDecision(s Schedule, loc *time.Location, since, now time.Time, grac
 }
 
 func AutomationHash(a Automation) string {
-	a.Enabled = false
+	a.Enabled, a.Trusted = false, false
 	data, _ := json.Marshal(a)
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
@@ -244,4 +245,21 @@ func wallTime(day time.Time, h, m int, loc *time.Location) time.Time {
 	}
 	_, before := time.Date(y, mo, d, 0, 0, 0, 0, loc).Zone()
 	return time.Date(y, mo, d, h, m, 0, 0, time.UTC).Add(-time.Duration(before) * time.Second).In(loc)
+}
+
+type AutomationTrust struct {
+	Key  string `json:"key"`
+	Hash string `json:"hash"`
+}
+
+func AutomationTrustKey(a Automation) string {
+	return a.Source + "\x00" + a.Name
+}
+
+func AutomationNeedsTrust(a Automation) bool {
+	return filepath.Base(a.Source) == ".agentws.toml" && (a.Schedule != "" || len(a.On) > 0 || a.Precheck != "")
+}
+
+func AutomationCanRunAlone(a Automation, trusted map[string]string) bool {
+	return a.Enabled && (!AutomationNeedsTrust(a) || trusted[AutomationTrustKey(a)] == AutomationHash(a))
 }

@@ -21,6 +21,7 @@ type Automation struct {
 	Session  string   `json:"session,omitempty"`
 	Enabled  bool     `json:"enabled"`
 	Source   string   `json:"source"`
+	Trusted  bool     `json:"trusted,omitempty"`
 }
 
 const (

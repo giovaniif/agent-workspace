@@ -30,27 +30,29 @@ var _ app.Store = (*Store)(nil)
 type table string
 
 const (
-	tableWorkspaces     table = "workspaces"
-	tableTasks          table = "tasks"
-	tableWorktrees      table = "worktrees"
-	tableSessions       table = "sessions"
-	tableViewed         table = "viewed"
-	tableDrafts         table = "review_drafts"
-	tableDevices        table = "devices"
-	tableProjects       table = "projects"
-	tableAutomationRuns table = "automation_runs"
+	tableWorkspaces      table = "workspaces"
+	tableTasks           table = "tasks"
+	tableWorktrees       table = "worktrees"
+	tableSessions        table = "sessions"
+	tableViewed          table = "viewed"
+	tableDrafts          table = "review_drafts"
+	tableDevices         table = "devices"
+	tableProjects        table = "projects"
+	tableAutomationRuns  table = "automation_runs"
+	tableAutomationTrust table = "automation_trust"
 )
 
 var keyColumn = map[table]string{
-	tableWorkspaces:     "root",
-	tableTasks:          "id",
-	tableWorktrees:      "id",
-	tableSessions:       "id",
-	tableViewed:         "key",
-	tableDrafts:         "id",
-	tableDevices:        "id",
-	tableProjects:       "root",
-	tableAutomationRuns: "id",
+	tableWorkspaces:      "root",
+	tableTasks:           "id",
+	tableWorktrees:       "id",
+	tableSessions:        "id",
+	tableViewed:          "key",
+	tableDrafts:          "id",
+	tableDevices:         "id",
+	tableProjects:        "root",
+	tableAutomationRuns:  "id",
+	tableAutomationTrust: "key",
 }
 
 type Store struct {
@@ -223,6 +225,8 @@ func (s *Store) PutProject(p domain.Project) { s.put(tableProjects, p.Root, p) }
 func (s *Store) DeleteProject(root string) { s.enqueue(tableProjects, root, nil) }
 
 func (s *Store) PutAutomationRun(r domain.AutomationRun) { s.put(tableAutomationRuns, r.ID, r) }
+
+func (s *Store) PutAutomationTrust(t domain.AutomationTrust) { s.put(tableAutomationTrust, t.Key, t) }
 
 func (s *Store) put(t table, key string, v any) {
 	data, err := json.Marshal(v)
@@ -417,6 +421,9 @@ func (s *Store) Load() (app.Snapshot, error) {
 		return snap, err
 	}
 	if snap.AutomationRuns, err = loadAll[domain.AutomationRun](s.db, tableAutomationRuns); err != nil {
+		return snap, err
+	}
+	if snap.AutomationTrust, err = loadAll[domain.AutomationTrust](s.db, tableAutomationTrust); err != nil {
 		return snap, err
 	}
 	snap.Events, err = loadEvents(s.db)
