@@ -562,6 +562,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.automationMethod(req), true
 	case rpc.MethodAutomationRun:
 		return d.automationRun(req)
+	case rpc.MethodAutomationSave:
+		return d.automationSave(req), true
 	case rpc.MethodAutomationTrust:
 		return d.automationTrustMethod(req)
 	case rpc.MethodAutomationRuns:

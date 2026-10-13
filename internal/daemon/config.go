@@ -76,6 +76,10 @@ func (d *Daemon) writeConfig(key, value, literal string) error {
 	if err != nil || values[key] != value {
 		return fmt.Errorf("%s sets %s in a form agentws cannot edit; change it there by hand", d.cfg.path, key)
 	}
+	return d.replaceConfig(src, next)
+}
+
+func (d *Daemon) replaceConfig(src, next string) error {
 	mode := fs.FileMode(0o600)
 	if info, err := os.Stat(d.cfg.path); err == nil {
 		mode = info.Mode().Perm()
