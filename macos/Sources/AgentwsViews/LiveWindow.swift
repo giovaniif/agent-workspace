@@ -93,16 +93,49 @@ public struct LiveWindow: View {
         explanation ?? attention?.message ?? commands.message
     }
 
+    private func makeScene(at now: Date) -> WindowScene {
+        let pane = nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 }
+        var scene = WindowScene(
+            state: store.state, connection: store.connection, selected: nav.selected, filter: filter,
+            inspector: inspector, endedExpanded: endedExpanded, server: server, now: now, focusFilter: focusFilter,
+            review: reviewScreen, view: panes.view, pane: pane,
+            popup: panes.popup, paneError: panes.error, card: attention?.card, message: windowMessage, servers: servers
+        )
+        scene.browser = browserChrome()
+        return scene
+    }
+
+    private var profileAlertTitle: String {
+        profilePrompt == .clone ? "Clone profile" : "New browser profile"
+    }
+
+    private var profileAlertShown: Binding<Bool> {
+        Binding(get: { profilePrompt != nil }, set: { if !$0 { profilePrompt = nil } })
+    }
+
+    private func browserLayer(_ content: some View) -> some View {
+#if canImport(WebKit)
+        let layered = content
+            .environment(\.agentwsBrowser, webViews)
+            .onAppear { bindWebViews() }
+#else
+        let layered = content
+#endif
+        return layered.alert(profileAlertTitle, isPresented: profileAlertShown) {
+            TextField("Name", text: $profileName)
+            Button("Create") { createProfile() }
+                .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { profilePrompt = nil }
+        }
+    }
+
     public var body: some View {
+        browserLayer(window)
+    }
+
+    private var window: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            let scene = WindowScene(
-                state: store.state, connection: store.connection, selected: nav.selected, filter: filter,
-                inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
-                review: reviewScreen, view: panes.view,
-                pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error, card: attention?.card, message: windowMessage, servers: servers,
-                browser: browserChrome()
-            )
+            let scene = makeScene(at: context.date)
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
         }
@@ -113,10 +146,6 @@ public struct LiveWindow: View {
         .onChange(of: keys.bound, initial: true) { terminals.views.bound = keys.bound }
 #endif
         .onAppear { store.start() }
-#if canImport(WebKit)
-        .environment(\.agentwsBrowser, webViews)
-        .onAppear { bindWebViews() }
-#endif
         .onChange(of: store.state?.seq) {
             reconcile(filter: filter)
             newSession?.observe(store.state)
@@ -178,12 +207,6 @@ public struct LiveWindow: View {
                 }
             }
             Button("Cancel", role: .cancel) { prompt = nil }
-        }
-        .alert(profilePrompt == .clone ? "Clone profile" : "New browser profile", isPresented: Binding(get: { profilePrompt != nil }, set: { if !$0 { profilePrompt = nil } })) {
-            TextField("Name", text: $profileName)
-            Button("Create") { createProfile() }
-                .keyboardShortcut(.defaultAction)
-            Button("Cancel", role: .cancel) { profilePrompt = nil }
         }
         .confirmationDialog("End this session?", isPresented: presenting(.end), titleVisibility: .visible) {
             Button("End session", role: .destructive) {
