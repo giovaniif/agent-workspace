@@ -16,7 +16,6 @@ enum Timestamp {
         return String(text[..<dot]) + "." + digits + String(text[end...])
     }
 }
-}
 
 public struct Header: Sendable, Equatable {
     public var title: String
