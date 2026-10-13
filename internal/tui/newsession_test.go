@@ -134,11 +134,11 @@ func TestNewSessionDialogKeepsABrokenURLAsText(t *testing.T) {
 	}
 }
 
-func TestNewSessionDialogNeedsAWorkItemAndAWorkspace(t *testing.T) {
+func TestNewSessionDialogStartsWithNoTaskButNeedsAWorkspace(t *testing.T) {
 	m, c := dialogModel(t, withWorkspaces(rpc.State{}))
-	m = pressCmd(m, keyEnter)
-	if len(c.methods()) != 0 || !strings.Contains(screen(m), "work item is empty") {
-		t.Fatalf("empty work item: calls %v\n%s", c.methods(), screen(m))
+	pressCmd(m, keyEnter)
+	if len(c.calls) == 0 || c.calls[0].params.(rpc.NewSessionParams).WorkItem != "" {
+		t.Fatalf("empty task: calls %+v", c.calls)
 	}
 	m, c = dialogModel(t, rpc.State{})
 	m = pressCmd(typeText(m, "x"), keyEnter)
@@ -285,11 +285,7 @@ func TestNewSessionDialogScrollsToTheActiveFieldOnAShortTerminal(t *testing.T) {
 	if out := screen(m); !strings.Contains(out, "Effort") {
 		t.Fatalf("the active Effort row is off screen:\n%s", out)
 	}
-	m = pressCmd(m, keyTab)
-	m = pressCmd(m, keyEnter)
-	if out := screen(m); !strings.Contains(out, "work item is empty") {
-		t.Fatalf("the error is off screen:\n%s", out)
-	}
+
 }
 
 func TestAStartReplyOnlyTouchesTheDialogThatSentIt(t *testing.T) {

@@ -85,3 +85,10 @@ func TestSessionEventTextIsCappedSoOneHookCannotBloatTheStore(t *testing.T) {
 		t.Fatalf("text is %d bytes, want %d", len(got.Text), MaxText)
 	}
 }
+
+func TestSessionEventFromHookKeepsThePromptOfAUserPromptSubmit(t *testing.T) {
+	ev := SessionEventFromHook(EventUserPromptSubmit, time.Time{}, []byte(`{"prompt":"fix the flaky upload test"}`))
+	if ev.Text != "fix the flaky upload test" {
+		t.Fatalf("text %q", ev.Text)
+	}
+}
