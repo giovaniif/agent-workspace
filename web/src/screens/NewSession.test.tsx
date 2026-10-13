@@ -27,6 +27,7 @@ function setup(options: { remembered?: unknown; workspacesDown?: boolean } = {})
   }
   const server = new FakeServer()
     .on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } })
+    .on("GET", "/api/v1/session-options", { status: 200, body: golden("session-options.json") })
     .on("GET", "/api/v1/workspaces", options.workspacesDown ? { status: 503, body: { error: { code: "unavailable", message: "daemon is down" } } } : { status: 200, body: workspaces });
   const env: AppEnv = {
     fetch: server.fetch,
@@ -117,6 +118,16 @@ describe("starting a session from the phone", () => {
   it("explains what the task does and how an empty one is named", async () => {
     setup();
     expect(await screen.findByText("Groups sessions and names them. Empty: the first prompt names the session.")).toBeInTheDocument();
+  });
+
+  it("names what default means for the model and effort of each agent", async () => {
+    setup();
+    const model = await screen.findByLabelText("Model");
+    await waitFor(() => expect(model).toHaveAttribute("placeholder", "default (opus)"));
+    expect(screen.getByRole("option", { name: "default (high)" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Codex" }));
+    expect(model).toHaveAttribute("placeholder", "default");
+    expect(screen.getByRole("option", { name: "default" })).toBeInTheDocument();
   });
 
   it("asks for a PR URL or text as the work item", async () => {
