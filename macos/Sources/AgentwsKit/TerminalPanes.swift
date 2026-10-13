@@ -145,6 +145,12 @@ public struct Letterbox: Equatable, Sendable {
     }
 
     public var note: String { "The TUI is showing this pane at \(cols)×\(rows)" }
+
+    public func fontSize(base: Double, cellWidth: Double, cellHeight: Double, width: Double, height: Double) -> Double {
+        guard cellWidth > 0, cellHeight > 0 else { return base }
+        let scale = min(1, width / (Double(cols) * cellWidth), height / (Double(rows) * cellHeight))
+        return max((base * scale * 2).rounded(.down) / 2, 5)
+    }
 }
 
 public enum PauseAction: Equatable, Sendable {
