@@ -102,6 +102,32 @@ struct NewSessionTests {
         #expect(model.form.workspace == "/src/api")
     }
 
+    @Test func anUnrelatedChangeKeepsTheJustAddedWorkspaceSelected() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .success(#"{"Root":"/src/new","Kind":"single","Repos":null}"#)
+        model.path.text = "/src/new"
+        #expect(await model.addWorkspace())
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces().filter { $0.root != "/src/web" }
+        model.observe(state)
+        #expect(model.form.workspace == "/src/new")
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api"])
+    }
+
+    @Test func aChangeSeenWhileTheOptionsLoadIsKept() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        var newer = Seed.state(sessions: [])
+        newer.workspaces = try NewSessionFixtures.workspaces() + [try Self.workspace("/src/new", "2026-10-06T09:00:00Z")]
+        model.observe(newer)
+        var older = Seed.state(sessions: [])
+        older.workspaces = try NewSessionFixtures.workspaces()
+        await model.load(state: older)
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api", "/src/web"])
+    }
+
     @Test func aStateThatDoesNotYetHaveTheJustAddedWorkspaceKeepsIt() async throws {
         let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
