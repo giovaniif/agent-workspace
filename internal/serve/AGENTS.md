@@ -47,7 +47,7 @@ Unknown paths under `/api/` answer `not_found`.
 | `GET /api/v1/hello` | no | none | → `{"api":"v1","build"}` (serve's build, which is the daemon's) |
 | `POST /api/v1/pair` | no | `pair.redeem` | `{"code","name"}` → `{"device":{"id","name","created_at","last_seen"},"token"}` |
 | `GET /api/v1/workspaces` | yes | `workspace.list` | → `{"workspaces":[Workspace],"last_used"}` |
-| `POST /api/v1/sessions` | yes | `session.new` | `{"workspace","work_item","harness","model","effort","prompt"}` (`work_item` and `harness` required; the rest optional) → the new `Session`; a setup recipe failure is `failed` with its output in `message` |
+| `POST /api/v1/sessions` | yes | `session.new` | `{"workspace","work_item","harness","model","effort","prompt"}` (`harness` required; the rest optional. An empty `work_item` starts a session that is named from its first prompt) → the new `Session`; a setup recipe failure is `failed` with its output in `message` |
 | `GET /api/v1/work-items/resolve?workspace=&item=` | yes | `session.resolve` | → `{"source","ref","title","worktree","workspace"}`; `bad_request` for an empty item or an unsupported link, `not_found` for an unknown workspace or an item the tracker does not know |
 | `GET /api/v1/sessions/{id}/messages?before=&limit=` | yes | `transcript.page` | → `{"messages":[Message],"before"}`; both query values optional integers |
 | `POST /api/v1/sessions/{id}/end` | yes | `session.end` | → the ended `Session` |

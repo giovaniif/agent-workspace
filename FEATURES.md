@@ -45,9 +45,9 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 **Sessions**
 - The sidebar has vertical rows grouped by task. Each row shows the state glyph, harness, model, effort and context left of a session. A session row expands to show its worktrees. Each worktree shows its repo, subtask, PR and check status (for example `api:shares #42 ✓`).
 - The session header shows every PR the session owns, each with its check status.
-- The tool names sessions automatically from the PR, then the task. The name of a text task is a 2-4 word summary of its first prompt. `R` renames and pins a name, `A` unpins it. The name is the work item, never the current activity of the agent.
+- The tool names sessions automatically from the PR, then the task. The name of a text task is a 2-4 word summary of its text. A session with no work item gets its own task, and the text of that task is its first prompt. `R` renames and pins a name, `A` unpins it. The name is the work item, never the current activity of the agent.
 - Keyboard-first navigation: go to a session by number, to the next waiting session, or to the last session.
-- The new-session dialog takes only the workspace, work item (PR or text), harness, model and effort. The default workspace is the last one used.
+- The new-session dialog takes only the workspace, an optional task (PR or text), harness, model and effort. The task groups sessions and names them. The default workspace is the last one used.
   - You never select repos or create worktrees yourself. The agent creates them. The tool finds each one and attaches it to the session.
   - Single-repo workspace: the session starts in one fresh worktree branched from `origin/main`, with the repo's setup recipe already run.
   - Orchestration root: the session starts at the root, and the agent creates worktrees in the service repos it needs.
