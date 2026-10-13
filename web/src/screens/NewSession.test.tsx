@@ -114,6 +114,11 @@ describe("starting a session from the phone", () => {
     await waitFor(() => expect(workspace).toHaveValue("/home/me/api"));
   });
 
+  it("explains what the task does and how an empty one is named", async () => {
+    setup();
+    expect(await screen.findByText("Groups sessions and names them. Empty: the first prompt names the session.")).toBeInTheDocument();
+  });
+
   it("asks for a PR URL or text as the work item", async () => {
     setup();
     expect(await screen.findByLabelText("Task (optional)")).toHaveAttribute("placeholder", "PR URL, or what to do");
