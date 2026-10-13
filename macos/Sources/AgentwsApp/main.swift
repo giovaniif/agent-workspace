@@ -321,6 +321,18 @@ struct AgentwsApp: App {
             }
         }
         .keyboardShortcut(launcher.settings.settings.shortcuts.combo(for: .worktrees).map(\.keyboardShortcut))
+        Window("Automations", id: "automations") {
+            if Launch.demo {
+                AutomationsWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 520)
+            } else if let store = launcher.store {
+                LiveAutomationsWindow(store: store, router: router)
+            } else {
+                AutomationsWindow(scene: AutomationsScene())
+                    .frame(minWidth: 900, minHeight: 520)
+                    .task { await launcher.load() }
+            }
+        }
+        .keyboardShortcut("a", modifiers: [.command, .shift])
         Settings {
             LiveSettings(
                 store: launcher.settings, server: launcher.server, serverName: launcher.current?.name ?? "This Mac",
