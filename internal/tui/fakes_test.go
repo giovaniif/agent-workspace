@@ -78,6 +78,7 @@ type fakeCaller struct {
 	err    error
 	failOn string
 	dirs   map[string][]domain.Child
+	autos  []domain.Automation
 }
 
 func (f *fakeCaller) Call(_ context.Context, method string, params, out any) error {
@@ -93,6 +94,10 @@ func (f *fakeCaller) Call(_ context.Context, method string, params, out any) err
 			return &rpc.Error{Code: rpc.CodeNotFound, Message: "no such directory"}
 		}
 		*out.(*rpc.WorkspaceDirs) = rpc.WorkspaceDirs{Dirs: children}
+		return nil
+	}
+	if method == rpc.MethodAutomationList {
+		*out.(*rpc.AutomationList) = rpc.AutomationList{Automations: f.autos}
 		return nil
 	}
 	if method == rpc.MethodNewSession {
