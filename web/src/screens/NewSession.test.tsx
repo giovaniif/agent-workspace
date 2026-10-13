@@ -114,6 +114,11 @@ describe("starting a session from the phone", () => {
     await waitFor(() => expect(workspace).toHaveValue("/home/me/api"));
   });
 
+  it("asks for a PR URL or text as the work item", async () => {
+    setup();
+    expect(await screen.findByLabelText("Work item")).toHaveAttribute("placeholder", "PR URL, or what to do");
+  });
+
   it("shows the resolved title and worktree name of a work item", async () => {
     const { server } = setup();
     server.on("GET", resolveURL("/home/me/api", "ENG-12"), { status: 200, body: golden("work-item-resolved.json") });

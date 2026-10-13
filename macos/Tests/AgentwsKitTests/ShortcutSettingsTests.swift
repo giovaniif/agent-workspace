@@ -6,7 +6,7 @@ struct ShortcutSettingsTests {
     @Test func theDefaultsFollowTheKeyboardMapWithTheTUIKeyBeside() {
         let shortcuts = Shortcuts.defaults
         #expect(shortcuts.combo(for: .review) == KeyCombo("r", [.command]))
-        #expect(shortcuts.combo(for: .linearLauncher) == KeyCombo("n", [.command, .shift]))
+        #expect(shortcuts.combo(for: .resumeEnded) == KeyCombo("u", [.command, .shift]))
         #expect(shortcuts.combo(for: .nextWaiting) == KeyCombo("space", [.control]))
         #expect(ShortcutAction.review.tuiKey == "r")
         #expect(ShortcutAction.inspector.tuiKey == nil)
@@ -14,6 +14,18 @@ struct ShortcutSettingsTests {
         #expect(KeyCombo("m", [.control, .option, .shift, .command]).display == "⌃⌥⇧⌘M")
         #expect(KeyCombo("space", [.control]).display == "⌃Space")
         #expect(KeyCombo("delete", [.command]).display == "⌘⌫")
+    }
+
+    @Test func thereIsNoLauncherAction() {
+        #expect(!ShortcutAction.allCases.map(\.title).contains("Linear launcher"))
+        #expect(Shortcuts.defaults.holder(of: KeyCombo("n", [.command, .shift])) == nil)
+    }
+
+    @Test func savedShortcutsWithAnActionThatIsGoneStillLoad() throws {
+        let saved = #"{"passThrough":false,"bindings":{"linearLauncher":{"key":"l","modifiers":12},"review":{"key":"j","modifiers":8}}}"#
+        let shortcuts = try JSONDecoder().decode(Shortcuts.self, from: Data(saved.utf8))
+        #expect(shortcuts.combo(for: .review) == KeyCombo("j", [.command]))
+        #expect(shortcuts.passThrough == false)
     }
 
     @Test func noTwoDefaultActionsShareAKey() {

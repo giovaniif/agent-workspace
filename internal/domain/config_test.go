@@ -7,9 +7,7 @@ func TestConfigLiteralValidatesEachKey(t *testing.T) {
 		key, value, want string
 		ok               bool
 	}{
-		{"launcher.max_parallel", "4", "4", true},
-		{"launcher.max_parallel", "0", "", false},
-		{"launcher.max_parallel", "four", "", false},
+		{"launcher.max_parallel", "4", "", false},
 		{"fallback.threshold", "20", "20", true},
 		{"fallback.threshold", "0", "0", true},
 		{"fallback.threshold", "100", "100", true},
@@ -32,7 +30,7 @@ func TestConfigLiteralValidatesEachKey(t *testing.T) {
 		{"theme.blue", "blue", "", false},
 		{"theme.blue", "#12345", "", false},
 		{"theme.purple", "#123456", "", false},
-		{"linear.token", "secret", "", false},
+		{"tracker.token", "secret", "", false},
 		{"launcher", "4", "", false},
 		{"", "4", "", false},
 	}
@@ -49,14 +47,14 @@ func TestConfigLiteralOfAnEmptyValueUnsetsAKnownKey(t *testing.T) {
 	if err != nil || got != "" {
 		t.Fatalf("got %q, %v", got, err)
 	}
-	if _, err := ConfigLiteral("linear.token", ""); err == nil {
+	if _, err := ConfigLiteral("tracker.token", ""); err == nil {
 		t.Fatal("an unknown key was accepted for unsetting")
 	}
 }
 
 func TestConfigKeysListEverySettableKey(t *testing.T) {
 	keys := ConfigKeys()
-	for _, want := range []string{"launcher.max_parallel", "fallback.threshold", "push.away_after", "defaults.claude.model", "defaults.codex.effort", "theme.deleted_bg"} {
+	for _, want := range []string{"fallback.threshold", "push.away_after", "defaults.claude.model", "defaults.codex.effort", "theme.deleted_bg"} {
 		found := false
 		for _, k := range keys {
 			found = found || k == want
@@ -78,14 +76,14 @@ func TestSetTOMLValue(t *testing.T) {
 	}{
 		{
 			name: "empty file gets the table",
-			src:  "", key: "launcher.max_parallel", literal: "4",
-			want: "[launcher]\nmax_parallel = 4\n",
+			src:  "", key: "fallback.threshold", literal: "4",
+			want: "[fallback]\nthreshold = 4\n",
 		},
 		{
 			name: "replaces the key in its table and keeps comments and other keys",
-			src:  "# mine\n[launcher]\n# how many\nmax_parallel = 2 # was two\nother = true\n\n[ui]\nmouse = false\n",
-			key:  "launcher.max_parallel", literal: "4",
-			want: "# mine\n[launcher]\n# how many\nmax_parallel = 4\nother = true\n\n[ui]\nmouse = false\n",
+			src:  "# mine\n[fallback]\n# how many\nthreshold = 2 # was two\nother = true\n\n[ui]\nmouse = false\n",
+			key:  "fallback.threshold", literal: "4",
+			want: "# mine\n[fallback]\n# how many\nthreshold = 4\nother = true\n\n[ui]\nmouse = false\n",
 		},
 		{
 			name: "adds the key at the end of an existing table",
@@ -125,9 +123,9 @@ func TestSetTOMLValue(t *testing.T) {
 		},
 		{
 			name: "array tables end the section",
-			src:  "[launcher]\n[[things]]\nmax_parallel = 9\n",
-			key:  "launcher.max_parallel", literal: "3",
-			want: "[launcher]\nmax_parallel = 3\n[[things]]\nmax_parallel = 9\n",
+			src:  "[fallback]\n[[things]]\nthreshold = 9\n",
+			key:  "fallback.threshold", literal: "3",
+			want: "[fallback]\nthreshold = 3\n[[things]]\nthreshold = 9\n",
 		},
 	}
 	for _, c := range cases {
