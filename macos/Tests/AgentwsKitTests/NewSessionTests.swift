@@ -64,6 +64,57 @@ enum NewSessionFixtures {
 
 @MainActor
 struct NewSessionTests {
+    static func workspace(_ root: String, _ lastUsed: String) throws -> Workspace {
+        let json = #"{"Root":"\#(root)","Kind":"single","Repos":null,"LastUsed":"\#(lastUsed)"}"#
+        return try JSONDecoder().decode(Workspace.self, from: Data(json.utf8))
+    }
+
+    @Test func goTimestampsWithNanosecondsAndAnOffsetOrderTheWorkspaces() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        var state = Seed.state(sessions: [])
+        state.workspaces = [
+            try Self.workspace("/home/me", "2026-10-12T09:00:00.5Z"),
+            try Self.workspace("/home/me/www/agent-workspace", "2026-10-12T21:15:03.123456789-03:00"),
+        ]
+        await model.load(state: state)
+        #expect(model.form.workspace == "/home/me/www/agent-workspace")
+        #expect(model.form.workspaces.map(\.root) == ["/home/me/www/agent-workspace", "/home/me"])
+    }
+
+    @Test func aWorkspaceAddedElsewhereShowsInTheOpenPicker() async throws {
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
+        model.form.workspace = "/src/api"
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces() + [try Self.workspace("/src/new", "2026-10-06T09:00:00Z")]
+        model.observe(state)
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api", "/src/web"])
+        #expect(model.form.workspace == "/src/api")
+    }
+
+    @Test func aWorkspaceRemovedElsewhereLeavesTheOpenPicker() async throws {
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces().filter { $0.root != "/src/acme" }
+        model.observe(state)
+        #expect(model.form.workspaces.map(\.root) == ["/src/api", "/src/web"])
+        #expect(model.form.workspace == "/src/api")
+    }
+
+    @Test func aStateThatDoesNotYetHaveTheJustAddedWorkspaceKeepsIt() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .success(#"{"Root":"/src/new","Kind":"single","Repos":null}"#)
+        model.path.text = "/src/new"
+        #expect(await model.addWorkspace())
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces()
+        state.limits = [NewSessionFixtures.quota("claude", "5h", left: 50)]
+        model.observe(state)
+        #expect(model.form.workspace == "/src/new")
+        #expect(model.form.workspaces.first?.root == "/src/new")
+    }
     @Test func theLastUsedWorkspaceIsPreselectedAndEachShowsItsKind() async throws {
         let model = try await NewSessionFixtures.loaded(NewSessionCaller())
         #expect(model.form.workspace == "/src/acme")
