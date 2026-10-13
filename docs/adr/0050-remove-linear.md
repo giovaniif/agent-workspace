@@ -19,4 +19,4 @@ agentws had three Linear functions: a Linear issue URL as a work item, a title r
 ## Consequences
 
 - To start many sessions, start them one at a time with `n` or `agentws new`.
-- Clients of an older build that call a launcher method get `unknown_method`. The build handshake (ADR 0039) already stops a client of a different build.
+- A request that passes the build handshake and calls a removed launcher method gets `unknown_method`. The build handshake (ADR 0039) stops a request from a different build before the daemon reads its method.

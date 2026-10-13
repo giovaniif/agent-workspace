@@ -79,7 +79,6 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - The work item is a GitHub PR URL or text. A URL of a different shape stays text (`domain.ParseWorkItem`).
   - A single repo gets one worktree at `$AGENTWS_HOME/worktrees/<repo>/<slug>`, branched from `origin/<default>`, and its setup recipe runs.
   - An orchestration root starts at the root with no worktree (`domain.PlanSessionStart`).
-  - The work item is the first prompt of the agent.
 - **First prompt.** `session.new` takes an optional `prompt`.
   - A fresh session is `idle` when its pane exists, but the harness is still booting. Thus the daemon queues the text in `State.Sends` and holds it (`state.booting`).
   - The hold stays until the first `SessionStart` or `UserPromptSubmit` hook of the harness. Both Claude and Codex install `SessionStart`. Then the text goes out through the normal `session.send` path.
