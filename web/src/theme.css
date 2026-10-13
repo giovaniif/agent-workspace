@@ -1051,3 +1051,51 @@ button.danger {
 .composer textarea:disabled {
   opacity: 0.6;
 }
+
+.automations ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.automation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.automation-row span {
+  color: var(--subtext);
+}
+
+.automation-row button {
+  min-height: 44px;
+  margin-left: auto;
+  padding: 8px 16px;
+}
+
+.run-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.run-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.run-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.run-actions button {
+  min-height: 44px;
+  padding: 8px 16px;
+}

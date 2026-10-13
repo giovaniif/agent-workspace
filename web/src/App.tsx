@@ -4,6 +4,7 @@ import { clearAuth, loadAuth, saveAuth, type Auth, type KeyValue } from "./auth"
 import { pairCodeFromHash } from "./display";
 import { disablePush, noPush, type PushEnv } from "./push";
 import { parseRoute } from "./route";
+import { Automations } from "./screens/Automations";
 import { Install } from "./screens/Install";
 import { NewSession } from "./screens/NewSession";
 import { Pair } from "./screens/Pair";
@@ -32,11 +33,14 @@ export type PageVisibility = {
   onChange: (listener: () => void) => () => void;
 };
 
-function Tabs({ settings }: { settings: boolean }) {
+function Tabs({ settings, automations = false }: { settings: boolean; automations?: boolean }) {
   return (
     <nav className="tabs" aria-label="Screens">
-      <a href="#/" aria-current={settings ? undefined : "page"}>
+      <a href="#/" aria-current={settings || automations ? undefined : "page"}>
         Sessions
+      </a>
+      <a href="#/automations" aria-current={automations ? "page" : undefined}>
+        Automations
       </a>
       <a href="#/settings" aria-current={settings ? "page" : undefined}>
         Settings
@@ -90,6 +94,14 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
   }
   if (route.screen === "session") {
     return <SessionScreen key={route.id} id={route.id} snapshot={snapshot} now={now} onRetry={retry} client={client} api={api} />;
+  }
+  if (hash === "#/automations") {
+    return (
+      <>
+        <Automations api={api} />
+        <Tabs settings={false} automations />
+      </>
+    );
   }
   if (hash === "#/settings") {
     return (

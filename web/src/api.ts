@@ -252,3 +252,34 @@ export async function tokenRefused(fetchFn: Fetch, token: string): Promise<boole
     return err instanceof ApiError && err.status === 401 && err.code === "unauthorized";
   }
 }
+
+export type Automation = {
+  name: string;
+  agent: string;
+  model?: string;
+  effort?: string;
+  target?: string;
+  prompt: string;
+  schedule?: string;
+  on?: string[];
+  enabled: boolean;
+  source: string;
+};
+
+export type AutomationList = { automations: Automation[]; problems?: string[] };
+
+export type AutomationRun = {
+  id: string;
+  automation: string;
+  outcome: string;
+  reason?: string;
+  session_id?: string;
+};
+
+export function listAutomations(a: Authed): Promise<AutomationList> {
+  return authedRequest<AutomationList>(a, "/api/v1/automations");
+}
+
+export function runAutomation(a: Authed, name: string, body: { context: string; work_item: string }): Promise<{ run: AutomationRun }> {
+  return authedRequest<{ run: AutomationRun }>(a, "/api/v1/automations/" + encodeURIComponent(name) + "/run", "POST", body);
+}
