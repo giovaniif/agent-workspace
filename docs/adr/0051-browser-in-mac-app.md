@@ -35,6 +35,16 @@ These facts apply:
 - `screenshot` writes a PNG file into the worktree or into a temporary folder on the server. Thus the agent can read it.
 - While an agent controls a tab, the app shows a banner on it. The user can take control at any time.
 
+### Where an agent can go
+
+The Mac is on networks that the server cannot reach. An agent must not use the browser to read services on the Mac or its local network. Thus the app applies this policy to each navigation while an agent controls the tab, also to each redirect and each frame (`WKNavigationDelegate`):
+
+- Only `http` and `https` are allowed.
+- The server host of the session is allowed, on all TCP ports. For This Mac, this is `localhost`. Thus dev servers open.
+- Other hosts are allowed only when they resolve to public addresses. Loopback, private, link-local, CGNAT (`100.64.0.0/10`) and multicast addresses are refused.
+- A refused navigation stops, and the command fails with the reason. The app does not follow the redirect.
+- When the user takes over, the policy stops for that tab until the next agent command. The user can open each address.
+
 ### No Mac app means no browser
 
 - If no app is attached, `browser.command` fails immediately with `unavailable` and the message `no browser: the macOS app is not connected`.
