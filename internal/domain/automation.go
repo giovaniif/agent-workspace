@@ -77,6 +77,11 @@ func ValidateAutomation(a Automation) error {
 			return fail("prompt uses the unknown variable %s", m[0])
 		}
 	}
+	if a.Schedule != "" {
+		if _, err := ParseSchedule(a.Schedule); err != nil {
+			return fail("%v", err)
+		}
+	}
 	for _, ev := range a.On {
 		if !slices.Contains(AutomationEvents, ev) {
 			return fail("event %q is not one of %v", ev, AutomationEvents)
