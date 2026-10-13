@@ -65,7 +65,8 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - It checks the item with `domain.CheckWorkItem` (`bad_request`).
   - It finds a PR title through the title resolvers, off the event loop. If that fails, it returns `not_found`.
   - It names the worktree as `session.new` does. It registers nothing.
-- `session.options` (`{}` → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort"}],"home"}`) tells what a new-session form offers. `home` is the home folder of the server, so a client can read a typed `~/` or relative path.
+- `session.options` (`{}` → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort","default_model","default_effort"}],"home"}`) tells what a new-session form offers. `home` is the home folder of the server, so a client can read a typed `~/` or relative path.
+  - `default_model` and `default_effort` tell what "default" means for the harness: the value in the config of the harness (`~/.claude/settings.json` `model`/`effortLevel`, `~/.codex/config.toml` `model`/`model_reasoning_effort`), else the built-in default of `domain.HarnessSpec` (`domain.ResolveDefault`). They are absent when neither is known (omp). Clients show `default (<value>)` (`domain.DefaultLabel`).
   - There is one entry for each registered harness, in `domain.Harnesses()` order. Each entry has its `domain.Spec` models and efforts.
   - `model` and `effort` come from `[defaults.<harness>]` in `$AGENTWS_HOME/config.toml` (`daemon.LoadStartDefaults`). The daemon reads them at start and again after each `config.set`. They are empty when unset.
   - The new-session sheet of the Mac app uses it, because the app cannot read the config of a remote server.

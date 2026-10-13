@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"log"
@@ -89,6 +90,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithProjectSetup(setup.Shell{Out: os.Stderr}),
 		WithStartDefaults(startDefaults),
+		WithHarnessConfig(readHarnessConfig),
 		WithConfig(filepath.Join(home, "config.toml")),
 		WithNotifier(banners, notify.New(), sounds),
 		WithWorktrees(gitadapter.Worktrees{}, &github.Finder{}),
@@ -175,3 +177,17 @@ func testHooksFromEnv(getenv func(string) string) testHooks {
 }
 
 func (h testHooks) cleanupClock() time.Time { return time.Now().Add(h.clockSkew) }
+
+func readHarnessConfig() map[domain.Harness]StartDefaults {
+	out := map[domain.Harness]StartDefaults{}
+	home, _ := os.UserHomeDir()
+	claudeDir := cmp.Or(os.Getenv("CLAUDE_CONFIG_DIR"), filepath.Join(home, ".claude"))
+	if model, effort, err := claude.ReadDefaults(filepath.Join(claudeDir, "settings.json")); err == nil {
+		out[domain.HarnessClaude] = StartDefaults{Model: model, Effort: effort}
+	}
+	codexDir := cmp.Or(os.Getenv("CODEX_HOME"), filepath.Join(home, ".codex"))
+	if model, effort, err := codex.ReadDefaults(filepath.Join(codexDir, "config.toml")); err == nil {
+		out[domain.HarnessCodex] = StartDefaults{Model: model, Effort: effort}
+	}
+	return out
+}
