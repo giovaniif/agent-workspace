@@ -7,6 +7,7 @@ The core e2e suite (`make e2e`, about 5 s). CI requires it. See [ADR 0032](../..
   - A worktree that an agent creates gets attached.
   - A merged PR gets its worktree cleaned.
   - Review comments get sent.
+  - An automation run with context puts the context in the first prompt, and a failing precheck skips the run.
 
   Keep it small and fast (< 60 s).
 - **How it runs.** It builds the binary one time and runs the `testdata/script/*.txtar` scripts. Each script has its own temp `AGENTWS_HOME`, temp repos and `tmux -L` server. Thus it needs `tmux`.

@@ -79,6 +79,12 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - With `repo`, a repo automation replaces the global one with the same name (`domain.MergeAutomations`). Without `repo`, the list has the global automations, then the automations of each registered repo.
   - An automation that `domain.ValidateAutomation` refuses is not in the list. Its error is in `problems`, with the file path.
   - `automation.show` (`{"name","repo"}` → an automation) uses the same list. An unknown name is `not_found`.
+- `automation.run` (`{"name","context","work_item","repo"}` or `{"rerun":"<run id>"}` → `{"run","session"}`) starts one run (`domain.PlanAutomationRun`).
+  - The repo is `repo`, else the folder of the `.agentws.toml` of the automation, else the last used workspace.
+  - `new-worktree` goes through `session.new`. `workspace` and `worktree:<path>` open a pane in that folder, as `session.launch` does. `session = "reuse"` sends the prompt to the live session of the last run.
+  - A `precheck` runs as `sh -c` in the repo (or the target folder) first, with a 2 min limit. A non-zero exit records the run as `skipped` and starts nothing. A failed start records `failed`.
+  - `rerun` repeats the name, context, work item and repo of a recorded run.
+- `automation.runs` (`{"name","limit"}` → `{"runs"}`) lists recorded runs, newest first. An empty `name` lists all. Runs are in the `automation_runs` table.
 - Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `launcher.enqueue`, `launcher.drop`, `launcher.retarget`, `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
   - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.agentws-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
 - Workspace and project methods:
