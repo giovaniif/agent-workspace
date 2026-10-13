@@ -373,6 +373,7 @@ func (m Model) helpLines() []string {
 		{"enter", "focus agent pane"},
 		{`ctrl+\`, "in an agent pane: back to the sidebar"},
 		{"n", "new session"},
+		{"a", "run an automation with context"},
 		{"P", "projects: open, add, remove"},
 		{"S", "set up Claude, Codex and nvim"},
 		{"x", "end session"},
@@ -421,6 +422,9 @@ func (m Model) statusLeft() (left []piece, withCounts bool) {
 	s := m.styles
 	if m.renaming != nil {
 		return m.renameLeft(), false
+	}
+	if m.auto != nil {
+		return m.automationLeft(), false
 	}
 	if m.confirm != nil {
 		return []piece{{s.badge, " KILL "}, {s.peach, " kill " + m.confirm.label + "? y/n"}}, false

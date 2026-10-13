@@ -35,7 +35,7 @@ func (m Model) menuActions(session string) []menuAction {
 
 func (m Model) menuOpenable() bool {
 	return m.ob == nil && !m.opts.NewSessionOnly && !m.rv.open && !m.dk.open && m.dialog == nil &&
-		m.renaming == nil && m.picker == nil && m.resuming == nil && !m.help &&
+		m.renaming == nil && m.auto == nil && m.picker == nil && m.resuming == nil && !m.help &&
 		m.confirm == nil && m.ending == "" && m.tabNew == nil && m.closingTab == nil
 }
 
