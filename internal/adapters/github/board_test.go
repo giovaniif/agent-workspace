@@ -25,7 +25,7 @@ func TestPRBoardParseBoardReadsEverythingTheBoardShows(t *testing.T) {
 	want := map[string][]domain.PullRequest{
 		"r0": {
 			{
-				Number: 12, Title: "Add login", URL: "https://github.com/o/api/pull/12", Head: "feat", State: domain.PROpen,
+				Number: 12, Title: "Add login", URL: "https://github.com/o/api/pull/12", Head: "feat", Author: "ana", State: domain.PROpen,
 				Checks: domain.CheckFailing, ReviewDecision: domain.ReviewChangesRequested, Mergeable: domain.MergeConflicting,
 				UnresolvedThreads: 2, BotComments: 4,
 				Failing: []domain.FailingCheck{

@@ -5,7 +5,7 @@
         "nodes": [
           {
             "number": 12, "title": "Add login", "url": "https://github.com/o/api/pull/12",
-            "headRefName": "feat", "state": "OPEN",
+            "headRefName": "feat", "state": "OPEN", "author": {"login": "ana"},
             "reviewDecision": "CHANGES_REQUESTED", "mergeable": "CONFLICTING",
             "reviewThreads": {"nodes": [
               {"isResolved": false, "comments": {"nodes": [{"author": {"__typename": "Bot"}, "createdAt": "2026-09-01T12:30:00Z"}]}},
