@@ -6,6 +6,7 @@ public enum MainView: String, Sendable, Equatable, CaseIterable {
     case review = "Review"
     case shell = "Shell"
     case nvim = "nvim"
+    case browser = "Browser"
 }
 
 struct ShellFocusParams: Encodable, Sendable {
@@ -37,7 +38,7 @@ public final class ShellNvim {
         switch view {
         case .shell: shells[session] ?? agent
         case .nvim: nvims[session] ?? agent
-        case .terminal, .review: agent
+        case .terminal, .review, .browser: agent
         }
     }
 
@@ -104,6 +105,13 @@ public final class ShellNvim {
         nvims[session] = pane
         error = nil
         view = .nvim
+    }
+
+    public func showBrowser() {
+        generation += 1
+        pending = nil
+        error = nil
+        view = .browser
     }
 
     public func closePopup() {

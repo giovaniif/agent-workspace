@@ -20,13 +20,16 @@ public struct WindowScene {
     public var card: PermissionCard?
     public var message: String?
     public var servers: [ServerKind]
+    public var browser: BrowserChrome?
 
     public init(
         state: ViewState?, connection: ConnectionStatus, selected: String? = nil, filter: String = "",
         inspector: Bool = true, endedExpanded: Bool = false, server: String = "This Mac", now: Date = Seed.now, focusFilter: Int = 0,
-        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil, card: PermissionCard? = nil, message: String? = nil, servers: [ServerKind] = []
+        review: ReviewScreen? = nil, view: MainView = .terminal, pane: String? = nil, popup: String? = nil, paneError: String? = nil, card: PermissionCard? = nil, message: String? = nil, servers: [ServerKind] = [],
+        browser: BrowserChrome? = nil
     ) {
         self.servers = servers
+        self.browser = browser
         self.state = state
         self.connection = connection
         self.selected = selected
@@ -58,6 +61,19 @@ public struct WindowScene {
                 PromptChoice(id: "3", label: "No, and tell Claude what to do differently"),
             ])
         ))
+    }
+
+    public static func seededBrowser(device: DevicePreset = .desktop, agent: Bool = true) -> WindowScene {
+        let tabs = [
+            BrowserTab(id: "t1", url: "http://devbox:3000/login", title: "Log in · api"),
+            BrowserTab(id: "t2", url: "https://docs.example.com/oauth", title: ""),
+        ]
+        let chrome = BrowserChrome(
+            tabs: tabs, selected: "t1", device: device, profile: "Work",
+            profiles: [.standard, BrowserProfile(id: "work", name: "Work")],
+            links: BrowserLinks.ports(session: "s1", state: Seed.window, host: "devbox"), agentControl: agent
+        )
+        return WindowScene(state: Seed.window, connection: .live, selected: "s1", view: .browser, browser: chrome)
     }
 
     public static func seededReview(layout: DiffLayout = .unified) -> WindowScene {
@@ -105,6 +121,7 @@ public struct WindowActions {
     public var hunk: (FileKey, Int, HunkAction) -> Void = { _, _, _ in }
     public var openInNvim: () -> Void = {}
     public var showView: (MainView) -> Void = { _ in }
+    public var browser: (BrowserAction) -> Void = { _ in }
     public var closePopup: () -> Void = {}
     public var dismissError: () -> Void = {}
     public var newSession: () -> Void = {}

@@ -23,6 +23,21 @@ struct MainColumn: View {
 #endif
     }
 
+    @ViewBuilder
+    private func main(_ session: Session, _ theme: Theme) -> some View {
+        if scene.view == .browser {
+            BrowserPane(chrome: scene.browser ?? BrowserChrome(tabs: [], selected: "", device: .desktop, profile: BrowserProfile.standard.name, links: [], agentControl: false), act: actions.browser)
+        } else {
+            terminal(session, theme)
+        }
+    }
+
+    private func status(_ session: Session) -> String {
+        if scene.view == .browser { return "Browser · " + (scene.browser?.profile ?? "") }
+        let pane = shown(session)
+        return pane.isEmpty ? "no pane" : scene.view.rawValue + " · pane " + pane
+    }
+
     private func shown(_ session: Session) -> String {
         scene.pane ?? session.pane
     }
@@ -46,7 +61,7 @@ struct MainColumn: View {
             if let session = scene.session {
                 HeaderStrip(header: Header(session: session, now: scene.now))
                 Rectangle().fill(theme(.surface)).frame(height: 1)
-                terminal(session, theme)
+                main(session, theme)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(theme(.base))
                     .overlay(alignment: .bottom) {
@@ -62,7 +77,7 @@ struct MainColumn: View {
                     }
                 Rectangle().fill(theme(.surface)).frame(height: 1)
                 HStack(spacing: 14) {
-                    Text(shown(session).isEmpty ? "no pane" : scene.view.rawValue + " · pane " + shown(session))
+                    Text(status(session))
                     if let error = scene.paneError {
                         Text(error).foregroundStyle(theme(.red)).lineLimit(1)
                     }
