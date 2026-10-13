@@ -104,3 +104,11 @@ func TestAutomationShowOfAnUnknownNameIsNotFound(t *testing.T) {
 		t.Errorf("got %v, want not_found", err)
 	}
 }
+
+func TestAutomationListReportsAnUnknownKey(t *testing.T) {
+	c, _ := configDaemon(t, "[[automation]]\nname = \"x\"\nagent = \"claude\"\nprompt = \"y\"\nshedule = \"daily 09:00\"\n")
+	got := listAutomations(t, c, "")
+	if len(got.Problems) != 1 || !strings.Contains(got.Problems[0], "shedule") {
+		t.Errorf("problems = %v, want one about shedule", got.Problems)
+	}
+}
