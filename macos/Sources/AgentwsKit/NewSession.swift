@@ -181,13 +181,7 @@ public struct NewSessionForm: Sendable, Equatable {
     public init() {}
 
     init(workspaces: [Workspace], options: SessionOptions) {
-        let ordered = workspaces.enumerated().sorted { a, b in
-            let at = Timestamp.parse(a.element.lastUsed) ?? .distantPast
-            let bt = Timestamp.parse(b.element.lastUsed) ?? .distantPast
-            return at != bt ? at > bt : a.offset < b.offset
-        }.map(\.element)
-        self.workspaces = ordered.map(WorkspaceChoice.init)
-        workspace = ordered.first?.root ?? ""
+        sync(workspaces)
         harnesses = options.harnesses
         if let first = options.harnesses.first { choose(harness: first.harness) }
     }
@@ -211,6 +205,16 @@ public struct NewSessionForm: Sendable, Equatable {
 
     public var emptyMessage: String? {
         workspaces.isEmpty ? "No workspaces on this server yet. Add one to start a session." : nil
+    }
+
+    public mutating func sync(_ all: [Workspace]) {
+        let ordered = all.enumerated().sorted { a, b in
+            let at = Timestamp.parse(a.element.lastUsed) ?? .distantPast
+            let bt = Timestamp.parse(b.element.lastUsed) ?? .distantPast
+            return at != bt ? at > bt : a.offset < b.offset
+        }.map(\.element)
+        workspaces = ordered.map(WorkspaceChoice.init)
+        if !workspaces.contains(where: { $0.root == workspace }) { workspace = workspaces.first?.root ?? "" }
     }
 
     public mutating func adopt(_ added: WorkspaceInfo) {
@@ -250,6 +254,7 @@ public final class NewSession: Identifiable {
     public var form = NewSessionForm()
     public private(set) var maxParallel = 0
     public private(set) var limits: [JSONValue] = []
+    @ObservationIgnored private var syncedRoots: Set<String> = []
     public private(set) var queue: [LaunchRow] = []
     public private(set) var card: WorkItemCard?
     public private(set) var resolveError: String?
@@ -291,6 +296,7 @@ public final class NewSession: Identifiable {
         do {
             let options: SessionOptions = try await caller.call("session.options", params: [String: String]())
             var loaded = NewSessionForm(workspaces: state?.workspaces ?? [], options: options)
+            syncedRoots = Set((state?.workspaces ?? []).map(\.root))
             loaded.workItem = form.workItem
             loaded.launchInput = form.launchInput
             form = loaded
@@ -304,6 +310,13 @@ public final class NewSession: Identifiable {
     }
 
     public func observe(_ state: ViewState?) {
+        if let all = state?.workspaces {
+            let roots = Set(all.map(\.root))
+            if roots != syncedRoots {
+                syncedRoots = roots
+                form.sync(all)
+            }
+        }
         limits = state?.limits ?? []
         queue = LaunchRow.rows(state?.queue ?? [])
     }
