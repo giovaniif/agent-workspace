@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -38,10 +37,9 @@ func automationCommand(args []string, stdout io.Writer) error {
 		return err
 	}
 	defer func() { _ = c.Close() }()
-	repo, _ := os.Getwd()
 	if args[0] == "show" {
 		var a rpc.Automation
-		if err := c.Call(ctx, rpc.MethodAutomationShow, rpc.AutomationShowParams{Name: args[1], Repo: repo}, &a); err != nil {
+		if err := c.Call(ctx, rpc.MethodAutomationShow, rpc.AutomationShowParams{Name: args[1]}, &a); err != nil {
 			return err
 		}
 		printAutomation(stdout, a)

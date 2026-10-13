@@ -36,7 +36,7 @@ func LoadAutomations(path string) ([]domain.Automation, []string) {
 	var doc struct {
 		Automation []automationDoc `toml:"automation"`
 	}
-	_, err := toml.DecodeFile(path, &doc)
+	meta, err := toml.DecodeFile(path, &doc)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
@@ -45,6 +45,11 @@ func LoadAutomations(path string) ([]domain.Automation, []string) {
 	}
 	var out []domain.Automation
 	var problems []string
+	for _, key := range meta.Undecoded() {
+		if len(key) > 1 && key[0] == "automation" {
+			problems = append(problems, fmt.Sprintf("%s: unknown automation key %s", path, key))
+		}
+	}
 	seen := map[string]bool{}
 	for _, d := range doc.Automation {
 		a := domain.Automation{
