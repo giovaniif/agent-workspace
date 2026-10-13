@@ -26,11 +26,11 @@ func wantCode(t *testing.T, err error, code string) {
 func TestResolveWorkItemNamesTheTitleAndTheWorktree(t *testing.T) {
 	titles := &fakeTitles{title: "Fix the login redirect"}
 	r := startNaming(t, titles)
-	got, err := resolve(t, r, "/src/api", "https://linear.app/acme/issue/ENG-1/x")
+	got, err := resolve(t, r, "/src/api", "https://github.com/acme/api/pull/1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := rpc.WorkItemResolved{Source: "linear", Ref: "ENG-1", Title: "Fix the login redirect", Worktree: "eng-1", Workspace: "/src/api"}
+	want := rpc.WorkItemResolved{Source: "pr", Ref: "api#1", Title: "Fix the login redirect", Worktree: "api-1", Workspace: "/src/api"}
 	if got != want {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}
@@ -76,12 +76,12 @@ func TestResolveWorkItemReportsAnItemTheTrackerDoesNotKnow(t *testing.T) {
 func TestResolveWorkItemSkipsAWorktreeNameAlreadyTaken(t *testing.T) {
 	titles := &fakeTitles{title: "Fix the login redirect"}
 	r := startNaming(t, titles)
-	r.newSession(t, "https://linear.app/acme/issue/ENG-1/x")
-	got, err := resolve(t, r, "/src/api", "https://linear.app/acme/issue/ENG-1/x")
+	r.newSession(t, "https://github.com/acme/api/pull/1")
+	got, err := resolve(t, r, "/src/api", "https://github.com/acme/api/pull/1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Worktree != "eng-1-2" {
+	if got.Worktree != "api-1-2" {
 		t.Fatalf("worktree %q", got.Worktree)
 	}
 }

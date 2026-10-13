@@ -14,13 +14,13 @@ func TestServeNewSessionStartsASessionWithItsPrompt(t *testing.T) {
 	f.devices[goodToken] = phone
 	f.results[rpc.MethodNewSession] = domain.Session{ID: "s9", TaskID: "t9", Harness: domain.HarnessCodex, State: domain.StateRunning}
 	_, ts := startServer(t, f, serve.Config{URL: publicURL})
-	body := `{"workspace":"/home/me/api","work_item":"ENG-12","harness":"codex","model":"gpt-5.5","effort":"high","prompt":"start with the tests"}`
+	body := `{"workspace":"/home/me/api","work_item":"api#12","harness":"codex","model":"gpt-5.5","effort":"high","prompt":"start with the tests"}`
 	status, out := do(t, ts, "POST", "/api/v1/sessions", goodToken, body)
 	if status != http.StatusOK {
 		t.Fatalf("status %d %s", status, out)
 	}
 	golden(t, "session-new.json", out)
-	want := `{"workspace":"/home/me/api","work_item":"ENG-12","harness":"codex","model":"gpt-5.5","effort":"high","prompt":"start with the tests"}`
+	want := `{"workspace":"/home/me/api","work_item":"api#12","harness":"codex","model":"gpt-5.5","effort":"high","prompt":"start with the tests"}`
 	params := f.paramsOf(rpc.MethodNewSession)
 	if len(params) != 1 || string(params[0]) != want {
 		t.Fatalf("params %s", params)
@@ -57,14 +57,14 @@ func TestServeNewSessionReportsALaunchFailureWithItsOutput(t *testing.T) {
 func TestServeResolvesAWorkItem(t *testing.T) {
 	f := newFakeDaemon()
 	f.devices[goodToken] = phone
-	f.results[rpc.MethodSessionResolve] = rpc.WorkItemResolved{Source: "linear", Ref: "ENG-12", Title: "Fix the login redirect", Worktree: "eng-12", Workspace: "/home/me/api"}
+	f.results[rpc.MethodSessionResolve] = rpc.WorkItemResolved{Source: "pr", Ref: "api#12", Title: "Fix the login redirect", Worktree: "api-12", Workspace: "/home/me/api"}
 	_, ts := startServer(t, f, serve.Config{URL: publicURL})
-	status, out := do(t, ts, "GET", "/api/v1/work-items/resolve?workspace=%2Fhome%2Fme%2Fapi&item=ENG-12", goodToken, "")
+	status, out := do(t, ts, "GET", "/api/v1/work-items/resolve?workspace=%2Fhome%2Fme%2Fapi&item=api%2312", goodToken, "")
 	if status != http.StatusOK {
 		t.Fatalf("status %d %s", status, out)
 	}
 	golden(t, "work-item-resolved.json", out)
-	want := `{"workspace":"/home/me/api","work_item":"ENG-12"}`
+	want := `{"workspace":"/home/me/api","work_item":"api#12"}`
 	params := f.paramsOf(rpc.MethodSessionResolve)
 	if len(params) != 1 || string(params[0]) != want {
 		t.Fatalf("params %s", params)
@@ -74,7 +74,7 @@ func TestServeResolvesAWorkItem(t *testing.T) {
 func TestServeResolveRequiresAnItemAndPassesTheDaemonsVerdictThrough(t *testing.T) {
 	f := newFakeDaemon()
 	f.devices[goodToken] = phone
-	f.errs[rpc.MethodSessionResolve] = &rpc.Error{Code: rpc.CodeBadRequest, Message: "unsupported link: use a Linear issue or GitHub pull request URL"}
+	f.errs[rpc.MethodSessionResolve] = &rpc.Error{Code: rpc.CodeBadRequest, Message: "unsupported link: use a GitHub pull request URL"}
 	_, ts := startServer(t, f, serve.Config{URL: publicURL})
 	status, out := do(t, ts, "GET", "/api/v1/work-items/resolve", goodToken, "")
 	if status != http.StatusBadRequest || errorCode(t, out) != rpc.CodeBadRequest {

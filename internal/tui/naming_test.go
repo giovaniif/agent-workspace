@@ -34,7 +34,7 @@ func namingModel(t *testing.T, task domain.Task) (tui.Model, *fakeCaller) {
 }
 
 func TestNamingSidebarTruncatesWithAnEllipsisAndTheCardShowsTheFullName(t *testing.T) {
-	m, _ := namingModel(t, domain.Task{ID: "t1", Source: domain.TaskLinear, Ref: "ENG-1", IssueTitle: longName})
+	m, _ := namingModel(t, domain.Task{ID: "t1", Source: domain.TaskPR, Ref: "api#1", PRTitle: longName})
 	out := screen(m)
 	var row string
 	for _, l := range strings.Split(out, "\n") {
@@ -56,10 +56,10 @@ func TestNamingSidebarTruncatesWithAnEllipsisAndTheCardShowsTheFullName(t *testi
 }
 
 func TestNamingSwitchesToThePRTitleWhenOneAppearsUnlessPinned(t *testing.T) {
-	task := domain.Task{ID: "t1", Source: domain.TaskLinear, Ref: "ENG-1", IssueTitle: "Fix login redirect"}
+	task := domain.Task{ID: "t1", Source: domain.TaskText, Text: "Fix login redirect"}
 	m, _ := namingModel(t, task)
 	if out := screen(m); !strings.Contains(out, "1 Fix login redirect") {
-		t.Fatalf("before a PR the row carries the issue title:\n%s", out)
+		t.Fatalf("before a PR the row carries the task text:\n%s", out)
 	}
 	wt := domain.Worktree{ID: "w1", Repo: "api", Branch: "b", PR: &domain.PullRequest{Number: 9, Title: "Redirect after login"}}
 	m = update(m, tui.DiffMsg(rpc.Diff{Seq: 1, Worktree: &wt}))
@@ -67,7 +67,7 @@ func TestNamingSwitchesToThePRTitleWhenOneAppearsUnlessPinned(t *testing.T) {
 		t.Fatalf("after the PR the row carries its title:\n%s", out)
 	}
 
-	pinned, _ := namingModel(t, domain.Task{ID: "t1", Source: domain.TaskLinear, IssueTitle: "Fix login redirect", PinnedName: "login work"})
+	pinned, _ := namingModel(t, domain.Task{ID: "t1", Source: domain.TaskText, Text: "Fix login redirect", PinnedName: "login work"})
 	pinned = update(pinned, tui.DiffMsg(rpc.Diff{Seq: 1, Worktree: &wt}))
 	if out := screen(pinned); !strings.Contains(out, "1 login work") || strings.Contains(out, "1 Redirect after login") {
 		t.Fatalf("a pinned name should stay:\n%s", out)
@@ -75,7 +75,7 @@ func TestNamingSwitchesToThePRTitleWhenOneAppearsUnlessPinned(t *testing.T) {
 }
 
 func TestNamingRKeyRenamesAndPins(t *testing.T) {
-	m, c := namingModel(t, domain.Task{ID: "t1", Source: domain.TaskLinear, IssueTitle: "Fix login redirect"})
+	m, c := namingModel(t, domain.Task{ID: "t1", Source: domain.TaskText, Text: "Fix login redirect"})
 	m = press(m, "R")
 	out := screen(m)
 	if !strings.Contains(out, "RENAME") || !strings.Contains(out, "Fix login redirect") {

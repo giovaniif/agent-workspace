@@ -70,8 +70,8 @@ func TestNewSessionDialogStartsTheSessionAndShowsItsPane(t *testing.T) {
 	if !strings.Contains(out, "New session") || !strings.Contains(out, "shop") {
 		t.Fatalf("dialog does not default to the last used workspace:\n%s", out)
 	}
-	m = typeText(m, "https://linear.app/acme/issue/ENG-9/add-search")
-	if out := screen(m); !strings.Contains(out, "ENG-9 · add search") {
+	m = typeText(m, "https://github.com/acme/api/pull/9")
+	if out := screen(m); !strings.Contains(out, "api#9 · session will be named after the PR") {
 		t.Fatalf("dialog does not say what the work item is:\n%s", out)
 	}
 	m = pressCmd(m, keyTab)
@@ -88,7 +88,7 @@ func TestNewSessionDialogStartsTheSessionAndShowsItsPane(t *testing.T) {
 	if got := c.methods(); !slices.Equal(got, []string{rpc.MethodNewSession, rpc.MethodSessionFocus}) {
 		t.Fatalf("calls %v", got)
 	}
-	want := rpc.NewSessionParams{Workspace: "/src/api", WorkItem: "https://linear.app/acme/issue/ENG-9/add-search", Harness: "codex", Model: "gpt-6.1-sol", Effort: "medium"}
+	want := rpc.NewSessionParams{Workspace: "/src/api", WorkItem: "https://github.com/acme/api/pull/9", Harness: "codex", Model: "gpt-6.1-sol", Effort: "medium"}
 	if !reflect.DeepEqual(c.calls[0].params, want) {
 		t.Fatalf("params %+v, want %+v", c.calls[0].params, want)
 	}
@@ -124,12 +124,12 @@ func TestNewSessionDialogEscapeCancelsWithoutCalling(t *testing.T) {
 
 func TestNewSessionDialogKeepsABrokenURLAsText(t *testing.T) {
 	m, c := dialogModel(t, withWorkspaces(rpc.State{}))
-	m = typeText(m, "https://linear.app/acme/nope")
+	m = typeText(m, "https://example.com/acme/nope")
 	if out := screen(m); !strings.Contains(out, "text") {
 		t.Fatalf("broken URL not shown as text:\n%s", out)
 	}
 	pressCmd(m, keyEnter)
-	if len(c.calls) == 0 || c.calls[0].params.(rpc.NewSessionParams).WorkItem != "https://linear.app/acme/nope" {
+	if len(c.calls) == 0 || c.calls[0].params.(rpc.NewSessionParams).WorkItem != "https://example.com/acme/nope" {
 		t.Fatalf("calls %+v", c.calls)
 	}
 }
