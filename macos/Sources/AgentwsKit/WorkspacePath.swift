@@ -159,4 +159,19 @@ public final class WorkspacePathInput {
         highlight = 0
         return true
     }
+
+    public func submit() -> Bool {
+        guard !text.isEmpty else { return false }
+        let p = parsed
+        guard listed == p.dir else { return true }
+        if missing { return false }
+        if p.prefix.isEmpty { return true }
+        let list = suggestions
+        if list.indices.contains(highlight) {
+            let head = text.lastIndex(of: "/").map { String(text[...$0]) } ?? ""
+            text = head + list[highlight].name
+            return true
+        }
+        return children.contains { $0.name == p.prefix }
+    }
 }
