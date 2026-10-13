@@ -1,0 +1,17 @@
+{
+  "password": "test-safe-storage-key",
+  "cookies": [
+    {
+      "host": ".example.com",
+      "version": 23,
+      "hex": "76313095159aed806e8fff58d7461d6643fcf5",
+      "value": "abc123"
+    },
+    {
+      "host": ".example.com",
+      "version": 24,
+      "hex": "763130e21e775c22c3139575c2d03e4751ed3e94e0540757d5407ad921bf6ed5c656325fb775894e91374d06e4be1b74e7ec2c",
+      "value": "abc123"
+    }
+  ]
+}
