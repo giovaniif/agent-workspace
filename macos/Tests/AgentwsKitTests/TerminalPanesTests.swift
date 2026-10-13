@@ -48,6 +48,14 @@ struct TerminalPanesTests {
         #expect(box?.note == "The TUI is showing this pane at 100×30")
     }
 
+    @Test func aLetterboxedPaneWiderThanTheViewShrinksTheFontToFitWholeColumns() {
+        let box = Letterbox(paneCols: 200, paneRows: 49, viewCols: 150, viewRows: 60)
+        #expect(box?.fontSize(base: 12, cellWidth: 7, cellHeight: 15, width: 1050, height: 900) == 9)
+        #expect(box?.fontSize(base: 12, cellWidth: 7, cellHeight: 15, width: 1400, height: 735) == 12)
+        #expect(box?.fontSize(base: 12, cellWidth: 7, cellHeight: 15, width: 1400, height: 368) == 6)
+        #expect(box?.fontSize(base: 12, cellWidth: 7, cellHeight: 15, width: 100, height: 100) == 5)
+    }
+
     @Test func layoutUpdatesSizesAndAClosedWindowForgetsItsPanes() {
         var panes = TerminalPanes()
         panes.set(PaneState(pane: "%3", window: "@2", cols: 80, rows: 24))
