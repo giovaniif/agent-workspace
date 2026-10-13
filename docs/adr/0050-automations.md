@@ -53,6 +53,14 @@ An automation has these fields:
 - A run calls the same code as `session.new`. Thus a run has a worktree, a review, attention, banners and history.
 - The daemon records each run in sqlite: the automation, the trigger, the context, the start, the end, the outcome and the session ID.
 - The triggers in v1 are: by hand with context, schedule and events.
+- The work item of a run comes from the trigger. A run by hand takes `work_item` from the caller. An event run uses the subject of the event, for example the PR link. A schedule run uses the text `<name> <start time>`. A run by hand with no work item uses the same text. Thus `session.new` always gets a work item, and a `new-worktree` target always gets a branch name.
+
+### Trust of commands
+
+- A `precheck` runs with the rights of the daemon user, as a `[setup] run` step does (ADR 0013). The daemon does not put it in a sandbox.
+- The daemon runs repo automations only for repos in a registered workspace. To register a workspace is the trust decision, as it is for the setup recipe.
+- A repo automation with a `schedule`, `on` or `precheck` does not run by itself until the user approves it one time (`agentws automation trust <name>`). The daemon records the approval with a hash of the definition. A change to the definition removes the approval.
+- The launcher limit controls how many sessions start. It does not control what a `precheck` command does.
 
 ### Methods
 
