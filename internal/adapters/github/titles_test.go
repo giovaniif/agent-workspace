@@ -39,7 +39,7 @@ func TestNamingPRTitleFromGH(t *testing.T) {
 func TestNamingPRTitleSkipsOtherTasks(t *testing.T) {
 	bin, argsFile := fakeGH(t, `echo '{"title":"x"}'`)
 	for _, task := range []domain.Task{
-		{Source: domain.TaskLinear, Ref: "ENG-1", URL: "https://linear.app/o/issue/ENG-1"},
+		{Source: domain.TaskText, Text: "https://github.com/o/api/pull/12"},
 		{Source: domain.TaskText, Text: "x"},
 		{Source: domain.TaskPR},
 	} {

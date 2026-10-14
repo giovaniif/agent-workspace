@@ -230,7 +230,9 @@ public final class BrowserWebViews {
     private var observers: [String: [NSKeyValueObservation]] = [:]
     private var stores: [String: WKWebsiteDataStore] = [:]
     var requested: [String: String] = [:]
+    private var reported: [String: [String]] = [:]
     public var report: @MainActor (String, String, String) -> Void = { _, _, _ in }
+    public var loading: @MainActor (String) -> Void = { _ in }
     public var profile: @MainActor (String) -> String = { _ in BrowserProfile.standard.id }
 
     public init() {}
@@ -261,8 +263,11 @@ public final class BrowserWebViews {
         view.allowsBackForwardNavigationGestures = true
         let publish: @MainActor (WKWebView) -> Void = { [weak self] web in
             let url = web.url?.absoluteString ?? ""
-            if !url.isEmpty { self?.requested[tab] = url }
-            self?.report(tab, url, web.title ?? "")
+            let title = web.title ?? ""
+            guard let self, self.reported[tab] != [url, title] else { return }
+            self.reported[tab] = [url, title]
+            if !url.isEmpty { self.requested[tab] = url }
+            self.report(tab, url, title)
         }
         observers[tab] = [
             view.observe(\.url, options: [.new]) { web, _ in MainActor.assumeIsolated { publish(web) } },
@@ -275,6 +280,7 @@ public final class BrowserWebViews {
     public func close(_ tab: String) {
         observers[tab] = nil
         requested[tab] = nil
+        reported[tab] = nil
         views.removeValue(forKey: tab)?.removeFromSuperview()
     }
 
@@ -307,6 +313,7 @@ struct WebTab: NSViewRepresentable {
             view.customUserAgent = device.userAgent
             if view.url != nil { view.reload() }
         }
+        defer { views.loading(tab.id) }
         guard !tab.url.isEmpty, views.requested[tab.id] != tab.url, view.url?.absoluteString != tab.url, let url = URL(string: tab.url) else { return }
         views.requested[tab.id] = tab.url
         view.load(URLRequest(url: url))

@@ -34,8 +34,8 @@ func fixture(sessions, worktreesEach int) rpc.State {
 		taskID := fmt.Sprintf("t%d", i/2+1)
 		if i%2 == 0 {
 			st.Tasks = append(st.Tasks, domain.Task{
-				ID: taskID, Source: domain.TaskLinear, Ref: fmt.Sprintf("#%d", 40+i/2),
-				IssueTitle: fmt.Sprintf("task number %d", i/2+1),
+				ID: taskID, Source: domain.TaskText, Ref: fmt.Sprintf("#%d", 40+i/2),
+				Text: fmt.Sprintf("task number %d", i/2+1),
 			})
 		}
 		s := domain.Session{

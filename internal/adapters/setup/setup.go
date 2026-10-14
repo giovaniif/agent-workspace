@@ -54,8 +54,10 @@ func (Recipes) Load(repoDir string) (domain.Recipe, bool, error) {
 	if err != nil {
 		return domain.Recipe{}, false, fmt.Errorf("%s: %w", recipeFile, err)
 	}
-	if undecoded := meta.Undecoded(); len(undecoded) > 0 {
-		return domain.Recipe{}, false, fmt.Errorf("%s: unknown key %s", recipeFile, undecoded[0])
+	for _, key := range meta.Undecoded() {
+		if key[0] != "automation" {
+			return domain.Recipe{}, false, fmt.Errorf("%s: unknown key %s", recipeFile, key)
+		}
 	}
 	s := doc.Setup
 	return domain.Recipe{Copy: s.Copy, Link: s.Link, Run: s.Run, Deps: domain.DepsMode(s.Deps)}, true, nil

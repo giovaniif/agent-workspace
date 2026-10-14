@@ -69,17 +69,17 @@ func TestNewSessionInASingleRepoStartsInAFreshWorktree(t *testing.T) {
 		return nil
 	})
 	var got domain.Session
-	params := rpc.NewSessionParams{Workspace: "/src/api", WorkItem: "https://linear.app/acme/issue/ENG-1/fix-login", Harness: "claude", Model: "opus", Effort: "high"}
+	params := rpc.NewSessionParams{Workspace: "/src/api", WorkItem: "https://github.com/acme/api/pull/1", Harness: "claude", Model: "opus", Effort: "high"}
 	if err := r.c.Call(context.Background(), rpc.MethodNewSession, params, &got); err != nil {
 		t.Fatal(err)
 	}
-	if want := []addedWorktree{{"/src/api", "/h/worktrees/api/eng-1", "eng-1", "origin/main"}}; !reflect.DeepEqual(r.wts.added, want) {
+	if want := []addedWorktree{{"/src/api", "/h/worktrees/api/api-1", "api-1", "origin/main"}}; !reflect.DeepEqual(r.wts.added, want) {
 		t.Fatalf("added %+v", r.wts.added)
 	}
-	if !slices.Equal(setupIn, []string{"/h/worktrees/api/eng-1"}) {
+	if !slices.Equal(setupIn, []string{"/h/worktrees/api/api-1"}) {
 		t.Fatalf("setup ran in %v", setupIn)
 	}
-	wantSpec := app.PaneSpec{Name: "eng-1", Dir: "/h/worktrees/api/eng-1",
+	wantSpec := app.PaneSpec{Name: "api-1", Dir: "/h/worktrees/api/api-1",
 		Command: []string{"claude", "--model", "opus", "--effort", "high"}}
 	if len(r.host.specs) != 1 || !reflect.DeepEqual(r.host.specs[0], wantSpec) {
 		t.Fatalf("specs %+v", r.host.specs)
@@ -92,10 +92,10 @@ func TestNewSessionInASingleRepoStartsInAFreshWorktree(t *testing.T) {
 	}
 
 	st := r.state(t)
-	if len(st.Tasks) != 1 || st.Tasks[0].ID != got.TaskID || st.Tasks[0].Source != domain.TaskLinear || st.Tasks[0].Ref != "ENG-1" {
+	if len(st.Tasks) != 1 || st.Tasks[0].ID != got.TaskID || st.Tasks[0].Source != domain.TaskPR || st.Tasks[0].Ref != "api#1" {
 		t.Fatalf("tasks %+v", st.Tasks)
 	}
-	wantWT := domain.Worktree{ID: "/h/worktrees/api/eng-1", Repo: "/src/api", Path: "/h/worktrees/api/eng-1", Branch: "eng-1", SessionID: got.ID}
+	wantWT := domain.Worktree{ID: "/h/worktrees/api/api-1", Repo: "/src/api", Path: "/h/worktrees/api/api-1", Branch: "api-1", SessionID: got.ID}
 	if len(st.Worktrees) != 1 || !reflect.DeepEqual(st.Worktrees[0], wantWT) {
 		t.Fatalf("worktrees %+v", st.Worktrees)
 	}

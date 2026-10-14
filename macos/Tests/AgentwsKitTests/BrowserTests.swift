@@ -23,7 +23,7 @@ struct BrowserTests {
         #expect(BrowserAddress.url(from: input, host: host) == url)
     }
 
-    @Test(arguments: ["", "   ", "not a url", "javascript:alert(1)", "file:///etc/passwd"])
+    @Test(arguments: ["", "   ", "not a url", "javascript:alert(1)", "file:///etc/passwd", "localhost:99999", "localhost:0", "localhost:abc"])
     func aBadAddressIsRefused(input: String) {
         #expect(BrowserAddress.url(from: input, host: "devbox") == nil)
     }
@@ -94,6 +94,19 @@ struct BrowserTests {
         #expect(page.selectedTab?.label == "Log in")
         page.update(id, url: "http://devbox:3000/x", title: "")
         #expect(page.selectedTab?.label == "devbox:3000")
+    }
+
+    @Test func aLateReportOfTheOldPageDoesNotUndoANewAddress() throws {
+        let page = BrowserPage()
+        let id = try #require(page.selectedTab).id
+        page.update(id, url: "http://devbox:3000/old", title: "Old")
+        page.navigate("3001", host: "devbox")
+        page.update(id, url: "http://devbox:3000/old", title: "Old, renamed")
+        #expect(page.selectedTab?.url == "http://devbox:3001/")
+        page.loading(id)
+        page.update(id, url: "http://devbox:3001/login", title: "Log in")
+        #expect(page.selectedTab?.url == "http://devbox:3001/login")
+        #expect(page.selectedTab?.title == "Log in")
     }
 
     @Test func theUserTakesOverFromTheAgent() {

@@ -44,7 +44,7 @@ public enum BrowserAddress {
         let name = authority.split(separator: ":", maxSplits: 1).first.map(String.init) ?? ""
         if loopback.contains(name.lowercased()) {
             let port = authority.dropFirst(name.count)
-            guard port.isEmpty || Int(port.dropFirst()) != nil else { return nil }
+            guard port.isEmpty || Int(port.dropFirst()).map({ (1...65535).contains($0) }) == true else { return nil }
             return "http://\(host)\(port)\(path)"
         }
         guard name.contains("."), !name.hasPrefix("."), !name.hasSuffix("."),
@@ -107,6 +107,7 @@ public final class BrowserPage {
     public private(set) var selected: String
     public var device: DevicePreset = .desktop
     public private(set) var agentControl = false
+    @ObservationIgnored private var pending: Set<String> = []
 
     public init() {
         let tab = BrowserTab()
@@ -130,6 +131,7 @@ public final class BrowserPage {
     public func close(_ id: String) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         tabs.remove(at: index)
+        pending.remove(id)
         if tabs.isEmpty { tabs = [BrowserTab()] }
         if selected == id { selected = tabs[min(index, tabs.count - 1)].id }
     }
@@ -139,11 +141,16 @@ public final class BrowserPage {
         guard let url = BrowserAddress.url(from: input, host: host), let index = tabs.firstIndex(where: { $0.id == selected }) else { return false }
         tabs[index].url = url
         tabs[index].title = ""
+        pending.insert(selected)
         return true
     }
 
+    public func loading(_ id: String) {
+        pending.remove(id)
+    }
+
     public func update(_ id: String, url: String, title: String) {
-        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        guard !pending.contains(id), let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         tabs[index].url = url
         tabs[index].title = title
     }
