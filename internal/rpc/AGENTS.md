@@ -140,7 +140,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - With no attached app, it is `unavailable` with the message `no browser: the macOS app is not connected`. If the app disconnects first, it is also `unavailable`.
   - An `error` from the app is `failed` with that message. No reply in `timeout_ms` (default 30 s, a maximum of 10 min) is `failed`.
   - An unknown command, or no session and no known pane, is `bad_request`.
-  - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0053](../../docs/adr/0053-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
+  - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0054](../../docs/adr/0054-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
   - `browser.cookies.import` (`{"cookies":[{"name","value","domain","path","expires","secure","httpOnly","sameSite"}]}` → `{"imported","total"}`) keeps the cookies for the headless browser. No cookies, or a cookie with no name or domain, is `bad_request`.
 - Web Push (ADR 0046):
   - `push.key` (→ `{"public_key"}`).
