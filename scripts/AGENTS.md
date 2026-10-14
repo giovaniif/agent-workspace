@@ -57,3 +57,8 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
   3. Run `scripts/install.sh` with `CREW_DOWNLOAD_BASE`, a temp `CREW_INSTALL_DIR` and a temp `XDG_DATA_HOME`.
 
   See [ADR 0040](../docs/adr/0040-first-run-walkthrough.md).
+- **`readme-shots`** (`make readme-shots`): makes all README images in `docs/images/readme/` from seeded demo data in a temp folder, never a real home or project.
+  - TUI: `scripts/screenshot` with `crew debug seed 6` (`tui-*.png`).
+  - Phone: `scripts/web-screenshot` with the fake API, light and dark (`phone-*.png`).
+  - Mac: it downloads the `macos-snapshots` artifact of the newest green `ci` run on main with `gh` (or of `README_MAC_RUN`) and copies the main window, review, new session, automations, browser, disk, first-run and menu bar shots (`mac-*.png`). Without the artifact, the Mac shots stay as they are.
+  - If `oxipng` is on `PATH`, it optimizes each PNG. It fails when a PNG is larger than `README_SHOT_LIMIT` (default 400 KB).

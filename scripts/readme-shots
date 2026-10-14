@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+out="$root/docs/images/readme"
+limit="${README_SHOT_LIMIT:-409600}"
+mkdir -p "$out"
+demo="$(mktemp -d /tmp/crew-demo.XXXXXX)"
+trap 'rm -rf "$demo"' EXIT
+mkdir -p "$demo/home/src/api" "$demo/home/src/web"
+for repo in api web; do
+  git -C "$demo/home/src/$repo" init -q -b main
+  git -C "$demo/home/src/$repo" -c user.name=demo -c user.email=demo@example.com commit -q --allow-empty -m init
+done
+
+tui() {
+  local name="$1" size="$2"
+  shift 2
+  (cd "$demo/home/src/api" && printf '%s\n' "$@" | "$root/scripts/screenshot" "$out/$name.png" "$size")
+}
+
+tui tui-sidebar 96x26 "run env HOME=$demo/home crew debug seed 6" "wait 2" "run env HOME=$demo/home crew tui" "wait 3"
+tui tui-new-session 90x26 "run env HOME=$demo/home crew tui --new-session" "type fix the login redirect" "wait 1"
+
+for scheme in light dark; do
+  (cd "$out" && "$root/scripts/web-screenshot" <<STEPS
+scheme $scheme
+mode installed
+goto /
+fill Pairing code=ABCD2345
+click Pair
+see Needs you
+wait 400
+shot phone-sessions-$scheme.png
+goto /#/sessions/s3
+see add retries
+wait 600
+shot phone-chat-$scheme.png
+goto /#/automations
+see last run succeeded
+wait 300
+shot phone-automations-$scheme.png
+STEPS
+  )
+done
+
+if [ -n "${README_MAC_RUN:-}" ] || command -v gh >/dev/null 2>&1; then
+  run="${README_MAC_RUN:-$(gh run list --workflow ci.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')}"
+  mac="$(mktemp -d)"
+  if gh run download "$run" --name macos-snapshots --dir "$mac" >/dev/null 2>&1; then
+    for pattern in 'window-latte' 'window-mocha' 'review-latte' 'review-mocha' 'browser-*' 'automations*' 'disk*' 'new-session*' 'first-run-1*' 'menu-bar'; do
+      find "$mac" -name "$pattern.png" -exec sh -c 'cp "$1" "$2/mac-$(basename "$1")"' _ {} "$out" \;
+    done
+  else
+    echo "readme-shots: no macos-snapshots artifact in run $run; the Mac shots stay as they are" >&2
+  fi
+  rm -rf "$mac"
+fi
+
+if command -v oxipng >/dev/null 2>&1; then
+  oxipng -q -o 4 --strip safe "$out"/*.png
+fi
+big=0
+for f in "$out"/*.png; do
+  size="$(wc -c <"$f")"
+  if [ "$size" -gt "$limit" ]; then
+    echo "readme-shots: $f is $size bytes, more than $limit" >&2
+    big=1
+  fi
+done
+exit "$big"
