@@ -261,7 +261,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 	if p.ClaudeSettings != "/c/settings.json" || p.CodexHome != "/x" || p.OmpAgentDir != "/pi" || p.NvimConfigDir != "/cfg/nvim" || p.Home != "/h" {
 		t.Errorf("probe = %+v", p)
 	}
-	if len(p.PluginDirs) < 2 || p.PluginDirs[0] != "/data/agentws/nvim" || p.PluginDirs[len(p.PluginDirs)-1] != "/repo/nvim" {
+	if len(p.PluginDirs) < 2 || p.PluginDirs[0] != "/data/crew/nvim" || p.PluginDirs[len(p.PluginDirs)-1] != "/repo/nvim" {
 		t.Errorf("plugin dirs = %q, want the data dir first and the checkout's nvim/ last", p.PluginDirs)
 	}
 
@@ -271,7 +271,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 		}
 		return ""
 	})
-	if bare.ClaudeSettings != "/home/me/.claude/settings.json" || bare.CodexHome != "/home/me/.codex" || bare.OmpAgentDir != "/home/me/.omp/agent" || bare.NvimConfigDir != "/home/me/.config/nvim" || bare.PluginDirs[0] != "/home/me/.local/share/agentws/nvim" {
+	if bare.ClaudeSettings != "/home/me/.claude/settings.json" || bare.CodexHome != "/home/me/.codex" || bare.OmpAgentDir != "/home/me/.omp/agent" || bare.NvimConfigDir != "/home/me/.config/nvim" || bare.PluginDirs[0] != "/home/me/.local/share/crew/nvim" {
 		t.Errorf("defaults = %+v", bare)
 	}
 }

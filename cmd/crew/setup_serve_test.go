@@ -18,7 +18,7 @@ func TestSetupServeUnitRunsServeWithThisShellsEnvironment(t *testing.T) {
 		t.Fatalf("remove %v err %v", remove, err)
 	}
 	u := svc.unit
-	if u.Name != "agentws-serve" || u.Dir != "/home/me/.config/systemd/user" || u.Log != "/home/me/.agentws/serve.log" {
+	if u.Name != "crew-serve" || u.Dir != "/home/me/.config/systemd/user" || u.Log != "/home/me/.agentws/serve.log" {
 		t.Fatalf("unit %+v", u)
 	}
 	if want := []string{"/usr/local/bin/agentws", "serve", "--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}; !reflect.DeepEqual(u.Program, want) {
@@ -40,7 +40,7 @@ func TestSetupServeUnitHonoursXDGConfigHome(t *testing.T) {
 	if want := []string{"/bin/agentws", "serve"}; !reflect.DeepEqual(svc.unit.Program, want) {
 		t.Fatalf("program %q", svc.unit.Program)
 	}
-	if svc.unit.Env["CREW_HOME"] != "/home/me/.agentws" {
+	if svc.unit.Env["CREW_HOME"] != "/home/me/.crew" {
 		t.Fatalf("env %v", svc.unit.Env)
 	}
 }
@@ -52,7 +52,7 @@ func TestSetupServeAgentOnMacOSIsALaunchdAgent(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := svc.agent
-	if !svc.launchd || a.Label != "dev.agentws.serve" || a.Dir != "/Users/me/Library/LaunchAgents" || a.UID != 501 || a.Log != "/Users/me/.agentws/serve.log" {
+	if !svc.launchd || a.Label != "dev.crew.serve" || a.Dir != "/Users/me/Library/LaunchAgents" || a.UID != 501 || a.Log != "/Users/me/.crew/serve.log" {
 		t.Fatalf("service %+v", svc)
 	}
 	if want := []string{"/opt/homebrew/bin/agentws", "serve", "--self-signed"}; !reflect.DeepEqual(a.Program, want) {
@@ -234,14 +234,14 @@ func TestSetupServeLifecycleOnSystemd(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", "")
 	manager := newFakeServiceManager(t, "systemctl")
-	serveLifecycle(t, "linux", filepath.Join(home, ".config", "systemd", "user", "agentws-serve.service"), manager)
+	serveLifecycle(t, "linux", filepath.Join(home, ".config", "systemd", "user", "crew-serve.service"), manager)
 }
 
 func TestSetupServeLifecycleOnLaunchd(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	manager := newFakeServiceManager(t, "launchctl")
-	serveLifecycle(t, "darwin", filepath.Join(home, "Library", "LaunchAgents", "dev.agentws.serve.plist"), manager)
+	serveLifecycle(t, "darwin", filepath.Join(home, "Library", "LaunchAgents", "dev.crew.serve.plist"), manager)
 }
 
 func TestSetupServePassesTheUrlThroughAfterTheOtherFlags(t *testing.T) {
