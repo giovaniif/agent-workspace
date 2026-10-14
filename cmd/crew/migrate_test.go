@@ -237,3 +237,33 @@ func TestMigrateServicesMovesLaunchdAgentsIncludingBridges(t *testing.T) {
 		t.Fatal("an agent that is not ours changed")
 	}
 }
+
+func TestMigrateServicesPutsTheOldServiceBackWhenTheHomeCannotMove(t *testing.T) {
+	r := newMigrateRig(t)
+	dir := r.path(".config", "systemd", "user")
+	unit := "[Service]\nExecStart=/old/bin/agentws daemon\n"
+	writeFile(t, filepath.Join(dir, "agentws-daemon.service"), unit)
+	writeFile(t, r.path(".agentws", "state.db"), "sessions")
+	r.alive = true
+	r.run(true)
+	if got := readFile(t, filepath.Join(dir, "agentws-daemon.service")); got != unit {
+		t.Fatalf("old unit:\n%s", got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "crew-daemon.service")); !os.IsNotExist(err) {
+		t.Fatalf("crew unit left: %v", err)
+	}
+	if _, err := os.Stat(r.path(".crew")); !os.IsNotExist(err) {
+		t.Fatalf("~/.crew made: %v", err)
+	}
+	want := []string{
+		"systemctl --user disable --now agentws-daemon.service",
+		"systemctl --user daemon-reload",
+		"systemctl --user enable --now agentws-daemon.service",
+	}
+	if strings.Join(r.cmds, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("commands:\n%s", strings.Join(r.cmds, "\n"))
+	}
+	if !strings.Contains(r.log.String(), "put back") {
+		t.Fatalf("log %q", r.log.String())
+	}
+}
