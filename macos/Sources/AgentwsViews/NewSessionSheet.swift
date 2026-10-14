@@ -10,6 +10,7 @@ public struct NewSessionSheet: View {
     let started: (String) -> Void
     let cancel: () -> Void
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.openSettings) private var openSettings
     @State private var addingWorkspace = false
 
     public init(
@@ -108,6 +109,11 @@ public struct NewSessionSheet: View {
                     }
                     .labelsHidden()
                     Button(addingWorkspace ? "Done" : "Add workspace…") { addingWorkspace.toggle() }
+                    Button("Manage workspaces…") {
+                        UserDefaults.standard.set(SettingsTab.workspaces.rawValue, forKey: "settings.tab")
+                        openSettings()
+                    }
+                    .help("Remove workspaces in Settings › Workspaces. No files on the server change.")
                 }
             }
             if empty != nil || addingWorkspace {
