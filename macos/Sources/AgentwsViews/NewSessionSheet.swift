@@ -40,7 +40,7 @@ public struct NewSessionSheet: View {
                     }
                 }
                 row("Workspace") { workspacePicker }
-                row("Work item") { workItem(theme) }
+                row("Task") { workItem(theme) }
                 row("Agent") { harnessPicker }
                 row("Model") { modelPicker }
                 row("Effort") { effortPicker }
@@ -131,7 +131,7 @@ public struct NewSessionSheet: View {
 
     private func workItem(_ theme: Theme) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("PR link or text", text: $model.form.workItem)
+            TextField("Optional: PR link or text. Groups sessions and names them.", text: $model.form.workItem)
                 .textFieldStyle(.roundedBorder)
             if let card = model.card {
                 VStack(alignment: .leading, spacing: 4) {

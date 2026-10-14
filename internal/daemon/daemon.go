@@ -413,6 +413,9 @@ func (s *state) hook(h rpc.Hook, now time.Time) {
 	s.dispatchSend(next)
 	if kind == domain.EventUserPromptSubmit {
 		s.promptSubmitted(session.ID)
+		if task, named := domain.NameFromPrompt(s.tasks[session.TaskID], ev.Text); named && session.TaskID != "" {
+			s.emit(TaskChanged{Task: task})
+		}
 	}
 }
 

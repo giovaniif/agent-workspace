@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -32,9 +31,12 @@ func TestNewArgsBecomeSessionParams(t *testing.T) {
 	}
 }
 
-func TestNewWithoutAWorkItemIsAUsageError(t *testing.T) {
-	var stderr bytes.Buffer
-	if code := run([]string{"new", "--harness", "codex"}, io.Discard, &stderr); code != 2 || !bytes.Contains(stderr.Bytes(), []byte("usage: agentws new")) {
-		t.Fatalf("exit %d, stderr %q", code, stderr.String())
+func TestNewWithoutAWorkItemStartsAnUnnamedSession(t *testing.T) {
+	got, err := parseNewArgs([]string{"--harness", "codex"}, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.WorkItem != "" || got.Harness != "codex" {
+		t.Fatalf("got %+v", got)
 	}
 }

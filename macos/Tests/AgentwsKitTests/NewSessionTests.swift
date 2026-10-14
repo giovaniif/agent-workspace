@@ -225,13 +225,18 @@ struct NewSessionTests {
         #expect(caller.params("session.focus") == .object(["id": .string("s9")]))
     }
 
-    @Test func anEmptyWorkItemCannotStart() async throws {
+    @Test func anEmptyWorkItemStartsASessionNamedByItsFirstPrompt() async throws {
         let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["session.new"] = .success(#"{"ID":"s9","State":"idle"}"#)
+        caller.replies["session.focus"] = .success("{}")
         model.form.workItem = "   "
-        #expect(!model.form.canStart)
-        #expect(await model.start() == nil)
-        #expect(caller.params("session.new") == nil)
+        #expect(model.form.canStart)
+        #expect(await model.start() == "s9")
+        #expect(caller.params("session.new") == .object([
+            "workspace": .string("/src/acme"), "work_item": .string(""), "harness": .string("claude"),
+            "model": .string("opus"), "effort": .string("xhigh"),
+        ]))
     }
 
     @Test func aSetupFailureShowsItsOutputInTheSheet() async throws {

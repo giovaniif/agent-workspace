@@ -74,6 +74,15 @@ func PinName(task Task, name string) Task {
 	return task
 }
 
+func NameFromPrompt(task Task, prompt string) (Task, bool) {
+	prompt = strings.TrimSpace(prompt)
+	if task.Source != TaskText || task.Text != "" || prompt == "" {
+		return task, false
+	}
+	task.Text = prompt
+	return task, true
+}
+
 func WithTitle(task Task, title string) (Task, bool) {
 	title = strings.TrimSpace(title)
 	if title == "" {

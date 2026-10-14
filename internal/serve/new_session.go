@@ -14,9 +14,6 @@ func newSession(r *http.Request, d Daemon) (any, error) {
 	if err := decodeBody(r, &p); err != nil {
 		return nil, err
 	}
-	if strings.TrimSpace(p.WorkItem) == "" {
-		return nil, &rpc.Error{Code: rpc.CodeBadRequest, Message: "work_item is required"}
-	}
 	if p.Harness != string(domain.HarnessClaude) && p.Harness != string(domain.HarnessCodex) {
 		return nil, &rpc.Error{Code: rpc.CodeBadRequest, Message: `harness is "claude" or "codex"`}
 	}

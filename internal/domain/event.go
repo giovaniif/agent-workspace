@@ -32,6 +32,7 @@ func SessionEventFromHook(kind HarnessEventKind, at time.Time, payload []byte) S
 		ToolInput            map[string]any `json:"tool_input"`
 		Message              string         `json:"message"`
 		LastAssistantMessage string         `json:"last_assistant_message"`
+		Prompt               string         `json:"prompt"`
 	}
 	if json.Unmarshal(payload, &p) != nil {
 		return ev
@@ -49,6 +50,8 @@ func SessionEventFromHook(kind HarnessEventKind, at time.Time, payload []byte) S
 		ev.Text = p.Message
 	case EventStop:
 		ev.Text = p.LastAssistantMessage
+	case EventUserPromptSubmit:
+		ev.Text = p.Prompt
 	}
 	ev.Text = cutBytes(ev.Text, MaxText)
 	return ev

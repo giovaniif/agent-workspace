@@ -98,7 +98,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
   }
 
   const roots = workspaces.state === "ready" ? workspaces.list.workspaces : [];
-  const canStart = !busy && !!workspace && item.trim() !== "" && resolution.state !== "bad";
+  const canStart = !busy && !!workspace && resolution.state !== "bad";
 
   return (
     <main className="screen">
@@ -135,7 +135,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
           </select>
         </label>
         <label>
-          Work item
+          Task (optional)
           <input
             value={item}
             onChange={(e) => setItem(e.target.value)}
@@ -146,6 +146,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
             aria-describedby="resolution"
           />
         </label>
+        <p className="muted">Groups sessions and names them. Empty: the first prompt names the session.</p>
         <div id="resolution" className="resolution">
           {resolution.state === "checking" ? <p className="muted">Checking…</p> : null}
           {resolution.state === "ok" ? (

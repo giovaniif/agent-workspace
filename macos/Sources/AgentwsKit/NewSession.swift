@@ -148,7 +148,7 @@ public struct NewSessionForm: Sendable, Equatable {
 
     public var trimmedWorkItem: String { workItem.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-    public var canStart: Bool { !trimmedWorkItem.isEmpty && !harness.isEmpty && !workspace.isEmpty }
+    public var canStart: Bool { !harness.isEmpty && !workspace.isEmpty }
 
     public var emptyMessage: String? {
         workspaces.isEmpty ? "No workspaces on this server yet. Add one to start a session." : nil

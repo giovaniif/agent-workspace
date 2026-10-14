@@ -57,7 +57,7 @@ func quits(cmd tea.Cmd) bool {
 func TestNewSessionPopupLooksLikeTheMockup(t *testing.T) {
 	m, _ := popupModel(t, repoWorkspaces(rpc.State{}), 100)
 	out := screen(m)
-	for _, want := range []string{"New session", "esc", "Work item", "Workspace", "Harness", "Model", "Effort", "● claude", "○ codex", "cancel", "⏎ create"} {
+	for _, want := range []string{"New session", "esc", "Task (optional)", "Workspace", "Harness", "Model", "Effort", "● claude", "○ codex", "cancel", "⏎ create"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("no %q in the popup:\n%s", want, out)
 		}

@@ -31,7 +31,7 @@ func TestServeNewSessionRefusesBadBodies(t *testing.T) {
 	f := newFakeDaemon()
 	f.devices[goodToken] = phone
 	_, ts := startServer(t, f, serve.Config{URL: publicURL})
-	for _, body := range []string{`nope`, `{}`, `{"work_item":"x"}`, `{"harness":"claude"}`, `{"work_item":"x","harness":"claude","workspace":"api"}`} {
+	for _, body := range []string{`nope`, `{}`, `{"work_item":"x"}`, `{"work_item":"x","harness":"claude","workspace":"api"}`} {
 		status, out := do(t, ts, "POST", "/api/v1/sessions", goodToken, body)
 		if status != http.StatusBadRequest || errorCode(t, out) != rpc.CodeBadRequest {
 			t.Fatalf("%s: status %d %s", body, status, out)
@@ -88,4 +88,17 @@ func TestServeResolveRequiresAnItemAndPassesTheDaemonsVerdictThrough(t *testing.
 		t.Fatalf("status %d %s", status, out)
 	}
 	golden(t, "work-item-bad.json", out)
+}
+
+func TestServeNewSessionStartsWithoutAWorkItem(t *testing.T) {
+	f := newFakeDaemon()
+	f.devices[goodToken] = phone
+	_, ts := startServer(t, f, serve.Config{URL: publicURL})
+	status, out := do(t, ts, "POST", "/api/v1/sessions", goodToken, `{"harness":"claude"}`)
+	if status != http.StatusOK {
+		t.Fatalf("status %d %s", status, out)
+	}
+	if got := f.paramsOf(rpc.MethodNewSession); len(got) != 1 {
+		t.Fatalf("calls %s", got)
+	}
 }

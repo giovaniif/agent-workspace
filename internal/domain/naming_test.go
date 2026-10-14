@@ -130,3 +130,26 @@ func TestNamingResolvedTitle(t *testing.T) {
 		})
 	}
 }
+
+func TestNamingFromTheFirstPrompt(t *testing.T) {
+	cases := []struct {
+		name    string
+		task    Task
+		prompt  string
+		want    Task
+		changed bool
+	}{
+		{"an empty text task takes the prompt", Task{Source: TaskText}, "  fix the flaky upload test \n", Task{Source: TaskText, Text: "fix the flaky upload test"}, true},
+		{"a blank prompt changes nothing", Task{Source: TaskText}, "  ", Task{Source: TaskText}, false},
+		{"a task with text keeps it", Task{Source: TaskText, Text: "mine"}, "other", Task{Source: TaskText, Text: "mine"}, false},
+		{"a PR task keeps its ref", Task{Source: TaskPR, Ref: "api#1"}, "other", Task{Source: TaskPR, Ref: "api#1"}, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, changed := NameFromPrompt(c.task, c.prompt)
+			if got != c.want || changed != c.changed {
+				t.Errorf("NameFromPrompt = %+v, %v; want %+v, %v", got, changed, c.want, c.changed)
+			}
+		})
+	}
+}

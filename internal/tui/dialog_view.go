@@ -140,7 +140,7 @@ func (m Model) dialogLines() ([]string, int, []string) {
 	} else if d.workItem == "" {
 		item = []piece{{s.dim, "a GitHub PR or a few words"}}
 	}
-	add(fieldWorkItem, append([]string{m.label(fieldWorkItem, "Work item")}, m.box(w, item, d.field == fieldWorkItem)...)...)
+	add(fieldWorkItem, append([]string{m.label(fieldWorkItem, "Task (optional)")}, m.box(w, item, d.field == fieldWorkItem)...)...)
 	out = append(out, m.line(false, []piece{{s.sub, " " + workItemPreview(d.workItem)}}, nil), "")
 
 	ws := []piece{{s.dim, "none: type a folder's path"}}
@@ -508,7 +508,7 @@ func workspaceKind(w domain.Workspace) string {
 
 func workItemPreview(input string) string {
 	if strings.TrimSpace(input) == "" {
-		return "the session is named after it"
+		return "empty: the first prompt names it"
 	}
 	t := domain.ParseWorkItem(input)
 	switch t.Source {

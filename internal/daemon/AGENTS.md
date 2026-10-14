@@ -76,7 +76,7 @@ A worktree that a project holds is a container of tabs: the agent that made it, 
 See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
 - **Start.** `n` in the TUI or `agentws new` calls `session.new`.
-  - The work item is a GitHub PR URL or text. A URL of a different shape stays text (`domain.ParseWorkItem`).
+  - The work item is a GitHub PR URL or text. A URL of a different shape stays text (`domain.ParseWorkItem`). It can be empty. Then the session gets its own text task, and its first `UserPromptSubmit` prompt becomes the text of that task (`domain.NameFromPrompt`).
   - A single repo gets one worktree at `$AGENTWS_HOME/worktrees/<repo>/<slug>`, branched from `origin/<default>`, and its setup recipe runs.
   - An orchestration root starts at the root with no worktree (`domain.PlanSessionStart`).
 - **First prompt.** `session.new` takes an optional `prompt`.

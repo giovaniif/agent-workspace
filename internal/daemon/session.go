@@ -140,6 +140,9 @@ func (d *Daemon) startSession(p rpc.NewSessionParams, prompt string) (domain.Ses
 	queued := false
 	ok = d.query(func(s *state) {
 		if in.isNew {
+			if task, named := domain.NameFromPrompt(in.task, p.Prompt); named {
+				in.task = task
+			}
 			s.emit(TaskChanged{Task: in.task})
 			d.resolveTitleAsync(in.task)
 		}

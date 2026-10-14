@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -13,9 +12,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const newUsage = "usage: agentws new [--workspace path] [--harness claude|codex|omp] [--model m] [--effort e] <work item>"
-
-var errNoWorkItem = errors.New("no work item")
+const newUsage = "usage: agentws new [--workspace path] [--harness claude|codex|omp] [--model m] [--effort e] [task]"
 
 func parseNewArgs(args []string, stderr io.Writer) (rpc.NewSessionParams, error) {
 	fs := flag.NewFlagSet("new", flag.ContinueOnError)
@@ -29,9 +26,6 @@ func parseNewArgs(args []string, stderr io.Writer) (rpc.NewSessionParams, error)
 		return p, err
 	}
 	p.WorkItem = strings.TrimSpace(strings.Join(fs.Args(), " "))
-	if p.WorkItem == "" {
-		return p, errNoWorkItem
-	}
 	if p.Workspace != "" {
 		abs, err := filepath.Abs(p.Workspace)
 		if err != nil {
