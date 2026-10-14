@@ -5,6 +5,7 @@ import { timeInState } from "../sessions";
 import type { Message, QueuedSend, Session, StreamClient, StreamSnapshot, StreamStatus } from "../stream";
 import { emptyTranscript, newestCursor, toolRow, withFrame, withPage, type Transcript } from "../transcript";
 import { Connection, sessionTitle } from "./SessionList";
+import { legacyBrowserWord } from "../legacy";
 
 const stateLabels: Record<string, string> = {
   running: "working",
@@ -130,7 +131,7 @@ function OlderRow({ t, loading, failed, onLoad }: { t: Transcript; loading: bool
   );
 }
 
-const browserCommand = /\b(crew|agentws) browser\b/;
+const browserCommand = new RegExp(`\\b(crew|${legacyBrowserWord}) browser\\b`);
 
 export function usesBrowser(messages: Message[]): boolean {
   return messages.some((m) => m.role === "tool" && browserCommand.test(m.tool?.summary ?? ""));
