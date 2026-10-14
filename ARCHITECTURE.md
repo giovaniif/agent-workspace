@@ -103,4 +103,5 @@ Do not let clean layers add latency. Apply these rules:
 | `session.new` + `session.focus` (no recipe) | < 1 s |
 | Discovery over 15 repos | < 300 ms |
 | Browser command through the daemon, without the work of the browser | < 5 ms (`BenchmarkBrowserRoundTrip`) |
+| Memory of one headless browser (PSS of its process group, one simple page) | < 350 MB with full Chromium (measured 321 MB), < 100 MB with `chrome-headless-shell` (measured 41 MB). `[browser] max_headless` (default 2) limits the total. |
 | Clone a 1 GB `node_modules` | < 5 s, < 50 MB |
