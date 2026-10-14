@@ -230,6 +230,7 @@ public final class BrowserWebViews {
     var requested: [String: String] = [:]
     private var reported: [String: [String]] = [:]
     public var report: @MainActor (String, String, String) -> Void = { _, _, _ in }
+    public var loading: @MainActor (String) -> Void = { _ in }
     public var profile: @MainActor (String) -> String = { _ in BrowserProfile.standard.id }
 
     public init() {}
@@ -313,6 +314,7 @@ struct WebTab: NSViewRepresentable {
         guard !tab.url.isEmpty, views.requested[tab.id] != tab.url, view.url?.absoluteString != tab.url, let url = URL(string: tab.url) else { return }
         views.requested[tab.id] = tab.url
         view.load(URLRequest(url: url))
+        views.loading(tab.id)
     }
 }
 
