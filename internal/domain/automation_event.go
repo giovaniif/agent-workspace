@@ -72,7 +72,10 @@ func WorktreeAutomationEvents(old *Worktree, wt Worktree) []AutomationEvent {
 	return out
 }
 
-func SessionAutomationEvents(old, s Session, workItem string) []AutomationEvent {
+func SessionAutomationEvents(old, s Session, workItem, repo string) []AutomationEvent {
+	if repo == "" {
+		repo = s.Dir
+	}
 	name := ""
 	switch {
 	case s.State == StateDone && old.State != StateDone:
@@ -83,7 +86,7 @@ func SessionAutomationEvents(old, s Session, workItem string) []AutomationEvent 
 		return nil
 	}
 	return []AutomationEvent{{
-		Name: name, Repo: s.Dir, Subject: s.ID, WorkItem: workItem,
+		Name: name, Repo: repo, Subject: s.ID, WorkItem: workItem,
 		Text: fmt.Sprintf("%s: session %s (%s) is %s in %s", name, s.ID, workItem, s.State, s.Dir),
 	}}
 }

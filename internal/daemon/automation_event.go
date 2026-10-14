@@ -36,7 +36,14 @@ func (s *state) sessionAutomationEvents(next domain.Session) {
 	if workItem == "" {
 		workItem = task.Text
 	}
-	s.automationEvents(domain.SessionAutomationEvents(old, next, workItem))
+	repo := ""
+	for _, id := range next.WorktreeIDs {
+		if w, ok := s.worktrees[id]; ok && w.Repo != "" {
+			repo = w.Repo
+			break
+		}
+	}
+	s.automationEvents(domain.SessionAutomationEvents(old, next, workItem, repo))
 }
 
 func (d *Daemon) runAutomationEvents(ctx context.Context, events <-chan domain.AutomationEvent) {
