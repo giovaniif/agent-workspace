@@ -121,7 +121,7 @@ func TestDaemonOfAnotherBuildStopsRetryingAndOffersARestart(t *testing.T) {
 		t.Fatal("keeps retrying a daemon of another build")
 	}
 	out := screen(m)
-	for _, want := range []string{"agentws was upgraded", "r restart", "q quit"} {
+	for _, want := range []string{"crew was upgraded", "r restart", "q quit"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("no %q on a version mismatch:\n%s", want, out)
 		}
@@ -149,7 +149,7 @@ func TestDaemonOfAnotherBuildWithoutRestartSaysToRunAgentwsAgain(t *testing.T) {
 	m, _ := step(t, reconnectingModel(f, &fakeCaller{}, false), tui.DisconnectedMsg{})
 	m, _ = redial(t, m)
 	out := screen(m)
-	if !strings.Contains(out, "agentws was upgraded") || !strings.Contains(out, "q quit, then run agentws") {
+	if !strings.Contains(out, "crew was upgraded") || !strings.Contains(out, "q quit, then run crew") {
 		t.Fatalf("no upgrade hint without a restart:\n%s", out)
 	}
 	if strings.Contains(out, "r restart") {

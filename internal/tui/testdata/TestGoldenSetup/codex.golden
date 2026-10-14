@@ -1,14 +1,14 @@
 
-      Set up agentws                                                        esc skip 
+      Set up crew                                                           esc skip 
      
       Agents › Claude Code › Codex › Neovim › Done                                   
      
       Codex                                                               not set up 
      
       ▌ Changes /Users/me/.codex/hooks.json                                          
-      ▌ Adds the agentws hooks. Your other hooks stay as they are.                   
+      ▌ Adds the crew hooks. Your other hooks stay as they are.                      
       ▌ Backup  /Users/me/.codex/hooks.json.agentws-<time>.bak                       
-      ▌ Undo    agentws setup codex --remove                                         
+      ▌ Undo    crew setup codex --remove                                            
      
       ▌ ! One more step in Codex                                                     
       ▌ Codex runs a hook only after you trust it. Start codex and accept the review 

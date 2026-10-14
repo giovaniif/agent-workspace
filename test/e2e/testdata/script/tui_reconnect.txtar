@@ -1,6 +1,6 @@
 exec agentws daemon start
 exec tmux -L $AGENTWS_TMUX_SOCKET new-session -d -s tui -x 48 -y 24 -e AGENTWS_HOME=$AGENTWS_HOME -e AGENTWS_NO_UPDATE_CHECK=1 agentws tui
-eventually 'Set up agentws' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
+eventually 'Set up crew' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
 exec tmux -L $AGENTWS_TMUX_SOCKET send-keys -t tui Escape
 eventually '0 sessions' tmux -L $AGENTWS_TMUX_SOCKET capture-pane -p -t tui
 
