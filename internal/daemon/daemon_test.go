@@ -21,7 +21,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/version"
 )
 
-func shortDir(t *testing.T) string {
+func shortDir(t testing.TB) string {
 	t.Helper()
 	dir, err := os.MkdirTemp("/tmp", "agentws-d")
 	if err != nil {
@@ -31,7 +31,7 @@ func shortDir(t *testing.T) string {
 	return dir
 }
 
-func start(t *testing.T, store app.Store, opts ...daemon.Option) (*daemon.Daemon, string) {
+func start(t testing.TB, store app.Store, opts ...daemon.Option) (*daemon.Daemon, string) {
 	t.Helper()
 	d, err := daemon.New(store, 1234, opts...)
 	if err != nil {
@@ -55,7 +55,7 @@ func start(t *testing.T, store app.Store, opts ...daemon.Option) (*daemon.Daemon
 	return d, path
 }
 
-func dial(t *testing.T, path string) *rpc.Client {
+func dial(t testing.TB, path string) *rpc.Client {
 	t.Helper()
 	c, err := rpc.Dial(path)
 	if err != nil {
