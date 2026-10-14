@@ -2,6 +2,7 @@ package daemon_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -1013,4 +1014,89 @@ func (r *fakeRunner) ran() []string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return append([]string(nil), r.runs...)
+}
+
+type fakeHeadless struct {
+	mu      sync.Mutex
+	opened  []string
+	tabs    map[string]*fakeHeadlessTab
+	openErr error
+}
+
+type fakeHeadlessTab struct {
+	mu      sync.Mutex
+	session string
+	calls   []string
+	cookies []domain.BrowserCookie
+	closed  bool
+}
+
+func (f *fakeHeadless) Open(_ context.Context, session string) (app.HeadlessTab, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.openErr != nil {
+		return nil, f.openErr
+	}
+	if f.tabs == nil {
+		f.tabs = map[string]*fakeHeadlessTab{}
+	}
+	tab := &fakeHeadlessTab{session: session}
+	f.opened = append(f.opened, session)
+	f.tabs[session] = tab
+	return tab, nil
+}
+
+func (f *fakeHeadless) tab(session string) *fakeHeadlessTab {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.tabs[session]
+}
+
+func (f *fakeHeadless) openCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.opened)
+}
+
+func (t *fakeHeadlessTab) Run(_ context.Context, command string, args json.RawMessage) (json.RawMessage, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed {
+		return nil, errors.New("closed")
+	}
+	t.calls = append(t.calls, command+" "+string(args))
+	if command == "eval" {
+		return nil, errors.New("ReferenceError: nope is not defined")
+	}
+	return json.Marshal(map[string]string{"text": "headless " + command, "session": t.session})
+}
+
+func (t *fakeHeadlessTab) SetCookies(_ context.Context, cookies []domain.BrowserCookie) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.cookies = append(t.cookies, cookies...)
+	return nil
+}
+
+func (t *fakeHeadlessTab) Close() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.closed = true
+	return nil
+}
+
+func (t *fakeHeadlessTab) isClosed() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.closed
+}
+
+func (t *fakeHeadlessTab) cookieNames() []string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	var out []string
+	for _, c := range t.cookies {
+		out = append(out, c.Name+"="+c.Value)
+	}
+	return out
 }
