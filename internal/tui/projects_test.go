@@ -147,7 +147,7 @@ func TestClickingAProjectRowOpensTheDialogInIt(t *testing.T) {
 }
 
 func TestOpeningAProjectWithAPopupPassesItsRoot(t *testing.T) {
-	popup := rpc.ClientPopupParams{Command: []string{"agentws", "tui", "--new-session"}, Env: map[string]string{"AGENTWS_HOME": "/h"}}
+	popup := rpc.ClientPopupParams{Command: []string{"agentws", "tui", "--new-session"}, Env: map[string]string{"CREW_HOME": "/h"}}
 	m, c := projectsModel(t, withProjects(rpc.State{}), tui.Options{DialogPopup: popup})
 	m = press(m, "P", "j")
 	pressCmd(m, keyEnter)
@@ -155,10 +155,10 @@ func TestOpeningAProjectWithAPopupPassesItsRoot(t *testing.T) {
 		t.Fatalf("calls %v", got)
 	}
 	got := c.calls[0].params.(rpc.ClientPopupParams)
-	if got.Env["AGENTWS_PROJECT"] != "/src/shop" || got.Env["AGENTWS_HOME"] != "/h" {
+	if got.Env["CREW_PROJECT"] != "/src/shop" || got.Env["CREW_HOME"] != "/h" {
 		t.Fatalf("popup env %+v", got.Env)
 	}
-	if _, leaked := popup.Env["AGENTWS_PROJECT"]; leaked {
+	if _, leaked := popup.Env["CREW_PROJECT"]; leaked {
 		t.Fatal("opening a project changed the shared popup env")
 	}
 }

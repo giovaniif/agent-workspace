@@ -47,7 +47,7 @@ func Run(ctx context.Context, home string) (err error) {
 		log.Printf("[ui] mouse ignored: %v", err)
 	}
 	host := tmux.New(tmux.Config{
-		Socket:     os.Getenv("AGENTWS_TMUX_SOCKET"),
+		Socket:     domain.Env(os.Getenv, "TMUX_SOCKET"),
 		ConfigPath: filepath.Join(home, "tmux.conf"),
 		NoMouse:    noMouse,
 	})
@@ -161,18 +161,18 @@ type testHooks struct {
 
 func testHooksFromEnv(getenv func(string) string) testHooks {
 	var h testHooks
-	if v := getenv("AGENTWS_TEST_CLOCK"); v != "" {
+	if v := domain.Env(getenv, "TEST_CLOCK"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			h.clockSkew = d
 		} else {
-			log.Printf("AGENTWS_TEST_CLOCK ignored: %v", err)
+			log.Printf("CREW_TEST_CLOCK ignored: %v", err)
 		}
 	}
-	if v := getenv("AGENTWS_TEST_PR_POLL"); v != "" {
+	if v := domain.Env(getenv, "TEST_PR_POLL"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil && d > 0 {
 			h.prPoll = d
 		} else {
-			log.Printf("AGENTWS_TEST_PR_POLL ignored: %q", v)
+			log.Printf("CREW_TEST_PR_POLL ignored: %q", v)
 		}
 	}
 	return h

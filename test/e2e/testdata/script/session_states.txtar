@@ -9,7 +9,7 @@ mkdir $AGENTWS_E2E/gates/ask
 eventually ' state=waiting ' agentws debug session --once $SID
 mkdir $AGENTWS_E2E/gates/finish
 eventually ' state=done ' agentws debug session --once $SID
-eventually '^-title\tadd a thing · api@\S+\t-message\twaiting: Shall I go on\?\t-group\t'$SID'\t-execute\tAGENTWS_HOME=.* focus '''$SID'''\t$' cat $AGENTWS_E2E/terminal-notifier.log
+eventually '^-title\tadd a thing · api@\S+\t-message\twaiting: Shall I go on\?\t-group\t'$SID'\t-execute\tCREW_HOME=.* focus '''$SID'''\t$' cat $AGENTWS_E2E/terminal-notifier.log
 exec agentws focus $SID
 eventually '^-remove\t'$SID'\t$' cat $AGENTWS_E2E/terminal-notifier.log
 

@@ -2,33 +2,33 @@
 set -eu
 
 repo=giovaniif/agent-workspace
-dir=${AGENTWS_INSTALL_DIR:-$HOME/.local/bin}
+dir=${CREW_INSTALL_DIR:-${AGENTWS_INSTALL_DIR:-$HOME/.local/bin}}
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 case $(uname -m) in
   arm64|aarch64) arch=arm64 ;;
   x86_64|amd64) arch=amd64 ;;
-  *) echo "agentws: unsupported CPU $(uname -m)" >&2; exit 1 ;;
+  *) echo "crew: unsupported CPU $(uname -m)" >&2; exit 1 ;;
 esac
 case "$os/$arch" in
   darwin/arm64|darwin/amd64|linux/amd64|linux/arm64) ;;
-  *) echo "agentws: no build for $os/$arch" >&2; exit 1 ;;
+  *) echo "crew: no build for $os/$arch" >&2; exit 1 ;;
 esac
 
-tag=${AGENTWS_VERSION:-}
-if [ -z "$tag" ] && [ -n "${AGENTWS_DOWNLOAD_BASE:-}" ]; then
+tag=${CREW_VERSION:-${AGENTWS_VERSION:-}}
+if [ -z "$tag" ] && [ -n "${CREW_DOWNLOAD_BASE:-${AGENTWS_DOWNLOAD_BASE:-}}" ]; then
   tag=snapshot
 fi
 if [ -z "$tag" ]; then
   tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases?per_page=1" |
     sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
 fi
-[ -n "$tag" ] || { echo "agentws: no release found" >&2; exit 1; }
+[ -n "$tag" ] || { echo "crew: no release found" >&2; exit 1; }
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-archive=agentws_${os}_${arch}.tar.gz
-base=${AGENTWS_DOWNLOAD_BASE:-https://github.com/$repo/releases/download/$tag}
+archive=crew_${os}_${arch}.tar.gz
+base=${CREW_DOWNLOAD_BASE:-${AGENTWS_DOWNLOAD_BASE:-https://github.com/$repo/releases/download/$tag}}
 curl -fsSL -o "$tmp/$archive" "$base/$archive"
 curl -fsSL -o "$tmp/checksums.txt" "$base/checksums.txt"
 
@@ -38,19 +38,24 @@ if command -v sha256sum >/dev/null 2>&1; then
 else
   got=$(shasum -a 256 "$tmp/$archive" | cut -d' ' -f1)
 fi
-[ -n "$want" ] && [ "$want" = "$got" ] || { echo "agentws: checksum mismatch for $archive" >&2; exit 1; }
+[ -n "$want" ] && [ "$want" = "$got" ] || { echo "crew: checksum mismatch for $archive" >&2; exit 1; }
 
-tar -xzf "$tmp/$archive" -C "$tmp" agentws nvim
+tar -xzf "$tmp/$archive" -C "$tmp" crew nvim
 mkdir -p "$dir"
-mv "$tmp/agentws" "$dir/agentws"
-chmod 755 "$dir/agentws"
-echo "installed agentws $tag to $dir/agentws"
+chmod 755 "$tmp/crew"
+"$tmp/crew" version >/dev/null || { echo "crew: the new binary does not run" >&2; exit 1; }
+mv "$tmp/crew" "$dir/crew"
+if [ -e "$dir/agentws" ] && [ ! -L "$dir/agentws" ]; then
+  "$dir/crew" version >/dev/null && rm -f "$dir/agentws"
+fi
+ln -sfn crew "$dir/agentws"
+echo "installed crew $tag to $dir/crew ($dir/agentws links to it)"
 share=${XDG_DATA_HOME:-$HOME/.local/share}/agentws
 mkdir -p "$share"
 rm -rf "$share/nvim"
 mv "$tmp/nvim" "$share/nvim"
-echo "installed the nvim plugin to $share/nvim; run agentws to set up Claude, Codex and nvim"
+echo "installed the nvim plugin to $share/nvim; run crew to set up Claude, Codex and nvim"
 case ":$PATH:" in *":$dir:"*) ;; *) echo "add $dir to your PATH" ;; esac
-if "$dir/agentws" daemon status >/dev/null 2>&1; then
-  echo "a daemon from the previous version is running: run 'agentws daemon stop' so the next 'agentws' starts the new one"
+if "$dir/crew" daemon status >/dev/null 2>&1; then
+  echo "a daemon from the previous version is running: run 'crew daemon stop' so the next 'crew' starts the new one"
 fi

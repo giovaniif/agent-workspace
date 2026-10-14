@@ -32,9 +32,9 @@ jobs:
         working-directory: web
       - run: AGENTWS_WEB_BUILT=1 go test ./internal/serve/ -run Static
       - run: make build
-      - run: ./bin/agentws version
+      - run: ./bin/crew version
       - run: make lint
-      - run: BUDGET_SCALE=2 scripts/bench-hook.sh ./bin/agentws
+      - run: BUDGET_SCALE=2 scripts/bench-hook.sh ./bin/crew
       - run: brew list tmux >/dev/null 2>&1 || brew install tmux
       - run: brew list neovim >/dev/null 2>&1 || brew install neovim
       - run: go test ./...

@@ -1,8 +1,8 @@
 # internal/view
 
-The derived view of the daemon's state. With it, native clients never implement `domain` rules again. The phone stream of `serve` and the `view.subscribe` of the bridge (`agentws rpc`, see [cmd/agentws/](../../cmd/agentws/AGENTS.md)) both use it. See [ADR 0049](../../docs/adr/0049-macos-app.md), "A derived view, shared with serve".
+The derived view of the daemon's state. With it, native clients never implement `domain` rules again. The phone stream of `serve` and the `view.subscribe` of the bridge (`agentws rpc`, see [cmd/crew/](../../cmd/crew/AGENTS.md)) both use it. See [ADR 0049](../../docs/adr/0049-macos-app.md), "A derived view, shared with serve".
 
-Tests: `go test ./internal/view/ ./internal/serve/ ./cmd/agentws/ -run 'View|Serve|Rpc'`. Goldens are in `testdata/` (`view-subscribe-state.json`, `view-subscribe-diffs.json`). The Swift tests of the Mac app decode the same files. To make them again, run `go test ./internal/view -update` and review the diff. A changed golden is a changed API.
+Tests: `go test ./internal/view/ ./internal/serve/ ./cmd/crew/ -run 'View|Serve|Rpc'`. Goldens are in `testdata/` (`view-subscribe-state.json`, `view-subscribe-diffs.json`). The Swift tests of the Mac app decode the same files. To make them again, run `go test ./internal/view -update` and review the diff. A changed golden is a changed API.
 
 ## Layers
 

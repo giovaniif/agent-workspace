@@ -25,7 +25,7 @@ This document gives the top-level design of `agentws`. [FEATURES.md](FEATURES.md
 ## Layers
 
 ```
-cmd/agentws            main: subcommands (daemon, tui, hook, setup, new, cleanup, ...)
+cmd/crew            main: subcommands (daemon, tui, hook, setup, new, cleanup, ...)
 internal/domain        pure types and rules. No IO, no imports from other internal packages.
 internal/app           use cases + ports (interfaces the use cases need)
 internal/adapters/...  tmux, git, github, claude, codex, sqlite, notify, procs (lsof/ports), nvim, fs, setup, onboard
@@ -64,7 +64,7 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` and `serve` t
 
 | Subsystem | Where |
 |---|---|
-| CLI, hook process, startup cost | [cmd/agentws/AGENTS.md](cmd/agentws/AGENTS.md) |
+| CLI, hook process, startup cost | [cmd/crew/AGENTS.md](cmd/crew/AGENTS.md) |
 | Protocol, methods, build handshake, client | [internal/rpc/AGENTS.md](internal/rpc/AGENTS.md) |
 | Daemon process, event loop, workspaces, sessions, naming, fallback, attention, worktrees and PRs, ports, cleanup schedule, review sends, shell and nvim | [internal/daemon/AGENTS.md](internal/daemon/AGENTS.md) |
 | Domain rules: state machine, discovery, attribution, review | [internal/domain/AGENTS.md](internal/domain/AGENTS.md) |

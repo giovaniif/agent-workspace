@@ -1,8 +1,8 @@
 ! exec sh -c 'exec agentws notify stream 2>$WORK/stream.err' &stream&
-eventually '^agentws notify stream: waiting for the daemon$' cat stream.err
+eventually '^crew notify stream: waiting for the daemon$' cat stream.err
 exec agentws daemon start
-stdout '^agentws daemon started \(pid [0-9]+\)$'
-eventually '^agentws notify stream: connected$' cat stream.err
+stdout '^crew daemon started \(pid [0-9]+\)$'
+eventually '^crew notify stream: connected$' cat stream.err
 
 repo api
 exec agentws workspace add api

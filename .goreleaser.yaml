@@ -1,14 +1,16 @@
 version: 2
 
-project_name: agentws
+project_name: crew
 
 before:
   hooks:
     - env -u GITHUB_TOKEN -u GH_TOKEN make web
+    - mkdir -p build/alias
+    - ln -sfn crew build/alias/agentws
 
 builds:
-  - main: ./cmd/agentws
-    binary: agentws
+  - main: ./cmd/crew
+    binary: crew
     env:
       - CGO_ENABLED=0
     goos: [darwin, linux]
@@ -21,6 +23,8 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
+      - src: build/alias/agentws
+        strip_parent: true
       - nvim/lua/**/*
       - nvim/plugin/*
 

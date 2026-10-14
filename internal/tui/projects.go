@@ -15,7 +15,7 @@ import (
 
 const ownProject = "pr:"
 
-const projectEnv = "AGENTWS_PROJECT"
+var projectEnv = domain.EnvName("PROJECT")
 
 type projectsPanel struct {
 	cursor   int
