@@ -189,6 +189,21 @@ struct ServersTests {
         #expect(!server.bin.read("daemon.log").contains("--remove"))
     }
 
+    @Test(.timeLimit(.minutes(1))) func aServerWithOnlyAgentwsOfTheSameBuildGetsCrew() async throws {
+        let server = try FakeServer()
+        try server.installOld(build: "v1.2.0 abc")
+        let setup = server.setup()
+        await setup.setUp()
+        #expect(setup.error == nil)
+        #expect(server.remoteBuild == "v1.2.0 abc")
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: server.home + "/.local/bin/agentws") == "crew")
+    }
+
+    @Test func aProbeTellsWhenItFoundOnlyTheAgentwsBinary() {
+        #expect(Probe.parse("kernel=Linux\nlegacy=1\nbuild=v1\n").legacy)
+        #expect(!Probe.parse("kernel=Linux\nbuild=v1\n").legacy)
+    }
+
     @Test(.timeLimit(.minutes(1))) func aHostThatNeedsAPasswordFailsFastAboutKeyOrAgentLogin() async throws {
         let server = try FakeServer(password: true)
         let setup = server.setup()
