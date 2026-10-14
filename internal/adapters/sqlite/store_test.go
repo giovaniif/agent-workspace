@@ -42,7 +42,7 @@ func reopen(t *testing.T, s *Store, path string) *Store {
 func TestRoundTripsEveryDomainType(t *testing.T) {
 	s, path := openTemp(t)
 	ws := domain.Workspace{Root: "/src/shop", Kind: domain.WorkspaceOrchestration, Repos: []domain.Repo{{Name: "api", Path: "/src/shop/api"}, {Name: "web", Path: "/src/shop/web"}}}
-	task := domain.Task{ID: "t1", Source: domain.TaskLinear, Ref: "#42", Text: "fix login", IssueTitle: "Login fails", PinnedName: "login"}
+	task := domain.Task{ID: "t1", Source: domain.TaskPR, Ref: "#42", Text: "fix login", IssueTitle: "Login fails", PinnedName: "login"}
 	wt := domain.Worktree{ID: "w1", Repo: "api", Path: "/wt/api-42", Branch: "42-login", PR: &domain.PullRequest{Number: 7, Title: "fix login", URL: "https://example.com/pr/7"}, SubtaskSlug: "api"}
 	wtNoPR := domain.Worktree{ID: "w2", Repo: "web", Path: "/wt/web-42", Branch: "42-web"}
 	sess := domain.Session{ID: "s1", TaskID: "t1", Harness: domain.HarnessCodex, Model: "m", Effort: "high", Transcript: "/home/dev/.codex/sessions/rollout-1.jsonl", State: domain.StatePermission, Unread: true, Focused: true, Muted: true, WorktreeIDs: []string{"w1", "w2"}, Usage: domain.Usage{ContextLeftPercent: 40, LimitUsedPercent: 12}}

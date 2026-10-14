@@ -1,7 +1,7 @@
 {
-  "source": "linear",
-  "ref": "ENG-12",
+  "source": "pr",
+  "ref": "api#12",
   "title": "Fix the login redirect",
-  "worktree": "eng-12",
+  "worktree": "api-12",
   "workspace": "/home/me/api"
 }
