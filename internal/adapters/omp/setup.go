@@ -15,7 +15,7 @@ import (
 
 const marker = "// agentws: written by agentws setup omp; agentws setup omp --remove deletes this file."
 
-var ErrNotOurs = errors.New("a file agentws did not write is in the way")
+var ErrNotOurs = errors.New("a file crew did not write is in the way")
 
 type SetupConfig struct {
 	Dir     string
@@ -105,7 +105,7 @@ func writeAtomic(file string, content []byte) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(dir, ".agentws-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".crew-*.tmp")
 	if err != nil {
 		return err
 	}

@@ -190,12 +190,12 @@ func (d *Daemon) automationSave(req rpc.Request) *rpc.Response {
 		return errorResponse(req.ID, rpc.CodeFailed, err.Error())
 	}
 	if _, err := configValues(src); err != nil {
-		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s does not parse, so agentws leaves it alone: %v", d.cfg.path, err))
+		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s does not parse, so crew leaves it alone: %v", d.cfg.path, err))
 	}
 	next := domain.SetAutomationBlock(src, a)
 	loaded, problems := loadAutomationsText(next, d.cfg.path)
 	if !slices.ContainsFunc(loaded, func(x domain.Automation) bool { return domain.AutomationHash(x) == domain.AutomationHash(a) }) {
-		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s has a form of %q that agentws cannot edit; change it there by hand %v", d.cfg.path, a.Name, problems))
+		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s has a form of %q that crew cannot edit; change it there by hand %v", d.cfg.path, a.Name, problems))
 	}
 	if next != src {
 		if err := d.replaceConfig(src, next); err != nil {

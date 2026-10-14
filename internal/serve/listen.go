@@ -129,7 +129,7 @@ func SelfSigned(dir, host string) (certFile, keyFile string, err error) {
 	now := time.Now()
 	tmpl := &x509.Certificate{
 		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: "agentws serve"},
+		Subject:               pkix.Name{CommonName: "crew serve"},
 		NotBefore:             now.Add(-time.Hour),
 		NotAfter:              now.Add(selfSignedFor),
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,

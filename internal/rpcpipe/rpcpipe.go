@@ -34,7 +34,7 @@ type views struct {
 func Run(socket string, in io.Reader, out io.Writer) error {
 	conn, err := net.Dial("unix", socket)
 	if err != nil {
-		line, _ := json.Marshal(rpc.Response{V: rpc.Version, Error: &rpc.Error{Code: rpc.CodeUnavailable, Message: "no agentws daemon is running: " + err.Error()}})
+		line, _ := json.Marshal(rpc.Response{V: rpc.Version, Error: &rpc.Error{Code: rpc.CodeUnavailable, Message: "no crew daemon is running: " + err.Error()}})
 		_, _ = out.Write(append(line, '\n'))
 		return ErrUnavailable
 	}

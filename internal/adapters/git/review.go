@@ -21,7 +21,7 @@ func (Review) WorkingTree(ctx context.Context, dir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tmp, err := os.CreateTemp("", "agentws-index-*")
+	tmp, err := os.CreateTemp("", "crew-index-*")
 	if err != nil {
 		return "", err
 	}
@@ -61,10 +61,10 @@ func copyInto(dst *os.File, src string) error {
 
 func (Review) PointRef(ctx context.Context, dir, ref, tree string) error {
 	env := []string{
-		"GIT_AUTHOR_NAME=agentws", "GIT_AUTHOR_EMAIL=agentws@localhost",
-		"GIT_COMMITTER_NAME=agentws", "GIT_COMMITTER_EMAIL=agentws@localhost",
+		"GIT_AUTHOR_NAME=crew", "GIT_AUTHOR_EMAIL=crew@localhost",
+		"GIT_COMMITTER_NAME=crew", "GIT_COMMITTER_EMAIL=crew@localhost",
 	}
-	commit, err := outputEnv(ctx, dir, env, "commit-tree", tree, "-m", "agentws turn snapshot")
+	commit, err := outputEnv(ctx, dir, env, "commit-tree", tree, "-m", "crew turn snapshot")
 	if err != nil {
 		return err
 	}

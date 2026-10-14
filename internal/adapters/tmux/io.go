@@ -10,7 +10,7 @@ import (
 )
 
 func (h *Host) SendText(ctx context.Context, pane app.PaneID, text string, bracketedPaste bool) error {
-	buffer := fmt.Sprintf("agentws-%d-%d", os.Getpid(), h.bufferSeq.Add(1))
+	buffer := fmt.Sprintf("crew-%d-%d", os.Getpid(), h.bufferSeq.Add(1))
 	if _, err := h.run(ctx, text, "load-buffer", "-b", buffer, "-"); err != nil {
 		return err
 	}

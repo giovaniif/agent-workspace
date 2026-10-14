@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	start = "\x1eagentws-login-path\x1e"
-	end   = "\x1fagentws-login-path\x1f"
+	start = "\x1ecrew-login-path\x1e"
+	end   = "\x1fcrew-login-path\x1f"
 )
 
 func Path(ctx context.Context, shell string) (string, error) {

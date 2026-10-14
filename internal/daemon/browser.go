@@ -138,7 +138,7 @@ func (d *Daemon) browserCommand(req rpc.Request) (*rpc.Response, bool) {
 			return nil, false
 		}
 		if session == "" {
-			return errorResponse(req.ID, rpc.CodeBadRequest, "no agentws session runs on pane "+p.Pane+": pass --session"), true
+			return errorResponse(req.ID, rpc.CodeBadRequest, "no crew session runs on pane "+p.Pane+": pass --session"), true
 		}
 	}
 	if session == "" {
