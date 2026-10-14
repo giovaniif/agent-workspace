@@ -47,7 +47,7 @@ func Run(ctx context.Context, home string) (err error) {
 		log.Printf("[ui] mouse ignored: %v", err)
 	}
 	host := tmux.New(tmux.Config{
-		Socket:     domain.Env(os.Getenv, "TMUX_SOCKET"),
+		Socket:     tmuxSocket(ctx),
 		ConfigPath: filepath.Join(home, "tmux.conf"),
 		NoMouse:    noMouse,
 	})
@@ -192,4 +192,11 @@ func readHarnessConfig() map[domain.Harness]StartDefaults {
 		out[domain.HarnessCodex] = StartDefaults{Model: model, Effort: effort}
 	}
 	return out
+}
+
+func tmuxSocket(ctx context.Context) string {
+	if env := domain.Env(os.Getenv, "TMUX_SOCKET"); env != "" {
+		return env
+	}
+	return domain.TmuxSocket("", tmux.HasAgentPanes(ctx, domain.LegacyTmuxServer))
 }

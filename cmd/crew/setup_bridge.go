@@ -14,6 +14,7 @@ import (
 
 	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
 	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
 const setupBridgeUsage = "usage: crew setup bridge [--remote-bin path] [--remove] <ssh host>"
@@ -73,7 +74,7 @@ func setupBridgeAgent(args []string, env func(string) string, self, userHome str
 	host := fs.Arg(0)
 	home := domain.Env(env, "HOME")
 	if home == "" {
-		home = filepath.Join(userHome, ".agentws")
+		home = rpc.DefaultHome(userHome)
 	}
 	program := []string{self, "notify", "bridge"}
 	if *remote != "agentws" {
@@ -86,7 +87,7 @@ func setupBridgeAgent(args []string, env func(string) string, self, userHome str
 	slug := labelSafe(host)
 	return launchd.Agent{
 		Dir:     filepath.Join(userHome, "Library", "LaunchAgents"),
-		Label:   "dev.agentws.bridge." + slug,
+		Label:   "dev.crew.bridge." + slug,
 		Program: append(program, host),
 		Env:     agentEnv,
 		Log:     filepath.Join(home, "bridge-"+slug+".log"),

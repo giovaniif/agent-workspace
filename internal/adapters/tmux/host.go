@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultSocket = "agentws"
+	DefaultSocket = "crew"
 	sessionName   = "agentws"
 	managedOption = "@agentws"
 	placeholder   = "tail -f /dev/null"

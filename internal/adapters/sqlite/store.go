@@ -73,11 +73,14 @@ func DefaultPath() (string, error) {
 	if home := domain.Env(os.Getenv, "HOME"); home != "" {
 		return filepath.Join(home, "state.db"), nil
 	}
-	home, err := os.UserHomeDir()
+	user, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".agentws", "state.db"), nil
+	_, newErr := os.Lstat(filepath.Join(user, domain.HomeDirName))
+	old, oldErr := os.Lstat(filepath.Join(user, domain.LegacyHomeDirName))
+	home := domain.ResolveHome(domain.HomeFacts{User: user, NewExists: newErr == nil, OldDir: oldErr == nil && old.IsDir()})
+	return filepath.Join(home, "state.db"), nil
 }
 
 func Open(path string) (*Store, error) {
