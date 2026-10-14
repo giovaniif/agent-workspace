@@ -93,3 +93,22 @@ func itoa(n int) string {
 	b, _ := json.Marshal(n)
 	return string(b)
 }
+
+func TestSetupClaudeAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", dir)
+	file := filepath.Join(dir, "skills", "agentws-browser", "SKILL.md")
+	var out, errOut bytes.Buffer
+	if code := run([]string{"setup", "claude"}, &out, &errOut); code != 0 {
+		t.Fatalf("setup: code %d, %s", code, errOut.String())
+	}
+	if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") || !strings.Contains(out.String(), file) {
+		t.Fatalf("skill: %v, stdout %q", err, out.String())
+	}
+	if code := run([]string{"setup", "claude", "--remove"}, &out, &errOut); code != 0 {
+		t.Fatalf("remove: code %d, %s", code, errOut.String())
+	}
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
+		t.Fatalf("skill left: %v", err)
+	}
+}

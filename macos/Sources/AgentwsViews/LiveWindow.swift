@@ -48,6 +48,7 @@ public struct LiveWindow: View {
 #if canImport(WebKit)
     @State private var webViews = BrowserWebViews()
     @State private var cookieImport: BrowserProfile?
+    @State private var agentLink: Task<Void, Never>?
 #endif
     @Environment(\.controlActiveState) private var activeState
     private let server: String
@@ -118,7 +119,14 @@ public struct LiveWindow: View {
 #if canImport(WebKit)
         let layered = content
             .environment(\.agentwsBrowser, webViews)
-            .onAppear { bindWebViews() }
+            .onAppear {
+                bindWebViews()
+                startBrowserLink()
+            }
+            .onDisappear {
+                agentLink?.cancel()
+                agentLink = nil
+            }
             .sheet(item: $cookieImport) { profile in
                 CookieImportSheet(profile: profile, store: webViews.store(for: profile.id).httpCookieStore) { cookieImport = nil }
             }
@@ -396,6 +404,16 @@ public struct LiveWindow: View {
     }
 
 #if canImport(WebKit)
+    private func startBrowserLink() {
+        guard agentLink == nil else { return }
+        let host = browserHost
+        let driver = BrowserDriver(browser: browser, profiles: profiles, webViews: webViews) { host }
+        let link = BrowserLink(endpoint: store.endpoint, build: store.build) { call in
+            await driver.run(call)
+        }
+        agentLink = Task { await link.run() }
+    }
+
     private func bindWebViews() {
         let browser = browser
         let profiles = profiles

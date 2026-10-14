@@ -65,7 +65,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
 - New session (`NewSession.swift`, view `NewSessionSheet`):
   - ⌘N opens the sheet. ⇧⌘N opens its Linear launcher tab. The New button of the toolbar also opens it.
   - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, the `[defaults.<harness>]` model and effort, and `max_parallel`. The app cannot read a remote `config.toml`.
-  - `NewSessionForm` preselects the workspace with the newest `LastUsed`. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
+  - `NewSessionForm` preselects the workspace with the newest `LastUsed`. `Timestamp.parse` reads the Go format (nanoseconds and an offset). While the sheet is open, `observe` syncs the list when the set of workspace roots in the view changes (for example, a workspace added in setup or removed in Settings). The selection stays, unless its workspace is gone. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
   - 300 ms after the last edit, `session.resolve` resolves the work item into a `WorkItemCard`: source, title, branch, and the path of an existing worktree on that branch. The form ignores a reply for an older text.
   - `warning` reads the `limits` of the view: the lowest `low` quota of the selected harness. It shows a switch button only when a different harness has reported limits and none of them is low (the rule of `domain.OfferFallback`).
   - Start (⌘↩) calls `session.new`, then `session.focus`, and the window selects the new session. A failure, for example the output of a setup recipe, stays in the sheet.
@@ -164,6 +164,15 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - Fixtures are in `Tests/testdata/cookies`. `swift test --filter CookieImport` runs the suite. The Chrome tests run only on macOS.
   - While `agentControl` is on, the tab shows "An agent controls this tab" and a Take over button.
   - Test: `swift test --filter Browser`. `SnapshotTests` draws `browser-latte`, `browser-mocha` and `browser-iphone`.
+- Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/agentws/](../cmd/agentws/AGENTS.md)):
+  - `BrowserLink` keeps its own `agentws rpc` process. It sends `browser.attach`, then runs each `browser` call that the daemon pushes and answers with `browser.reply`. After a drop, it connects again by `Backoff`. A `version_mismatch` stops it.
+  - `BrowserStep.of` changes a call into one step: a load, a page script, a poll, a sleep, a screenshot, the tabs, the cookies or a device. A bad call is a `BrowserRefusal`.
+  - The page scripts (`BrowserScript`) get their values as arguments of `callAsyncJavaScript`, never in the source. `snapshot` marks each element that it lists with `data-agentws-ref`. `click`, `fill` and `wait @eN` find the element by this mark.
+  - `BrowserPolicy` is the navigation policy of ADR 0051. `AgentGuard` applies it to each navigation, redirect and frame while an agent controls the tab. Before `snapshot`, `screenshot` and the other scripts, the driver checks the current address and the frames of the tab again.
+  - `screenshot` returns the PNG as base64. The CLI on the server writes the file.
+  - `cookies` returns names, domains and paths, never values.
+  - `LiveWindow` starts one link for each window. A new attach replaces the old one in the daemon.
+  - Test: `swift test --filter BrowserAgent`.
 - Attention (`Attention.swift`, screen 4; views `PermissionCardView`, `AttentionMenuView`, `UserNotifier`):
   - `NoticeStream` keeps a `notify.stream` process (with backoff, as `ViewStore` does) and gives each notice to `Attention`.
   - The `Notifier` port posts a banner (Go field names) as one notification for each session. The session ID is the request and thread identifier, so a newer banner replaces the older one. `remove` withdraws it.

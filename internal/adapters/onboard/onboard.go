@@ -13,6 +13,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
 	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
 	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
+	"github.com/giovaniif/agent-workspace/internal/adapters/skill"
 	"github.com/giovaniif/agent-workspace/internal/domain"
 )
 
@@ -84,6 +85,9 @@ func (p Probe) Install(_ context.Context, h domain.Harness) (domain.HarnessSetup
 		if err := claude.Setup(p.ClaudeSettings, p.Bin); err != nil {
 			return domain.HarnessSetup{}, err
 		}
+		if _, err := skill.Install(filepath.Dir(p.ClaudeSettings)); err != nil {
+			return domain.HarnessSetup{}, err
+		}
 		s := p.claudeSetup()
 		if !existed {
 			s.Backup = ""
@@ -92,6 +96,9 @@ func (p Probe) Install(_ context.Context, h domain.Harness) (domain.HarnessSetup
 	case domain.HarnessCodex:
 		res, err := codex.Setup(p.codexConfig())
 		if err != nil {
+			return domain.HarnessSetup{}, err
+		}
+		if _, err := skill.Install(p.CodexHome); err != nil {
 			return domain.HarnessSetup{}, err
 		}
 		s := p.codexSetup()
