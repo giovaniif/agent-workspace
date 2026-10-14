@@ -115,7 +115,7 @@ Two environment variables change this behavior:
 # a specific release
 curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | CREW_VERSION=v0.1.0-beta.1 sh
 # another directory
-curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | CREW_INSTALL_DIR=/usr/local/bin sh
+curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | CREW_INSTALL_DIR="$HOME/bin" sh
 ```
 
 If the install directory is not on your `PATH`, the script tells you. Add it in your shell profile (`~/.zshrc` or `~/.bashrc`):
@@ -154,11 +154,11 @@ crew
 
 crew was called agentws in the alphas. The first start of `crew` (or `crew setup`) moves your state one time, and writes one line for each step:
 
-- `~/.agentws` moves to `~/.crew`: sessions, worktrees, `config.toml` and paired phones. `~/.agentws` stays as a link. If an agentws daemon still runs, crew does not move the dir and tells you to run `crew daemon stop`.
+- If only `~/.agentws` exists, it moves to `~/.crew` (sessions, worktrees, `config.toml` and paired phones), and `~/.agentws` becomes a link. If both dirs exist, crew uses `~/.crew` and does not change `~/.agentws`. If an agentws daemon still runs, crew does not move the dir and tells you to run `crew daemon stop`.
 - Live sessions keep running: the daemon uses the old tmux server until its sessions end.
 - The Claude and Codex hooks run `crew hook` after the move. crew backs up each file first.
 - `crew setup` replaces the `agentws-*` systemd units and `dev.agentws.*` launchd agents with `crew-*` and `dev.crew.*`.
-- The nvim plugin dir moves to `~/.local/share/crew`.
+- The nvim plugin dir moves to `$XDG_DATA_HOME/crew` (`~/.local/share/crew` when `XDG_DATA_HOME` is not set).
 - The Mac app keeps your servers, settings and shortcuts.
 
 The `agentws` command and the `AGENTWS_*` variables work for one more release, and stop in v0.2.0.
@@ -171,7 +171,7 @@ Run `crew`. The first time, a setup screen opens on top of the sidebar:
 2. **Claude Code.** The screen shows the file that it changes (`~/.claude/settings.json`), what it adds, where the backup goes, and how to undo it (`crew setup claude --remove`).
 3. **Codex.** The same for `~/.codex/hooks.json`. Codex then needs a one-time trust step: start `codex` and accept the review prompt for the new hooks.
 4. **Neovim (optional).** It writes `~/.config/nvim/plugin/agentws.lua`, which loads the plugin. It does not edit your own files.
-5. **Done.** Press `n` to start your first session.
+5. **Done.** Press `⏎` to close the setup screen, then press `n` to start your first session.
 
 To open it again, press `S` in the sidebar or run `crew setup`. `crew setup claude`, `crew setup codex` and `crew setup nvim` do the same installs without the screen. More: [docs/getting-started.md](docs/getting-started.md).
 

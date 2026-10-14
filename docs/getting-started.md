@@ -18,7 +18,7 @@ Run `crew`. The first time, a setup screen opens on top of the sidebar:
    - `⏎` writes it, `s` skips.
    - It does not edit your own files (init.lua, init.vim, lazy.nvim specs). `crew setup nvim --remove` deletes the file.
    - Without nvim, the step tells how to install it (`brew install neovim`), and `⏎` continues. All keys except `e` and `o` work without nvim.
-5. **Done.** Press `n` to start your first session.
+5. **Done.** Press `⏎` to close the setup screen, then press `n` to start your first session.
 
 At each step, `esc` skips the remaining steps. After you finish or skip, the screen does not open again automatically. It never opens when a harness is already set up and nvim has nothing more to configure. To open it again, press `S` in the sidebar or run `crew setup`. `crew setup claude`, `crew setup codex` and `crew setup nvim` do the same installs without the screen.
 
@@ -59,7 +59,7 @@ The plugin needs `crew` on `PATH`. It works in the nvim that the `e` key starts,
 
 - `:AgentwsDiff [last_turn|uncommitted|branch]` opens a review scope of the session in diffview. The default is the scope that the review pane has open.
 - `:'<,'>AgentwsComment [text]` adds the selected lines as a draft review comment.
-- `setup{bin = 'agentws', tmux = 'tmux', navigate = true}`. With `navigate = false`, the plugin does not change `C-h/j/k/l` in nvim.
+- `require('agentws').setup({ bin = 'crew', tmux = 'tmux', navigate = true })`. With `navigate = false`, the plugin does not change `C-h/j/k/l` in nvim.
 
 ## Mouse
 

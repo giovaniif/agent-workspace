@@ -9,7 +9,7 @@ crew setup serve --addr 0.0.0.0:7420 --cert ~/machine.crt --key ~/machine.key
 crew setup serve --remove
 ```
 
-On Linux, it writes the systemd user unit `~/.config/systemd/user/crew-serve.service`. On macOS, it writes the launchd agent `~/Library/LaunchAgents/dev.crew.serve.plist`. Each one:
+On Linux, it writes the systemd user unit `$XDG_CONFIG_HOME/systemd/user/crew-serve.service` (`~/.config/systemd/user/crew-serve.service` when `XDG_CONFIG_HOME` is not set). On macOS, it writes the launchd agent `~/Library/LaunchAgents/dev.crew.serve.plist`. Each one:
 
 - starts at login with the `PATH` and `CREW_HOME` of the shell that ran the command
 - restarts `serve` if it exits
@@ -25,17 +25,17 @@ A systemd user service stops when your last login session ends, unless lingering
 
 ## Tailscale
 
-Both machines are on one tailnet, and nothing is open to the internet. Get a certificate for the name of the machine, and let `serve` use it:
+Both machines are on one tailnet, and nothing is open to the internet. Get a certificate for the name of the machine, and let `serve` use it. Bind `serve` to the tailnet address only, not to `0.0.0.0`:
 
 ```sh
 sudo tailscale cert machine.tailnet-name.ts.net
-crew setup serve --addr 0.0.0.0:7420 --cert machine.tailnet-name.ts.net.crt --key machine.tailnet-name.ts.net.key
+crew setup serve --addr "$(tailscale ip -4):7420" --cert machine.tailnet-name.ts.net.crt --key machine.tailnet-name.ts.net.key
 crew remote pair --url https://machine.tailnet-name.ts.net:7420
 ```
 
 1. Make the certificate and key readable by your user.
 2. Before they expire (about every 90 days), run `tailscale cert` again.
-3. Restart with `systemctl --user restart crew-serve`.
+3. Restart `serve`. On Linux: `systemctl --user restart crew-serve`. On macOS: `launchctl kickstart -k gui/$(id -u)/dev.crew.serve`.
 
 To use port 443 and renew without a change to `serve`, run a reverse proxy on the machine (see below). Let the proxy use the same certificate.
 
@@ -46,6 +46,8 @@ Keep `serve` on loopback. Let a proxy on the same machine terminate TLS with a L
 ```sh
 crew setup serve
 ```
+
+Caddy needs a DNS provider module and a `tls { dns <provider> ... }` block for a DNS-01 challenge. Without them, give Caddy a certificate that you already have (`tls cert.pem key.pem`). The example shows only the proxy part:
 
 ```caddyfile
 agent.example.com {
@@ -76,7 +78,6 @@ ingress:
 Create the Access application for `agent.example.com` with a policy that allows only you. The installed app must also go through Access. Access sessions end, so do one of these:
 
 - Use a long session duration.
-- Add a service token policy for the `/api/v1/*` path of the app, and keep the interactive login for the other paths.
 
 Without Access (or a different layer that authenticates), the tunnel is a public endpoint, and the warning above applies.
 
