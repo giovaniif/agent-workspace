@@ -1,0 +1,339 @@
+import Foundation
+import Testing
+@testable import CrewKit
+
+@MainActor
+final class NewSessionCaller: Caller {
+    var replies: [String: Result<String, RPCError>] = [:]
+    private(set) var calls: [(method: String, params: JSONValue)] = []
+
+    func call<Params: Encodable & Sendable, Answer: Decodable & Sendable>(_ method: String, params: Params) async throws -> Answer {
+        let sent = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(params))
+        calls.append((method, sent))
+        switch replies[method] {
+        case let .success(json):
+            return try JSONDecoder().decode(Answer.self, from: Data(json.utf8))
+        case let .failure(error):
+            throw CrewError.rpc(error)
+        case nil:
+            throw CrewError.rpc(RPCError(code: "unknown_method", message: method))
+        }
+    }
+
+    func params(_ method: String) -> JSONValue? {
+        calls.last { $0.method == method }?.params
+    }
+}
+
+enum NewSessionFixtures {
+    static let options = """
+    {"harnesses":[
+      {"harness":"claude","name":"Claude Code","tag":"CC","models":["opus","sonnet","haiku"],"efforts":["low","medium","high","xhigh","max"],"model":"opus","effort":"xhigh"},
+      {"harness":"codex","name":"Codex","tag":"CX","models":["gpt-6-sol","gpt-5.5"],"efforts":["low","medium","high"],"model":"gpt-6-sol","effort":"high"}
+    ],"home":"/src"}
+    """
+
+    static func workspaces() throws -> [Workspace] {
+        let json = """
+        [
+          {"Root":"/src/api","Kind":"single","Repos":null,"LastUsed":"2026-10-01T09:00:00Z"},
+          {"Root":"/src/acme","Kind":"orchestration","Repos":[{},{},{}],"LastUsed":"2026-10-05T09:00:00Z"},
+          {"Root":"/src/web","Kind":"single","Repos":null,"LastUsed":"0001-01-01T00:00:00Z"}
+        ]
+        """
+        return try JSONDecoder().decode([Workspace].self, from: Data(json.utf8))
+    }
+
+    static func quota(_ harness: String, _ label: String, left: Int) -> JSONValue {
+        .object([
+            "Harness": .string(harness), "label": .string(label), "LeftPercent": .number(Double(left)), "low": .bool(left < 20),
+        ])
+    }
+
+    @MainActor
+    static func loaded(_ caller: NewSessionCaller, limits: [JSONValue] = []) async throws -> NewSession {
+        caller.replies["session.options"] = .success(options)
+        let model = NewSession(caller: caller)
+        var state = Seed.state(sessions: [])
+        state.workspaces = try workspaces()
+        state.limits = limits
+        await model.load(state: state)
+        return model
+    }
+}
+
+@MainActor
+struct NewSessionTests {
+    static func workspace(_ root: String, _ lastUsed: String) throws -> Workspace {
+        let json = #"{"Root":"\#(root)","Kind":"single","Repos":null,"LastUsed":"\#(lastUsed)"}"#
+        return try JSONDecoder().decode(Workspace.self, from: Data(json.utf8))
+    }
+
+    @Test func goTimestampsWithNanosecondsAndAnOffsetOrderTheWorkspaces() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        var state = Seed.state(sessions: [])
+        state.workspaces = [
+            try Self.workspace("/home/me", "2026-10-12T09:00:00.5Z"),
+            try Self.workspace("/home/me/www/agent-workspace", "2026-10-12T21:15:03.123456789-03:00"),
+        ]
+        await model.load(state: state)
+        #expect(model.form.workspace == "/home/me/www/agent-workspace")
+        #expect(model.form.workspaces.map(\.root) == ["/home/me/www/agent-workspace", "/home/me"])
+    }
+
+    @Test func aWorkspaceAddedElsewhereShowsInTheOpenPicker() async throws {
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
+        model.form.workspace = "/src/api"
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces() + [try Self.workspace("/src/new", "2026-10-06T09:00:00Z")]
+        model.observe(state)
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api", "/src/web"])
+        #expect(model.form.workspace == "/src/api")
+    }
+
+    @Test func aWorkspaceRemovedElsewhereLeavesTheOpenPicker() async throws {
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces().filter { $0.root != "/src/acme" }
+        model.observe(state)
+        #expect(model.form.workspaces.map(\.root) == ["/src/api", "/src/web"])
+        #expect(model.form.workspace == "/src/api")
+    }
+
+    @Test func anUnrelatedChangeKeepsTheJustAddedWorkspaceSelected() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .success(#"{"Root":"/src/new","Kind":"single","Repos":null}"#)
+        model.path.text = "/src/new"
+        #expect(await model.addWorkspace())
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces().filter { $0.root != "/src/web" }
+        model.observe(state)
+        #expect(model.form.workspace == "/src/new")
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api"])
+    }
+
+    @Test func aChangeSeenWhileTheOptionsLoadIsKept() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        var newer = Seed.state(sessions: [])
+        newer.workspaces = try NewSessionFixtures.workspaces() + [try Self.workspace("/src/new", "2026-10-06T09:00:00Z")]
+        model.observe(newer)
+        var older = Seed.state(sessions: [])
+        older.workspaces = try NewSessionFixtures.workspaces()
+        await model.load(state: older)
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api", "/src/web"])
+    }
+
+    @Test func aStateThatDoesNotYetHaveTheJustAddedWorkspaceKeepsIt() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .success(#"{"Root":"/src/new","Kind":"single","Repos":null}"#)
+        model.path.text = "/src/new"
+        #expect(await model.addWorkspace())
+        var state = Seed.state(sessions: [])
+        state.workspaces = try NewSessionFixtures.workspaces()
+        state.limits = [NewSessionFixtures.quota("claude", "5h", left: 50)]
+        model.observe(state)
+        #expect(model.form.workspace == "/src/new")
+        #expect(model.form.workspaces.first?.root == "/src/new")
+    }
+    @Test func theLastUsedWorkspaceIsPreselectedAndEachShowsItsKind() async throws {
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
+        #expect(model.form.workspace == "/src/acme")
+        #expect(model.form.workspaces.map(\.root) == ["/src/acme", "/src/api", "/src/web"])
+        #expect(model.form.workspaces.map(\.detail) == ["orchestration root · 3 repos", "single repo", "single repo"])
+        #expect(model.form.workspaces.first?.name == "acme")
+    }
+
+    @Test func textTypedWhileTheOptionsLoadIsKept() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        model.form.workItem = "fix the login redirect"
+        await model.load(state: nil)
+        #expect(model.form.workItem == "fix the login redirect")
+        #expect(model.form.harness == "claude")
+    }
+
+    @Test func thePickersNameWhatDefaultMeans() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success("""
+        {"harnesses":[
+          {"harness":"claude","name":"Claude Code","tag":"CC","models":["opus"],"efforts":["high"],"model":"","effort":"","default_model":"opus","default_effort":"high"},
+          {"harness":"omp","name":"Oh My Pi","tag":"OMP","models":null,"efforts":null,"model":"","effort":""}
+        ],"home":"/src"}
+        """)
+        let model = NewSession(caller: caller)
+        await model.load(state: nil)
+        #expect(model.form.defaultModelLabel == "default (opus)")
+        #expect(model.form.defaultEffortLabel == "default (high)")
+        model.form.choose(harness: "omp")
+        #expect(model.form.defaultModelLabel == "default")
+        #expect(model.form.defaultEffortLabel == "default")
+    }
+
+    @Test func optionsWithoutALauncherLimitDecode() throws {
+        let options = try JSONDecoder().decode(SessionOptions.self, from: Data(NewSessionFixtures.options.utf8))
+        #expect(options.harnesses.map(\.harness) == ["claude", "codex"])
+        #expect(options.home == "/src")
+    }
+
+    @Test func defaultsComeFromTheServersDefaultsTables() async throws {
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller())
+        #expect(model.form.harness == "claude")
+        #expect(model.form.model == "opus")
+        #expect(model.form.effort == "xhigh")
+        model.form.choose(harness: "codex")
+        #expect(model.form.model == "gpt-6-sol")
+        #expect(model.form.effort == "high")
+        #expect(model.form.chosen?.models == ["gpt-6-sol", "gpt-5.5"])
+    }
+
+    @Test func aLowHarnessOffersOneSwitchToTheOther() async throws {
+        let limits = [
+            NewSessionFixtures.quota("claude", "5h", left: 12),
+            NewSessionFixtures.quota("claude", "7d", left: 60),
+            NewSessionFixtures.quota("codex", "7d", left: 70),
+        ]
+        let model = try await NewSessionFixtures.loaded(NewSessionCaller(), limits: limits)
+        let warning = try #require(model.warning)
+        #expect(warning.message == "Claude Code 5h quota is low: 12% left")
+        #expect(warning.button == "Switch to Codex")
+        model.takeSwitch()
+        #expect(model.form.harness == "codex")
+        #expect(model.form.model == "gpt-6-sol")
+        #expect(model.warning == nil)
+    }
+
+    @Test func noSwitchIsOfferedWhenTheOtherHarnessIsLowOrUnreported() async throws {
+        let bothLow = [NewSessionFixtures.quota("claude", "5h", left: 5), NewSessionFixtures.quota("codex", "7d", left: 9)]
+        let low = try await NewSessionFixtures.loaded(NewSessionCaller(), limits: bothLow)
+        #expect(low.warning?.message == "Claude Code 5h quota is low: 5% left")
+        #expect(low.warning?.button == nil)
+        let fine = try await NewSessionFixtures.loaded(NewSessionCaller(), limits: [NewSessionFixtures.quota("claude", "5h", left: 50)])
+        #expect(fine.warning == nil)
+    }
+
+    @Test(arguments: [
+        ("/src/api", "fix the login redirect"),
+        ("/src/acme", "rename the billing tables"),
+        ("/src/api", "https://github.com/acme/api/pull/42"),
+        ("/src/acme", "https://github.com/acme/web/pull/7"),
+    ])
+    func startSendsTheFormAndFocusesTheNewSession(workspace: String, item: String) async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["session.new"] = .success(#"{"ID":"s9","State":"idle"}"#)
+        caller.replies["session.focus"] = .success("{}")
+        model.form.workspace = workspace
+        model.form.workItem = "  " + item + "\n"
+        model.form.effort = "medium"
+        let started = await model.start()
+        #expect(started == "s9")
+        #expect(model.failure == nil)
+        #expect(caller.params("session.new") == .object([
+            "workspace": .string(workspace), "work_item": .string(item), "harness": .string("claude"),
+            "model": .string("opus"), "effort": .string("medium"),
+        ]))
+        #expect(caller.params("session.focus") == .object(["id": .string("s9")]))
+    }
+
+    @Test func anEmptyWorkItemStartsASessionNamedByItsFirstPrompt() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["session.new"] = .success(#"{"ID":"s9","State":"idle"}"#)
+        caller.replies["session.focus"] = .success("{}")
+        model.form.workItem = "   "
+        #expect(model.form.canStart)
+        #expect(await model.start() == "s9")
+        #expect(caller.params("session.new") == .object([
+            "workspace": .string("/src/acme"), "work_item": .string(""), "harness": .string("claude"),
+            "model": .string("opus"), "effort": .string("xhigh"),
+        ]))
+    }
+
+    @Test func aSetupFailureShowsItsOutputInTheSheet() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        let message = "setup /h/api/eng-7: exit status 1: bun install\nerror: lockfile had changes"
+        caller.replies["session.new"] = .failure(RPCError(code: "failed", message: message))
+        model.form.workItem = "eng-7"
+        #expect(await model.start() == nil)
+        #expect(model.failure == message)
+        #expect(!model.starting)
+    }
+
+    @Test func theWorkItemResolvesIntoACardNamingTheBranchAndAnExistingWorktree() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["session.resolve"] = .success(
+            #"{"source":"pr","ref":"web#7","title":"Billing export","worktree":"42-login-redirect","workspace":"/src/acme"}"#
+        )
+        model.form.workItem = "https://github.com/acme/web/pull/7"
+        await model.resolve(in: Seed.window)
+        #expect(caller.params("session.resolve") == .object([
+            "workspace": .string("/src/acme"), "work_item": .string("https://github.com/acme/web/pull/7"),
+        ]))
+        #expect(model.card == WorkItemCard(
+            source: "PR web#7", title: "Billing export", branch: "42-login-redirect", existing: "/w/api-42-login-redirect"
+        ))
+    }
+
+    @Test func aStaleOrFailedResolveLeavesNoCard() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["session.resolve"] = .failure(RPCError(code: "bad_request", message: "not a pull request link"))
+        model.form.workItem = "https://github.com/acme/web/issues/4"
+        await model.resolve(in: nil)
+        #expect(model.card == nil)
+        #expect(model.resolveError == "not a pull request link")
+        model.form.workItem = ""
+        await model.resolve(in: nil)
+        #expect(model.resolveError == nil)
+        #expect(caller.calls.filter { $0.method == "session.resolve" }.count == 1)
+    }
+
+    @Test func aServerWithNoWorkspacesSaysSoAndCannotStart() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success(NewSessionFixtures.options)
+        let model = NewSession(caller: caller)
+        await model.load(state: Seed.state(sessions: []))
+        model.form.workItem = "fix the login redirect"
+        #expect(model.form.workspaces.isEmpty)
+        #expect(model.form.emptyMessage == "No workspaces on this server yet. Add one to start a session.")
+        #expect(!model.form.canStart)
+        #expect(model.path.home == "/src")
+    }
+
+    @Test func aWorkspaceAddedFromTheSheetIsSelected() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .success(#"{"Root":"/src/new","Kind":"orchestration","Repos":[{"Name":"a","Path":"/src/new/a","Branch":"main"}]}"#)
+        model.path.text = "~/new/"
+        let added = await model.addWorkspace()
+        #expect(added)
+        #expect(caller.params("workspace.add") == .object(["path": .string("/src/new")]))
+        #expect(model.form.workspace == "/src/new")
+        #expect(model.form.workspaces.map(\.root) == ["/src/new", "/src/acme", "/src/api", "/src/web"])
+        #expect(model.form.workspaces.first?.detail == "orchestration root · 1 repos")
+        #expect(model.form.emptyMessage == nil)
+        #expect(model.addError == nil)
+        #expect(model.path.text == "")
+    }
+
+    @Test func aRefusedWorkspaceKeepsTheSelectionAndShowsWhy() async throws {
+        let caller = NewSessionCaller()
+        let model = try await NewSessionFixtures.loaded(caller)
+        caller.replies["workspace.add"] = .failure(RPCError(code: "bad_request", message: "/nope is not a git repo or a folder of repos"))
+        model.path.text = "/nope"
+        let added = await model.addWorkspace()
+        #expect(!added)
+        #expect(model.form.workspace == "/src/acme")
+        #expect(model.addError == "/nope is not a git repo or a folder of repos")
+        #expect(model.path.text == "/nope")
+    }
+}
