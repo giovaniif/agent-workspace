@@ -35,7 +35,7 @@ func setConfig(c *rpc.Client, key, value string) (rpc.ConfigValues, error) {
 
 func backups(t *testing.T, path string) []string {
 	t.Helper()
-	got, err := filepath.Glob(path + ".agentws-*.bak")
+	got, err := filepath.Glob(path + ".crew-*.bak")
 	if err != nil {
 		t.Fatal(err)
 	}

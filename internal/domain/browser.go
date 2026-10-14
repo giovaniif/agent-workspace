@@ -23,7 +23,7 @@ func BrowserCommands() []string {
 
 func ParseBrowserCommand(args []string) (BrowserCall, error) {
 	if len(args) == 0 {
-		return BrowserCall{}, errors.New("usage: agentws browser <" + strings.Join(BrowserCommands(), "|") + "> [args]")
+		return BrowserCall{}, errors.New("usage: crew browser <" + strings.Join(BrowserCommands(), "|") + "> [args]")
 	}
 	cmd, rest := args[0], args[1:]
 	call := BrowserCall{Command: cmd, Args: map[string]any{}}

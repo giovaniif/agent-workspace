@@ -174,7 +174,7 @@ func (h *Host) popupClient(ctx context.Context) (string, error) {
 	if client, ok := activeClient(out); ok {
 		return client, nil
 	}
-	return "", errors.New("no terminal is attached to the agentws tmux server")
+	return "", errors.New("no terminal is attached to the crew tmux server")
 }
 
 func activeClient(out string) (string, bool) {

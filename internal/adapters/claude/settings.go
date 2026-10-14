@@ -251,7 +251,7 @@ func writeFile(path string, b []byte) error {
 	if fi, err := os.Stat(path); err == nil {
 		mode = fi.Mode().Perm()
 	}
-	tmp := path + ".agentws-tmp"
+	tmp := path + ".crew-tmp"
 	if err := os.WriteFile(tmp, b, mode); err != nil {
 		return err
 	}

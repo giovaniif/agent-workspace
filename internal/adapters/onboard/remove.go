@@ -56,7 +56,7 @@ func backupBeforeRemoval(file string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	backup := file + ".agentws-removed-" + time.Now().UTC().Format("20060102T150405.000000000Z") + ".bak"
+	backup := file + ".crew-removed-" + time.Now().UTC().Format("20060102T150405.000000000Z") + ".bak"
 	if err := os.WriteFile(backup, current, 0o600); err != nil {
 		return "", err
 	}

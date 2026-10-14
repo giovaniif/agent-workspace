@@ -140,7 +140,7 @@ func TestMigrateRewritesAgentwsHooksToCrewWithABackup(t *testing.T) {
 	if _, err := os.Stat(claude.BackupPath(settings)); err != nil {
 		t.Fatalf("no claude backup: %v", err)
 	}
-	backups, _ := filepath.Glob(r.path(".codex", "hooks.json.agentws-*.bak"))
+	backups, _ := filepath.Glob(r.path(".codex", "hooks.json.crew-*.bak"))
 	if len(backups) == 0 {
 		t.Fatal("no codex backup")
 	}

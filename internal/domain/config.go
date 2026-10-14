@@ -30,7 +30,7 @@ func ConfigKeys() []string {
 
 func ConfigLiteral(key, value string) (string, error) {
 	if !slices.Contains(ConfigKeys(), key) {
-		return "", fmt.Errorf("%q is not a setting agentws can change", key)
+		return "", fmt.Errorf("%q is not a setting crew can change", key)
 	}
 	if value == "" {
 		return "", nil

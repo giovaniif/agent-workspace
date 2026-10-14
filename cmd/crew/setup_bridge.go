@@ -63,7 +63,7 @@ func runSetupBridge(args []string, stdout, stderr io.Writer, env func(string) st
 func setupBridgeAgent(args []string, env func(string) string, self, userHome string, uid int) (launchd.Agent, bool, error) {
 	fs := flag.NewFlagSet("setup bridge", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	remote := fs.String("remote-bin", "agentws", "")
+	remote := fs.String("remote-bin", "crew", "")
 	remove := fs.Bool("remove", false, "")
 	if err := fs.Parse(args); err != nil {
 		return launchd.Agent{}, false, err
@@ -77,7 +77,7 @@ func setupBridgeAgent(args []string, env func(string) string, self, userHome str
 		home = rpc.DefaultHome(userHome)
 	}
 	program := []string{self, "notify", "bridge"}
-	if *remote != "agentws" {
+	if *remote != "crew" {
 		program = append(program, "--remote-bin", *remote)
 	}
 	agentEnv := map[string]string{domain.EnvName("HOME"): home}

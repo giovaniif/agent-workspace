@@ -175,7 +175,7 @@ func TestADaemonThatNamesNoBuildIsRefused(t *testing.T) {
 	defer func() { _ = c.Close() }()
 	_, err = c.WorkspaceList(context.Background())
 	var rerr *rpc.Error
-	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeVersionMismatch || !strings.Contains(rerr.Message, "agentws daemon stop") {
+	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeVersionMismatch || !strings.Contains(rerr.Message, "crew daemon stop") {
 		t.Fatalf("err %v", err)
 	}
 	if _, err := c.Status(context.Background()); err != nil {

@@ -145,7 +145,7 @@ func (p Probe) codexSetup() domain.HarnessSetup {
 	file := filepath.Join(p.CodexHome, "hooks.json")
 	s := domain.HarnessSetup{File: file}
 	if exists(file) {
-		s.Backup = file + ".agentws-<time>.bak"
+		s.Backup = file + ".crew-<time>.bak"
 	}
 	ok, err := codex.Installed(p.codexConfig())
 	s.Installed = ok
