@@ -18,6 +18,7 @@ public enum BrowserAction: Equatable {
     case newProfile
     case cloneProfile
     case makeDefault
+    case importCookies
     case takeOver
 }
 
@@ -117,6 +118,7 @@ struct BrowserPane: View {
                 Button("New profile…") { act(.newProfile) }
                 Button("Clone this profile…") { act(.cloneProfile) }
                 Button("Make this profile the default") { act(.makeDefault) }
+                Button("Import cookies…") { act(.importCookies) }
             } label: {
                 Label(chrome.profile, systemImage: "person.crop.circle").font(.system(size: 12))
             }

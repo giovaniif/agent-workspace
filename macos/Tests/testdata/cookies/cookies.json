@@ -1,0 +1,20 @@
+[
+  {
+    "name": "sid",
+    "value": "abc123",
+    "domain": ".example.com",
+    "path": "/",
+    "expirationDate": 1893456000.5,
+    "secure": true,
+    "httpOnly": true
+  },
+  {
+    "name": "pref",
+    "value": "dark",
+    "domain": "other.dev",
+    "path": "/",
+    "secure": false,
+    "httpOnly": false,
+    "session": true
+  }
+]

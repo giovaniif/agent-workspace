@@ -155,6 +155,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `BrowserLinks.ports` changes the TCP ports of the worktrees of the session into quick links (`api :3000`).
   - `BrowserProfiles` keeps the profiles, the default profile and the profile of each session in `UserDefaults` (`browser.profiles`, `browser.default`, `browser.sessions`). The `Default` profile always exists. A name must not be empty or used.
   - `BrowserWebViews` (macOS only) keeps one `WKWebView` for each tab. Each profile has its own `WKWebsiteDataStore(forIdentifier:)`. `Default` uses the default store. A clone copies the cookies of the source store.
+  - Cookie import (`CookieImport.swift`, `ChromeCookies.swift`, view `CookieImportSheet`; #338): Import cookies… in the profile menu.
+    - `CookieFile.parse` reads a Netscape `cookies.txt`, a JSON cookie list or a Playwright `storageState`. `BinaryCookies.parse` reads the Safari `Cookies.binarycookies` (it needs Full Disk Access).
+    - `CookieSources.profiles` finds the profiles of Chrome, Arc, Brave, Edge and Safari under the home folder. `ChromeCookies.read` copies the SQLite file, and decrypts the values with the Safe Storage key from the Keychain (`ChromeCrypto`, macOS only).
+    - The sheet shows the count for each site (`CookieImport.summary`). The user selects the sites. An import first deletes the cookies of those sites in the profile, then sets the new ones.
+    - Cookies stay on the Mac. They never go to the server or into a log.
+    - Fixtures are in `Tests/testdata/cookies`. `swift test --filter CookieImport` runs the suite. The Chrome tests run only on macOS.
   - While `agentControl` is on, the tab shows "An agent controls this tab" and a Take over button.
   - Test: `swift test --filter Browser`. `SnapshotTests` draws `browser-latte`, `browser-mocha` and `browser-iphone`.
 - Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/agentws/](../cmd/agentws/AGENTS.md)):
