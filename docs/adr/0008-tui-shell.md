@@ -13,7 +13,7 @@ Status: accepted, 2026-09-29.
 
 ## Why
 
-- The TUI may not run tmux (depguard), and `cmd/agentws` should not duplicate adapter flags.
+- The TUI may not run tmux (depguard), and `cmd/crew` should not duplicate adapter flags.
 - tmux splits a window resize across both panes, so a one-off `resize-pane` does not hold.
 - Stripped goldens are readable in review and do not change when a color profile or style escape changes.
 - Measured in a nested tmux, keypress to changed frame was 25.5 ms p95 at 60 fps and 17.1 ms at 120 fps, against a 12.6 ms baseline for the same harness around `cat`. The model itself takes 0.5 ms (benchmark).

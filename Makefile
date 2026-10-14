@@ -8,7 +8,8 @@ GREMLINS ?= $(shell go env GOPATH)/bin/gremlins
 .PHONY: build test lint bench mutate e2e dev web
 
 build:
-	go build -ldflags "$(LDFLAGS)" -o bin/agentws ./cmd/agentws
+	go build -ldflags "$(LDFLAGS)" -o bin/crew ./cmd/crew
+	ln -sf crew bin/agentws
 
 test:
 	go test $(GO_TEST_FLAGS) ./...

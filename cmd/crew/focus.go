@@ -11,7 +11,7 @@ import (
 
 func runFocus(args []string, stderr io.Writer) int {
 	if len(args) != 1 {
-		fmt.Fprintln(stderr, "usage: agentws focus <session id>")
+		fmt.Fprintln(stderr, "usage: crew focus <session id>")
 		return 2
 	}
 	home, err := rpc.Home()
@@ -24,7 +24,7 @@ func runFocus(args []string, stderr io.Writer) int {
 		}
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws focus %s: %v\n", args[0], err)
+		fmt.Fprintf(stderr, "crew focus %s: %v\n", args[0], err)
 		return 1
 	}
 	return 0

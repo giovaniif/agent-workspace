@@ -240,7 +240,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 
 ## Pairing and devices
 
-`go test ./internal/domain/ ./internal/daemon/ ./cmd/agentws/ -run 'Pair|Device|Remote'`. The rules are in `domain` (`Pairing`, `NewPairCode`, `CheckDeviceToken`, `RevokeDevice`, `Device.Seen`). See [ADR 0046](../../docs/adr/0046-remote-app.md).
+`go test ./internal/domain/ ./internal/daemon/ ./cmd/crew/ -run 'Pair|Device|Remote'`. The rules are in `domain` (`Pairing`, `NewPairCode`, `CheckDeviceToken`, `RevokeDevice`, `Device.Seen`). See [ADR 0046](../../docs/adr/0046-remote-app.md).
 
 - **State.** Open codes and failed tries are in `state.pairing` on the loop, in memory only. A daemon restart voids open codes. Devices are in `state.devices` and the `devices` table, with ID as the key, and only the SHA-256 of the token (`TokenHash`).
 - **`pair.code`** draws the code with `crypto/rand` on the connection goroutine, then issues it on the loop.

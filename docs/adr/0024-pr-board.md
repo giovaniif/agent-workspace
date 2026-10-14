@@ -15,7 +15,7 @@ Status: accepted, 2026-09-30.
 
 ## `agentws pr --json`
 
-The shape is pinned by `cmd/agentws/testdata/pr.json.golden`. Fields are only ever added.
+The shape is pinned by `cmd/crew/testdata/pr.json.golden`. Fields are only ever added.
 
 ```json
 {

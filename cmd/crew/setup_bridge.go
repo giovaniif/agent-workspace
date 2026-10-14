@@ -16,17 +16,17 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/domain"
 )
 
-const setupBridgeUsage = "usage: agentws setup bridge [--remote-bin path] [--remove] <ssh host>"
+const setupBridgeUsage = "usage: crew setup bridge [--remote-bin path] [--remove] <ssh host>"
 
 func runSetupBridge(args []string, stdout, stderr io.Writer, env func(string) string, self string) int {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup bridge: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup bridge: %v\n", err)
 		return 1
 	}
 	a, remove, err := setupBridgeAgent(args, env, self, userHome, os.Getuid())
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup bridge: %v\n%s\n", err, setupBridgeUsage)
+		fmt.Fprintf(stderr, "crew setup bridge: %v\n%s\n", err, setupBridgeUsage)
 		return 2
 	}
 	ctx := context.Background()
@@ -34,7 +34,7 @@ func runSetupBridge(args []string, stdout, stderr io.Writer, env func(string) st
 		removed, err := launchd.Remove(ctx, a, launchd.Exec)
 		switch {
 		case err != nil:
-			fmt.Fprintf(stderr, "agentws setup bridge: %v\n", err)
+			fmt.Fprintf(stderr, "crew setup bridge: %v\n", err)
 			return 1
 		case removed:
 			fmt.Fprintf(stdout, "stopped and removed %s\n", a.Label)
@@ -45,7 +45,7 @@ func runSetupBridge(args []string, stdout, stderr io.Writer, env func(string) st
 	}
 	res, err := launchd.Install(ctx, a, launchd.Exec)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup bridge: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup bridge: %v\n", err)
 		return 1
 	}
 	if !res.Changed {

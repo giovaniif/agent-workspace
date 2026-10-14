@@ -2,15 +2,15 @@
 set -euo pipefail
 
 repo=$(cd "$(dirname "$0")/.." && pwd)
-home=${AGENTWS_DEV_HOME:-/tmp/agentws-dev-$(id -u)}
-socket=${AGENTWS_DEV_SOCKET:-agentws-dev}
-bin=$home/bin/agentws
+home=${CREW_DEV_HOME:-/tmp/crew-dev-$(id -u)}
+socket=${CREW_DEV_SOCKET:-crew-dev}
+bin=$home/bin/crew
 log=$home/dev.log
 pidfile=$home/dev-watch.pid
 version_pkg=github.com/giovaniif/agent-workspace/internal/version
 
-export AGENTWS_HOME=$home
-export AGENTWS_TMUX_SOCKET=$socket
+export CREW_HOME=$home
+export CREW_TMUX_SOCKET=$socket
 mkdir -p "$home/bin"
 
 if [ "${FAKES:-}" = 1 ]; then
@@ -22,14 +22,14 @@ fi
 
 note() {
 	printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >>"$log"
-	tmux -L "$socket" display-message -d 5000 "agentws dev: $*" 2>/dev/null || true
+	tmux -L "$socket" display-message -d 5000 "crew dev: $*" 2>/dev/null || true
 }
 
 build() {
 	local commit tmp
 	commit=$(git -C "$repo" rev-parse --short HEAD 2>/dev/null || echo none)
 	tmp=$bin.new
-	if ! (cd "$repo" && go build -ldflags "-X $version_pkg.Version=dev -X $version_pkg.Commit=$commit.$(date +%s)" -o "$tmp" ./cmd/agentws) >"$home/build.log" 2>&1; then
+	if ! (cd "$repo" && go build -ldflags "-X $version_pkg.Version=dev -X $version_pkg.Commit=$commit.$(date +%s)" -o "$tmp" ./cmd/crew) >"$home/build.log" 2>&1; then
 		cat "$home/build.log" >>"$log"
 		note "build failed, still running the last good build: $(grep -v '^#' "$home/build.log" | head -n 1) (see $log)"
 		return 1
@@ -111,5 +111,5 @@ watch &
 watcher=$!
 echo "$watcher" >"$pidfile"
 trap stop_own_watcher EXIT
-echo "agentws dev: home $home, tmux -L $socket, log $log"
+echo "crew dev: home $home, tmux -L $socket, log $log"
 "$bin"

@@ -22,7 +22,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const remoteUsage = "usage: agentws remote pair [--name n] [--url u] | devices | revoke <id>"
+const remoteUsage = "usage: crew remote pair [--name n] [--url u] | devices | revoke <id>"
 
 const qrQuietZone = 4
 
@@ -35,7 +35,7 @@ func runRemote(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, remoteUsage)
 		return 2
 	case err != nil:
-		fmt.Fprintf(stderr, "agentws remote: %v\n", err)
+		fmt.Fprintf(stderr, "crew remote: %v\n", err)
 		return 1
 	}
 	return 0
@@ -67,7 +67,7 @@ func remotePair(args []string, stdout, stderr io.Writer) error {
 	fs := flag.NewFlagSet("remote pair", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	name := fs.String("name", "", "name for the device (default: the name the app sends)")
-	url := fs.String("url", "", "public URL of agentws serve (default: [serve] url in config.toml)")
+	url := fs.String("url", "", "public URL of crew serve (default: [serve] url in config.toml)")
 	if err := fs.Parse(args); err != nil || fs.NArg() > 0 {
 		return errRemoteUsage
 	}
@@ -82,7 +82,7 @@ func remotePair(args []string, stdout, stderr io.Writer) error {
 		}
 	}
 	if strings.TrimSpace(base) == "" {
-		return fmt.Errorf("no public URL for agentws serve: pass --url https://<host> or add\n\n  [serve]\n  url = \"https://<host>\"\n\nto %s", filepath.Join(home, "config.toml"))
+		return fmt.Errorf("no public URL for crew serve: pass --url https://<host> or add\n\n  [serve]\n  url = \"https://<host>\"\n\nto %s", filepath.Join(home, "config.toml"))
 	}
 	if _, err := domain.PairURL(base, ""); err != nil {
 		return err

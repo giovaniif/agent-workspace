@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const automationUsage = "usage: agentws automation list | show <name> | run [--work-item w] <name> [context...|-] | runs [name] | rerun <run id> | trust <name>"
+const automationUsage = "usage: crew automation list | show <name> | run [--work-item w] <name> [context...|-] | runs [name] | rerun <run id> | trust <name>"
 
 func runAutomation(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 || !automationArgsOK(args) {
@@ -20,7 +20,7 @@ func runAutomation(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if err := automationCommand(args, os.Stdin, stdout); err != nil {
-		fmt.Fprintf(stderr, "agentws automation %s: %v\n", args[0], err)
+		fmt.Fprintf(stderr, "crew automation %s: %v\n", args[0], err)
 		return 1
 	}
 	return 0

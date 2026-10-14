@@ -16,7 +16,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/domain"
 )
 
-const setupServeUsage = "usage: agentws setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"
+const setupServeUsage = "usage: crew setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"
 
 const (
 	serveUnitName   = "agentws-serve"
@@ -39,12 +39,12 @@ func (s serveService) path() string {
 func runSetupServe(args []string, stdout, stderr io.Writer, env func(string) string, self, goos string) int {
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup serve: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup serve: %v\n", err)
 		return 1
 	}
 	svc, remove, err := setupServeService(args, env, self, userHome, os.Getuid(), goos)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup serve: %v\n%s\n", err, setupServeUsage)
+		fmt.Fprintf(stderr, "crew setup serve: %v\n%s\n", err, setupServeUsage)
 		return 2
 	}
 	ctx := context.Background()
@@ -52,7 +52,7 @@ func runSetupServe(args []string, stdout, stderr io.Writer, env func(string) str
 		removed, err := removeServe(ctx, svc)
 		switch {
 		case err != nil:
-			fmt.Fprintf(stderr, "agentws setup serve: %v\n", err)
+			fmt.Fprintf(stderr, "crew setup serve: %v\n", err)
 			return 1
 		case removed:
 			fmt.Fprintf(stdout, "stopped and removed %s\n", svc.path())
@@ -63,7 +63,7 @@ func runSetupServe(args []string, stdout, stderr io.Writer, env func(string) str
 	}
 	path, backup, changed, err := installServe(ctx, svc)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup serve: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup serve: %v\n", err)
 		return 1
 	}
 	if !changed {

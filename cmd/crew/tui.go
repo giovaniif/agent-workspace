@@ -32,7 +32,7 @@ func attach(stderr io.Writer) int {
 	if err == nil {
 		err = attachIn(home)
 	}
-	fmt.Fprintf(stderr, "agentws: %v\n", err)
+	fmt.Fprintf(stderr, "crew: %v\n", err)
 	return 1
 }
 
@@ -68,7 +68,7 @@ func runTUI(args []string, stderr io.Writer) int {
 	newSession := len(args) == 1 && args[0] == "--new-session"
 	setup := len(args) == 1 && args[0] == "--setup"
 	if len(args) > 0 && !newSession && !setup {
-		fmt.Fprintln(stderr, "usage: agentws tui [--new-session|--setup]")
+		fmt.Fprintln(stderr, "usage: crew tui [--new-session|--setup]")
 		return 2
 	}
 	home, err := rpc.Home()
@@ -76,7 +76,7 @@ func runTUI(args []string, stderr io.Writer) int {
 		err = tuiIn(home, newSession, setup)
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws tui: %v\n", err)
+		fmt.Fprintf(stderr, "crew tui: %v\n", err)
 		return 1
 	}
 	return 0
@@ -161,7 +161,7 @@ func runDebugSeed(args []string, stdout, stderr io.Writer) int {
 	}
 	home, err := rpc.Home()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws debug: %v\n", err)
+		fmt.Fprintf(stderr, "crew debug: %v\n", err)
 		return 1
 	}
 	ctx := context.Background()
@@ -171,7 +171,7 @@ func runDebugSeed(args []string, stdout, stderr io.Writer) int {
 		_ = c.Close()
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws debug: %v\n", err)
+		fmt.Fprintf(stderr, "crew debug: %v\n", err)
 		return 1
 	}
 	fmt.Fprintf(stdout, "seeded %d sessions\n", n)

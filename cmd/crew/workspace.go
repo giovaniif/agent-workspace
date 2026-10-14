@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const workspaceUsage = "usage: agentws workspace <add|list|remove> [path]"
+const workspaceUsage = "usage: crew workspace <add|list|remove> [path]"
 
 func runWorkspace(args []string, stdout, stderr io.Writer) int {
 	wantArgs := map[string]int{"add": 2, "remove": 2, "list": 1}
@@ -22,7 +22,7 @@ func runWorkspace(args []string, stdout, stderr io.Writer) int {
 	}
 	sub := args[0]
 	if err := workspaceCommand(sub, args[1:], stdout); err != nil {
-		fmt.Fprintf(stderr, "agentws workspace: %v\n", err)
+		fmt.Fprintf(stderr, "crew workspace: %v\n", err)
 		return 1
 	}
 	return 0

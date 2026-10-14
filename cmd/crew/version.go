@@ -15,14 +15,14 @@ import (
 )
 
 func runVersion(current, commit string, latest func(context.Context) (string, error), w io.Writer) int {
-	fmt.Fprintf(w, "agentws %s (commit %s)\n", current, commit)
+	fmt.Fprintf(w, "crew %s (commit %s)\n", current, commit)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	tag, err := latest(ctx)
 	if err != nil || !domain.NewerRelease(current, tag) {
 		return 0
 	}
-	fmt.Fprintf(w, "agentws %s is available. Upgrade (see the README), then run `agentws daemon stop` so the new binary starts a new daemon.\n", tag)
+	fmt.Fprintf(w, "crew %s is available. Upgrade (see the README), then run `crew daemon stop` so the new binary starts a new daemon.\n", tag)
 	return 0
 }
 

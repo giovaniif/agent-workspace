@@ -1,4 +1,4 @@
-# cmd/agentws
+# cmd/crew
 
 `main`: one binary that is the daemon, the TUI, the CLI and the hook handler. The standard library dispatches the subcommands. See [ADR 0002](../../docs/adr/0002-cli-and-ci-tooling.md).
 
@@ -21,7 +21,7 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
 - `agentws workspace add <path>|list|remove <path>` registers workspaces through the daemon (it starts automatically). This step is optional: `session.new` registers a folder that it does not know. The new-session dialog uses the folder where `agentws` started as its default. `list` shows `-` for the git facts of a repo until the first background refresh is done.
 - `agentws new [--workspace p] [--harness claude|codex|omp] [--model m] [--effort e] [task]` starts a session, like the `n` dialog of the TUI. Without `--workspace`, it uses the last workspace. New single-repo worktrees go under `$AGENTWS_HOME/worktrees`.
 - `agentws focus <id>` focuses a session through the daemon. A `terminal-notifier` banner runs it on click.
-- `agentws automation list` prints each automation, its trigger and its source file, then the problems. `agentws automation show <name>` prints one automation from the same list. `agentws automation run [--work-item w] <name> [context...]` starts a run. With `-` as the context, it reads the context from stdin. `agentws automation runs [name]` and `agentws automation rerun <run id>` show and repeat runs. `agentws automation trust <name>` approves a repo automation of the current folder. Tests: `go test ./cmd/agentws/ -run Automation`.
+- `agentws automation list` prints each automation, its trigger and its source file, then the problems. `agentws automation show <name>` prints one automation from the same list. `agentws automation run [--work-item w] <name> [context...]` starts a run. With `-` as the context, it reads the context from stdin. `agentws automation runs [name]` and `agentws automation rerun <run id>` show and repeat runs. `agentws automation trust <name>` approves a repo automation of the current folder. Tests: `go test ./cmd/crew/ -run Automation`.
 - `agentws setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]` keeps `agentws serve` running. On Linux, it uses a systemd user unit (`agentws-serve.service`). On macOS, it uses the launchd agent `dev.agentws.serve`. The service gets the PATH and `AGENTWS_HOME` of the shell that ran the command.
   - It writes the flags in a fixed order. Thus the same arguments change nothing, and different arguments make a backup and write the file again.
   - Like `serve`, it refuses plain HTTP off loopback.
@@ -31,7 +31,7 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
   - The install, backup and remove rules are the same as for `setup serve`. It logs to `$AGENTWS_HOME/daemon-service.log`.
   - On Linux, if `loginctl show-user $USER -p Linger` is not `Linger=yes`, it tells you that the daemon stops at logout. It prints `sudo loginctl enable-linger $USER`.
   - `--check` prints `{"installed","running","linger"}` as JSON for the Mac app. On macOS, `linger` is always true.
-  - Tests: `go test ./cmd/agentws/ -run SetupDaemon`. They put a fake `systemctl`, `launchctl`, `loginctl` and login shell on `PATH`, with a temp `HOME`. See [ADR 0049](../../docs/adr/0049-macos-app.md).
+  - Tests: `go test ./cmd/crew/ -run SetupDaemon`. They put a fake `systemctl`, `launchctl`, `loginctl` and login shell on `PATH`, with a temp `HOME`. See [ADR 0049](../../docs/adr/0049-macos-app.md).
 - `agentws notify stream` prints the banners and withdrawals of the daemon as JSON lines. It never starts a daemon. It waits for one, because a daemon started through the bare `ssh -T` of the bridge gives each agent pane that PATH without login.
   - `agentws notify bridge [--remote-bin path] <ssh host>` runs it through `ssh` on the Mac when the daemon is on a remote host. It posts each banner locally and connects again automatically.
   - `agentws setup bridge [--remote-bin path] [--remove] <ssh host>` keeps the bridge running as a launchd agent.
@@ -42,10 +42,10 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
   - When the terminal is narrower than the code, it does not draw the code and writes a warning on stderr. The width comes from the terminal or `COLUMNS`.
   - The URL comes from `--url` or `[serve] url` in `$AGENTWS_HOME/config.toml`. If neither is set, it tells how to set one. It refuses an `http://` URL.
   - `agentws remote devices` lists paired devices. `agentws remote revoke <id>` removes one.
-  - `testdata/qr.colour.golden` and `testdata/qr.plain.golden` pin the QR output (make them again with `go test ./cmd/agentws -run RemoteQR -update`). The tests decode the modules back from both outputs.
+  - `testdata/qr.colour.golden` and `testdata/qr.plain.golden` pin the QR output (make them again with `go test ./cmd/crew -run RemoteQR -update`). The tests decode the modules back from both outputs.
   - It is not possible to test a camera here. To verify, run `agentws remote pair` in a real terminal and scan it.
-  - Tests: `go test ./cmd/agentws/ -run Remote`. See [internal/daemon/](../../internal/daemon/AGENTS.md) and ADR 0046.
-- `agentws serve [--addr 127.0.0.1:7420] [--cert f --key f | --self-signed] [--url u]` runs the API of the phone app (see [internal/serve/](../../internal/serve/AGENTS.md)). It refuses plain HTTP off loopback before it starts anything. The public URL for the `Origin` check of the stream comes from `--url` or `[serve] url`. It starts the daemon like the TUI does. Tests: `go test ./cmd/agentws/ -run Serve`.
+  - Tests: `go test ./cmd/crew/ -run Remote`. See [internal/daemon/](../../internal/daemon/AGENTS.md) and ADR 0046.
+- `agentws serve [--addr 127.0.0.1:7420] [--cert f --key f | --self-signed] [--url u]` runs the API of the phone app (see [internal/serve/](../../internal/serve/AGENTS.md)). It refuses plain HTTP off loopback before it starts anything. The public URL for the `Origin` check of the stream comes from `--url` or `[serve] url`. It starts the daemon like the TUI does. Tests: `go test ./cmd/crew/ -run Serve`.
 - `agentws rpc` is the one transport of the Mac app, local or through `ssh -T host agentws rpc`.
   - It connects to `$AGENTWS_HOME/agentws.sock` and copies protocol lines in both directions between the socket and stdin/stdout. The line limit is `rpc.MaxMessage` (16 MiB).
   - It never starts a daemon. If nothing listens, it writes one `{"v":1,"id":0,"error":{"code":"unavailable",...}}` line and exits 1.
@@ -54,7 +54,7 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
   - The bridge answers one method itself, `view.subscribe`. It sends `subscribe` with the same `id` and `build`, and replies with the derived state and diffs of `internal/view` (see [internal/view/](../../internal/view/AGENTS.md)).
   - It also extends `review.open`. With `"tokens": true` in the params, it passes the request on and adds `Spans`, a list of `[start, end, class]`, to each diff line of the reply (see [internal/syntax/](../../internal/syntax/AGENTS.md)). A file with no lexer gets no `Spans`.
   - All other lines pass through with no change.
-  - Tests: `go test ./cmd/agentws/ -run 'Rpc|Tokens'` and `go test -tags integration ./test/integration/ -run RpcBridge`. See [ADR 0049](../../docs/adr/0049-macos-app.md).
+  - Tests: `go test ./cmd/crew/ -run 'Rpc|Tokens'` and `go test -tags integration ./test/integration/ -run RpcBridge`. See [ADR 0049](../../docs/adr/0049-macos-app.md).
 - `agentws browser [--session id] [--json] [--out file.png] [--timeout 30s] <command> [args]` drives the browser of the Mac app ([ADR 0051](../../docs/adr/0051-browser-in-mac-app.md)).
   - The commands are `goto`, `snapshot`, `click`, `fill`, `type`, `press`, `wait`, `screenshot`, `eval`, `tabs`, `cookies` and `set-device`. `domain.ParseBrowserCommand` checks the arguments.
   - The session is `--session`, else `$AGENTWS_SESSION`, else the session on `$TMUX_PANE`.
@@ -62,10 +62,10 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
   - `screenshot` writes the PNG to `--out`, else to a temp file, and prints the path.
   - Without the Mac app, it exits 1 with `no browser: the macOS app is not connected`. Bad arguments exit 2.
   - `agentws setup claude` and `agentws setup codex` also write the browser skill (see [internal/adapters/](../../internal/adapters/AGENTS.md)).
-  - Tests: `go test ./cmd/agentws/ ./internal/daemon/ ./internal/domain/ -run Browser`.
+  - Tests: `go test ./cmd/crew/ ./internal/daemon/ ./internal/domain/ -run Browser`.
 - `agentws worktree list|assign <path> <session>` prints the path, branch, owner and PR of each worktree, and sets an owner.
 - `agentws cleanup [--dry-run]` runs (or only prints) the cleanup plan through the daemon (see [internal/daemon/](../../internal/daemon/AGENTS.md)).
-- `agentws pr <session id or name> [--json]` prints the PR board of a session from daemon state. `testdata/pr.json.golden` pins the JSON shape. To make it again, run `go test ./cmd/agentws -run PRBoardJSON -update` and review the diff. [ADR 0024](../../docs/adr/0024-pr-board.md) documents the shape. Run the board tests with `go test ./... -run PRBoard`. The tests of the github adapter and the integration tests use a fake `gh` script, so nothing goes to GitHub.
+- `agentws pr <session id or name> [--json]` prints the PR board of a session from daemon state. `testdata/pr.json.golden` pins the JSON shape. To make it again, run `go test ./cmd/crew -run PRBoardJSON -update` and review the diff. [ADR 0024](../../docs/adr/0024-pr-board.md) documents the shape. Run the board tests with `go test ./... -run PRBoard`. The tests of the github adapter and the integration tests use a fake `gh` script, so nothing goes to GitHub.
 - `agentws review comment [--session id] (--file abs | --worktree id --path rel) --start n [--end n] [--code text] --body text` adds a draft comment. `agentws review scope [--session id] [--scope s]` prints the path, base commit and files of each worktree as JSON. `agentws review send [--session id]` sends the draft, or queues it until the agent is between tools. The default of `--session` is `$AGENTWS_SESSION`, which the shell and nvim panes have.
 - `agentws setup claude|codex|omp [--remove]`: see [internal/adapters/](../../internal/adapters/AGENTS.md). `agentws setup` with no arguments and `agentws setup nvim [--remove]`: see [internal/adapters/onboard/](../../internal/adapters/onboard/AGENTS.md).
 - `agentws setup-worktree <path>`: see [internal/adapters/setup/](../../internal/adapters/setup/AGENTS.md).

@@ -19,7 +19,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const browserUsage = "usage: agentws browser [--session id] [--json] [--out file.png] [--timeout 30s] <" +
+const browserUsage = "usage: crew browser [--session id] [--json] [--out file.png] [--timeout 30s] <" +
 	"goto url | snapshot | click @eN | fill @eN text | type text | press key | wait @eN|ms|text | screenshot | eval js | tabs | cookies [domain] | set-device desktop|ipad|iphone>"
 
 type browserShot struct {
@@ -41,7 +41,7 @@ func runBrowser(args []string, stdout, stderr io.Writer) int {
 	}
 	call, err := domain.ParseBrowserCommand(fs.Args())
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws browser: %v\n%s\n", err, browserUsage)
+		fmt.Fprintf(stderr, "crew browser: %v\n%s\n", err, browserUsage)
 		return 2
 	}
 	p := rpc.BrowserCommandParams{Session: *session, Command: call.Command, Args: call.Args, TimeoutMS: int(timeout.Milliseconds())}
@@ -52,7 +52,7 @@ func runBrowser(args []string, stdout, stderr io.Writer) int {
 	defer cancel()
 	c, err := connectHome(ctx)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws browser: %v\n", err)
+		fmt.Fprintf(stderr, "crew browser: %v\n", err)
 		return 1
 	}
 	defer func() { _ = c.Close() }()
@@ -60,16 +60,16 @@ func runBrowser(args []string, stdout, stderr io.Writer) int {
 	if err := c.Call(ctx, rpc.MethodBrowserCommand, p, &res); err != nil {
 		var rerr *rpc.Error
 		if errors.As(err, &rerr) {
-			fmt.Fprintf(stderr, "agentws browser: %s\n", rerr.Message)
+			fmt.Fprintf(stderr, "crew browser: %s\n", rerr.Message)
 		} else {
-			fmt.Fprintf(stderr, "agentws browser: %v\n", err)
+			fmt.Fprintf(stderr, "crew browser: %v\n", err)
 		}
 		return 1
 	}
 	if call.Command == "screenshot" {
 		res, err = saveShot(res, *out, *asJSON)
 		if err != nil {
-			fmt.Fprintf(stderr, "agentws browser: %v\n", err)
+			fmt.Fprintf(stderr, "crew browser: %v\n", err)
 			return 1
 		}
 	}
@@ -87,7 +87,7 @@ func saveShot(res json.RawMessage, out string, asJSON bool) (json.RawMessage, er
 		return nil, fmt.Errorf("the PNG is not base64: %w", err)
 	}
 	if out == "" {
-		out = filepath.Join(os.TempDir(), "agentws-browser-"+strconv.FormatInt(time.Now().UnixNano(), 10)+".png")
+		out = filepath.Join(os.TempDir(), "crew-browser-"+strconv.FormatInt(time.Now().UnixNano(), 10)+".png")
 	}
 	if err := os.WriteFile(out, data, 0o600); err != nil {
 		return nil, err

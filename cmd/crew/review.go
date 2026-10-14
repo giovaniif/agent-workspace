@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	reviewUsage  = "usage: agentws review <comment|scope|send> ..."
-	commentUsage = "usage: agentws review comment [--session id] (--file abs-path | --worktree id --path rel-path) --start line [--end line] [--code text] --body text"
-	scopeUsage   = "usage: agentws review scope [--session id] [--scope last_turn|uncommitted|branch] [--worktree id]"
-	sendUsage    = "usage: agentws review send [--session id]"
+	reviewUsage  = "usage: crew review <comment|scope|send> ..."
+	commentUsage = "usage: crew review comment [--session id] (--file abs-path | --worktree id --path rel-path) --start line [--end line] [--code text] --body text"
+	scopeUsage   = "usage: crew review scope [--session id] [--scope last_turn|uncommitted|branch] [--worktree id]"
+	sendUsage    = "usage: crew review send [--session id]"
 )
 
 var errBadComment = errors.New("bad comment arguments")
@@ -116,7 +116,7 @@ func callReview(stderr io.Writer, what string, f func(context.Context, *rpc.Clie
 		_ = c.Close()
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws review %s: %v\n", what, err)
+		fmt.Fprintf(stderr, "crew review %s: %v\n", what, err)
 		return 1
 	}
 	return 0

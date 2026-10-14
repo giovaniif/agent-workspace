@@ -18,7 +18,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/domain"
 )
 
-const setupDaemonUsage = "usage: agentws setup daemon [--remove | --check]"
+const setupDaemonUsage = "usage: crew setup daemon [--remove | --check]"
 
 const (
 	daemonUnitName   = "agentws-daemon"
@@ -47,12 +47,12 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 		err = fmt.Errorf("%s is not supported, only linux and macOS", goos)
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup daemon: %v\n%s\n", err, setupDaemonUsage)
+		fmt.Fprintf(stderr, "crew setup daemon: %v\n%s\n", err, setupDaemonUsage)
 		return 2
 	}
 	userHome, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup daemon: %v\n", err)
 		return 1
 	}
 	ctx := context.Background()
@@ -64,7 +64,7 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 		removed, err := removeServe(ctx, svc)
 		switch {
 		case err != nil:
-			fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
+			fmt.Fprintf(stderr, "crew setup daemon: %v\n", err)
 			return 1
 		case removed:
 			fmt.Fprintf(stdout, "stopped and removed %s\n", svc.path())
@@ -75,7 +75,7 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 	}
 	loginPath, err := loginshell.Path(ctx, env("SHELL"))
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup daemon: reading the login shell's PATH: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup daemon: reading the login shell's PATH: %v\n", err)
 		return 1
 	}
 	if svc.launchd {
@@ -85,7 +85,7 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 	}
 	path, backup, changed, err := installServe(ctx, svc)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup daemon: %v\n", err)
 		return 1
 	}
 	if changed {
@@ -100,7 +100,7 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 		return 0
 	}
 	if on, err := lingerOn(ctx, env); err != nil {
-		fmt.Fprintf(stderr, "agentws setup daemon: could not check linger: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup daemon: could not check linger: %v\n", err)
 	} else if !on {
 		fmt.Fprintf(stdout, "linger is off for %s: the daemon and every session stop at logout. Fix it with:\n  sudo loginctl enable-linger %s\n", env("USER"), env("USER"))
 	}
@@ -147,7 +147,7 @@ func printDaemonCheck(ctx context.Context, svc serveService, env func(string) st
 	case err == nil:
 		c.Installed = true
 	case !errors.Is(err, os.ErrNotExist):
-		fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup daemon: %v\n", err)
 		return 1
 	}
 	if svc.launchd {
@@ -157,13 +157,13 @@ func printDaemonCheck(ctx context.Context, svc serveService, env func(string) st
 		c.Running = systemd.Exec(ctx, "systemctl", "--user", "is-active", svc.unit.Name+".service") == nil
 		on, err := lingerOn(ctx, env)
 		if err != nil {
-			fmt.Fprintf(stderr, "agentws setup daemon: could not check linger: %v\n", err)
+			fmt.Fprintf(stderr, "crew setup daemon: could not check linger: %v\n", err)
 			return 1
 		}
 		c.Linger = on
 	}
 	if err := json.NewEncoder(stdout).Encode(c); err != nil {
-		fmt.Fprintf(stderr, "agentws setup daemon: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup daemon: %v\n", err)
 		return 1
 	}
 	return 0

@@ -11,7 +11,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const worktreeUsage = "usage: agentws worktree <list|assign <path> <session>>"
+const worktreeUsage = "usage: crew worktree <list|assign <path> <session>>"
 
 func runWorktree(args []string, stdout, stderr io.Writer) int {
 	wantArgs := map[string]int{"list": 1, "assign": 3}
@@ -20,7 +20,7 @@ func runWorktree(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if err := worktreeCommand(args, stdout); err != nil {
-		fmt.Fprintf(stderr, "agentws worktree: %v\n", err)
+		fmt.Fprintf(stderr, "crew worktree: %v\n", err)
 		return 1
 	}
 	return 0

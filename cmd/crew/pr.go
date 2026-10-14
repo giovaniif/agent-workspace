@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const prUsage = "usage: agentws pr <session id or name> [--json]"
+const prUsage = "usage: crew pr <session id or name> [--json]"
 
 type prCheckJSON struct {
 	Name string `json:"name"`
@@ -49,7 +49,7 @@ func runPR(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if err := prCommand(session, asJSON, stdout); err != nil {
-		fmt.Fprintf(stderr, "agentws pr: %v\n", err)
+		fmt.Fprintf(stderr, "crew pr: %v\n", err)
 		return 1
 	}
 	return 0

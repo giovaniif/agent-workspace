@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const newUsage = "usage: agentws new [--workspace path] [--harness claude|codex|omp] [--model m] [--effort e] [task]"
+const newUsage = "usage: crew new [--workspace path] [--harness claude|codex|omp] [--model m] [--effort e] [task]"
 
 func parseNewArgs(args []string, stderr io.Writer) (rpc.NewSessionParams, error) {
 	fs := flag.NewFlagSet("new", flag.ContinueOnError)
@@ -45,13 +45,13 @@ func runNew(args []string, stdout, stderr io.Writer) int {
 	ctx := context.Background()
 	c, err := connectHome(ctx)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws new: %v\n", err)
+		fmt.Fprintf(stderr, "crew new: %v\n", err)
 		return 1
 	}
 	defer func() { _ = c.Close() }()
 	var s domain.Session
 	if err := c.Call(ctx, rpc.MethodNewSession, p, &s); err != nil {
-		fmt.Fprintf(stderr, "agentws new: %v\n", err)
+		fmt.Fprintf(stderr, "crew new: %v\n", err)
 		return 1
 	}
 	fmt.Fprintf(stdout, "session %s on pane %s\n", s.ID, s.Pane)

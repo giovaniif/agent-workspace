@@ -14,7 +14,7 @@ Claude Code and Codex load an `AGENTS.md` from each directory they work in. Here
 
 | Directory | Covers |
 |---|---|
-| [cmd/agentws/](cmd/agentws/AGENTS.md) | CLI subcommands, the hook process, startup cost, `agentws pr` JSON golden |
+| [cmd/crew/](cmd/crew/AGENTS.md) | CLI subcommands, the hook process, startup cost, `agentws pr` JSON golden |
 | [internal/domain/](internal/domain/AGENTS.md) | the pure rules (state machine, naming, cleanup, discovery, review, ports, disk), review prompt golden |
 | [internal/app/](internal/app/AGENTS.md) | use cases and ports, cleanup execution, disk sizes |
 | [internal/daemon/](internal/daemon/AGENTS.md) | process files, event loop, sessions, attention and banners, launcher, naming, fallback, worktree scan and PRs, ports, cleanup schedule, shell and nvim methods |

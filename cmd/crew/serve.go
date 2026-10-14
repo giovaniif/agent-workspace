@@ -18,7 +18,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/version"
 )
 
-const serveUsage = "usage: agentws serve [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"
+const serveUsage = "usage: crew serve [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"
 
 var errServeUsage = errors.New("usage")
 
@@ -30,7 +30,7 @@ type serveFlags struct {
 func runServe(args []string, stdout, stderr io.Writer) int {
 	home, err := rpc.Home()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws serve: %v\n", err)
+		fmt.Fprintf(stderr, "crew serve: %v\n", err)
 		return 1
 	}
 	f, err := parseServe(args, home, stderr)
@@ -39,13 +39,13 @@ func runServe(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, serveUsage)
 		return 2
 	case err != nil:
-		fmt.Fprintf(stderr, "agentws serve: %v\n", err)
+		fmt.Fprintf(stderr, "crew serve: %v\n", err)
 		return 1
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if err := serveIn(ctx, home, f, stdout, stderr); err != nil {
-		fmt.Fprintf(stderr, "agentws serve: %v\n", err)
+		fmt.Fprintf(stderr, "crew serve: %v\n", err)
 		return 1
 	}
 	return 0
@@ -90,15 +90,15 @@ func serveIn(ctx context.Context, home string, f serveFlags, stdout, stderr io.W
 		return err
 	}
 	if strings.TrimSpace(f.url) == "" {
-		fmt.Fprintf(stderr, "agentws serve: no public URL, so the stream refuses every client; set [serve] url in %s or pass --url\n", filepath.Join(home, "config.toml"))
+		fmt.Fprintf(stderr, "crew serve: no public URL, so the stream refuses every client; set [serve] url in %s or pass --url\n", filepath.Join(home, "config.toml"))
 	}
 	if err := srv.Start(ctx); err != nil {
 		return fmt.Errorf("subscribe to the daemon: %w", err)
 	}
 	return serve.Listen(ctx, f.opts, serveHandler(srv), func(url string) {
-		fmt.Fprintf(stdout, "agentws serve: listening on %s\n", url)
+		fmt.Fprintf(stdout, "crew serve: listening on %s\n", url)
 		if f.opts.SelfSigned {
-			fmt.Fprintf(stdout, "agentws serve: self-signed certificate %s; set your proxy to trust it\n", filepath.Join(f.opts.CertDir, "cert.pem"))
+			fmt.Fprintf(stdout, "crew serve: self-signed certificate %s; set your proxy to trust it\n", filepath.Join(f.opts.CertDir, "cert.pem"))
 		}
 	})
 }

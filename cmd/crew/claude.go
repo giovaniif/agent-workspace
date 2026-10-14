@@ -41,7 +41,7 @@ func runSetupClaude(args []string, stdout, stderr io.Writer, env func(string) st
 		err = setupClaude(path, self, *remove, stdout)
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup claude: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup claude: %v\n", err)
 		return 1
 	}
 	return 0
@@ -52,20 +52,20 @@ func setupClaude(path, self string, remove bool, stdout io.Writer) error {
 		if err := claude.Remove(path); err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "removed agentws hooks and status line from %s\n", path)
+		fmt.Fprintf(stdout, "removed crew hooks and status line from %s\n", path)
 		return removeSkill(filepath.Dir(path), stdout)
 	}
 	if err := claude.Setup(path, self); err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "merged agentws hooks and status line into %s (backup: %s)\n", path, claude.BackupPath(path))
+	fmt.Fprintf(stdout, "merged crew hooks and status line into %s (backup: %s)\n", path, claude.BackupPath(path))
 	return installSkill(filepath.Dir(path), stdout)
 }
 
 func installSkill(dir string, stdout io.Writer) error {
 	changed, err := skill.Install(dir)
 	if changed {
-		fmt.Fprintf(stdout, "installed the agentws browser skill in %s\n", skill.Path(dir))
+		fmt.Fprintf(stdout, "installed the crew browser skill in %s\n", skill.Path(dir))
 	}
 	return err
 }
@@ -73,7 +73,7 @@ func installSkill(dir string, stdout io.Writer) error {
 func removeSkill(dir string, stdout io.Writer) error {
 	changed, err := skill.Remove(dir)
 	if changed {
-		fmt.Fprintf(stdout, "removed the agentws browser skill from %s\n", skill.Path(dir))
+		fmt.Fprintf(stdout, "removed the crew browser skill from %s\n", skill.Path(dir))
 	}
 	return err
 }

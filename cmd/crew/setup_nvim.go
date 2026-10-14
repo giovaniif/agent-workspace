@@ -21,21 +21,21 @@ func runSetupNvim(args []string, stdout, stderr io.Writer, env func(string) stri
 	if *remove {
 		removed, err := p.RemoveNvim(ctx)
 		if err != nil {
-			fmt.Fprintf(stderr, "agentws setup nvim: %v\n", err)
+			fmt.Fprintf(stderr, "crew setup nvim: %v\n", err)
 			return 1
 		}
 		if removed {
-			fmt.Fprintln(stdout, "removed the agentws setup file from the nvim config")
+			fmt.Fprintln(stdout, "removed the crew setup file from the nvim config")
 		} else {
-			fmt.Fprintln(stdout, "no agentws setup file in the nvim config")
+			fmt.Fprintln(stdout, "no crew setup file in the nvim config")
 		}
 		return 0
 	}
 	n, err := p.InstallNvim(ctx)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup nvim: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup nvim: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "wrote %s, which nvim loads at startup; agentws setup nvim --remove deletes it\n", n.ConfigFile)
+	fmt.Fprintf(stdout, "wrote %s, which nvim loads at startup; crew setup nvim --remove deletes it\n", n.ConfigFile)
 	return 0
 }

@@ -34,7 +34,7 @@ func hook1(args []string, stdin io.Reader, stdout io.Writer, home, pane string) 
 		return err
 	}
 	if *harness == "" || *event == "" {
-		return errors.New("usage: agentws hook --harness claude|codex|omp --event <name>")
+		return errors.New("usage: crew hook --harness claude|codex|omp --event <name>")
 	}
 	payload, err := io.ReadAll(stdin)
 	if err != nil {

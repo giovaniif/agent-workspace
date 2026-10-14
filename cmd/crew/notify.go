@@ -19,7 +19,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const notifyUsage = "usage: agentws notify stream | agentws notify bridge [--remote-bin path] <ssh host>"
+const notifyUsage = "usage: crew notify stream | crew notify bridge [--remote-bin path] <ssh host>"
 
 func runNotify(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -32,7 +32,7 @@ func runNotify(args []string, stdout, stderr io.Writer) int {
 	case "bridge":
 		p, err := parseBridge(args[1:])
 		if err != nil {
-			fmt.Fprintf(stderr, "agentws notify bridge: %v\n%s\n", err, notifyUsage)
+			fmt.Fprintf(stderr, "crew notify bridge: %v\n%s\n", err, notifyUsage)
 			return 2
 		}
 		return runBridge(p, stderr)
@@ -46,14 +46,14 @@ func runNotifyStream(stdout, stderr io.Writer) int {
 	ctx := context.Background()
 	home, err := rpc.Home()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws notify stream: %v\n", err)
+		fmt.Fprintf(stderr, "crew notify stream: %v\n", err)
 		return 1
 	}
 	c := awaitDaemon(home, stderr)
 	defer func() { _ = c.Close() }()
 	notices, err := c.StreamNotices(ctx)
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws notify stream: %v\n", err)
+		fmt.Fprintf(stderr, "crew notify stream: %v\n", err)
 		return 1
 	}
 	enc := json.NewEncoder(stdout)
@@ -62,7 +62,7 @@ func runNotifyStream(stdout, stderr io.Writer) int {
 			return 1
 		}
 	}
-	fmt.Fprintln(stderr, "agentws notify stream: daemon went away")
+	fmt.Fprintln(stderr, "crew notify stream: daemon went away")
 	return 1
 }
 
@@ -72,11 +72,11 @@ func awaitDaemon(home string, stderr io.Writer) *rpc.Client {
 	if err == nil {
 		return c
 	}
-	fmt.Fprintln(stderr, "agentws notify stream: waiting for the daemon")
+	fmt.Fprintln(stderr, "crew notify stream: waiting for the daemon")
 	for {
 		time.Sleep(awaitDaemonEvery)
 		if c, err := rpc.Dial(sock); err == nil {
-			fmt.Fprintln(stderr, "agentws notify stream: connected")
+			fmt.Fprintln(stderr, "crew notify stream: connected")
 			return c
 		}
 	}

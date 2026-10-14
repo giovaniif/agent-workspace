@@ -120,7 +120,7 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 - A subscription is stored on its device (`Device.Push`, inside the `devices` row), one per device, so revoking the device deletes it with no second table to keep in step. A push service answer of 404 or 410 clears it.
 - The payload is `{"title","body","url","tag"}`: the banner's title and body (falling back to `agentws` and the state word, never empty), `url` `/#/sessions/<id>` and `tag` the session ID, so a session's newer notification replaces its older one. The terminal-in-front check of the Mac banner does not apply to push.
 
-Rejected: `serve` subscribing to `notify.stream` and sending through an adapter injected from `cmd/agentws`. It keeps sending out of the daemon, but subscriptions would still have to be stored and dropped through new daemon methods, revocation and a gone subscription would cross the socket twice, and a push would be lost whenever `serve` is not running even though the daemon saw the banner.
+Rejected: `serve` subscribing to `notify.stream` and sending through an adapter injected from `cmd/crew`. It keeps sending out of the daemon, but subscriptions would still have to be stored and dropped through new daemon methods, revocation and a gone subscription would cross the socket twice, and a push would be lost whenever `serve` is not running even though the daemon saw the banner.
 
 ## Amendment, 2026-10-06 (#206): don't push while the owner is at the terminal or on the app
 

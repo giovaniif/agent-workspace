@@ -22,7 +22,7 @@ import (
 func runDaemon(args []string, stdout, stderr io.Writer) int {
 	home, err := rpc.Home()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws daemon: %v\n", err)
+		fmt.Fprintf(stderr, "crew daemon: %v\n", err)
 		return 1
 	}
 	sub := ""
@@ -39,11 +39,11 @@ func runDaemon(args []string, stdout, stderr io.Writer) int {
 	case "stop":
 		err = stop(home, stdout)
 	default:
-		fmt.Fprintf(stderr, "agentws daemon: unknown subcommand %q\nusage: agentws daemon [start|status|stop]\n", sub)
+		fmt.Fprintf(stderr, "crew daemon: unknown subcommand %q\nusage: crew daemon [start|status|stop]\n", sub)
 		return 2
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws daemon: %v\n", err)
+		fmt.Fprintf(stderr, "crew daemon: %v\n", err)
 		return 1
 	}
 	return 0
@@ -101,14 +101,14 @@ func start(home string, stdout io.Writer) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "agentws daemon already running (pid %d)\n", st.PID)
+		fmt.Fprintf(stdout, "crew daemon already running (pid %d)\n", st.PID)
 		return nil
 	}
 	st, err := connectStatus(home)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "agentws daemon started (pid %d)\n", st.PID)
+	fmt.Fprintf(stdout, "crew daemon started (pid %d)\n", st.PID)
 	return nil
 }
 
@@ -155,7 +155,7 @@ func stop(home string, stdout io.Writer) error {
 	deadline := time.Now().Add(rpc.StartTimeout)
 	for {
 		if _, ok := daemon.ReadPID(home); !ok {
-			fmt.Fprintf(stdout, "agentws daemon stopped (pid %d)\n", st.PID)
+			fmt.Fprintf(stdout, "crew daemon stopped (pid %d)\n", st.PID)
 			return nil
 		}
 		if time.Now().After(deadline) {

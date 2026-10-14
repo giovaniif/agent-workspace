@@ -10,7 +10,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const debugUsage = "usage: agentws debug seed <count> [--codex]\n       agentws debug launch --harness claude --dir <dir> [--model m] [--effort e] [--name n]\n       agentws debug session [--once] <id>"
+const debugUsage = "usage: crew debug seed <count> [--codex]\n       crew debug launch --harness claude --dir <dir> [--model m] [--effort e] [--name n]\n       crew debug session [--once] <id>"
 
 func runDebug(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -41,7 +41,7 @@ func runDebug(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws debug: %v\n", err)
+		fmt.Fprintf(stderr, "crew debug: %v\n", err)
 		return 1
 	}
 	return 0

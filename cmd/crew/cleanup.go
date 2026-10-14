@@ -10,7 +10,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const cleanupUsage = "usage: agentws cleanup [--dry-run]"
+const cleanupUsage = "usage: crew cleanup [--dry-run]"
 
 func runCleanup(args []string, stdout, stderr io.Writer) int {
 	dryRun := false
@@ -23,7 +23,7 @@ func runCleanup(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if err := cleanupCommand(dryRun, stdout); err != nil {
-		fmt.Fprintf(stderr, "agentws cleanup: %v\n", err)
+		fmt.Fprintf(stderr, "crew cleanup: %v\n", err)
 		return 1
 	}
 	return 0

@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/app"
 )
 
-const worktreeSetupUsage = "usage: agentws setup-worktree <path>"
+const worktreeSetupUsage = "usage: crew setup-worktree <path>"
 
 func runSetupWorktree(args []string, stdout, stderr io.Writer) int {
 	if len(args) != 1 {
@@ -21,7 +21,7 @@ func runSetupWorktree(args []string, stdout, stderr io.Writer) int {
 	}
 	worktree, err := resolveDir(args[0])
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup-worktree: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup-worktree: %v\n", err)
 		return 1
 	}
 	service := app.WorktreeSetup{
@@ -36,7 +36,7 @@ func runSetupWorktree(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, line)
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws setup-worktree: %v\n", err)
+		fmt.Fprintf(stderr, "crew setup-worktree: %v\n", err)
 		return 1
 	}
 	fmt.Fprintln(stdout, setupSummary(report))

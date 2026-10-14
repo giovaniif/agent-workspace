@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const debugSessionUsage = "usage: agentws debug session [--once] <id>"
+const debugSessionUsage = "usage: crew debug session [--once] <id>"
 
 func runDebugSession(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("debug session", flag.ContinueOnError)
@@ -25,7 +25,7 @@ func runDebugSession(args []string, stdout, stderr io.Writer) int {
 	}
 	home, err := rpc.Home()
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws debug: %v\n", err)
+		fmt.Fprintf(stderr, "crew debug: %v\n", err)
 		return 1
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -39,7 +39,7 @@ func runDebugSession(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "agentws debug: %v\n", err)
+		fmt.Fprintf(stderr, "crew debug: %v\n", err)
 		return 1
 	}
 	return 0

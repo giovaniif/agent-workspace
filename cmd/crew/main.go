@@ -39,7 +39,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case cmd == "setup":
 		self, err := os.Executable()
 		if err != nil {
-			fmt.Fprintf(stderr, "agentws setup: %v\n", err)
+			fmt.Fprintf(stderr, "crew setup: %v\n", err)
 			return 1
 		}
 		return runSetup(args[1:], stdout, stderr, os.Getenv, self)
@@ -77,10 +77,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case cmd == "rpc":
 		return runRPC(args[1:], os.Stdin, stdout, stderr)
 	case slices.Contains(stubs, cmd):
-		fmt.Fprintf(stderr, "agentws %s: not implemented yet\n", cmd)
+		fmt.Fprintf(stderr, "crew %s: not implemented yet\n", cmd)
 		return 1
 	default:
-		fmt.Fprintf(stderr, "agentws: unknown command %q\n", cmd)
+		fmt.Fprintf(stderr, "crew: unknown command %q\n", cmd)
 		usage(stderr)
 		return 2
 	}
@@ -101,5 +101,5 @@ func buildCommit() string {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|automation|review|browser|focus|notify|remote|serve|rpc|cleanup|version [--build]]")
+	fmt.Fprintln(w, "usage: crew [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|automation|review|browser|focus|notify|remote|serve|rpc|cleanup|version [--build]]")
 }
