@@ -8,14 +8,15 @@ const icons = [
   { dir: publicDir, file: "icon-192.png", size: 192, bleed: false, scale: 1 },
   { dir: publicDir, file: "icon-512.png", size: 512, bleed: false, scale: 1 },
   { dir: publicDir, file: "icon-maskable-512.png", size: 512, bleed: true, scale: 1 },
+  { dir: publicDir, file: "favicon-32.png", size: 32, bleed: false, scale: 1 },
   { dir: publicDir, file: "apple-touch-icon.png", size: 180, bleed: true, scale: 1 },
   { dir: macosDir, file: "AppIcon.png", size: 1024, bleed: false, scale: 0.8 },
 ];
 
 function page(svg: string, size: number, bleed: boolean, scale: number): string {
   const scaled = scale === 1 ? svg : svg.replace("<svg ", `<svg style="transform: scale(${scale})" `);
-  const art = bleed ? svg.replace('rx="112"', 'rx="0"').replace("<svg ", '<svg style="transform: scale(0.82)" ') : scaled;
-  const background = bleed ? "#1e66f5" : "transparent";
+  const art = bleed ? svg.replace('rx="120.32"', 'rx="0"').replace("<svg ", '<svg style="transform: scale(0.82)" ') : scaled;
+  const background = bleed ? "#eff1f5" : "transparent";
   return `<!doctype html><html><body style="margin:0;width:${size}px;height:${size}px;background:${background};display:grid;place-items:center">${art.replace("<svg ", `<svg width="${size}" height="${size}" `)}</body></html>`;
 }
 
