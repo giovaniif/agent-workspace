@@ -42,7 +42,7 @@ func codexHome(t *testing.T, hooksJSON []byte) (SetupConfig, string) {
 
 func backups(t *testing.T, dir string) []string {
 	t.Helper()
-	found, err := filepath.Glob(filepath.Join(dir, "hooks.json.agentws-*.bak"))
+	found, err := filepath.Glob(filepath.Join(dir, "hooks.json.crew-*.bak"))
 	if err != nil {
 		t.Fatal(err)
 	}

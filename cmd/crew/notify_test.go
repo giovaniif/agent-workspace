@@ -20,12 +20,12 @@ func TestNotifyBridgeStreamsOverSSHAndFocusesThroughIt(t *testing.T) {
 	}
 }
 
-func TestNotifyBridgeDefaultsToAgentwsOnTheRemotePath(t *testing.T) {
+func TestNotifyBridgeDefaultsToCrewOnTheRemotePath(t *testing.T) {
 	p, err := parseBridge([]string{"vps"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := p.streamArgv(); got[len(got)-1] != "'agentws' notify stream" {
+	if got := p.streamArgv(); got[len(got)-1] != "'crew' notify stream" {
 		t.Fatalf("stream argv %q", got)
 	}
 }
