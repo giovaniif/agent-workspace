@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { clearAuth, loadAuth, saveAuth } from "./auth";
 import { loadChoices } from "./newsession";
+import { usesBrowser } from "./screens/Session";
 import { cacheName, staleCaches } from "./sw-cache";
 import { MemoryStorage } from "./test/fake-server";
 
 const device = { id: "k3m9p2qx", name: "phone", created_at: "2026-10-03T10:00:00Z", last_seen: "2026-10-03T10:00:00Z" };
 
-describe("the crew storage names", () => {
+describe("the names of the old tool", () => {
   it("copies an agentws login one time, so a paired phone stays paired", () => {
     const storage = new MemoryStorage();
     storage.setItem("agentws.auth", JSON.stringify({ token: "old", device }));
@@ -42,5 +43,10 @@ describe("the crew storage names", () => {
   it("names the shell cache crew and drops the agentws caches", () => {
     expect(cacheName("b1")).toBe("crew-shell-b1");
     expect(staleCaches(["agentws-shell-b0", "crew-shell-b0", "crew-shell-b1", "other"], "crew-shell-b1")).toEqual(["agentws-shell-b0", "crew-shell-b0"]);
+  });
+
+  it("still knows the old name of the browser command", () => {
+    const message = { role: "tool", tool: { summary: "agentws browser goto localhost:3000" } };
+    expect(usesBrowser([message] as never)).toBe(true);
   });
 });
