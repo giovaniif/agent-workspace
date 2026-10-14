@@ -1,14 +1,14 @@
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api --harness omp --model sonnet 'add a thing'
+exec crew workspace add api
+exec crew new --workspace api --harness omp --model sonnet 'add a thing'
 capture SID '^session (\S+) on pane %\d+$'
 
-mkdir $AGENTWS_E2E/gates/prompt
-eventually '^seq=\d+ state=running harness=omp .* model=opus effort=high ' agentws debug session --once $SID
-mkdir $AGENTWS_E2E/gates/round
-eventually ' state=permission ' agentws debug session --once $SID
-mkdir $AGENTWS_E2E/gates/finish
-eventually ' state=done harness=omp ' agentws debug session --once $SID
+mkdir $CREW_E2E/gates/prompt
+eventually '^seq=\d+ state=running harness=omp .* model=opus effort=high ' crew debug session --once $SID
+mkdir $CREW_E2E/gates/round
+eventually ' state=permission ' crew debug session --once $SID
+mkdir $CREW_E2E/gates/finish
+eventually ' state=done harness=omp ' crew debug session --once $SID
 
 -- omp.steps --
 gate prompt

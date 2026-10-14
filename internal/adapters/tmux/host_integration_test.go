@@ -27,7 +27,7 @@ func newHost(t testing.TB) *tmux.Host {
 	}
 	dir := t.TempDir()
 	h := tmux.New(tmux.Config{
-		Socket:     fmt.Sprintf("agentws-test-%d-%d", os.Getpid(), time.Now().UnixNano()),
+		Socket:     fmt.Sprintf("crew-test-%d-%d", os.Getpid(), time.Now().UnixNano()),
 		ConfigPath: filepath.Join(dir, "tmux.conf"),
 	})
 	t.Cleanup(func() { _ = h.Close(context.Background()) })
@@ -222,8 +222,8 @@ func TestCreateHonorsDirAndEnv(t *testing.T) {
 	p, err := h.Create(ctx, app.PaneSpec{
 		Name:    "env",
 		Dir:     dir,
-		Env:     map[string]string{"AGENTWS_PROBE": "42"},
-		Command: []string{"sh", "-c", `echo "$PWD $AGENTWS_PROBE"; sleep 600`},
+		Env:     map[string]string{"CREW_PROBE": "42"},
+		Command: []string{"sh", "-c", `echo "$PWD $CREW_PROBE"; sleep 600`},
 	})
 	if err != nil {
 		t.Fatal(err)

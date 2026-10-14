@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ "$1" = api ]; then
-	cat "$AGENTWS_E2E/prs.json" 2>/dev/null || echo '{"data":{}}'
+	cat "$CREW_E2E/prs.json" 2>/dev/null || echo '{"data":{}}'
 	exit 0
 fi
 echo "fake gh: unsupported: $*" >&2

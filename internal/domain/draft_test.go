@@ -132,8 +132,8 @@ func TestDraftLinksOnlyTheFirstTurnAfterItWasSent(t *testing.T) {
 	if !d.AwaitsTurn() {
 		t.Fatal("a sent draft awaits its turn")
 	}
-	d = d.LinkTurn([]string{"refs/agentws/turns/s1/k/3"})
-	if d.AwaitsTurn() || !reflect.DeepEqual(d.Turns, []string{"refs/agentws/turns/s1/k/3"}) {
+	d = d.LinkTurn([]string{"refs/crew/turns/s1/k/3"})
+	if d.AwaitsTurn() || !reflect.DeepEqual(d.Turns, []string{"refs/crew/turns/s1/k/3"}) {
 		t.Errorf("linked %+v", d)
 	}
 	if (ReviewDraft{Status: DraftQueued}).AwaitsTurn() {

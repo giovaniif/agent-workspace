@@ -1,9 +1,9 @@
-exec agentws debug seed 3
+exec crew debug seed 3
 stdout '^seeded 3 sessions$'
 
-exec agentws daemon status
+exec crew daemon status
 stdout '^sessions 3$'
 stdout '^worktrees 6$'
 
-! exec agentws debug seed zero
+! exec crew debug seed zero
 stderr 'usage: crew debug seed <count>'

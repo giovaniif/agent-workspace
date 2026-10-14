@@ -239,19 +239,19 @@ func TestReopeningLatestKeepsVersion(t *testing.T) {
 	}
 }
 
-func TestDefaultPathHonoursAgentwsHome(t *testing.T) {
-	t.Setenv("AGENTWS_HOME", "/tmp/aw")
+func TestDefaultPathHonoursCrewHome(t *testing.T) {
+	t.Setenv("CREW_HOME", "/tmp/aw")
 	if p, _ := DefaultPath(); p != "/tmp/aw/state.db" {
 		t.Errorf("path = %q", p)
 	}
-	t.Setenv("AGENTWS_HOME", "")
+	t.Setenv("CREW_HOME", "")
 	t.Setenv("HOME", "/home/u")
 	if p, _ := DefaultPath(); p != "/home/u/.crew/state.db" {
 		t.Errorf("path = %q", p)
 	}
 }
 
-const writeLoopEnv = "AGENTWS_SQLITE_WRITE_LOOP"
+const writeLoopEnv = "CREW_SQLITE_WRITE_LOOP"
 
 func TestMain(m *testing.M) {
 	if path := os.Getenv(writeLoopEnv); path != "" {
@@ -540,14 +540,14 @@ func TestAutomationRunsPersistAndAnUpdateReplacesTheRun(t *testing.T) {
 
 func TestAutomationTrustPersistsByKey(t *testing.T) {
 	s, path := openTemp(t)
-	s.PutAutomationTrust(domain.AutomationTrust{Key: "/w/api/.agentws.toml\x00deps", Hash: "one"})
-	s.PutAutomationTrust(domain.AutomationTrust{Key: "/w/api/.agentws.toml\x00deps", Hash: "two"})
+	s.PutAutomationTrust(domain.AutomationTrust{Key: "/w/api/.crew.toml\x00deps", Hash: "one"})
+	s.PutAutomationTrust(domain.AutomationTrust{Key: "/w/api/.crew.toml\x00deps", Hash: "two"})
 	s = reopen(t, s, path)
 	snap, err := s.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []domain.AutomationTrust{{Key: "/w/api/.agentws.toml\x00deps", Hash: "two"}}
+	want := []domain.AutomationTrust{{Key: "/w/api/.crew.toml\x00deps", Hash: "two"}}
 	if !reflect.DeepEqual(snap.AutomationTrust, want) {
 		t.Fatalf("trust %+v", snap.AutomationTrust)
 	}

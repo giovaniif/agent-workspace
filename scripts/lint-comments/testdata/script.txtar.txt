@@ -1,5 +1,5 @@
 # a comment
-exec agentws version
+exec crew version
 stdout 'v1 # x'
 -- f.sh --
 #!/bin/sh

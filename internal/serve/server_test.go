@@ -23,7 +23,7 @@ import (
 var updateGolden = flag.Bool("update", false, "rewrite golden files")
 
 const (
-	publicURL = "https://agentws.example.ts.net"
+	publicURL = "https://crew.example.ts.net"
 	goodToken = "good-token"
 )
 
@@ -504,7 +504,7 @@ func TestServeRefusesAPublicURLThatIsNotHTTP(t *testing.T) {
 func TestServeTakesAPublicURLWithoutAScheme(t *testing.T) {
 	f := newFakeDaemon()
 	f.devices[goodToken] = phone
-	_, ts := startServer(t, f, serve.Config{URL: "agentws.example.ts.net/"})
+	_, ts := startServer(t, f, serve.Config{URL: "crew.example.ts.net/"})
 	c, _, err := dialStream(t, ts, publicURL)
 	if err != nil {
 		t.Fatal(err)

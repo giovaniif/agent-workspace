@@ -25,8 +25,8 @@ func TestVersionTellsAboutNewerRelease(t *testing.T) {
 }
 
 func TestVersionCheckSkippedByEnv(t *testing.T) {
-	t.Setenv("AGENTWS_HOME", t.TempDir())
-	t.Setenv("AGENTWS_NO_UPDATE_CHECK", "1")
+	t.Setenv("CREW_HOME", t.TempDir())
+	t.Setenv("CREW_NO_UPDATE_CHECK", "1")
 	if _, err := latestRelease(context.Background()); !errors.Is(err, errUpdateCheckOff) {
 		t.Fatalf("err = %v, want errUpdateCheckOff", err)
 	}

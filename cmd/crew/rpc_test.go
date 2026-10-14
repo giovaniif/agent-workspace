@@ -16,7 +16,7 @@ import (
 
 func TestRpcWithNoDaemonPrintsUnavailableAndExitsNonZeroWithoutStartingOne(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	var stdout, stderr bytes.Buffer
 	code := runRPC(nil, strings.NewReader(""), &stdout, &stderr)
 	if code == 0 {
@@ -47,7 +47,7 @@ func fakeSocket(t *testing.T, home string) net.Listener {
 
 func TestRpcCopiesLinesBothWaysAndExitsZeroWhenTheSocketCloses(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	got := make(chan string, 1)
 	go func() {
@@ -84,7 +84,7 @@ func TestRpcCopiesLinesBothWaysAndExitsZeroWhenTheSocketCloses(t *testing.T) {
 
 func TestRpcEndsTheConnectionWhenStdinCloses(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	go func() {
 		c, err := ln.Accept()
@@ -111,7 +111,7 @@ func TestRpcEndsTheConnectionWhenStdinCloses(t *testing.T) {
 
 func TestRpcRefusesALineOverTheMessageCap(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	received := make(chan int64, 1)
 	go func() {
@@ -143,7 +143,7 @@ func TestRpcTakesNoArguments(t *testing.T) {
 
 func TestRpcAnswersViewSubscribeWithDerivedStateAndDiffs(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	got := make(chan string, 2)
 	go func() {

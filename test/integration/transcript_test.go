@@ -84,7 +84,7 @@ func messageIDs(msgs []rpc.Message) []string {
 }
 
 func TestTranscriptPageAndWatchOnARealClaudeTranscript(t *testing.T) {
-	home, err := os.MkdirTemp("/tmp", "agentws-tx")
+	home, err := os.MkdirTemp("/tmp", "crew-tx")
 	if err != nil {
 		t.Fatal(err)
 	}

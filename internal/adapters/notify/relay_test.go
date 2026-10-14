@@ -80,19 +80,19 @@ func TestNotifyRelayKeepsGoingWhenABannerFails(t *testing.T) {
 
 func TestNotifyTerminalNotifierRunsTheGivenFocusCommandOnClick(t *testing.T) {
 	r := &recorder{}
-	n := notify.TerminalNotifier{Run: r.run, Bin: "terminal-notifier", FocusCmd: "ssh -T 'vps' 'agentws' focus"}
+	n := notify.TerminalNotifier{Run: r.run, Bin: "terminal-notifier", FocusCmd: "ssh -T 'vps' 'crew' focus"}
 	if err := n.Notify(context.Background(), domain.Banner{Title: "t", Body: "b", Group: "s1"}); err != nil {
 		t.Fatal(err)
 	}
 	got := r.calls[0]
-	if got[len(got)-2] != "-execute" || got[len(got)-1] != "ssh -T 'vps' 'agentws' focus 's1'" {
+	if got[len(got)-2] != "-execute" || got[len(got)-1] != "ssh -T 'vps' 'crew' focus 's1'" {
 		t.Fatalf("argv %q", got)
 	}
 }
 
 func TestNotifySelectIsSilentWithoutAnyNotifier(t *testing.T) {
 	missing := func(string) (string, error) { return "", errors.New("not found") }
-	n := notify.Select(missing, notify.Click{Self: "/bin/agentws", Home: "/h"})
+	n := notify.Select(missing, notify.Click{Self: "/bin/crew", Home: "/h"})
 	if _, ok := n.(notify.Silent); !ok {
 		t.Fatalf("got %#v", n)
 	}

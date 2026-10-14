@@ -48,11 +48,11 @@ func newDaemonSetupFixture(t *testing.T, goos, linger string) *daemonSetupFixtur
 	return f
 }
 
-func (f *daemonSetupFixture) run(t *testing.T, goos string, agentwsHome string, args ...string) (int, string, string) {
+func (f *daemonSetupFixture) run(t *testing.T, goos string, crewHome string, args ...string) (int, string, string) {
 	t.Helper()
-	env := envOf(map[string]string{"CREW_HOME": agentwsHome, "PATH": "/caller/bin:" + f.bin, "SHELL": f.shell, "USER": "me"})
+	env := envOf(map[string]string{"CREW_HOME": crewHome, "PATH": "/caller/bin:" + f.bin, "SHELL": f.shell, "USER": "me"})
 	var stdout, stderr bytes.Buffer
-	code := runSetupDaemon(args, &stdout, &stderr, env, "/bin/agentws", goos)
+	code := runSetupDaemon(args, &stdout, &stderr, env, "/bin/crew", goos)
 	return code, stdout.String(), stderr.String()
 }
 
@@ -68,7 +68,7 @@ func daemonLifecycle(t *testing.T, goos string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"/bin/agentws", "daemon", home, "/login/bin:/usr/bin"} {
+	for _, want := range []string{"/bin/crew", "daemon", home, "/login/bin:/usr/bin"} {
 		if !strings.Contains(string(first), want) {
 			t.Fatalf("missing %q in\n%s", want, first)
 		}
@@ -199,7 +199,7 @@ func TestSetupDaemonCheckFailsWhenTheServiceFileCannotBeInspected(t *testing.T) 
 	}
 }
 
-func TestSetupDaemonMakesARelativeAgentwsHomeAbsolute(t *testing.T) {
+func TestSetupDaemonMakesARelativeCrewHomeAbsolute(t *testing.T) {
 	f := newDaemonSetupFixture(t, "linux", "yes")
 	wd, err := os.Getwd()
 	if err != nil {
@@ -228,7 +228,7 @@ func TestSetupDaemonRefusesArguments(t *testing.T) {
 
 func TestSetupDaemonIsReachableFromSetup(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := runSetup([]string{"daemon", "extra"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup daemon") {
+	if code := runSetup([]string{"daemon", "extra"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/crew"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup daemon") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }

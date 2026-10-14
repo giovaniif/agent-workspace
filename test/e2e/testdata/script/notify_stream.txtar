@@ -1,16 +1,16 @@
-! exec sh -c 'exec agentws notify stream 2>$WORK/stream.err' &stream&
+! exec sh -c 'exec crew notify stream 2>$WORK/stream.err' &stream&
 eventually '^crew notify stream: waiting for the daemon$' cat stream.err
-exec agentws daemon start
+exec crew daemon start
 stdout '^crew daemon started \(pid [0-9]+\)$'
 eventually '^crew notify stream: connected$' cat stream.err
 
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'add a thing'
+exec crew workspace add api
+exec crew new --workspace api 'add a thing'
 capture SID '^session (\S+) on pane %\d+$'
-eventually ' state=done ' agentws debug session --once $SID
+eventually ' state=done ' crew debug session --once $SID
 
-exec agentws daemon stop
+exec crew daemon stop
 wait stream
 stdout '"Group":"'$SID'"'
 eventually 'daemon went away' cat stream.err

@@ -43,7 +43,7 @@ func reviewResult() string {
 			Files: []domain.FileDiff{
 				reviewFileDiff("main.go", "package main", "", "func main() {", "\tfmt.Println(\"hi\", 42) // greet", "}"),
 				reviewFileDiff("web/app.ts", "export const total = (n: number): string => `${n}`;", "/* sum */ let x = 1 + 2;"),
-				reviewFileDiff("README.md", "# agentws", "- run `make build`", "<!-- note -->"),
+				reviewFileDiff("README.md", "# project", "- run `make build`", "<!-- note -->"),
 				reviewFileDiff("notes.unknownext", "just some text"),
 			},
 		}},
@@ -54,7 +54,7 @@ func reviewResult() string {
 func runReviewOpen(t *testing.T, request string) (daemonGot, stdout string) {
 	t.Helper()
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	got := make(chan string, 1)
 	go func() {
@@ -143,7 +143,7 @@ func TestRpcReviewOpenTokensHighlightsAMarkdownHeadingOnTheLastLine(t *testing.T
 
 func TestRpcReviewOpenWithoutTokensAfterAnUnreadableReplyAddsNoSpans(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	go func() {
 		c, err := ln.Accept()
@@ -176,7 +176,7 @@ func TestRpcReviewOpenWithoutTokensAfterAnUnreadableReplyAddsNoSpans(t *testing.
 func tokensFor(t *testing.T, file string) []string {
 	t.Helper()
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	ln := fakeSocket(t, home)
 	go func() {
 		c, err := ln.Accept()

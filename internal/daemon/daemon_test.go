@@ -23,7 +23,7 @@ import (
 
 func shortDir(t testing.TB) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("/tmp", "agentws-d")
+	dir, err := os.MkdirTemp("/tmp", "crew-d")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func start(t testing.TB, store app.Store, opts ...daemon.Option) (*daemon.Daemon
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	ln, err := net.Listen("unix", path)
 	if err != nil {
 		t.Fatal(err)

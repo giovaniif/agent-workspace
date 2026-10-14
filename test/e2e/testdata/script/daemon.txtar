@@ -1,24 +1,24 @@
-exec agentws daemon start
+exec crew daemon start
 stdout '^crew daemon started \(pid [0-9]+\)$'
-exists $AGENTWS_HOME/agentws.pid
+exists $CREW_HOME/agentws.pid
 
-exec agentws daemon status
+exec crew daemon status
 stdout '^pid [0-9]+$'
 stdout '^uptime '
 stdout '^sessions 0$'
 stdout '^worktrees 0$'
 
-! exec agentws daemon
+! exec crew daemon
 stderr '^crew daemon: already running \(pid [0-9]+\)$'
 
-exec agentws daemon start
+exec crew daemon start
 stdout '^crew daemon already running \(pid [0-9]+\)$'
 
-exec agentws daemon stop
+exec crew daemon stop
 stdout '^crew daemon stopped \(pid [0-9]+\)$'
-! exec agentws daemon status
+! exec crew daemon status
 stderr '^crew daemon: not running$'
-! exists $AGENTWS_HOME/agentws.pid
+! exists $CREW_HOME/agentws.pid
 
-! exec agentws daemon stop
+! exec crew daemon stop
 stderr 'not running'

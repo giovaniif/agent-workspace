@@ -20,7 +20,7 @@ import (
 	"github.com/giovaniif/crew/internal/rpc"
 )
 
-const serverEnv = "AGENTWS_PORTS_SERVER"
+const serverEnv = "CREW_PORTS_SERVER"
 
 func TestMain(m *testing.M) {
 	if os.Getenv(serverEnv) == "" {

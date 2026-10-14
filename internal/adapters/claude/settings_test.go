@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/crew/internal/adapters/claude"
 )
 
-const bin = "/opt/agentws/bin/agentws"
+const bin = "/opt/crew/bin/crew"
 
 func settingsIn(t *testing.T, fixture string) (path string, original []byte) {
 	t.Helper()
@@ -99,8 +99,8 @@ func TestRemoveKeepsEditsMadeAfterSetup(t *testing.T) {
 	if !strings.Contains(got, `"theme": "light"`) {
 		t.Fatalf("edit lost:\n%s", got)
 	}
-	if strings.Contains(got, "agentws") {
-		t.Fatalf("agentws entries left:\n%s", got)
+	if strings.Contains(got, "crew") {
+		t.Fatalf("crew entries left:\n%s", got)
 	}
 	if !strings.Contains(got, `"command": "~/.claude/statusline.sh"`) {
 		t.Fatalf("user status line not restored:\n%s", got)
@@ -155,7 +155,7 @@ func TestSetupChainsTheUsersStatusLine(t *testing.T) {
 
 func TestSetupWithANewBinaryReplacesItsOwnEntries(t *testing.T) {
 	path, _ := settingsIn(t, "user.json")
-	if err := claude.Setup(path, "/old/agentws"); err != nil {
+	if err := claude.Setup(path, "/old/crew"); err != nil {
 		t.Fatal(err)
 	}
 	if err := claude.Setup(path, bin); err != nil {

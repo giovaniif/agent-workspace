@@ -15,7 +15,7 @@ import (
 	"github.com/giovaniif/crew/internal/tui"
 )
 
-var popupCommand = []string{"/bin/agentws", "tui", "--new-session"}
+var popupCommand = []string{"/bin/crew", "tui", "--new-session"}
 
 func repoWorkspaces(st rpc.State) rpc.State {
 	st.Workspaces = []domain.Workspace{
@@ -164,7 +164,7 @@ func TestNewSessionPopupShowsTheNewSessionAndQuits(t *testing.T) {
 func TestNOpensTheDialogAsAPopupWhenOneIsConfigured(t *testing.T) {
 	st := repoWorkspaces(fixture(1, 0))
 	c := &fakeCaller{}
-	env := map[string]string{"AGENTWS_HOME": "/h"}
+	env := map[string]string{"CREW_HOME": "/h"}
 	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: c, DialogPopup: rpc.ClientPopupParams{Command: popupCommand, Env: env}})
 	m = update(m, tea.WindowSizeMsg{Width: 48, Height: 40})
 	m = update(m, tui.StateMsg(st))
@@ -220,7 +220,7 @@ func launchedIn(t *testing.T, dir string, st rpc.State) tui.Model {
 	return update(m, tui.StateMsg(st))
 }
 
-func TestNewSessionPopupDefaultsToTheFolderAgentwsWasLaunchedIn(t *testing.T) {
+func TestNewSessionPopupDefaultsToTheFolderCrewWasLaunchedIn(t *testing.T) {
 	out := screen(launchedIn(t, "/code/web", rpc.State{}))
 	if !strings.Contains(out, "‹ web ›") || !strings.Contains(out, "new · added when you create") || strings.Contains(out, "workspace add") {
 		t.Fatalf("want the launch folder as a new workspace:\n%s", out)
