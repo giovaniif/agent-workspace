@@ -200,6 +200,20 @@ export type WorkItemResolved = {
   workspace: string;
 };
 
+export type HarnessOptions = {
+  harness: string;
+  default_model?: string;
+  default_effort?: string;
+};
+
+export type SessionOptions = {
+  harnesses: HarnessOptions[];
+};
+
+export function sessionOptions(fetchFn: Fetch, token: string): Promise<SessionOptions> {
+  return request<SessionOptions>(fetchFn, "/api/v1/session-options", authed(token));
+}
+
 export type NewSessionRequest = {
   workspace?: string;
   work_item: string;

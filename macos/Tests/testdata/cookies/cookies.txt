@@ -1,0 +1,7 @@
+# Netscape HTTP Cookie File
+# This is a generated file.
+
+.example.com	TRUE	/	TRUE	1893456000	sid	abc123
+#HttpOnly_app.example.com	FALSE	/api	FALSE	0	token	xyz
+other.dev	FALSE	/	FALSE	1893456000	pref	dark
+broken line

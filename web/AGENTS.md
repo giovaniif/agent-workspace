@@ -63,7 +63,7 @@ The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](.
   Ended sessions are not shown.
 - `src/route.ts`:
   - `#/sessions/<id>` opens a session. Push notifications use the same URL.
-  - `#/new` is the new session form (`screens/NewSession.tsx`). Its fields are workspace, work item, first prompt, agent, model and effort. After 350 ms, the form checks the work item through `/work-items/resolve`. It keeps the choices in `agentws.new` in `localStorage`. The default workspace is the last one that the daemon used. A launch error, also the output of a setup recipe, shows in the form. A success opens `#/sessions/<id>`.
+  - `#/new` is the new session form (`screens/NewSession.tsx`). Its fields are workspace, task (optional), first prompt, agent, model and effort. After 350 ms, the form checks the work item through `/work-items/resolve`. It keeps the choices in `agentws.new` in `localStorage`. The default workspace is the last one that the daemon used. A launch error, also the output of a setup recipe, shows in the form. A success opens `#/sessions/<id>`.
   - All other routes show the list.
 - `src/push.ts` and `src/sw-push.ts`: Web Push. `AppEnv.push` (`browserPush(window)` in `main.tsx`, `FakePush` in tests) wraps `Notification` and `pushManager`.
   - When Settings opens, it reads the real state. If permission is granted, it calls `PushEnv.subscribed()`: the `pushManager` of the worker registration holds a subscription. Then it shows "Notifications are on for this device" with Turn off (`disablePush`), not Enable. It does not ask the server, because the server has no endpoint that reports the subscription of a device.

@@ -50,7 +50,6 @@ public enum ShortcutAction: String, CaseIterable, Codable, CodingKeyRepresentabl
     case lastSession
     case filter
     case newSession
-    case linearLauncher
     case review
     case shellSplit
     case shellPopup
@@ -74,7 +73,6 @@ public enum ShortcutAction: String, CaseIterable, Codable, CodingKeyRepresentabl
         case .lastSession: "Last session"
         case .filter: "Filter sessions"
         case .newSession: "New session"
-        case .linearLauncher: "Linear launcher"
         case .review: "Review"
         case .shellSplit: "Shell in worktree (split)"
         case .shellPopup: "Shell in worktree (popup)"
@@ -96,7 +94,6 @@ public enum ShortcutAction: String, CaseIterable, Codable, CodingKeyRepresentabl
         switch self {
         case .nextWaiting: "space"
         case .newSession: "n"
-        case .linearLauncher: "L"
         case .review: "r"
         case .shellSplit: "t"
         case .shellPopup: "T"
@@ -120,7 +117,6 @@ public enum ShortcutAction: String, CaseIterable, Codable, CodingKeyRepresentabl
         case .lastSession: KeyCombo("[", [.command])
         case .filter: KeyCombo("k", [.command])
         case .newSession: KeyCombo("n", [.command])
-        case .linearLauncher: KeyCombo("n", [.command, .shift])
         case .review: KeyCombo("r", [.command])
         case .shellSplit: KeyCombo("t", [.command])
         case .shellPopup: KeyCombo("t", [.command, .shift])
@@ -171,6 +167,19 @@ public struct Shortcuts: Codable, Equatable, Sendable {
 
     private init(bindings: [ShortcutAction: KeyCombo?]) {
         self.bindings = bindings
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case passThrough, bindings
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        passThrough = try container.decodeIfPresent(Bool.self, forKey: .passThrough) ?? true
+        let saved = try container.decode([String: KeyCombo?].self, forKey: .bindings)
+        bindings = Dictionary(uniqueKeysWithValues: saved.compactMap { name, combo in
+            ShortcutAction(rawValue: name).map { ($0, combo) }
+        })
     }
 
     public func combo(for action: ShortcutAction) -> KeyCombo? {

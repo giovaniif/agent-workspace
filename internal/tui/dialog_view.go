@@ -138,9 +138,9 @@ func (m Model) dialogLines() ([]string, int, []string) {
 	if d.field == fieldWorkItem {
 		item = append(item, piece{s.bar, "▏"})
 	} else if d.workItem == "" {
-		item = []piece{{s.dim, "a Linear issue, a GitHub PR or a few words"}}
+		item = []piece{{s.dim, "a GitHub PR or a few words"}}
 	}
-	add(fieldWorkItem, append([]string{m.label(fieldWorkItem, "Work item")}, m.box(w, item, d.field == fieldWorkItem)...)...)
+	add(fieldWorkItem, append([]string{m.label(fieldWorkItem, "Task (optional)")}, m.box(w, item, d.field == fieldWorkItem)...)...)
 	out = append(out, m.line(false, []piece{{s.sub, " " + workItemPreview(d.workItem)}}, nil), "")
 
 	ws := []piece{{s.dim, "none: type a folder's path"}}
@@ -280,9 +280,6 @@ func (m Model) pickers(keep *int, at int) []string {
 	effort := d.efforts[d.effort]
 	if effort == "" {
 		effort = defaultLabel(m.defaultEffort())
-		if m.chosenHarness() == domain.HarnessOmp {
-			effort = "Default"
-		}
 	}
 	cols := []struct {
 		f     field
@@ -371,7 +368,7 @@ func (m Model) modelPieces() []piece {
 	}
 	label := d.model
 	if label == "" {
-		label = "Default"
+		label = defaultLabel(m.defaultModelName())
 	}
 	return []piece{{s.bold, "‹ " + label + " ›"}}
 }
@@ -508,16 +505,10 @@ func workspaceKind(w domain.Workspace) string {
 
 func workItemPreview(input string) string {
 	if strings.TrimSpace(input) == "" {
-		return "the session is named after it"
+		return "empty: the first prompt names it"
 	}
 	t := domain.ParseWorkItem(input)
 	switch t.Source {
-	case domain.TaskLinear:
-		title := t.IssueTitle
-		if title == "" {
-			title = "title from Linear"
-		}
-		return t.Ref + " · " + title + " · session will be named after it"
 	case domain.TaskPR:
 		return t.Ref + " · session will be named after the PR"
 	}
@@ -649,9 +640,14 @@ func harnessName(h domain.Harness) string {
 
 func defaultLabel(name string) string {
 	if name == "" {
-		return "default"
+		return "Default"
 	}
-	return "default · " + name
+	return domain.DefaultLabel(name)
+}
+
+func (m Model) defaultModelName() string {
+	model, _ := domain.ResolveDefault(m.chosenHarness(), m.opts.HarnessDefaults[m.chosenHarness()].Model, "")
+	return model
 }
 
 func (m Model) defaultModel() string {
@@ -671,8 +667,6 @@ func (m Model) defaultModel() string {
 
 func (m Model) defaultEffort() string {
 	d := m.opts.HarnessDefaults[m.chosenHarness()]
-	if d.Effort != "" {
-		return d.Effort
-	}
-	return d.EffortByModel[m.defaultModel()]
+	_, effort := domain.ResolveDefault(m.chosenHarness(), "", cmp.Or(d.Effort, d.EffortByModel[m.defaultModel()]))
+	return effort
 }

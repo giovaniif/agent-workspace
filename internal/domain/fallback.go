@@ -48,16 +48,6 @@ func OfferFallback(quotas []Quota, cfg FallbackConfig, req StartRequest) (Fallba
 	}, true
 }
 
-func OfferFallbacks(quotas []Quota, cfg FallbackConfig, queue []StartRequest) map[int]FallbackOffer {
-	out := map[int]FallbackOffer{}
-	for i, req := range queue {
-		if offer, ok := OfferFallback(quotas, cfg, req); ok {
-			out[i] = offer
-		}
-	}
-	return out
-}
-
 func mapModel(models map[string]string, model string) string {
 	model = strings.ToLower(strings.TrimSpace(model))
 	if model == "" {

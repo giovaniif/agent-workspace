@@ -57,7 +57,7 @@ func quits(cmd tea.Cmd) bool {
 func TestNewSessionPopupLooksLikeTheMockup(t *testing.T) {
 	m, _ := popupModel(t, repoWorkspaces(rpc.State{}), 100)
 	out := screen(m)
-	for _, want := range []string{"New session", "esc", "Work item", "Workspace", "Harness", "Model", "Effort", "● claude", "○ codex", "cancel", "⏎ create"} {
+	for _, want := range []string{"New session", "esc", "Task (optional)", "Workspace", "Harness", "Model", "Effort", "● claude", "○ codex", "cancel", "⏎ create"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("no %q in the popup:\n%s", want, out)
 		}
@@ -69,8 +69,7 @@ func TestNewSessionPopupLooksLikeTheMockup(t *testing.T) {
 
 func TestNewSessionPopupPreviewsTheWorkItem(t *testing.T) {
 	cases := []struct{ input, want string }{
-		{"https://linear.app/acme/issue/ENG-9/add-search", "ENG-9 · add search · session will be named after it"},
-		{"https://linear.app/acme/issue/ENG-9", "ENG-9 · title from Linear · session will be named after it"},
+		{"https://linear.app/acme/issue/ENG-9", "text · session named “https://linear.app/acme/issue/ENG-9”"},
 		{"https://github.com/acme/api/pull/12", "api#12 · session will be named after the PR"},
 		{"fix the flaky upload test", "text · session named “fix the flaky upload test”"},
 	}
@@ -79,6 +78,14 @@ func TestNewSessionPopupPreviewsTheWorkItem(t *testing.T) {
 		if out := screen(typeText(m, c.input)); !strings.Contains(out, c.want) {
 			t.Errorf("%s: no %q:\n%s", c.input, c.want, out)
 		}
+	}
+}
+
+func TestNewSessionPopupPlaceholderNamesOnlyAPROrText(t *testing.T) {
+	m, _ := popupModel(t, repoWorkspaces(rpc.State{}), 100)
+	m = pressCmd(m, keyTab)
+	if out := screen(m); !strings.Contains(out, "a GitHub PR or a few words") {
+		t.Fatalf("placeholder:\n%s", out)
 	}
 }
 
@@ -104,7 +111,7 @@ func TestNewSessionPopupPicksTheModelFromTheHarnessChoices(t *testing.T) {
 	m, c := popupModel(t, repoWorkspaces(rpc.State{}), 100)
 	m = typeText(m, "x")
 	m = pressCmd(pressCmd(pressCmd(m, keyTab), keyTab), keyTab)
-	if out := screen(m); !strings.Contains(out, "‹ Default ›") {
+	if out := screen(m); !strings.Contains(out, "‹ default (opus) ›") {
 		t.Fatalf("model does not start at the default:\n%s", out)
 	}
 	m = pressCmd(m, keyRight)
@@ -251,12 +258,12 @@ func TestNewSessionPopupNamesWhatDefaultMeans(t *testing.T) {
 		HarnessDefaults: map[domain.Harness]tui.Defaults{domain.HarnessClaude: {Effort: "low"}}})
 	m = update(m, tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = update(m, tui.StateMsg(st))
-	if out := screen(m); !strings.Contains(out, "‹ Default ›") || strings.Contains(out, "opus-5.5") || !strings.Contains(out, "‹ default · low ›") {
+	if out := screen(m); !strings.Contains(out, "‹ default (opus) ›") || strings.Contains(out, "opus-5.5") || !strings.Contains(out, "‹ default (low) ›") {
 		t.Fatalf("defaults not named:\n%s", out)
 	}
 	m = pressCmd(pressCmd(pressCmd(m, keyTab), keyTab), keyRight)
-	if out := screen(m); !strings.Contains(out, "‹ Default ›") {
-		t.Fatalf("codex, with nothing known, should say just Default:\n%s", out)
+	if out := screen(m); !strings.Contains(out, "‹ default (gpt-6.1-sol) ›") || !strings.Contains(out, "‹ default (medium) ›") {
+		t.Fatalf("codex, with nothing configured, should name its built-in default:\n%s", out)
 	}
 }
 
@@ -267,8 +274,8 @@ func TestNewSessionPopupNamesTheSameDefaultEveryTime(t *testing.T) {
 	}})
 	for range 20 {
 		m, _ := popupModel(t, st, 100)
-		if out := screen(m); !strings.Contains(out, "‹ Default ›") || strings.Contains(out, "opus-5.5") || strings.Contains(out, "sonnet-5.5") {
-			t.Fatalf("the blank model should say Default and name no session model:\n%s", out)
+		if out := screen(m); !strings.Contains(out, "‹ default (opus) ›") || strings.Contains(out, "opus-5.5") || strings.Contains(out, "sonnet-5.5") {
+			t.Fatalf("the blank model should name the built-in default and no session model:\n%s", out)
 		}
 	}
 }
@@ -279,7 +286,17 @@ func TestNewSessionPopupNamesThePerModelEffortOfTheDefaultModel(t *testing.T) {
 		HarnessDefaults: map[domain.Harness]tui.Defaults{domain.HarnessClaude: {EffortByModel: map[string]string{"opus-5.5": "low", "sonnet-5.5": "high"}}}})
 	m = update(m, tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = update(m, tui.StateMsg(st))
-	if out := screen(m); !strings.Contains(out, "‹ Default ›") || strings.Contains(out, "opus-5.5") || !strings.Contains(out, "‹ default · low ›") {
+	if out := screen(m); !strings.Contains(out, "‹ default (opus) ›") || strings.Contains(out, "opus-5.5") || !strings.Contains(out, "‹ default (low) ›") {
 		t.Fatalf("want the effort set for opus-5.5:\n%s", out)
+	}
+}
+
+func TestNewSessionPopupNamesTheConfiguredDefaultModel(t *testing.T) {
+	m := tui.New(tui.Options{Theme: tui.Latte(), Now: clock, Calls: &fakeCaller{}, NewSessionOnly: true,
+		HarnessDefaults: map[domain.Harness]tui.Defaults{domain.HarnessClaude: {Model: "sonnet", Effort: "xhigh"}}})
+	m = update(m, tea.WindowSizeMsg{Width: 100, Height: 30})
+	m = update(m, tui.StateMsg(repoWorkspaces(rpc.State{})))
+	if out := screen(m); !strings.Contains(out, "‹ default (sonnet) ›") || !strings.Contains(out, "‹ default (xhigh) ›") {
+		t.Fatalf("configured defaults not named:\n%s", out)
 	}
 }

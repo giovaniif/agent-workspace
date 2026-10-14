@@ -32,7 +32,6 @@ type State struct {
 	Worktrees  []domain.Worktree   `json:"worktrees"`
 	Sessions   []Session           `json:"sessions"`
 	Limits     []Quota             `json:"limits"`
-	Queue      []domain.LaunchItem `json:"queue"`
 	Sends      []domain.QueuedSend `json:"sends"`
 }
 
@@ -46,7 +45,6 @@ type Diff struct {
 	Worktree         *domain.Worktree     `json:"worktree,omitempty"`
 	Session          *Session             `json:"session,omitempty"`
 	Limits           *[]Quota             `json:"limits,omitempty"`
-	Queue            *[]domain.LaunchItem `json:"queue,omitempty"`
 	Sends            *[]domain.QueuedSend `json:"sends,omitempty"`
 }
 
@@ -85,7 +83,6 @@ type NativeState struct {
 	Worktrees   []domain.Worktree     `json:"worktrees"`
 	Sessions    []NativeSession       `json:"sessions"`
 	Limits      []Quota               `json:"limits"`
-	Queue       []domain.LaunchItem   `json:"queue"`
 	Sends       []domain.QueuedSend   `json:"sends"`
 	Events      []domain.SessionEvent `json:"events"`
 	Subagents   []domain.Subagent     `json:"subagents"`
@@ -105,7 +102,6 @@ type NativeDiff struct {
 	Worktree         *domain.Worktree      `json:"worktree,omitempty"`
 	Session          *NativeSession        `json:"session,omitempty"`
 	Limits           *[]Quota              `json:"limits,omitempty"`
-	Queue            *[]domain.LaunchItem  `json:"queue,omitempty"`
 	Sends            *[]domain.QueuedSend  `json:"sends,omitempty"`
 	Event            *domain.SessionEvent  `json:"event,omitempty"`
 	Subagent         *domain.Subagent      `json:"subagent,omitempty"`
@@ -151,7 +147,6 @@ func New(st rpc.State) (*View, *State) {
 		Worktrees:  worktrees,
 		Sessions:   sessions,
 		Limits:     native.Limits,
-		Queue:      native.Queue,
 		Sends:      native.Sends,
 	}
 }
@@ -195,7 +190,6 @@ func build(st rpc.State, native bool) (*View, *NativeState) {
 		Worktrees:   orEmpty(st.Worktrees),
 		Sessions:    sessions,
 		Limits:      v.limits,
-		Queue:       orEmpty(st.Queue),
 		Sends:       orEmpty(st.Sends),
 		Events:      orEmpty(st.Events),
 		Subagents:   orEmpty(st.Subagents),
@@ -227,7 +221,6 @@ func (v *View) ApplyNative(d rpc.Diff) []*NativeDiff {
 		Project:          d.Project,
 		Task:             d.Task,
 		Worktree:         d.Worktree,
-		Queue:            d.Queue,
 		Sends:            d.Sends,
 		Event:            d.Event,
 		Subagent:         d.Subagent,
@@ -261,7 +254,6 @@ func (d *NativeDiff) phone() *Diff {
 		Workspace:        d.Workspace,
 		Task:             d.Task,
 		Limits:           d.Limits,
-		Queue:            d.Queue,
 		Sends:            d.Sends,
 	}
 	if d.Worktree != nil {
@@ -439,7 +431,7 @@ func (v *View) quotas() []Quota {
 
 func (d *Diff) keep() bool {
 	return d.RemovedWorkspace != "" || d.RemovedWorktree != "" || d.RemovedSession != "" ||
-		d.Workspace != nil || d.Task != nil || d.Worktree != nil || d.Session != nil || d.Queue != nil || d.Sends != nil || d.Limits != nil
+		d.Workspace != nil || d.Task != nil || d.Worktree != nil || d.Session != nil || d.Sends != nil || d.Limits != nil
 }
 
 func (d *NativeDiff) keep() bool {

@@ -17,8 +17,8 @@ public enum Snapshot {
         renderView(SettingsView(scene: scene), size: size, dark: dark)
     }
 
-    public static func renderNewSession(_ model: NewSession, tab: NewSessionTab, size: CGSize, dark: Bool) -> NSBitmapImageRep {
-        renderView(NewSessionSheet(model: model, tab: .constant(tab), server: "This Mac", state: nil, live: false), size: size, dark: dark)
+    public static func renderNewSession(_ model: NewSession, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(NewSessionSheet(model: model, server: "This Mac", state: nil, live: false), size: size, dark: dark)
     }
 
     public static func renderFirstRun(_ flow: FirstRunFlow, hosts: [String], size: CGSize, dark: Bool) -> NSBitmapImageRep {

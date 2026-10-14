@@ -1,0 +1,22 @@
+{
+  "harnesses": [
+    {
+      "harness": "claude",
+      "name": "Claude Code",
+      "tag": "CC",
+      "models": [
+        "opus",
+        "sonnet"
+      ],
+      "efforts": [
+        "low",
+        "high"
+      ],
+      "model": "",
+      "effort": "",
+      "default_model": "opus",
+      "default_effort": "high"
+    }
+  ],
+  "home": "/home/me"
+}

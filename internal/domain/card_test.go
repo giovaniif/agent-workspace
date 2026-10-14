@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var cardTask = Task{ID: "t1", Source: TaskLinear, Ref: "#42", IssueTitle: "Retry failed uploads"}
+var cardTask = Task{ID: "t1", Source: TaskPR, Ref: "#42", PRTitle: "Retry failed uploads"}
 
 func fixtureLog(sessionID string) []SessionEvent {
 	at := time.Date(2026, 9, 29, 21, 0, 0, 0, time.UTC)

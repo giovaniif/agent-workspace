@@ -115,3 +115,18 @@ func TestNewSessionPromptIsDroppedWithItsSessionBeforeTheHarnessStarts(t *testin
 		t.Fatalf("queued %q", got)
 	}
 }
+
+func TestNewSessionPromptNamesASessionWithNoWorkItem(t *testing.T) {
+	r := startPromptRig(t, time.Hour)
+	var s domain.Session
+	p := rpc.NewSessionParams{Workspace: "/src/shop", Harness: "claude", Prompt: "fix the flaky upload test"}
+	if err := r.c.Call(context.Background(), rpc.MethodNewSession, p, &s); err != nil {
+		t.Fatal(err)
+	}
+	for _, task := range r.state(t).Tasks {
+		if task.ID == s.TaskID && task.Text == "fix the flaky upload test" {
+			return
+		}
+	}
+	t.Fatalf("tasks %+v", r.state(t).Tasks)
+}

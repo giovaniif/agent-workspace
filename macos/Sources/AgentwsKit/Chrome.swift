@@ -2,9 +2,18 @@ import Foundation
 
 enum Timestamp {
     static func parse(_ text: String) -> Date? {
+        if let plain = ISO8601DateFormatter().date(from: text) { return plain }
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return fractional.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+        return fractional.date(from: millis(text))
+    }
+
+    static func millis(_ text: String) -> String {
+        guard let dot = text.firstIndex(of: ".") else { return text }
+        let start = text.index(after: dot)
+        let end = text[start...].firstIndex { !$0.isNumber } ?? text.endIndex
+        let digits = String((text[start..<end] + "000").prefix(3))
+        return String(text[..<dot]) + "." + digits + String(text[end...])
     }
 }
 
@@ -116,6 +125,7 @@ public enum Toolbar {
         case .review: "Start or select a session to review its changes"
         case .shell: "Start or select a session to open a shell in its worktree"
         case .nvim: "Start or select a session to open nvim in its worktree"
+        case .browser: "Start or select a session to open its browser"
         }
     }
 

@@ -19,7 +19,7 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
 - `agentws` attaches to the client layout. If necessary, it creates the layout and the daemon: `client.open`, then `exec` of the tmux attach argv that it returns. `agentws tui` runs in its left pane. `agentws tui --new-session` is only the new-session dialog. `n` runs it in a centred tmux popup (ADR 0037).
 - `agentws daemon [start|status|stop]`: `agentws daemon` runs in the foreground. The other forms are in [internal/daemon/](../../internal/daemon/AGENTS.md).
 - `agentws workspace add <path>|list|remove <path>` registers workspaces through the daemon (it starts automatically). This step is optional: `session.new` registers a folder that it does not know. The new-session dialog uses the folder where `agentws` started as its default. `list` shows `-` for the git facts of a repo until the first background refresh is done.
-- `agentws new [--workspace p] [--harness claude|codex|omp] [--model m] [--effort e] <work item>` starts a session, like the `n` dialog of the TUI. Without `--workspace`, it uses the last workspace. New single-repo worktrees go under `$AGENTWS_HOME/worktrees`.
+- `agentws new [--workspace p] [--harness claude|codex|omp] [--model m] [--effort e] [task]` starts a session, like the `n` dialog of the TUI. Without `--workspace`, it uses the last workspace. New single-repo worktrees go under `$AGENTWS_HOME/worktrees`.
 - `agentws focus <id>` focuses a session through the daemon. A `terminal-notifier` banner runs it on click.
 - `agentws automation list` prints each automation, its trigger and its source file, then the problems. `agentws automation show <name>` prints one automation from the same list. `agentws automation run [--work-item w] <name> [context...]` starts a run. With `-` as the context, it reads the context from stdin. `agentws automation runs [name]` and `agentws automation rerun <run id>` show and repeat runs. Tests: `go test ./cmd/agentws/ -run Automation`.
 - `agentws setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]` keeps `agentws serve` running. On Linux, it uses a systemd user unit (`agentws-serve.service`). On macOS, it uses the launchd agent `dev.agentws.serve`. The service gets the PATH and `AGENTWS_HOME` of the shell that ran the command.
@@ -55,6 +55,14 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
   - It also extends `review.open`. With `"tokens": true` in the params, it passes the request on and adds `Spans`, a list of `[start, end, class]`, to each diff line of the reply (see [internal/syntax/](../../internal/syntax/AGENTS.md)). A file with no lexer gets no `Spans`.
   - All other lines pass through with no change.
   - Tests: `go test ./cmd/agentws/ -run 'Rpc|Tokens'` and `go test -tags integration ./test/integration/ -run RpcBridge`. See [ADR 0049](../../docs/adr/0049-macos-app.md).
+- `agentws browser [--session id] [--json] [--out file.png] [--timeout 30s] <command> [args]` drives the browser of the Mac app ([ADR 0051](../../docs/adr/0051-browser-in-mac-app.md)).
+  - The commands are `goto`, `snapshot`, `click`, `fill`, `type`, `press`, `wait`, `screenshot`, `eval`, `tabs`, `cookies` and `set-device`. `domain.ParseBrowserCommand` checks the arguments.
+  - The session is `--session`, else `$AGENTWS_SESSION`, else the session on `$TMUX_PANE`.
+  - It prints the `text` of the result (the tree of `snapshot`), a plain string, or else JSON. `--json` prints the full result.
+  - `screenshot` writes the PNG to `--out`, else to a temp file, and prints the path.
+  - Without the Mac app, it exits 1 with `no browser: the macOS app is not connected`. Bad arguments exit 2.
+  - `agentws setup claude` and `agentws setup codex` also write the browser skill (see [internal/adapters/](../../internal/adapters/AGENTS.md)).
+  - Tests: `go test ./cmd/agentws/ ./internal/daemon/ ./internal/domain/ -run Browser`.
 - `agentws worktree list|assign <path> <session>` prints the path, branch, owner and PR of each worktree, and sets an owner.
 - `agentws cleanup [--dry-run]` runs (or only prints) the cleanup plan through the daemon (see [internal/daemon/](../../internal/daemon/AGENTS.md)).
 - `agentws pr <session id or name> [--json]` prints the PR board of a session from daemon state. `testdata/pr.json.golden` pins the JSON shape. To make it again, run `go test ./cmd/agentws -run PRBoardJSON -update` and review the diff. [ADR 0024](../../docs/adr/0024-pr-board.md) documents the shape. Run the board tests with `go test ./... -run PRBoard`. The tests of the github adapter and the integration tests use a fake `gh` script, so nothing goes to GitHub.

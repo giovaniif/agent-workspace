@@ -27,6 +27,7 @@ function setup(options: { remembered?: unknown; workspacesDown?: boolean } = {})
   }
   const server = new FakeServer()
     .on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } })
+    .on("GET", "/api/v1/session-options", { status: 200, body: golden("session-options.json") })
     .on("GET", "/api/v1/workspaces", options.workspacesDown ? { status: 503, body: { error: { code: "unavailable", message: "daemon is down" } } } : { status: 200, body: workspaces });
   const env: AppEnv = {
     fetch: server.fetch,
@@ -95,7 +96,7 @@ describe("starting a session from the phone", () => {
     expect(screen.getByRole("radio", { name: "Claude" })).toBeChecked();
     expect(screen.getByLabelText("Model")).toHaveValue("");
     expect(screen.getByLabelText("Effort")).toHaveValue("");
-    expect(screen.getByRole("button", { name: "Start session" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Start session" })).toBeEnabled();
     expect(new Set(server.headers.map((h) => h.authorization))).toEqual(new Set(["Bearer t0k"]));
   });
 
@@ -114,10 +115,30 @@ describe("starting a session from the phone", () => {
     await waitFor(() => expect(workspace).toHaveValue("/home/me/api"));
   });
 
+  it("explains what the task does and how an empty one is named", async () => {
+    setup();
+    expect(await screen.findByText("Groups sessions and names them. Empty: the first prompt names the session.")).toBeInTheDocument();
+  });
+
+  it("names what default means for the model and effort of each agent", async () => {
+    setup();
+    const model = await screen.findByLabelText("Model");
+    await waitFor(() => expect(model).toHaveAttribute("placeholder", "default (opus)"));
+    expect(screen.getByRole("option", { name: "default (high)" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Codex" }));
+    expect(model).toHaveAttribute("placeholder", "default");
+    expect(screen.getByRole("option", { name: "default" })).toBeInTheDocument();
+  });
+
+  it("asks for a PR URL or text as the work item", async () => {
+    setup();
+    expect(await screen.findByLabelText("Task (optional)")).toHaveAttribute("placeholder", "PR URL, or what to do");
+  });
+
   it("shows the resolved title and worktree name of a work item", async () => {
     const { server } = setup();
     server.on("GET", resolveURL("/home/me/api", "ENG-12"), { status: 200, body: golden("work-item-resolved.json") });
-    await userEvent.type(await screen.findByLabelText("Work item"), "ENG-12");
+    await userEvent.type(await screen.findByLabelText("Task (optional)"), "ENG-12");
     expect(await screen.findByText("Fix the login redirect")).toBeInTheDocument();
     expect(screen.getByText("api-12")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start session" })).toBeEnabled();
@@ -127,7 +148,7 @@ describe("starting a session from the phone", () => {
     const { server } = setup();
     const url = "https://example.com/x";
     server.on("GET", resolveURL("/home/me/api", url), { status: 400, body: golden("work-item-bad.json") });
-    await userEvent.type(await screen.findByLabelText("Work item"), url);
+    await userEvent.type(await screen.findByLabelText("Task (optional)"), url);
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("unsupported link: use a GitHub pull request URL");
     expect(screen.getByRole("button", { name: "Start session" })).toBeDisabled();
@@ -141,7 +162,7 @@ describe("starting a session from the phone", () => {
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/api"));
     await user.selectOptions(screen.getByLabelText("Workspace"), "/home/me/web");
-    await user.type(screen.getByLabelText("Work item"), "ENG-12");
+    await user.type(screen.getByLabelText("Task (optional)"), "ENG-12");
     await user.click(screen.getByRole("radio", { name: "Codex" }));
     await user.type(screen.getByLabelText("Model"), "gpt-5.5");
     await user.selectOptions(screen.getByLabelText("Effort"), "high");
@@ -171,7 +192,7 @@ describe("starting a session from the phone", () => {
     server.on("POST", "/api/v1/sessions", { status: 200, body: golden("session-new.json") });
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/api"));
-    await user.type(screen.getByLabelText("Work item"), "tidy");
+    await user.type(screen.getByLabelText("Task (optional)"), "tidy");
     await user.type(screen.getByLabelText("First prompt"), "   ");
     await user.click(screen.getByRole("button", { name: "Start session" }));
     await waitFor(() => expect(window.location.hash).toBe("#/sessions/s9"));
@@ -184,7 +205,7 @@ describe("starting a session from the phone", () => {
     server.on("POST", "/api/v1/sessions", { status: 500, body: golden("session-new-failed.json") });
     const user = userEvent.setup();
     await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/api"));
-    await user.type(screen.getByLabelText("Work item"), "tidy");
+    await user.type(screen.getByLabelText("Task (optional)"), "tidy");
     await user.click(screen.getByRole("button", { name: "Start session" }));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("setup /w/api: npm ci: exit status 1");

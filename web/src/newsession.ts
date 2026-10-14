@@ -21,6 +21,11 @@ export const modelChoices: Record<string, string[]> = {
 
 export const effortChoices = ["low", "medium", "high", "xhigh", "max"];
 
+export function defaultLabel(value: string | undefined): string {
+  const name = (value ?? "").trim();
+  return name ? "default (" + name + ")" : "default";
+}
+
 export function loadChoices(storage: KeyValue): Choices {
   const fallback: Choices = { workspace: "", harness: "claude", model: "", effort: "" };
   try {

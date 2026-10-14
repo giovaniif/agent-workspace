@@ -80,6 +80,7 @@ func New(cfg Config) (*Server, error) {
 func (s *Server) routes() []route {
 	return []route{
 		{"GET /api/v1/workspaces", s.workspaces},
+		{"GET /api/v1/session-options", sessionOptions},
 		{"POST /api/v1/sessions", newSession},
 		{"GET /api/v1/work-items/resolve", resolveWorkItem},
 		{"GET /api/v1/sessions/{id}/messages", messages},
@@ -428,4 +429,15 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+func sessionOptions(r *http.Request, d Daemon) (any, error) {
+	var out rpc.SessionOptions
+	if err := d.Call(r.Context(), rpc.MethodSessionOptions, struct{}{}, &out); err != nil {
+		return nil, err
+	}
+	if out.Harnesses == nil {
+		out.Harnesses = []rpc.HarnessOptions{}
+	}
+	return out, nil
 }

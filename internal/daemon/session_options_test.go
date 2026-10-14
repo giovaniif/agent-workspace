@@ -2,6 +2,7 @@ package daemon_test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -28,16 +29,19 @@ func sessionOptions(t *testing.T, opts ...daemon.Option) rpc.SessionOptions {
 func TestSessionOptionsListTheHarnessesWithTheirConfiguredDefaults(t *testing.T) {
 	t.Setenv("HOME", "/srv/me")
 	got := sessionOptions(t,
-		daemon.WithLauncher(5),
-		daemon.WithStartDefaults(map[domain.Harness]daemon.StartDefaults{domain.HarnessCodex: {Model: "gpt-6-sol", Effort: "high"}}))
+		daemon.WithStartDefaults(map[domain.Harness]daemon.StartDefaults{domain.HarnessCodex: {Model: "gpt-6-sol", Effort: "high"}}),
+		daemon.WithHarnessConfig(func() map[domain.Harness]daemon.StartDefaults {
+			return map[domain.Harness]daemon.StartDefaults{domain.HarnessClaude: {Model: "sonnet"}}
+		}))
 	claudeSpec, codexSpec := domain.Spec(domain.HarnessClaude), domain.Spec(domain.HarnessCodex)
 	want := rpc.SessionOptions{
 		Harnesses: []rpc.HarnessOptions{
-			{Harness: "claude", Name: claudeSpec.Name, Tag: claudeSpec.Tag, Models: claudeSpec.Models, Efforts: claudeSpec.Efforts},
-			{Harness: "codex", Name: codexSpec.Name, Tag: codexSpec.Tag, Models: codexSpec.Models, Efforts: codexSpec.Efforts, Model: "gpt-6-sol", Effort: "high"},
+			{Harness: "claude", Name: claudeSpec.Name, Tag: claudeSpec.Tag, Models: claudeSpec.Models, Efforts: claudeSpec.Efforts,
+				DefaultModel: "sonnet", DefaultEffort: "high"},
+			{Harness: "codex", Name: codexSpec.Name, Tag: codexSpec.Tag, Models: codexSpec.Models, Efforts: codexSpec.Efforts, Model: "gpt-6-sol", Effort: "high",
+				DefaultModel: "gpt-6.1-sol", DefaultEffort: "medium"},
 		},
-		MaxParallel: 5,
-		Home:        "/srv/me",
+		Home: "/srv/me",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v\nwant %+v", got, want)
@@ -51,9 +55,14 @@ func TestSessionOptionsNameTheServersHomeForTypedPaths(t *testing.T) {
 	}
 }
 
-func TestSessionOptionsFallBackToTheDefaultMaxParallel(t *testing.T) {
-	if got := sessionOptions(t).MaxParallel; got != domain.DefaultMaxParallel {
-		t.Fatalf("max_parallel = %d, want %d", got, domain.DefaultMaxParallel)
+func TestSessionOptionsHaveNoLauncherLimit(t *testing.T) {
+	_, path := start(t, &memStore{}, daemon.WithHarnesses(&fakeHost{}, claude.Adapter{}))
+	var raw map[string]json.RawMessage
+	if err := dial(t, path).Call(context.Background(), rpc.MethodSessionOptions, struct{}{}, &raw); err != nil {
+		t.Fatal(err)
+	}
+	if _, has := raw["max_parallel"]; has {
+		t.Fatalf("session.options still sends max_parallel: %v", raw)
 	}
 }
 

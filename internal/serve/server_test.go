@@ -38,6 +38,7 @@ var (
 		rpc.MethodPushKey, rpc.MethodPushSubscribe, rpc.MethodPushUnsubscribe,
 		rpc.MethodSessionSend, rpc.MethodSessionUnsend, rpc.MethodSessionInterrupt,
 		rpc.MethodSessionPrompt, rpc.MethodSessionAnswer, rpc.MethodDeviceViewing,
+		rpc.MethodSessionOptions,
 	}
 )
 
@@ -47,6 +48,7 @@ type authedEndpoint struct {
 
 var authedEndpoints = []authedEndpoint{
 	{"GET", "/api/v1/workspaces", ""},
+	{"GET", "/api/v1/session-options", ""},
 	{"GET", "/api/v1/sessions/s1/messages", ""},
 	{"POST", "/api/v1/sessions/s1/end", ""},
 	{"POST", "/api/v1/sessions/s1/resume", ""},

@@ -96,6 +96,13 @@ struct SnapshotTests {
         }
     }
 
+    @Test func theBrowserViewShowsTabsPortLinksAndTheAgentBanner() throws {
+        let rep = try shoot("browser-latte", .seededBrowser())
+        #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
+        _ = try shoot("browser-mocha", .seededBrowser(), dark: true)
+        _ = try shoot("browser-iphone", .seededBrowser(device: .iphone, agent: false))
+    }
+
     @Test func theInspectorCanBeHidden() throws {
         _ = try shoot("window-no-inspector", .seeded(inspector: false))
     }
@@ -192,27 +199,23 @@ struct SnapshotTests {
     static let sheet = CGSize(width: 600, height: 640)
 
     @Test func theNewSessionSheetShowsTheWorkItemCardAndTheQuotaWarning() throws {
-        let rep = try save("new-session", Snapshot.renderNewSession(Seed.newSession(), tab: .session, size: Self.sheet, dark: false), size: Self.sheet)
+        let rep = try save("new-session", Snapshot.renderNewSession(Seed.newSession(), size: Self.sheet, dark: false), size: Self.sheet)
         #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
         #expect(pixels(rep, near: Palette.latte.hex(.blue)) > 20)
     }
 
     @Test func theNewSessionSheetDrawsInMocha() throws {
-        let rep = try save("new-session-mocha", Snapshot.renderNewSession(Seed.newSession(), tab: .session, size: Self.sheet, dark: true), size: Self.sheet)
+        let rep = try save("new-session-mocha", Snapshot.renderNewSession(Seed.newSession(), size: Self.sheet, dark: true), size: Self.sheet)
         #expect(pixels(rep, near: Palette.mocha.hex(.base)) > 1_000)
     }
 
-    @Test func theLauncherTabShowsTheQueueAndTheLimit() throws {
-        _ = try save("launcher", Snapshot.renderNewSession(Seed.newSession(), tab: .launcher, size: Self.sheet, dark: false), size: Self.sheet)
-    }
-
     @Test func aSetupFailureIsDrawnInTheSheet() throws {
-        let rep = try save("new-session-failed", Snapshot.renderNewSession(Seed.newSession(failure: Seed.setupFailure), tab: .session, size: Self.sheet, dark: false), size: Self.sheet)
+        let rep = try save("new-session-failed", Snapshot.renderNewSession(Seed.newSession(failure: Seed.setupFailure), size: Self.sheet, dark: false), size: Self.sheet)
         #expect(pixels(rep, near: Palette.latte.hex(.red)) > 20)
     }
 
     @Test func aServerWithNoWorkspacesOffersToAddOneInTheSheet() throws {
-        let rep = try save("new-session-no-workspaces", Snapshot.renderNewSession(Seed.newSession(workspaces: false), tab: .session, size: Self.sheet, dark: false), size: Self.sheet)
+        let rep = try save("new-session-no-workspaces", Snapshot.renderNewSession(Seed.newSession(workspaces: false), size: Self.sheet, dark: false), size: Self.sheet)
         #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
     }
 

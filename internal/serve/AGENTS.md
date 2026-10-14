@@ -47,7 +47,8 @@ Unknown paths under `/api/` answer `not_found`.
 | `GET /api/v1/hello` | no | none | → `{"api":"v1","build"}` (serve's build, which is the daemon's) |
 | `POST /api/v1/pair` | no | `pair.redeem` | `{"code","name"}` → `{"device":{"id","name","created_at","last_seen"},"token"}` |
 | `GET /api/v1/workspaces` | yes | `workspace.list` | → `{"workspaces":[Workspace],"last_used"}` |
-| `POST /api/v1/sessions` | yes | `session.new` | `{"workspace","work_item","harness","model","effort","prompt"}` (`work_item` and `harness` required; the rest optional) → the new `Session`; a setup recipe failure is `failed` with its output in `message` |
+| `GET /api/v1/session-options` | yes | `session.options` | → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort","default_model","default_effort"}],"home"}`; the new-session form shows `default (<value>)` |
+| `POST /api/v1/sessions` | yes | `session.new` | `{"workspace","work_item","harness","model","effort","prompt"}` (`harness` required; the rest optional. An empty `work_item` starts a session that is named from its first prompt) → the new `Session`; a setup recipe failure is `failed` with its output in `message` |
 | `GET /api/v1/work-items/resolve?workspace=&item=` | yes | `session.resolve` | → `{"source","ref","title","worktree","workspace"}`; `bad_request` for an empty item or an unsupported link, `not_found` for an unknown workspace or an item the tracker does not know |
 | `GET /api/v1/sessions/{id}/messages?before=&limit=` | yes | `transcript.page` | → `{"messages":[Message],"before"}`; both query values optional integers |
 | `POST /api/v1/sessions/{id}/end` | yes | `session.end` | → the ended `Session` |
@@ -94,8 +95,8 @@ The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`. `Handler(nil)` s
 - The first client frame must be `{"token":"<device token>"}`, within 5 s (`Config.AuthTimeout`).
   - If the first frame is late, is not JSON or has no token, serve closes the socket with 4400 (`CloseBadHandshake`). The client tries again. A phone that wakes up, or a slow link, must not lose its pairing.
   - serve closes with 4401 only for a token that `device.check` refuses, or for a revoked device.
-- Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","queue","sends"}}`. It sends one `{"diff":{...}}` for each change to these items.
-  - A diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `queue` (whole list), `sends` (whole list), `removed_workspace`, `removed_worktree`, `removed_session`.
+- Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","sends"}}`. It sends one `{"diff":{...}}` for each change to these items.
+  - A diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `sends` (whole list), `removed_workspace`, `removed_worktree`, `removed_session`.
   - serve drops events, subagents, review drafts and comments, so `seq` has gaps. Worktrees come without `Ports`.
 - Each stream keeps a `view.View` ([internal/view/](../view/AGENTS.md)) of tasks, worktrees, sessions and their last `domain.SessionEventsKept` events. Thus serve sends a session as a `StreamSession`: the Go fields and these fields:
   - `name`: `domain.NameFor` with the PRs of its worktrees.

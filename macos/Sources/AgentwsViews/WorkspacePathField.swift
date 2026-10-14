@@ -29,8 +29,8 @@ struct WorkspacePathField: View {
                     }
                     .onKeyPress(.tab) { input.accept() ? .handled : .ignored }
                     .onKeyPress(.rightArrow) { input.suggestions.isEmpty ? .ignored : (input.accept() ? .handled : .ignored) }
-                    .onSubmit { if canAdd { add() } }
-                Button(busy ? "Adding…" : "Add", action: add)
+                    .onSubmit { if canAdd && input.submit() { add() } }
+                Button(busy ? "Adding…" : "Add") { if input.submit() { add() } }
                     .disabled(!canAdd)
             }
             .disabled(!enabled)

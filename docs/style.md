@@ -24,7 +24,7 @@ Use these terms with these meanings only.
 | **agent** | The AI program that does the work in a session: Claude Code, Codex or Oh My Pi (`omp`). |
 | **harness** | The kind of agent program: `claude`, `codex` or `omp`. Each harness has an adapter in `internal/adapters`. |
 | **session** | One agent that runs in one pane, with its state, model, effort and worktrees. |
-| **task** | A work item: a Linear issue, a PR or free text. Sessions are grouped under it. |
+| **task** | A work item: a PR or free text. Sessions are grouped under it. |
 | **workspace** | A folder that `agentws` manages: a single repo, or an orchestration root. |
 | **orchestration root** | A workspace folder that holds several repos. |
 | **project** | A registered workspace root with an optional machine-local setup script (`domain.Project`). |

@@ -114,18 +114,41 @@ func TestNamingResolvedTitle(t *testing.T) {
 		want    Task
 		changed bool
 	}{
-		{"linear title fills the issue title", Task{Source: TaskLinear, IssueTitle: "guess"}, "  Real title ", Task{Source: TaskLinear, IssueTitle: "Real title"}, true},
-		{"pr title fills the pr title", Task{Source: TaskPR}, "Add login", Task{Source: TaskPR, PRTitle: "Add login"}, true},
-		{"same title changes nothing", Task{Source: TaskLinear, IssueTitle: "Same"}, "Same", Task{Source: TaskLinear, IssueTitle: "Same"}, false},
-		{"blank title changes nothing", Task{Source: TaskLinear, IssueTitle: "guess"}, " ", Task{Source: TaskLinear, IssueTitle: "guess"}, false},
+		{"pr title fills the pr title", Task{Source: TaskPR}, "  Add login ", Task{Source: TaskPR, PRTitle: "Add login"}, true},
+		{"same title changes nothing", Task{Source: TaskPR, PRTitle: "Same"}, "Same", Task{Source: TaskPR, PRTitle: "Same"}, false},
+		{"blank title changes nothing", Task{Source: TaskPR, PRTitle: "guess"}, " ", Task{Source: TaskPR, PRTitle: "guess"}, false},
+		{"an issue task from an old store has nothing to resolve", Task{Source: "linear", IssueTitle: "guess"}, "Real", Task{Source: "linear", IssueTitle: "guess"}, false},
 		{"a text task has nothing to resolve", Task{Source: TaskText, Text: "x"}, "Title", Task{Source: TaskText, Text: "x"}, false},
-		{"a pin is left alone", Task{Source: TaskLinear, PinnedName: "mine"}, "Real", Task{Source: TaskLinear, PinnedName: "mine", IssueTitle: "Real"}, true},
+		{"a pin is left alone", Task{Source: TaskPR, PinnedName: "mine"}, "Real", Task{Source: TaskPR, PinnedName: "mine", PRTitle: "Real"}, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got, changed := WithTitle(c.task, c.title)
 			if got != c.want || changed != c.changed {
 				t.Errorf("WithTitle = %+v, %v; want %+v, %v", got, changed, c.want, c.changed)
+			}
+		})
+	}
+}
+
+func TestNamingFromTheFirstPrompt(t *testing.T) {
+	cases := []struct {
+		name    string
+		task    Task
+		prompt  string
+		want    Task
+		changed bool
+	}{
+		{"an empty text task takes the prompt", Task{Source: TaskText}, "  fix the flaky upload test \n", Task{Source: TaskText, Text: "fix the flaky upload test"}, true},
+		{"a blank prompt changes nothing", Task{Source: TaskText}, "  ", Task{Source: TaskText}, false},
+		{"a task with text keeps it", Task{Source: TaskText, Text: "mine"}, "other", Task{Source: TaskText, Text: "mine"}, false},
+		{"a PR task keeps its ref", Task{Source: TaskPR, Ref: "api#1"}, "other", Task{Source: TaskPR, Ref: "api#1"}, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, changed := NameFromPrompt(c.task, c.prompt)
+			if got != c.want || changed != c.changed {
+				t.Errorf("NameFromPrompt = %+v, %v; want %+v, %v", got, changed, c.want, c.changed)
 			}
 		})
 	}

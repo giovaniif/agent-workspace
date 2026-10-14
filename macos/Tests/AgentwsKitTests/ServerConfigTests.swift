@@ -90,7 +90,7 @@ struct ServerConfigTests {
     }
 
     @Test func eachTabListsItsServerSettings() {
-        #expect(ConfigFields.workspaces.map(\.key) == ["launcher.max_parallel"])
+        #expect(ConfigFields.workspaces.isEmpty)
         #expect(ConfigFields.agents.map(\.key) == ["fallback.threshold"])
         #expect(ConfigFields.notifications.map(\.key) == ["push.away_after"])
         #expect(ConfigFields.theme.count == 15)

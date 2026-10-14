@@ -180,3 +180,26 @@ func TestNamingResolvedTitleDoesNotUndoAPinMadeMeanwhile(t *testing.T) {
 		t.Fatalf("task %+v", task)
 	}
 }
+
+func TestNamingASessionWithNoWorkItemTakesItsFirstPrompt(t *testing.T) {
+	r := startNaming(t, &fakeTitles{title: "never"})
+	s := r.newSession(t, "  ")
+	h := rpc.Hook{Harness: "claude", Event: "UserPromptSubmit", Pane: s.Pane, Payload: []byte(`{"prompt":"fix the flaky upload test"}`)}
+	if err := r.c.Call(context.Background(), rpc.MethodHook, h, nil); err != nil {
+		t.Fatal(err)
+	}
+	other := r.newSession(t, "")
+	if other.TaskID == s.TaskID {
+		t.Fatal("two sessions with no work item share a task")
+	}
+	got := r.task(t, s.TaskID)
+	if got.Text != "fix the flaky upload test" || domain.NameFor(got, nil) == "" {
+		t.Fatalf("task %+v", got)
+	}
+	if err := r.c.Call(context.Background(), rpc.MethodHook, rpc.Hook{Harness: "claude", Event: "UserPromptSubmit", Pane: s.Pane, Payload: []byte(`{"prompt":"now do more"}`)}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := r.task(t, s.TaskID); got.Text != "fix the flaky upload test" {
+		t.Fatalf("a later prompt renamed the task: %+v", got)
+	}
+}

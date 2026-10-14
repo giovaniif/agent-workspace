@@ -11,9 +11,8 @@ import (
 )
 
 var (
-	linearKey = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*-[0-9]+$`)
-	prNumber  = regexp.MustCompile(`^[0-9]+$`)
-	notSlug   = regexp.MustCompile(`[^a-z0-9]+`)
+	prNumber = regexp.MustCompile(`^[0-9]+$`)
+	notSlug  = regexp.MustCompile(`[^a-z0-9]+`)
 )
 
 const (
@@ -29,23 +28,10 @@ func ParseWorkItem(input string) Task {
 		return text
 	}
 	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	switch strings.TrimPrefix(u.Host, "www.") {
-	case "linear.app":
-		if len(parts) < 3 || parts[1] != "issue" || !linearKey.MatchString(parts[2]) {
-			return text
-		}
-		t := Task{Source: TaskLinear, Ref: strings.ToUpper(parts[2]), URL: input}
-		if len(parts) > 3 {
-			t.IssueTitle = strings.ReplaceAll(parts[3], "-", " ")
-		}
-		return t
-	case "github.com":
-		if len(parts) < 4 || parts[2] != "pull" || !prNumber.MatchString(parts[3]) {
-			return text
-		}
-		return Task{Source: TaskPR, Ref: parts[1] + "#" + parts[3], URL: input}
+	if strings.TrimPrefix(u.Host, "www.") != "github.com" || len(parts) < 4 || parts[2] != "pull" || !prNumber.MatchString(parts[3]) {
+		return text
 	}
-	return text
+	return Task{Source: TaskPR, Ref: parts[1] + "#" + parts[3], URL: input}
 }
 
 func CheckWorkItem(input string) (Task, error) {
@@ -55,7 +41,7 @@ func CheckWorkItem(input string) (Task, error) {
 	}
 	task := ParseWorkItem(input)
 	if task.Source == TaskText && (strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://")) {
-		return Task{}, errors.New("unsupported link: use a Linear issue or GitHub pull request URL")
+		return Task{}, errors.New("unsupported link: use a GitHub pull request URL")
 	}
 	return task, nil
 }

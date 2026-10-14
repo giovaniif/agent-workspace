@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -21,6 +20,12 @@ type StartDefaults struct {
 func WithStartDefaults(defaults map[domain.Harness]StartDefaults) Option {
 	return func(d *Daemon) {
 		d.hs.defaults = defaults
+	}
+}
+
+func WithHarnessConfig(read func() map[domain.Harness]StartDefaults) Option {
+	return func(d *Daemon) {
+		d.hs.config = read
 	}
 }
 
@@ -45,11 +50,14 @@ func LoadStartDefaults(path string) (map[domain.Harness]StartDefaults, error) {
 }
 
 func (d *Daemon) sessionOptions() rpc.SessionOptions {
-	var maxParallel int
 	var defaults map[domain.Harness]StartDefaults
-	d.query(func(*state) { maxParallel, defaults = d.lc.maxParallel, d.hs.defaults })
+	d.query(func(*state) { defaults = d.hs.defaults })
 	home, _ := os.UserHomeDir()
-	out := rpc.SessionOptions{MaxParallel: cmp.Or(maxParallel, domain.DefaultMaxParallel), Home: home}
+	out := rpc.SessionOptions{Home: home}
+	var config map[domain.Harness]StartDefaults
+	if d.hs.config != nil {
+		config = d.hs.config()
+	}
 	for _, h := range domain.Harnesses() {
 		if _, ok := d.hs.adapters[h]; !ok {
 			continue
@@ -60,6 +68,8 @@ func (d *Daemon) sessionOptions() rpc.SessionOptions {
 			Harness: string(h), Name: spec.Name, Tag: spec.Tag, Models: spec.Models, Efforts: spec.Efforts,
 			Model: def.Model, Effort: def.Effort,
 		})
+		last := &out.Harnesses[len(out.Harnesses)-1]
+		last.DefaultModel, last.DefaultEffort = domain.ResolveDefault(h, config[h].Model, config[h].Effort)
 	}
 	return out
 }

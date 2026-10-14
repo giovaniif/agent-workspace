@@ -86,7 +86,6 @@ export function fakeStreamState(now = Date.now()) {
       fakeSession("s6", { State: "idle", name: "explore the auth flow", where: "api@main", since: ago(26 * 60) }),
     ],
     limits: [quota("claude", "five_hour", "5h", 38, 130), quota("claude", "seven_day", "7d", 19, 3 * 24 * 60), quota("codex", "five_hour", "5h", 77, 200)],
-    queue: [],
     sends: [
       { id: "m1", session: "s3", text: "then add a test for the backoff", queued_at: ago(2) },
       { id: "m2", session: "s3", text: "and update the README", queued_at: ago(1) },
@@ -291,16 +290,26 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           });
           return;
         }
+        if (req.method === "GET" && path === "/api/v1/session-options") {
+          send(res, 200, {
+            harnesses: [
+              { harness: "claude", default_model: "opus", default_effort: "high" },
+              { harness: "codex", default_model: "gpt-6.1-sol", default_effort: "medium" },
+            ],
+          });
+          return;
+        }
         if (req.method === "GET" && path === "/api/v1/work-items/resolve") {
           const query = new URL(req.url ?? "", "http://fake").searchParams;
           const item = query.get("item") ?? "";
           const workspace = query.get("workspace") ?? "";
-          if (item.startsWith("http") && !item.includes("linear.app")) {
-            send(res, 400, { error: { code: "bad_request", message: "unsupported link: use a Linear issue or GitHub pull request URL" } });
+          const pr = item.match(/^https:\/\/github\.com\/[^/]+\/([^/]+)\/pull\/(\d+)/);
+          if (pr) {
+            send(res, 200, { source: "pr", ref: pr[1] + "#" + pr[2], title: "Fix the login redirect", worktree: pr[1] + "-" + pr[2], workspace });
             return;
           }
-          if (item.includes("linear.app")) {
-            send(res, 200, { source: "linear", ref: "ENG-12", title: "Fix the login redirect", worktree: "eng-12", workspace });
+          if (item.startsWith("http")) {
+            send(res, 400, { error: { code: "bad_request", message: "unsupported link: use a GitHub pull request URL" } });
             return;
           }
           send(res, 200, { source: "text", title: item, worktree: item.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), workspace });

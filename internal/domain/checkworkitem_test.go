@@ -13,12 +13,12 @@ func TestCheckWorkItem(t *testing.T) {
 	}{
 		{"free text", "tidy up the readme", ""},
 		{"a branch name", "feature/login-fix", ""},
-		{"linear issue URL", "https://linear.app/acme/issue/ENG-1/x", ""},
+		{"an issue tracker URL is not a PR", "https://tracker.example.com/acme/issue/ENG-1/x", "unsupported link: use a GitHub pull request URL"},
 		{"github PR URL", "https://github.com/acme/web/pull/4", ""},
 		{"empty", "", "work item is empty"},
 		{"blank", "  \t ", "work item is empty"},
-		{"a github issue URL is not a PR", "https://github.com/acme/web/issues/4", "unsupported link: use a Linear issue or GitHub pull request URL"},
-		{"another site", "https://example.com/x", "unsupported link: use a Linear issue or GitHub pull request URL"},
+		{"a github issue URL is not a PR", "https://github.com/acme/web/issues/4", "unsupported link: use a GitHub pull request URL"},
+		{"another site", "https://example.com/x", "unsupported link: use a GitHub pull request URL"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

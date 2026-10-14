@@ -4,7 +4,6 @@ import SwiftUI
 
 public struct NewSessionSheet: View {
     @Bindable var model: NewSession
-    @Binding var tab: NewSessionTab
     let server: String
     let state: ViewState?
     let live: Bool
@@ -15,11 +14,10 @@ public struct NewSessionSheet: View {
     @State private var addingWorkspace = false
 
     public init(
-        model: NewSession, tab: Binding<NewSessionTab>, server: String, state: ViewState?, live: Bool = true,
+        model: NewSession, server: String, state: ViewState?, live: Bool = true,
         started: @escaping (String) -> Void = { _ in }, cancel: @escaping () -> Void = {}
     ) {
         self.model = model
-        _tab = tab
         self.server = server
         self.state = state
         self.live = live
@@ -30,12 +28,7 @@ public struct NewSessionSheet: View {
     public var body: some View {
         let theme = Theme(scheme)
         VStack(alignment: .leading, spacing: 14) {
-            Picker("", selection: $tab) {
-                Text("New session").tag(NewSessionTab.session)
-                Text("Linear launcher").tag(NewSessionTab.launcher)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            Text("New session").font(.system(size: 15, weight: .semibold))
             if let error = model.loadError {
                 Notice(text: error, tone: .red)
             }
@@ -47,11 +40,7 @@ public struct NewSessionSheet: View {
                     }
                 }
                 row("Workspace") { workspacePicker }
-                if tab == .session {
-                    row("Work item") { workItem(theme) }
-                } else {
-                    row("Issues") { launchInput(theme) }
-                }
+                row("Task") { workItem(theme) }
                 row("Agent") { harnessPicker }
                 row("Model") { modelPicker }
                 row("Effort") { effortPicker }
@@ -71,12 +60,8 @@ public struct NewSessionSheet: View {
                     Rectangle().fill(theme(.peach)).frame(width: 3)
                 }
             }
-            if tab == .session {
-                if let failure = model.failure {
-                    failureBox(failure, theme)
-                }
-            } else {
-                queue(theme)
+            if let failure = model.failure {
+                failureBox(failure, theme)
             }
             Spacer(minLength: 0)
             footer(theme)
@@ -85,8 +70,8 @@ public struct NewSessionSheet: View {
         .frame(minWidth: 560, minHeight: 520)
         .foregroundStyle(theme(.text))
         .background(theme(.base))
-        .task(id: live && tab == .session ? model.form.workItem + "\n" + model.form.workspace : "") {
-            guard live, tab == .session else { return }
+        .task(id: live ? model.form.workItem + "\n" + model.form.workspace : "") {
+            guard live else { return }
             try? await Task.sleep(for: .milliseconds(300))
             if Task.isCancelled { return }
             await model.resolve(in: state)
@@ -146,7 +131,7 @@ public struct NewSessionSheet: View {
 
     private func workItem(_ theme: Theme) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Linear issue, PR link or text", text: $model.form.workItem)
+            TextField("Optional: PR link or text. Groups sessions and names them.", text: $model.form.workItem)
                 .textFieldStyle(.roundedBorder)
             if let card = model.card {
                 VStack(alignment: .leading, spacing: 4) {
@@ -178,16 +163,6 @@ public struct NewSessionSheet: View {
         }
     }
 
-    private func launchInput(_ theme: Theme) -> some View {
-        TextEditor(text: $model.form.launchInput)
-            .font(Metrics.mono)
-            .frame(height: 84)
-            .scrollContentBackground(.hidden)
-            .padding(4)
-            .background(RoundedRectangle(cornerRadius: Metrics.corner).fill(theme(.mantle)))
-            .overlay(RoundedRectangle(cornerRadius: Metrics.corner).stroke(theme(.surface)))
-    }
-
     private var harnessPicker: some View {
         Picker("", selection: $model.form.harness) {
             ForEach(model.form.harnesses, id: \.harness) { h in
@@ -200,18 +175,18 @@ public struct NewSessionSheet: View {
     }
 
     private var modelPicker: some View {
-        choicePicker(selection: $model.form.model, choices: model.form.chosen?.models ?? [])
+        choicePicker(selection: $model.form.model, choices: model.form.chosen?.models ?? [], blank: model.form.defaultModelLabel)
     }
 
     private var effortPicker: some View {
-        choicePicker(selection: $model.form.effort, choices: model.form.chosen?.efforts ?? [])
+        choicePicker(selection: $model.form.effort, choices: model.form.chosen?.efforts ?? [], blank: model.form.defaultEffortLabel)
     }
 
-    private func choicePicker(selection: Binding<String>, choices: [String]) -> some View {
+    private func choicePicker(selection: Binding<String>, choices: [String], blank: String) -> some View {
         let current = selection.wrappedValue
         let all = current.isEmpty || choices.contains(current) ? choices : choices + [current]
         return Picker("", selection: selection) {
-            Text("default").tag("")
+            Text(blank).tag("")
             ForEach(all, id: \.self) { Text($0).tag($0) }
         }
         .labelsHidden()
@@ -236,61 +211,22 @@ public struct NewSessionSheet: View {
         .overlay(RoundedRectangle(cornerRadius: Metrics.corner).stroke(theme(.red).opacity(0.5)))
     }
 
-    private func queue(_ theme: Theme) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Queue").font(.system(size: 12, weight: .semibold))
-                Spacer()
-                Text("up to \(model.maxParallel) at once").font(.system(size: 11)).foregroundStyle(theme(.subtext))
-            }
-            if model.queue.isEmpty {
-                Text("Nothing waiting.").font(.system(size: 12)).foregroundStyle(theme(.subtext))
-            }
-            ForEach(model.queue) { item in
-                HStack(spacing: 8) {
-                    Text(item.harness)
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(theme(.subtext))
-                    Text(item.ref).font(Metrics.mono)
-                    Spacer()
-                    Text(item.status)
-                        .font(.system(size: 11))
-                        .foregroundStyle(theme(item.status.hasPrefix("failed") ? .red : item.status == "starting" ? .blue : .subtext))
-                }
-                .padding(.vertical, 3)
-            }
-            if let note = model.launchNote {
-                Text(note).font(.system(size: 11)).foregroundStyle(theme(.subtext))
-            }
-        }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: Metrics.corner).fill(theme(.mantle)))
-    }
-
     private func footer(_ theme: Theme) -> some View {
         HStack {
-            Text(tab == .session ? "You type the first prompt in the session's terminal." : "Each issue gets its own session.")
+            Text("You type the first prompt in the session's terminal.")
                 .font(.system(size: 11))
                 .foregroundStyle(theme(.subtext))
             Spacer()
             Button("Cancel", action: cancel)
                 .keyboardShortcut(.cancelAction)
-            if tab == .session {
-                Button(model.starting ? "Starting…" : "Start") {
-                    Task {
-                        if let id = await model.start() { started(id) }
-                    }
+            Button(model.starting ? "Starting…" : "Start") {
+                Task {
+                    if let id = await model.start() { started(id) }
                 }
-                .keyboardShortcut(.return, modifiers: .command)
-                .buttonStyle(.borderedProminent)
-                .disabled(!model.form.canStart || model.starting)
-            } else {
-                Button("Queue") {
-                    Task { await model.enqueue() }
-                }
-                .keyboardShortcut(.return, modifiers: .command)
-                .buttonStyle(.borderedProminent)
             }
+            .keyboardShortcut(.return, modifiers: .command)
+            .buttonStyle(.borderedProminent)
+            .disabled(!model.form.canStart || model.starting)
         }
     }
 }

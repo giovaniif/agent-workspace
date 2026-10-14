@@ -313,7 +313,7 @@ struct WorkspacesPane: View {
                     actions.addWorkspace(actions.workspacePath.resolved)
                 }
             }
-            ServerConfigGroup(title: "Worktrees and launcher", scene: scene, actions: actions, fields: ConfigFields.workspaces) {
+            ServerConfigGroup(title: "Worktrees", scene: scene, actions: actions, fields: ConfigFields.workspaces) {
                 if let config = scene.config {
                     LabeledContent("Worktree location") { Text(config.worktreeLocation).font(Metrics.mono) }
                     LabeledContent("Auto-cleanup") { Text("Every 10 minutes and when a PR merges") }

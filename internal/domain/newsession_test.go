@@ -12,14 +12,9 @@ func TestParseWorkItem(t *testing.T) {
 		want  Task
 	}{
 		{
-			"linear issue URL with a title slug",
-			" https://linear.app/acme/issue/ENG-123/fix-the-login-bug ",
-			Task{Source: TaskLinear, Ref: "ENG-123", IssueTitle: "fix the login bug", URL: "https://linear.app/acme/issue/ENG-123/fix-the-login-bug"},
-		},
-		{
-			"linear issue URL without a slug",
-			"https://linear.app/acme/issue/ENG-7",
-			Task{Source: TaskLinear, Ref: "ENG-7", URL: "https://linear.app/acme/issue/ENG-7"},
+			"an issue tracker URL is plain text",
+			" https://tracker.example.com/acme/issue/ENG-123/fix-the-login-bug ",
+			Task{Source: TaskText, Text: "https://tracker.example.com/acme/issue/ENG-123/fix-the-login-bug"},
 		},
 		{
 			"github PR URL",
@@ -32,9 +27,6 @@ func TestParseWorkItem(t *testing.T) {
 			Task{Source: TaskPR, Ref: "web#42", URL: "https://github.com/acme/web/pull/42/files"},
 		},
 		{"plain text", "  make the build faster ", Task{Source: TaskText, Text: "make the build faster"}},
-		{"linear URL with no issue key", "https://linear.app/acme/issue/", Task{Source: TaskText, Text: "https://linear.app/acme/issue/"}},
-		{"linear URL whose key is not KEY-n", "https://linear.app/acme/issue/nope/x", Task{Source: TaskText, Text: "https://linear.app/acme/issue/nope/x"}},
-		{"linear project URL", "https://linear.app/acme/project/ENG-1", Task{Source: TaskText, Text: "https://linear.app/acme/project/ENG-1"}},
 		{"github PR URL with no number", "https://github.com/acme/web/pull/abc", Task{Source: TaskText, Text: "https://github.com/acme/web/pull/abc"}},
 		{"github issue URL", "https://github.com/acme/web/issues/42", Task{Source: TaskText, Text: "https://github.com/acme/web/issues/42"}},
 		{"other host", "https://example.com/acme/web/pull/42", Task{Source: TaskText, Text: "https://example.com/acme/web/pull/42"}},
@@ -56,7 +48,6 @@ func TestTaskSlug(t *testing.T) {
 		task Task
 		want string
 	}{
-		{"linear key", Task{Source: TaskLinear, Ref: "ENG-123"}, "eng-123"},
 		{"pr ref", Task{Source: TaskPR, Ref: "web#42"}, "web-42"},
 		{"text words", Task{Source: TaskText, Text: "Make the Build faster!"}, "make-the-build-faster"},
 		{"text keeps five words", Task{Source: TaskText, Text: "one two three four five six seven"}, "one-two-three-four-five"},
@@ -76,7 +67,7 @@ func TestTaskSlug(t *testing.T) {
 
 func TestFindTask(t *testing.T) {
 	known := []Task{
-		{ID: "1", Source: TaskLinear, Ref: "ENG-1"},
+		{ID: "1", Source: TaskPR, Ref: "api#1"},
 		{ID: "2", Source: TaskPR, Ref: "web#42"},
 		{ID: "3", Source: TaskText, Text: "fix it"},
 	}
@@ -85,11 +76,11 @@ func TestFindTask(t *testing.T) {
 		task   Task
 		wantID string
 	}{
-		{"same linear issue", Task{Source: TaskLinear, Ref: "ENG-1", URL: "https://linear.app/x/issue/ENG-1/other"}, "1"},
+		{"same PR under another URL", Task{Source: TaskPR, Ref: "api#1", URL: "https://github.com/x/api/pull/1/files"}, "1"},
 		{"same PR", Task{Source: TaskPR, Ref: "web#42"}, "2"},
 		{"same text", Task{Source: TaskText, Text: "fix it"}, "3"},
 		{"other text", Task{Source: TaskText, Text: "fix that"}, ""},
-		{"ref under another source", Task{Source: TaskPR, Ref: "ENG-1"}, ""},
+		{"ref under another source", Task{Source: TaskText, Text: "api#1"}, ""},
 		{"empty text never matches", Task{Source: TaskText}, ""},
 	}
 	for _, c := range cases {

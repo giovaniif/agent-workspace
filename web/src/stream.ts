@@ -101,16 +101,6 @@ export type Quota = {
   stale_at: string;
 };
 
-export type LaunchItem = {
-  ID: string;
-  Ref: string;
-  URL: string;
-  Workspace: string;
-  Request: { Harness: string; Model: string; Effort: string };
-  Starting: boolean;
-  Err: string;
-};
-
 export type QueuedSend = {
   id: string;
   session: string;
@@ -125,7 +115,6 @@ export type StreamState = {
   worktrees: Worktree[];
   sessions: Session[];
   limits: Quota[];
-  queue: LaunchItem[];
   sends: QueuedSend[];
 };
 
@@ -139,7 +128,6 @@ export type StreamDiff = {
   worktree?: Worktree;
   session?: Session;
   limits?: Quota[];
-  queue?: LaunchItem[];
   sends?: QueuedSend[];
 };
 
@@ -236,7 +224,6 @@ export function applyDiff(state: StreamState, diff: StreamDiff): StreamState {
     worktrees,
     sessions,
     limits: diff.limits ?? state.limits,
-    queue: diff.queue ?? state.queue,
     sends: diff.sends ?? state.sends,
   };
 }

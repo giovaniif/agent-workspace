@@ -42,7 +42,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `LineProcess` sends and receives newline-delimited lines on the stdio of the process. It keeps stdin open until `close()`.
   - `RPCClient` matches replies to calls by `id`. A reply with `id` 0 fails all calls. The bridge sends this reply (`unavailable`) when no daemon listens. If the process stops, all calls fail with `AgentwsError.disconnected`.
 - Live state (`LiveState.swift`, `ViewStore.swift`):
-  - `ViewState.apply(_:)` applies a diff as the TUI does: replace by key, removals, whole-list `limits`/`queue`/`sends`, and the last 20 events for each session.
+  - `ViewState.apply(_:)` applies a diff as the TUI does: replace by key, removals, whole-list `limits`/`sends`, and the last 20 events for each session.
   - `ViewStore` (`@Observable`, main actor) keeps one process for `view.subscribe` and a different one for `call`. Thus diffs never delay a call.
   - After a drop, it waits by `Backoff` (1 s, doubled each time to 30 s, reset by each new state). Then it subscribes again from the start.
   - `connection` is `live`, `connecting`, `reconnecting(in:)`, `unavailable(message)` (it continues to try) or `versionMismatch(message)` (it stops until `start()` runs again).
@@ -63,19 +63,18 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - Go to session and Open shell go through `WindowRouter` to the main window. The main window selects the session and shows the shell of the worktree. The shell of a worktree with no owner has no session to show under, so it still calls `shell.toggle` and reports it.
   - `Seed.disk` is the seeded view for snapshots and `--demo`.
 - New session (`NewSession.swift`, view `NewSessionSheet`):
-  - ⌘N opens the sheet. ⇧⌘N opens its Linear launcher tab. The New button of the toolbar also opens it.
-  - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, the `[defaults.<harness>]` model and effort, and `max_parallel`. The app cannot read a remote `config.toml`.
-  - `NewSessionForm` preselects the workspace with the newest `LastUsed`. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
+  - ⌘N opens the sheet. The New button of the toolbar also opens it.
+  - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, and the `[defaults.<harness>]` model and effort. The app cannot read a remote `config.toml`.
+  - `NewSessionForm` preselects the workspace with the newest `LastUsed`. `Timestamp.parse` reads the Go format (nanoseconds and an offset). While the sheet is open, `observe` syncs the list when the set of workspace roots in the view changes (for example, a workspace added in setup or removed in Settings). The selection stays, unless its workspace is gone. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
   - 300 ms after the last edit, `session.resolve` resolves the work item into a `WorkItemCard`: source, title, branch, and the path of an existing worktree on that branch. The form ignores a reply for an older text.
   - `warning` reads the `limits` of the view: the lowest `low` quota of the selected harness. It shows a switch button only when a different harness has reported limits and none of them is low (the rule of `domain.OfferFallback`).
   - Start (⌘↩) calls `session.new`, then `session.focus`, and the window selects the new session. A failure, for example the output of a setup recipe, stays in the sheet.
-  - The launcher sends `launcher.enqueue` and lists the `queue` of the view (`LaunchRow`).
   - When the server has no workspaces, the sheet shows "No workspaces on this server yet" and the workspace path field. Else, "Add workspace…" shows the field. `NewSession.addWorkspace` calls `workspace.add` and selects the new workspace. Start stays disabled while no workspace is selected.
   - Tests: `swift test --filter NewSession` with a fake `Caller`.
 - Workspace path field (`WorkspacePath.swift`, view `WorkspacePathField`): one field for Settings › Workspaces, the first-run Workspace step and the new-session sheet (ADR 0047 in the Mac app).
   - `ParsedPath.parse` reads `~`, `~/x`, `x`, `./x`, `../x` and `/abs` against the home of the server (`home` from `session.options`).
   - `WorkspacePathInput.refresh` calls `workspace.dirs` one time for each folder that the input points into. `suggestions` filters the folders by the last segment (case-insensitive prefix, hidden folders only for a `.` prefix) and marks each `repo` or `worktree`.
-  - ↑/↓ move the highlight. ⇥ or → opens the highlighted folder (it appends `name/`). ↩ adds the workspace.
+  - ↑/↓ move the highlight. ⇥ or → opens the highlighted folder (it appends `name/`). ↩ adds the workspace. When the last segment is not empty and a suggestion is highlighted, ↩ first completes the path to that suggestion (`submit`). When the path does not exist, ↩ does nothing and the `no such folder` line stays.
   - `status` is the line under the box: the resolved path and `single repo`, `orchestration root · N repos`, `worktree`, `folder` or `no such folder`.
   - Test: `swift test --filter WorkspacePath`.
 - Build (`Build.swift`): `Build.read(binary:)` runs `<binary> version --build`. The result is the exact string that the daemon compares in the handshake. The app reads it from the `agentws` that it talks to, in this order:
@@ -133,14 +132,14 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `CLILink` links `/usr/local/bin/agentws` to the `agentws` of the app. It never replaces or removes a file that it did not make.
   - Workspaces and Agents are for each server. `ServerSettings` calls `workspace.list/add/remove` and `onboarding.status/install/remove/nvim` through `Caller` (the protocol that `ReviewController` uses, and `ViewStore` conforms to). `onboarding.remove` first copies the hook file to a backup.
   - The `config.toml` settings of the server (`ServerConfig.swift`) come from `config.get`. `config.set` saves them one key at a time. It backs up the file and keeps the comments of the user (see [internal/daemon/](../internal/daemon/AGENTS.md#config)). `ConfigFields` lists them for each tab:
-    - Workspaces: `launcher.max_parallel`, and the read-only worktree location beside `config.toml` and the cleanup schedule.
+    - Workspaces: the read-only worktree location beside `config.toml` and the cleanup schedule.
     - Agents: the `[defaults.<harness>]` model and effort as pickers from `session.options`, and `fallback.threshold`.
     - Notifications: `push.away_after` and the phones (`device.list`, `device.revoke`, `pair.code`).
     - Appearance: the `[theme]` overrides.
   - With a daemon that does not have `config.get` or `device.list` (`unknown_method`), those groups are empty and show a note.
   - You cannot set the cleanup interval, stale-limit age, worktree location and setup recipes. They are fixed in the daemon, or they are in the `.agentws.toml` of each repo.
 - Shell and nvim views (`ShellNvim.swift`):
-  - `MainView` is the view switcher (Terminal, Review, Shell, nvim).
+  - `MainView` is the view switcher (Terminal, Review, Shell, nvim, Browser).
   - `Toolbar.views(session:)` gives the tabs. With no selected session, Review, Shell and nvim are grey and have a tooltip (`Toolbar.needsSession`). A click on one, or its shortcut, shows that text as the window message. Thus a click never does nothing.
   - `EmptyMain` is the main column with no session: "Waiting for the daemon", "No sessions yet" or "Select a session", with a New session button.
   - `ShellNvim` (main actor, over `Caller`) calls `shell.focus` for ⌘T and ⇧⌘T. ⌘T is for the selected session: the daemon selects its first worktree, else the root of the session. ⇧⌘T shows the same shell as a popup over the current view.
@@ -148,6 +147,31 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - It keeps the shell and nvim pane of each session. Thus the main column draws that pane instead of the pane of the agent.
   - When you press the shortcut again, select Terminal or select a different session, only the view changes back. The shell and nvim continue to run.
   - Test: `swift test --filter 'Shell|Nvim'`.
+- Browser view (`Browser.swift`, view `BrowserPane`; [ADR 0051](../docs/adr/0051-browser-in-mac-app.md)):
+  - `MainView.browser` is the fifth tab. `ShellNvim.showBrowser()` selects it. A change of session goes back to Terminal, as for the shell.
+  - `Browser` keeps one `BrowserPage` for each session: tabs, the selected tab, the `DevicePreset` (Desktop, iPad, iPhone) and `agentControl`.
+  - `BrowserAddress.url(from:host:)` reads the address bar. A bare port (`3000`, `:3000`) and `localhost:<port>` open on the server host. A name with a dot gets `https://`. Other schemes than `http` and `https` are refused.
+  - `BrowserHost.of` gives the server host: `localhost` for This Mac, else the SSH host without the user.
+  - `BrowserLinks.ports` changes the TCP ports of the worktrees of the session into quick links (`api :3000`).
+  - `BrowserProfiles` keeps the profiles, the default profile and the profile of each session in `UserDefaults` (`browser.profiles`, `browser.default`, `browser.sessions`). The `Default` profile always exists. A name must not be empty or used.
+  - `BrowserWebViews` (macOS only) keeps one `WKWebView` for each tab. Each profile has its own `WKWebsiteDataStore(forIdentifier:)`. `Default` uses the default store. A clone copies the cookies of the source store.
+  - Cookie import (`CookieImport.swift`, `ChromeCookies.swift`, view `CookieImportSheet`; #338): Import cookies… in the profile menu.
+    - `CookieFile.parse` reads a Netscape `cookies.txt`, a JSON cookie list or a Playwright `storageState`. `BinaryCookies.parse` reads the Safari `Cookies.binarycookies` (it needs Full Disk Access).
+    - `CookieSources.profiles` finds the profiles of Chrome, Arc, Brave, Edge and Safari under the home folder. `ChromeCookies.read` copies the SQLite file, and decrypts the values with the Safe Storage key from the Keychain (`ChromeCrypto`, macOS only).
+    - The sheet shows the count for each site (`CookieImport.summary`). The user selects the sites. An import first deletes the cookies of those sites in the profile, then sets the new ones.
+    - Cookies stay on the Mac. They never go to the server or into a log.
+    - Fixtures are in `Tests/testdata/cookies`. `swift test --filter CookieImport` runs the suite. The Chrome tests run only on macOS.
+  - While `agentControl` is on, the tab shows "An agent controls this tab" and a Take over button.
+  - Test: `swift test --filter Browser`. `SnapshotTests` draws `browser-latte`, `browser-mocha` and `browser-iphone`.
+- Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/agentws/](../cmd/agentws/AGENTS.md)):
+  - `BrowserLink` keeps its own `agentws rpc` process. It sends `browser.attach`, then runs each `browser` call that the daemon pushes and answers with `browser.reply`. After a drop, it connects again by `Backoff`. A `version_mismatch` stops it.
+  - `BrowserStep.of` changes a call into one step: a load, a page script, a poll, a sleep, a screenshot, the tabs, the cookies or a device. A bad call is a `BrowserRefusal`.
+  - The page scripts (`BrowserScript`) get their values as arguments of `callAsyncJavaScript`, never in the source. `snapshot` marks each element that it lists with `data-agentws-ref`. `click`, `fill` and `wait @eN` find the element by this mark.
+  - `BrowserPolicy` is the navigation policy of ADR 0051. `AgentGuard` applies it to each navigation, redirect and frame while an agent controls the tab. Before `snapshot`, `screenshot` and the other scripts, the driver checks the current address and the frames of the tab again.
+  - `screenshot` returns the PNG as base64. The CLI on the server writes the file.
+  - `cookies` returns names, domains and paths, never values.
+  - `LiveWindow` starts one link for each window. A new attach replaces the old one in the daemon.
+  - Test: `swift test --filter BrowserAgent`.
 - Attention (`Attention.swift`, screen 4; views `PermissionCardView`, `AttentionMenuView`, `UserNotifier`):
   - `NoticeStream` keeps a `notify.stream` process (with backoff, as `ViewStore` does) and gives each notice to `Attention`.
   - The `Notifier` port posts a banner (Go field names) as one notification for each session. The session ID is the request and thread identifier, so a newer banner replaces the older one. `remove` withdraws it.
@@ -179,6 +203,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - a sidebar list of `FirstRunFlow.steps` (ticked by `isComplete`)
     - the content of the step on the window background, with stock controls (radio-group pickers, `GroupBox`es through `SettingsGroup`, rounded text fields)
     - a bottom bar with Cancel (Esc, ⌘.), Back and the default button `primaryTitle`. On first launch, Cancel quits. Else it closes "Add a server".
+  - Main window frame (`WindowFrame.swift`, `MainWindowFrame` in the app): when the live main view shows for the first time, the window gets the autosave name `agentws.main`. If no frame is saved, the window gets 80% of the visible screen (minimum 1280×800, never larger than the screen), centered. After that, AppKit keeps the size and position that the user sets. The first-run view in the same window keeps its smaller size. Test: `swift test --filter WindowFrame`.
   - `Snapshot.renderFirstRun` draws each step (`first-run-<n>[-dark].png`).
   - Hosts come from `~/.ssh/config` (`SSHConfig.hosts`, without wildcards) or a typed `user@host`. `SSHConfig.target` refuses options and spaces.
   - `ServerSetup` runs each remote step through `ProcessShell`: `ssh -T -o BatchMode=yes -o ConnectTimeout=10 <host> sh -c '<script>'`. Thus a host that asks for a password fails immediately (exit 255), with a message about key, agent or Tailscale SSH login.

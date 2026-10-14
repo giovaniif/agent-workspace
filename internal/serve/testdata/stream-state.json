@@ -156,21 +156,6 @@
         "stale_at": "2026-10-03T11:15:00Z"
       }
     ],
-    "queue": [
-      {
-        "ID": "q1",
-        "Ref": "#42",
-        "URL": "",
-        "Workspace": "/home/me/api",
-        "Request": {
-          "Harness": "",
-          "Model": "",
-          "Effort": ""
-        },
-        "Starting": false,
-        "Err": ""
-      }
-    ],
     "sends": [
       {
         "id": "m1",

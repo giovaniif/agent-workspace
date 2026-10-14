@@ -681,11 +681,6 @@ func (m Model) submit() tea.Cmd {
 	if d.menu {
 		d.acceptMenu()
 	}
-	switch {
-	case strings.TrimSpace(d.workItem) == "":
-		d.err = "work item is empty"
-		return nil
-	}
 	space, ok := d.chosen()
 	if !ok {
 		d.err = "no workspace: type a folder's path"

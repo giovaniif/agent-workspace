@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"log"
@@ -14,7 +15,6 @@ import (
 	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
 	gitadapter "github.com/giovaniif/agent-workspace/internal/adapters/git"
 	"github.com/giovaniif/agent-workspace/internal/adapters/github"
-	"github.com/giovaniif/agent-workspace/internal/adapters/linear"
 	"github.com/giovaniif/agent-workspace/internal/adapters/notify"
 	"github.com/giovaniif/agent-workspace/internal/adapters/nvim"
 	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
@@ -70,14 +70,6 @@ func Run(ctx context.Context, home string) (err error) {
 	if err != nil {
 		log.Printf("notify.json ignored: %v", err)
 	}
-	linearToken, err := linear.LoadToken(filepath.Join(home, "config.toml"))
-	if err != nil {
-		log.Printf("linear token ignored: %v", err)
-	}
-	maxParallel, err := LoadMaxParallel(filepath.Join(home, "config.toml"))
-	if err != nil {
-		log.Printf("launcher max_parallel ignored: %v", err)
-	}
 	startDefaults, err := LoadStartDefaults(filepath.Join(home, "config.toml"))
 	if err != nil {
 		log.Printf("new-session defaults ignored: %v", err)
@@ -98,12 +90,12 @@ func Run(ctx context.Context, home string) (err error) {
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithProjectSetup(setup.Shell{Out: os.Stderr}),
 		WithAutomationPrecheck(setup.Shell{Out: os.Stderr}),
-		WithLauncher(maxParallel),
 		WithStartDefaults(startDefaults),
+		WithHarnessConfig(readHarnessConfig),
 		WithConfig(filepath.Join(home, "config.toml")),
 		WithNotifier(banners, notify.New(), sounds),
 		WithWorktrees(gitadapter.Worktrees{}, &github.Finder{}),
-		WithTitles(app.TitleResolvers{linear.Client{Token: linearToken}, github.Titles{}}),
+		WithTitles(app.TitleResolvers{github.Titles{}}),
 		WithProcessTable(procs.Table{}),
 		WithReview(gitadapter.Review{}),
 		WithCleanup(cleanup, DefaultCleanupEvery),
@@ -186,3 +178,17 @@ func testHooksFromEnv(getenv func(string) string) testHooks {
 }
 
 func (h testHooks) cleanupClock() time.Time { return time.Now().Add(h.clockSkew) }
+
+func readHarnessConfig() map[domain.Harness]StartDefaults {
+	out := map[domain.Harness]StartDefaults{}
+	home, _ := os.UserHomeDir()
+	claudeDir := cmp.Or(os.Getenv("CLAUDE_CONFIG_DIR"), filepath.Join(home, ".claude"))
+	if model, effort, err := claude.ReadDefaults(filepath.Join(claudeDir, "settings.json")); err == nil {
+		out[domain.HarnessClaude] = StartDefaults{Model: model, Effort: effort}
+	}
+	codexDir := cmp.Or(os.Getenv("CODEX_HOME"), filepath.Join(home, ".codex"))
+	if model, effort, err := codex.ReadDefaults(filepath.Join(codexDir, "config.toml")); err == nil {
+		out[domain.HarnessCodex] = StartDefaults{Model: model, Effort: effort}
+	}
+	return out
+}

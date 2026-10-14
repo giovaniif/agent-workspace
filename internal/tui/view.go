@@ -238,9 +238,6 @@ func (m Model) body() ([]string, int, []string) {
 	if m.tabNew != nil {
 		return m.tabChooserLines(), 3 + m.tabNew.row, nil
 	}
-	if m.launching != nil {
-		return m.launcherLines(), 0, nil
-	}
 	if m.help {
 		return m.helpLines(), 0, nil
 	}
@@ -262,11 +259,11 @@ func (m Model) body() ([]string, int, []string) {
 		return m.resumeLines(), 2 + m.resuming.cursor, owners
 	}
 	if len(m.entries) == 0 {
-		return append([]string{
+		return []string{
 			"",
 			m.line(false, []piece{{s.sub, " No sessions yet."}}, nil),
 			m.line(false, []piece{{s.dim, " Sessions you start show up here."}}, nil),
-		}, m.queueLines()...), 0, nil
+		}, 0, nil
 	}
 	var out, owners []string
 	selRow := 0
@@ -294,7 +291,7 @@ func (m Model) body() ([]string, int, []string) {
 			owners = append(owners, own)
 		}
 	}
-	return append(out, m.queueLines()...), selRow, owners
+	return out, selRow, owners
 }
 
 func (m Model) sessionLines(e entry, sel bool) []string {
@@ -376,10 +373,7 @@ func (m Model) helpLines() []string {
 		{"enter", "focus agent pane"},
 		{`ctrl+\`, "in an agent pane: back to the sidebar"},
 		{"n", "new session"},
-		{"L", "launch Linear issues"},
 		{"P", "projects: open, add, remove"},
-		{"c", "queued issues to codex"},
-		{"X", "clear the queue"},
 		{"S", "set up Claude, Codex and nvim"},
 		{"x", "end session"},
 		{"u", "resume ended"},

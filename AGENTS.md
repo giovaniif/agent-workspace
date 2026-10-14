@@ -23,7 +23,7 @@ Claude Code and Codex load an `AGENTS.md` from each directory they work in. Here
 | [internal/view/](internal/view/AGENTS.md) | the derived view shared by `serve` and `view.subscribe`: names, banners, order, PR board, goldens |
 | [internal/syntax/](internal/syntax/AGENTS.md) | the curated chroma lexers the TUI and `agentws rpc` share, review spans |
 | [internal/tui/](internal/tui/AGENTS.md) | sidebar, limits bar, theme and defaults, review viewer, disk view, goldens |
-| [internal/adapters/](internal/adapters/AGENTS.md) | Claude and Codex adapters and their `setup`, notify, procs, fs, github, linear, sqlite |
+| [internal/adapters/](internal/adapters/AGENTS.md) | Claude and Codex adapters and their `setup`, notify, procs, fs, github, sqlite |
 | [internal/adapters/git/](internal/adapters/git/AGENTS.md) | git CLI use, repo facts, worktree listing, review diffs, turn snapshots, hunks |
 | [internal/adapters/tmux/](internal/adapters/tmux/AGENTS.md) | the `agentws` tmux server, layout, shell panes, keys |
 | [internal/adapters/setup/](internal/adapters/setup/AGENTS.md) | `.agentws.toml` setup recipes |
