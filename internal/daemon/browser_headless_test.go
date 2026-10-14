@@ -262,3 +262,29 @@ func TestAnAutomationWithBrowserMacNeverFallsBack(t *testing.T) {
 		t.Fatal("browser = mac fell back to headless")
 	}
 }
+
+func TestAHeadlessBrowserThatRefusesImportedCookiesStopsAndTheNextOneGetsThem(t *testing.T) {
+	r := startHeadless(t, headlessOn, time.Hour)
+	if _, err := browserCommand(r.c, rpc.BrowserCommandParams{Session: "s1", Command: "snapshot"}); err != nil {
+		t.Fatal(err)
+	}
+	first := r.b.tab("s1")
+	first.mu.Lock()
+	first.refuse = true
+	first.mu.Unlock()
+	err := r.c.Call(context.Background(), rpc.MethodBrowserCookiesImport, rpc.BrowserCookiesParams{Cookies: []domain.BrowserCookie{
+		{Name: "sid", Value: "abc", Domain: ".example.com", Path: "/"},
+	}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.isClosed() {
+		t.Fatal("kept a browser without the imported cookies")
+	}
+	if _, err := browserCommand(r.c, rpc.BrowserCommandParams{Session: "s1", Command: "snapshot"}); err != nil {
+		t.Fatal(err)
+	}
+	if names := r.b.tab("s1").cookieNames(); !reflect.DeepEqual(names, []string{"sid=abc"}) {
+		t.Fatalf("new browser cookies %q", names)
+	}
+}

@@ -1029,6 +1029,7 @@ type fakeHeadlessTab struct {
 	calls   []string
 	cookies []domain.BrowserCookie
 	closed  bool
+	refuse  bool
 }
 
 func (f *fakeHeadless) Open(_ context.Context, session string) (app.HeadlessTab, error) {
@@ -1074,6 +1075,9 @@ func (t *fakeHeadlessTab) Run(_ context.Context, command string, args json.RawMe
 func (t *fakeHeadlessTab) SetCookies(_ context.Context, cookies []domain.BrowserCookie) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	if t.refuse {
+		return errors.New("cookies refused")
+	}
 	t.cookies = append(t.cookies, cookies...)
 	return nil
 }
