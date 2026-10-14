@@ -79,7 +79,7 @@ describe("StreamClient", () => {
     const { sockets, client } = started();
     sockets.last.open();
     sockets.last.push({ state: goldenState() });
-    sockets.last.drop(1013, "the agentws daemon went away");
+    sockets.last.drop(1013, "the crew daemon went away");
     expect(client.snapshot().status).toBe("offline");
     expect(client.snapshot().state?.sessions).toHaveLength(2);
     await vi.waitFor(() => expect(sockets.opened).toHaveLength(2));

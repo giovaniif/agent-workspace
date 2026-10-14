@@ -21,9 +21,9 @@ function setup(options: { remembered?: unknown; workspacesDown?: boolean } = {})
   window.location.hash = "#/new";
   const sockets = new FakeSockets();
   const storage = new MemoryStorage();
-  storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+  storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
   if (options.remembered) {
-    storage.setItem("agentws.new", JSON.stringify(options.remembered));
+    storage.setItem("crew.new", JSON.stringify(options.remembered));
   }
   const server = new FakeServer()
     .on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } })
@@ -34,7 +34,7 @@ function setup(options: { remembered?: unknown; workspacesDown?: boolean } = {})
     storage,
     installed: true,
     hash: "#/new",
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     openStream: sockets.open,
     retryDelay: () => 5,
@@ -62,7 +62,7 @@ describe("starting a session from the phone", () => {
     window.location.hash = "";
     const sockets = new FakeSockets();
     const storage = new MemoryStorage();
-    storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+    storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
     const server = new FakeServer().on("GET", "/api/v1/workspaces", { status: 200, body: workspaces });
     render(
       <App

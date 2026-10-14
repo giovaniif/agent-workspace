@@ -17,7 +17,7 @@ function setup(hash = "", workspaces: FakeRoute | Error = { status: 200, body: {
   window.location.hash = hash;
   const sockets = new FakeSockets();
   const storage = new MemoryStorage();
-  storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+  storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
   const server = new FakeServer()
     .on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } })
     .on("GET", "/api/v1/workspaces", workspaces);
@@ -26,7 +26,7 @@ function setup(hash = "", workspaces: FakeRoute | Error = { status: 200, body: {
     storage,
     installed: true,
     hash,
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     openStream: sockets.open,
     retryDelay: () => 5,
@@ -98,7 +98,7 @@ describe("the session list", () => {
   it("shows an offline state when the connection drops and recovers on its own", async () => {
     const { sockets } = setup();
     live(sockets);
-    sockets.last.drop(1013, "the agentws daemon went away");
+    sockets.last.drop(1013, "the crew daemon went away");
     expect(screen.getByRole("status")).toHaveTextContent(/Offline/);
     expect(screen.getByRole("link", { name: /fix the login redirect/ })).toBeInTheDocument();
     await waitFor(() => expect(sockets.opened).toHaveLength(2));
@@ -121,7 +121,7 @@ describe("the session list", () => {
     sockets.last.drop(4401, "device revoked");
     expect(await screen.findByRole("heading", { name: "Pair this device" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(/removed from crew, or the server rejected its login/);
-    expect(storage.getItem("agentws.auth")).toBeNull();
+    expect(storage.getItem("crew.auth")).toBeNull();
     const check = server.calls.findIndex((c) => c.path === "/api/v1/workspaces");
     expect(check).toBeGreaterThanOrEqual(0);
     expect(server.headers[check].authorization).toBe("Bearer t0k");
@@ -129,7 +129,7 @@ describe("the session list", () => {
 
   it.each<[string, FakeRoute | Error]>([
     ["the check succeeds", { status: 200, body: { workspaces: [], last_used: "" } }],
-    ["the daemon is down", { status: 503, body: { error: { code: "unavailable", message: "the agentws daemon is not reachable" } } }],
+    ["the daemon is down", { status: 503, body: { error: { code: "unavailable", message: "the crew daemon is not reachable" } } }],
     ["a proxy answers 502", { status: 502, raw: "Bad Gateway" }],
     ["the network fails", new TypeError("Load failed")],
   ])("keeps its login and reconnects when the stream says 4401 but %s", async (_, workspaces) => {
@@ -138,7 +138,7 @@ describe("the session list", () => {
     sockets.last.drop(4401, "no token in time");
     await waitFor(() => expect(server.calls.some((c) => c.path === "/api/v1/workspaces")).toBe(true));
     await waitFor(() => expect(sockets.opened).toHaveLength(2));
-    expect(storage.getItem("agentws.auth")).not.toBeNull();
+    expect(storage.getItem("crew.auth")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
     sockets.last.open();
     expect(sockets.last.sent).toEqual([{ token: "t0k" }]);

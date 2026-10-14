@@ -30,13 +30,13 @@ function setup(server: FakeServer) {
   window.location.hash = "#/sessions/s1";
   const sockets = new FakeSockets();
   const storage = new MemoryStorage();
-  storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+  storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
   const env: AppEnv = {
     fetch: server.fetch,
     storage,
     installed: true,
     hash: "#/sessions/s1",
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     openStream: sockets.open,
     retryDelay: () => 5,

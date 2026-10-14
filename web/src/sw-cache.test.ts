@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildFromWorkerLocation, cacheName, precacheList, requestKind, staleCaches } from "./sw-cache";
 
-const origin = "https://agentws.example";
+const origin = "https://crew.example";
 
 describe("the shell cache", () => {
   it("is keyed by the build the worker was registered for", () => {
