@@ -117,6 +117,14 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - A device is `{"id","name","created_at","last_seen"}`. Its token hash never leaves the daemon. A revocation is a diff with only `revoked_device` (an ID) set.
   - `device.viewing` (`{"device","visible"}` → `{}`) records if the app of that device is on screen, while the calling connection stays open. An unknown device is `not_found`. `serve` sends it on the connection of the stream.
   - `client.viewing` (`{"session","front"}` → `{}`) records the session that a native client shows, and if the client is in front, while the calling connection stays open. See "Web Push" in [internal/daemon/](../daemon/AGENTS.md).
+- Browser ([ADR 0051](../../docs/adr/0051-browser-in-mac-app.md)):
+  - `browser.attach` (`{}` → `{"attached":true}`) makes the calling connection the browser. The Mac app sends it. A new attach replaces the old one. The attach ends when its connection closes.
+  - After the result, the daemon pushes each call on the same `id` as a response with `browser`: `{"call","session","command","args"}`.
+  - The app answers with `browser.reply` (`{"call","result","error"}` → `{}`) on the same connection. A call that does not wait for this connection is `not_found`.
+  - `browser.command` (`{"session","pane","command","args","timeout_ms"}` → the `result` of the app) runs one command. With no `session`, the daemon uses the session on `pane`.
+  - With no attached app, it is `unavailable` with the message `no browser: the macOS app is not connected`. If the app disconnects first, it is also `unavailable`.
+  - An `error` from the app is `failed` with that message. No reply in `timeout_ms` (default 30 s, a maximum of 10 min) is `failed`.
+  - An unknown command, or no session and no known pane, is `bad_request`.
 - Web Push (ADR 0046):
   - `push.key` (→ `{"public_key"}`).
   - `push.subscribe` (`{"device","endpoint","keys":{"p256dh","auth"}}` → `{}`). An unknown device is `not_found`. An endpoint that is not https, or keys that are not from a browser, are `bad_request`.

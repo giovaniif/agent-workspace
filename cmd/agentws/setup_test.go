@@ -83,3 +83,20 @@ func TestSetupRejectsAnUnknownHarness(t *testing.T) {
 		t.Fatalf("stderr %q", errOut.String())
 	}
 }
+
+func TestSetupCodexAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "skills", "agentws-browser", "SKILL.md")
+	if code, _, errOut := setupCodex(t, dir); code != 0 {
+		t.Fatalf("code %d: %s", code, errOut)
+	}
+	if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") {
+		t.Fatalf("skill: %v", err)
+	}
+	if code, _, _ := setupCodex(t, dir, "--remove"); code != 0 {
+		t.Fatal("remove")
+	}
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
+		t.Fatalf("skill left: %v", err)
+	}
+}

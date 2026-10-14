@@ -349,3 +349,21 @@ func setupFile(w world, h domain.Harness) string {
 	}
 	return w.probe.ClaudeSettings
 }
+
+func TestInstallAlsoTeachesClaudeAndCodexTheBrowserCommands(t *testing.T) {
+	w := newWorld(t, false)
+	ctx := context.Background()
+	for _, h := range []domain.Harness{domain.HarnessClaude, domain.HarnessCodex} {
+		if _, err := w.probe.Install(ctx, h); err != nil {
+			t.Fatalf("install %s: %v", h, err)
+		}
+	}
+	for _, file := range []string{
+		filepath.Join(w.root, "claude", "skills", "agentws-browser", "SKILL.md"),
+		filepath.Join(w.root, "codex", "skills", "agentws-browser", "SKILL.md"),
+	} {
+		if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") {
+			t.Errorf("%s: %v", file, err)
+		}
+	}
+}
