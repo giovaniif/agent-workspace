@@ -152,6 +152,15 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - The PR link (or the session task) is `{{work_item}}`. A text that describes the event is `{{event}}`.
   - There is one run for each automation and subject (the PR link, the session or the worktree) at a time. While that run is live, a new event records a `skipped` run.
 
+## Mates
+
+`go test ./internal/domain/ ./internal/daemon/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md) and the methods in [internal/rpc/](../rpc/AGENTS.md).
+
+- `mate.*` use the `config.toml` path, the mutex and the backup of the Config section. They run on the connection goroutine, never on the loop.
+- A load validates each `[[mate]]` table against the registered workspaces (`domain.CheckMates`). An invalid or repeated mate gives a problem with the file path, and the other mates load.
+- A write parses the new text again. The result must hold exactly the mate that was set. If it does not, the daemon refuses and tells you to edit the file by hand. It never touches a file that does not parse.
+- Tokens are not part of a mate. They go in a separate file with mode 600 (a later issue of the epic).
+
 ## Codex fallback
 
 `go test ./... -run Fallback`. `[fallback]` in `$CREW_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row, the new-session dialog shows the low-quota warning of `domain.Advise`. `ctrl+s` takes the offer: it switches to the other harness when that harness has reported limits. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).

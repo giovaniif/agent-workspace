@@ -87,6 +87,13 @@ Each RPC request and response contains the build (`version.String()`). The daemo
 - `automation.trust` (`{"name","repo"}` → the automation) approves a repo automation with a `schedule`, `on` or `precheck`. The daemon stores a hash of the definition (`domain.AutomationHash`) in the `automation_trust` table. A changed definition is not trusted. The list sets `trusted`. The schedule and events start only automations that are enabled and trusted (`domain.AutomationCanRunAlone`). Global automations need no approval.
 - `automation.save` (`{"automation"}` → the saved automation) validates it and writes it as an `[[automation]]` table in `config.toml` (`domain.SetAutomationBlock`). It replaces the table with the same `name`, else it appends one. It makes the same backup and atomic write as `config.set`. It never writes a repo `.agentws.toml`.
 - `automation.runs` (`{"name","limit"}` → `{"runs"}`) lists recorded runs, newest first. An empty `name` lists all. Runs are in the `automation_runs` table.
+- `mate.list` (`{}` → `{"mates","problems"}`) reads the `[[mate]]` tables of `config.toml` on the connection goroutine. See [ADR 0053](../../docs/adr/0053-mates.md).
+  - A mate that `domain.CheckMates` refuses is not in the list. Its error is in `problems`, with the file path. The other mates still load.
+  - An unknown key in a `[[mate]]` table is also a problem.
+  - `mate.show` (`{"name"}` → a mate) uses the same list. An unknown name is `not_found`.
+  - `mate.set` (`{"mate"}` → the saved mate) validates the mate against the registered workspaces (`bad_request`). It writes it as a `[[mate]]` table (`domain.SetMateBlock`) with the backup and the atomic write of `config.set`. It replaces the table with the same `name`, else it appends one.
+  - `mate.remove` (`{"name"}` → the removed mate) deletes the table (`domain.RemoveMateBlock`) with the same backup. An unknown name is `not_found`.
+  - All four answer `unavailable` without `WithConfig`. No result holds a token.
 - Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
   - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.agentws-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
 - Workspace and project methods:
