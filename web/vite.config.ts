@@ -7,7 +7,7 @@ const shellFilesMarker = "__AGENTWS_SHELL_FILES__";
 
 function appShell(): Plugin {
   return {
-    name: "agentws-app-shell",
+    name: "crew-app-shell",
     apply: "build",
     enforce: "post",
     generateBundle(_options, bundle) {

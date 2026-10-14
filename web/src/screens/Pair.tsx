@@ -51,7 +51,7 @@ export function Pair({ env, code, notice = "", onPaired }: PairProps) {
         </section>
       )}
       <p className="lead">
-        Enter the code from <code>agentws remote pair</code> on your computer.
+        Enter the code from <code>crew remote pair</code> on your computer.
       </p>
       <section className="card" aria-label="Server">
         <h2>Server</h2>

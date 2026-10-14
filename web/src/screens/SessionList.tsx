@@ -1,4 +1,4 @@
-import { groupSessions, limitRows, sessionMeta, timeInState } from "../sessions";
+import { groupSessions, limitRows, sessionMeta, stateStyle, timeInState } from "../sessions";
 import type { Session, StreamSnapshot } from "../stream";
 import { Brand } from "./Brand";
 
@@ -67,6 +67,9 @@ function Card({ session, now }: { session: Session; now: number }) {
     <li>
       <a className={"session-card state-" + session.State} href={sessionHref(session.ID)}>
         <span className="card-top">
+          <span className="glyph" aria-hidden="true">
+            {stateStyle(session.State).glyph}
+          </span>
           <span className="name">{sessionTitle(session)}</span>
           {session.State === "done" && session.Unread ? <span className="badge">unread</span> : null}
           {age ? <span className="age">{age}</span> : null}

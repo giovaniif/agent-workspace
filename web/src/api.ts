@@ -208,6 +208,7 @@ export type HarnessOptions = {
 
 export type SessionOptions = {
   harnesses: HarnessOptions[];
+  home?: string;
 };
 
 export function sessionOptions(fetchFn: Fetch, token: string): Promise<SessionOptions> {
@@ -233,6 +234,28 @@ function authed(token: string, init: RequestInit = {}): RequestInit {
 
 export function listWorkspaces(fetchFn: Fetch, token: string): Promise<WorkspaceList> {
   return request<WorkspaceList>(fetchFn, "/api/v1/workspaces", authed(token));
+}
+
+export function addWorkspace(fetchFn: Fetch, token: string, path: string): Promise<WorkspaceInfo> {
+  return request<WorkspaceInfo>(fetchFn, "/api/v1/workspaces", authed(token, { method: "POST", body: JSON.stringify({ path }) }));
+}
+
+export function removeWorkspace(fetchFn: Fetch, token: string, root: string): Promise<unknown> {
+  return request<unknown>(fetchFn, "/api/v1/workspaces/remove", authed(token, { method: "POST", body: JSON.stringify({ root }) }));
+}
+
+export function expandPath(input: string, home: string): string {
+  const path = input.trim();
+  if (path === "~") {
+    return home;
+  }
+  if (path.startsWith("~/")) {
+    return home.replace(/\/$/, "") + path.slice(1);
+  }
+  if (!path.startsWith("/") && home) {
+    return home.replace(/\/$/, "") + "/" + path;
+  }
+  return path;
 }
 
 export function resolveWorkItem(fetchFn: Fetch, token: string, workspace: string, item: string): Promise<WorkItemResolved> {
@@ -271,10 +294,16 @@ export type AutomationList = { automations: Automation[]; problems?: string[] };
 export type AutomationRun = {
   id: string;
   automation: string;
+  trigger?: string;
   outcome: string;
   reason?: string;
   session_id?: string;
+  start?: string;
 };
+
+export function automationRuns(a: Authed, limit = 100): Promise<{ runs: AutomationRun[] }> {
+  return authedRequest<{ runs: AutomationRun[] }>(a, "/api/v1/automations/runs?limit=" + limit);
+}
 
 export function listAutomations(a: Authed): Promise<AutomationList> {
   return authedRequest<AutomationList>(a, "/api/v1/automations");

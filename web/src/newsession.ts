@@ -1,4 +1,4 @@
-import type { KeyValue } from "./auth";
+import { adoptLegacy, type KeyValue } from "./auth";
 
 export type Choices = {
   workspace: string;
@@ -7,7 +7,8 @@ export type Choices = {
   effort: string;
 };
 
-const key = "agentws.new";
+const key = "crew.new";
+const legacyKey = "agentws.new";
 
 export const harnesses = [
   { id: "claude", label: "Claude" },
@@ -29,7 +30,7 @@ export function defaultLabel(value: string | undefined): string {
 export function loadChoices(storage: KeyValue): Choices {
   const fallback: Choices = { workspace: "", harness: "claude", model: "", effort: "" };
   try {
-    const raw = storage.getItem(key);
+    const raw = adoptLegacy(storage, key, legacyKey);
     if (!raw) {
       return fallback;
     }

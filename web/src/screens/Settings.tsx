@@ -84,12 +84,12 @@ export function Settings({ auth, host, installed, fetch, push, onSignOut }: Sett
         <h2>Notifications</h2>
         {!installed && (
           <p className="muted">
-            On iPhone and iPad, notifications work only in the app opened from the Home Screen. Add agentws to your Home
+            On iPhone and iPad, notifications work only in the app opened from the Home Screen. Add crew to your Home
             Screen, then open it from there.
           </p>
         )}
         {!push.supported ? (
-          <p className="muted">This browser cannot show notifications from agentws.</p>
+          <p className="muted">This browser cannot show notifications from crew.</p>
         ) : (
           <>
             <p className="muted">Get a notification when a session needs you, waits for an answer or finishes.</p>
@@ -99,7 +99,7 @@ export function Settings({ auth, host, installed, fetch, push, onSignOut }: Sett
             </p>
             {notify.state === "on" && <p>Notifications are on for this device.</p>}
             {notify.state === "denied" && (
-              <p className="error">Notifications are blocked. Allow them for agentws in your device's settings, then try again.</p>
+              <p className="error">Notifications are blocked. Allow them for crew in your device's settings, then try again.</p>
             )}
             {notify.state === "on" && notify.error && (
               <p className="error" role="alert">

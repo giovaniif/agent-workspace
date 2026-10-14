@@ -39,7 +39,7 @@ var (
 		rpc.MethodPushKey, rpc.MethodPushSubscribe, rpc.MethodPushUnsubscribe,
 		rpc.MethodSessionSend, rpc.MethodSessionUnsend, rpc.MethodSessionInterrupt,
 		rpc.MethodSessionPrompt, rpc.MethodSessionAnswer, rpc.MethodDeviceViewing,
-		rpc.MethodSessionOptions,
+		rpc.MethodSessionOptions, rpc.MethodWorkspaceAdd, rpc.MethodWorkspaceRemove, rpc.MethodAutomationRuns,
 	}
 )
 
@@ -51,6 +51,9 @@ var authedEndpoints = []authedEndpoint{
 	{"GET", "/api/v1/workspaces", ""},
 	{"GET", "/api/v1/session-options", ""},
 	{"GET", "/api/v1/automations", ""},
+	{"GET", "/api/v1/automations/runs", ""},
+	{"POST", "/api/v1/workspaces", `{"path":"/x"}`},
+	{"POST", "/api/v1/workspaces/remove", `{"root":"/x"}`},
 	{"POST", "/api/v1/automations/fix-ci/run", `{"context":"x"}`},
 	{"GET", "/api/v1/sessions/s1/messages", ""},
 	{"POST", "/api/v1/sessions/s1/end", ""},

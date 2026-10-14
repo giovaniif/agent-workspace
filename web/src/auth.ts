@@ -7,11 +7,24 @@ export type Auth = {
   device: Device;
 };
 
-const authKey = "agentws.auth";
+const authKey = "crew.auth";
+const legacyAuthKey = "agentws.auth";
+
+export function adoptLegacy(storage: KeyValue, key: string, legacy: string): string | null {
+  const current = storage.getItem(key);
+  if (current) {
+    return current;
+  }
+  const old = storage.getItem(legacy);
+  if (old) {
+    storage.setItem(key, old);
+  }
+  return old;
+}
 
 export function loadAuth(storage: KeyValue): Auth | null {
   try {
-    const raw = storage.getItem(authKey);
+    const raw = adoptLegacy(storage, authKey, legacyAuthKey);
     if (!raw) {
       return null;
     }
@@ -27,6 +40,7 @@ export function loadAuth(storage: KeyValue): Auth | null {
 
 export function clearAuth(storage: KeyValue): void {
   storage.removeItem(authKey);
+  storage.removeItem(legacyAuthKey);
 }
 
 export function saveAuth(storage: KeyValue, paired: Paired): Auth {
