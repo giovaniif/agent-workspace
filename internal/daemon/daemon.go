@@ -558,6 +558,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
+	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove:
+		return d.mateMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true
 	case rpc.MethodAutomationRun:
