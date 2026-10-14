@@ -125,6 +125,7 @@ type state struct {
 	pairing         domain.Pairing
 	devices         map[string]domain.Device
 	projects        map[string]domain.Project
+	automationRuns  map[string]domain.AutomationRun
 	shellTabs       map[string]domain.ShellTab
 	activeTabs      map[string]string
 	orphanPanes     []app.PaneID
@@ -155,6 +156,7 @@ type Daemon struct {
 	tx       *transcripts
 	push     app.PushProvider
 	presence presenceCfg
+	auto     automationCfg
 	browser  browserHub
 }
 
@@ -164,31 +166,35 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		return nil, err
 	}
 	st := &state{
-		store:      store,
-		workspaces: map[string]domain.Workspace{},
-		tasks:      map[string]domain.Task{},
-		worktrees:  map[string]domain.Worktree{},
-		sessions:   map[string]domain.Session{},
-		events:     map[string][]domain.SessionEvent{},
-		subs:       map[*conn]uint64{},
-		noticeSubs: map[*conn]uint64{},
-		usage:      map[string]*usageJob{},
-		hints:      newWorktreeHints(),
-		viewed:     map[string]domain.ViewedMark{},
-		scopes:     map[string]domain.ReviewScope{},
-		drafts:     map[string]domain.ReviewDraft{},
-		awaiting:   map[string]domain.ReviewDraft{},
-		pasting:    map[string]bool{},
-		inFlight:   map[string]sendFlight{},
-		booting:    map[string]bool{},
-		devices:    map[string]domain.Device{},
-		projects:   map[string]domain.Project{},
-		shellTabs:  map[string]domain.ShellTab{},
-		activeTabs: map[string]string{},
-		co:         domain.NewCoalescer(),
-		gate:       domain.NewPushGate(),
-		views:      map[*conn]domain.ViewReport{},
-		clients:    map[*conn]domain.ClientView{},
+		store:          store,
+		workspaces:     map[string]domain.Workspace{},
+		tasks:          map[string]domain.Task{},
+		worktrees:      map[string]domain.Worktree{},
+		sessions:       map[string]domain.Session{},
+		events:         map[string][]domain.SessionEvent{},
+		subs:           map[*conn]uint64{},
+		noticeSubs:     map[*conn]uint64{},
+		usage:          map[string]*usageJob{},
+		hints:          newWorktreeHints(),
+		viewed:         map[string]domain.ViewedMark{},
+		scopes:         map[string]domain.ReviewScope{},
+		drafts:         map[string]domain.ReviewDraft{},
+		awaiting:       map[string]domain.ReviewDraft{},
+		pasting:        map[string]bool{},
+		inFlight:       map[string]sendFlight{},
+		booting:        map[string]bool{},
+		devices:        map[string]domain.Device{},
+		projects:       map[string]domain.Project{},
+		automationRuns: map[string]domain.AutomationRun{},
+		shellTabs:      map[string]domain.ShellTab{},
+		activeTabs:     map[string]string{},
+		co:             domain.NewCoalescer(),
+		gate:           domain.NewPushGate(),
+		views:          map[*conn]domain.ViewReport{},
+		clients:        map[*conn]domain.ClientView{},
+	}
+	for _, r := range snap.AutomationRuns {
+		st.automationRuns[r.ID] = r
 	}
 	for _, p := range snap.Projects {
 		st.projects[p.Root] = p
@@ -535,6 +541,10 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.configMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true
+	case rpc.MethodAutomationRun:
+		return d.automationRun(req)
+	case rpc.MethodAutomationRuns:
+		return d.automationRunsMethod(req)
 	case rpc.MethodEndSession:
 		return d.endSession(req)
 	case rpc.MethodResumeSession:

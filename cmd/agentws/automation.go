@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -11,22 +12,58 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const automationUsage = "usage: agentws automation list|show <name>"
+const automationUsage = "usage: agentws automation list | show <name> | run [--work-item w] <name> [context...|-] | runs [name] | rerun <run id>"
 
 func runAutomation(args []string, stdout, stderr io.Writer) int {
-	wantArgs := map[string]int{"list": 1, "show": 2}
-	if len(args) == 0 || len(args) != wantArgs[args[0]] {
+	if len(args) == 0 || !automationArgsOK(args) {
 		fmt.Fprintln(stderr, automationUsage)
 		return 2
 	}
-	if err := automationCommand(args, stdout); err != nil {
+	if err := automationCommand(args, os.Stdin, stdout); err != nil {
 		fmt.Fprintf(stderr, "agentws automation %s: %v\n", args[0], err)
 		return 1
 	}
 	return 0
 }
 
-func automationCommand(args []string, stdout io.Writer) error {
+func automationArgsOK(args []string) bool {
+	switch args[0] {
+	case "list":
+		return len(args) == 1
+	case "show", "rerun":
+		return len(args) == 2
+	case "runs":
+		return len(args) <= 2
+	case "run":
+		return len(args) >= 2
+	}
+	return false
+}
+
+func automationRunParams(args []string, stdin io.Reader) (rpc.AutomationRunParams, error) {
+	var p rpc.AutomationRunParams
+	if len(args) >= 2 && args[0] == "--work-item" {
+		p.WorkItem, args = args[1], args[2:]
+	}
+	if len(args) == 0 {
+		return p, fmt.Errorf("%s", automationUsage)
+	}
+	p.Name = args[0]
+	rest := args[1:]
+	if len(rest) == 1 && rest[0] == "-" {
+		data, err := io.ReadAll(stdin)
+		if err != nil {
+			return p, err
+		}
+		p.Context = strings.TrimSpace(string(data))
+	} else {
+		p.Context = strings.Join(rest, " ")
+	}
+	p.Repo, _ = os.Getwd()
+	return p, nil
+}
+
+func automationCommand(args []string, stdin io.Reader, stdout io.Writer) error {
 	home, err := rpc.Home()
 	if err != nil {
 		return err
@@ -37,6 +74,33 @@ func automationCommand(args []string, stdout io.Writer) error {
 		return err
 	}
 	defer func() { _ = c.Close() }()
+	switch args[0] {
+	case "run", "rerun":
+		p := rpc.AutomationRunParams{Rerun: args[len(args)-1]}
+		if args[0] == "run" {
+			var err error
+			if p, err = automationRunParams(args[1:], stdin); err != nil {
+				return err
+			}
+		}
+		var got rpc.AutomationRunResult
+		if err := c.Call(ctx, rpc.MethodAutomationRun, p, &got); err != nil {
+			return err
+		}
+		printAutomationRuns(stdout, []domain.AutomationRun{got.Run})
+		return nil
+	case "runs":
+		p := rpc.AutomationRunsParams{Limit: 50}
+		if len(args) == 2 {
+			p.Name = args[1]
+		}
+		var got rpc.AutomationRuns
+		if err := c.Call(ctx, rpc.MethodAutomationRuns, p, &got); err != nil {
+			return err
+		}
+		printAutomationRuns(stdout, got.Runs)
+		return nil
+	}
 	if args[0] == "show" {
 		var a rpc.Automation
 		if err := c.Call(ctx, rpc.MethodAutomationShow, rpc.AutomationShowParams{Name: args[1]}, &a); err != nil {
@@ -118,4 +182,27 @@ func printAutomation(w io.Writer, a domain.Automation) {
 	for _, line := range strings.Split(strings.TrimRight(a.Prompt, "\n"), "\n") {
 		fmt.Fprintf(w, "  %s\n", line)
 	}
+}
+
+func dash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
+func printAutomationRuns(w io.Writer, runs []domain.AutomationRun) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "ID\tAUTOMATION\tTRIGGER\tSTART\tOUTCOME\tSESSION\tCONTEXT")
+	for _, r := range runs {
+		note := domain.OneLine(r.Context, 60)
+		switch {
+		case r.Reason != "" && note == "":
+			note = r.Reason
+		case r.Reason != "":
+			note += " (" + r.Reason + ")"
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.ID, r.Automation, r.Trigger, r.Start.Local().Format("2006-01-02 15:04"), r.Outcome, dash(r.SessionID), dash(note))
+	}
+	_ = tw.Flush()
 }

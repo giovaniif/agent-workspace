@@ -157,6 +157,24 @@ func (s *memStore) DeleteProject(root string) {
 	s.snap.Projects = kept
 }
 
+func (s *memStore) PutAutomationRun(run domain.AutomationRun) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, x := range s.snap.AutomationRuns {
+		if x.ID == run.ID {
+			s.snap.AutomationRuns[i] = run
+			return
+		}
+	}
+	s.snap.AutomationRuns = append(s.snap.AutomationRuns, run)
+}
+
+func (s *memStore) automationRuns() []domain.AutomationRun {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]domain.AutomationRun(nil), s.snap.AutomationRuns...)
+}
+
 func (s *memStore) devices() []domain.Device {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -972,12 +990,16 @@ func (h *fakeHost) die(pane app.PaneID) {
 type fakeRunner struct {
 	mu   sync.Mutex
 	runs []string
+	fail bool
 }
 
 func (r *fakeRunner) Run(_ context.Context, dir string, argv ...string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.runs = append(r.runs, dir+": "+strings.Join(argv, " "))
+	if r.fail {
+		return errors.New("exit status 1")
+	}
 	return nil
 }
 
