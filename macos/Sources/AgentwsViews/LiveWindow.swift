@@ -47,6 +47,7 @@ public struct LiveWindow: View {
     @State private var profileName = ""
 #if canImport(WebKit)
     @State private var webViews = BrowserWebViews()
+    @State private var agentLink: Task<Void, Never>?
 #endif
     @Environment(\.controlActiveState) private var activeState
     private let server: String
@@ -117,7 +118,14 @@ public struct LiveWindow: View {
 #if canImport(WebKit)
         let layered = content
             .environment(\.agentwsBrowser, webViews)
-            .onAppear { bindWebViews() }
+            .onAppear {
+                bindWebViews()
+                startBrowserLink()
+            }
+            .onDisappear {
+                agentLink?.cancel()
+                agentLink = nil
+            }
 #else
         let layered = content
 #endif
@@ -392,6 +400,16 @@ public struct LiveWindow: View {
     }
 
 #if canImport(WebKit)
+    private func startBrowserLink() {
+        guard agentLink == nil else { return }
+        let host = browserHost
+        let driver = BrowserDriver(browser: browser, profiles: profiles, webViews: webViews) { host }
+        let link = BrowserLink(endpoint: store.endpoint, build: store.build) { call in
+            await driver.run(call)
+        }
+        agentLink = Task { await link.run() }
+    }
+
     private func bindWebViews() {
         let browser = browser
         let profiles = profiles
