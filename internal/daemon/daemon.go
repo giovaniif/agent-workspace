@@ -134,6 +134,8 @@ type state struct {
 	projects        map[string]domain.Project
 	automationRuns  map[string]domain.AutomationRun
 	automationTrust map[string]string
+	approvals       []domain.Approval
+	approvalSeq     int
 	autoEvents      chan domain.AutomationEvent
 	shellTabs       map[string]domain.ShellTab
 	activeTabs      map[string]string
@@ -373,6 +375,10 @@ func (d *Daemon) loop(ctx context.Context) {
 func (s *state) emit(e Event) {
 	var id string
 	switch ev := e.(type) {
+	case MateTurn:
+		if session, ok := s.sessions[ev.SessionID]; !ok || session.Mate == nil {
+			return
+		}
 	case SessionChanged:
 		id = ev.Session.ID
 	case SessionHooked:
@@ -540,8 +546,17 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		if err := json.Unmarshal(req.Params, &h); err != nil {
 			return errorResponse(req.ID, rpc.CodeBadRequest, "hook params: "+err.Error()), true
 		}
-		ok := d.query(func(s *state) { s.hook(h, d.ws.now()) })
-		return result(req.ID, rpc.HookReply{}), ok
+		var reply rpc.HookReply
+		ok := d.query(func(s *state) {
+			now := d.ws.now()
+			reply = s.gateHook(h, now)
+			s.hook(h, now)
+		})
+		return result(req.ID, reply), ok
+	case rpc.MethodApprovalList:
+		var list []domain.Approval
+		ok := d.query(func(s *state) { list = s.pendingApprovals() })
+		return result(req.ID, list), ok
 	case rpc.MethodStatusLine:
 		var sl rpc.StatusLine
 		if err := json.Unmarshal(req.Params, &sl); err != nil {

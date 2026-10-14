@@ -10,6 +10,12 @@ Keep startup light. Each `crew hook` pays for package init, and `modernc.org/sql
 
 Hooks call `crew hook`. It writes one message to the socket and exits. It never waits for the daemon for more than 50 ms, and never blocks the agent. If the daemon is down, it drops the event and writes a log line to `hook.log`. It connects to the socket directly, not through `rpc.Client`. It sends one `hook` request and closes without reading the reply. The exception is an event whose stdout the harness reads (`UserPromptSubmit`). For that event, it waits a maximum of the same 50 ms, and prints nothing on timeout. See [ADR 0006](../../docs/adr/0006-hook-ingestion.md).
 
+**The mate gate (`PreToolUse`).** The hook classifies the tool call with `domain.ClassifyAction` before it sends the event ([ADR 0053](../../docs/adr/0053-mates.md)). The root is `CLAUDE_PROJECT_DIR`, else the `cwd` of the payload. The hook resolves symlinks with `filepath.EvalSymlinks` (the deepest part of the path that exists).
+- A safe call does not change: the hook sends the event and does not wait.
+- A dangerous call puts the `action` in the `hook` params and waits a maximum of 50 ms for the reply. The hook prints the `output` of the reply. For a mate session that the gate stops, this is a `PreToolUse` deny with the reason "waiting for owner approval". For other sessions, the reply is empty.
+- If the daemon does not reply in 50 ms, the hook prints nothing and the call runs.
+- Tests: `go test ./cmd/crew/ -run PreToolUse`.
+
 ## Version
 
 `-ldflags -X` stamps `internal/version.Version` and `.Commit` (`make build`, `scripts/dev`, releases). If there is no commit stamp, the commit is the VCS revision from the Go build info. The build handshake that uses them is in [internal/rpc/](../../internal/rpc/AGENTS.md). `crew version --build` prints only `version.String()`, the exact string that the handshake compares. The Mac app reads its build from the bundled binary this way.

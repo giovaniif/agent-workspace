@@ -33,6 +33,12 @@ func (a Action) Dangerous() bool {
 	return a.Kind != ActionSafe
 }
 
+type MateSeat struct {
+	Name      string
+	Owner     string
+	Authority string
+}
+
 type ActionScope struct {
 	Root string
 	Real func(string) string
@@ -384,6 +390,10 @@ func parseShell(s string) ([]shellCmd, error) {
 
 func isDigit(b byte) bool { return b >= '0' && b <= '9' }
 
+func isNameByte(b byte) bool {
+	return b == '_' || isDigit(b) || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
+}
+
 func isDigits(s string) bool {
 	if s == "" {
 		return false
@@ -402,8 +412,7 @@ func isAssignment(w string) bool {
 		return false
 	}
 	for i := 0; i < eq; i++ {
-		b := w[i]
-		if !(b == '_' || isDigit(b) || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')) {
+		if !isNameByte(w[i]) {
 			return false
 		}
 	}
