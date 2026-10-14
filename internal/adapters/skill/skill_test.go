@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/skill"
+	"github.com/giovaniif/crew/internal/adapters/skill"
 )
 
 func TestInstallWritesTheBrowserSkillOnceAndRemoveTakesItAway(t *testing.T) {

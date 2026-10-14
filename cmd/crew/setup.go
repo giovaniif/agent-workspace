@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
+	"github.com/giovaniif/crew/internal/adapters/codex"
 )
 
 const setupUsage = "usage: crew setup [codex|claude|omp|nvim [--remove]] | crew setup bridge [--remote-bin path] [--remove] <ssh host> | crew setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host] | crew setup daemon [--remove | --check]"

@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
-const ReleasesURL = "https://api.github.com/repos/giovaniif/agent-workspace/releases?per_page=10"
+const ReleasesURL = "https://api.github.com/repos/giovaniif/crew/releases?per_page=10"
 
 type ReleaseChecker struct {
 	URL       string

@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
-	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
-	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/codex"
+	"github.com/giovaniif/crew/internal/adapters/omp"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func (p Probe) Remove(_ context.Context, h domain.Harness) (domain.HarnessSetup, error) {

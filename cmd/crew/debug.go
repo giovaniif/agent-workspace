@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const debugUsage = "usage: crew debug seed <count> [--codex]\n       crew debug launch --harness claude --dir <dir> [--model m] [--effort e] [--name n]\n       crew debug session [--once] <id>"

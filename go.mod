@@ -1,4 +1,4 @@
-module github.com/giovaniif/agent-workspace
+module github.com/giovaniif/crew
 
 go 1.27
 

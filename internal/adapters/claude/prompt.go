@@ -3,8 +3,8 @@ package claude
 import (
 	"strconv"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/dialog"
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/adapters/dialog"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 var permissionSpec = dialog.Spec{

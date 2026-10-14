@@ -18,12 +18,12 @@ import (
 
 	"github.com/coder/websocket"
 
-	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
-	gitadapter "github.com/giovaniif/agent-workspace/internal/adapters/git"
-	"github.com/giovaniif/agent-workspace/internal/adapters/sqlite"
-	"github.com/giovaniif/agent-workspace/internal/daemon"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/serve"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
+	gitadapter "github.com/giovaniif/crew/internal/adapters/git"
+	"github.com/giovaniif/crew/internal/adapters/sqlite"
+	"github.com/giovaniif/crew/internal/daemon"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/serve"
 )
 
 const serveOrigin = "https://box.example.ts.net"

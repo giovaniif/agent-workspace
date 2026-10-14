@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/git"
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/adapters/git"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 var _ app.RepoInspector = git.Inspector{}

@@ -1,6 +1,6 @@
 package app
 
-import "github.com/giovaniif/agent-workspace/internal/domain"
+import "github.com/giovaniif/crew/internal/domain"
 
 type LaunchRequest struct {
 	Name   string

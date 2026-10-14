@@ -18,8 +18,8 @@ import (
 	"github.com/charmbracelet/x/term"
 	"rsc.io/qr"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const remoteUsage = "usage: crew remote pair [--name n] [--url u] | devices | revoke <id>"

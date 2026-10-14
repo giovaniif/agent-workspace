@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 func TestParsePanesKeepsOnlyManagedPanes(t *testing.T) {

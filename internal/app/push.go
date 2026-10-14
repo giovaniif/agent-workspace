@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 var ErrPushGone = errors.New("the push service no longer has this subscription")

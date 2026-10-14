@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/serve"
+	"github.com/giovaniif/crew/internal/serve"
 )
 
 func TestServeOptionsRefusePlainHTTPOffLoopback(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func TestRpcWithNoDaemonPrintsUnavailableAndExitsNonZeroWithoutStartingOne(t *testing.T) {

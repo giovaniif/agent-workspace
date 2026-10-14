@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/tmux"
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/adapters/tmux"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 var _ app.TerminalActivity = (*tmux.Host)(nil)

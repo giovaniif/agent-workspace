@@ -6,7 +6,7 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 type fakeOnboarder struct {

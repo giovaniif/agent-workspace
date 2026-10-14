@@ -18,12 +18,12 @@ import (
 
 	wp "github.com/SherClockHolmes/webpush-go"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const (
-	Subscriber  = "https://github.com/giovaniif/agent-workspace"
+	Subscriber  = "https://github.com/giovaniif/crew"
 	TTL         = 24 * time.Hour
 	sendTimeout = 15 * time.Second
 )

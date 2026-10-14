@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/rpcpipe"
-	"github.com/giovaniif/agent-workspace/internal/version"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/rpcpipe"
+	"github.com/giovaniif/crew/internal/version"
 )
 
 type bridged struct {

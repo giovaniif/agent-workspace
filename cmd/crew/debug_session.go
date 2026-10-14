@@ -9,8 +9,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const debugSessionUsage = "usage: crew debug session [--once] <id>"

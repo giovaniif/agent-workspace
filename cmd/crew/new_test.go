@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func TestNewArgsBecomeSessionParams(t *testing.T) {

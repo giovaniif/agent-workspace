@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/git"
-	"github.com/giovaniif/agent-workspace/internal/adapters/setup"
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/adapters/git"
+	"github.com/giovaniif/crew/internal/adapters/setup"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 func gitIn(t *testing.T, dir string, args ...string) {

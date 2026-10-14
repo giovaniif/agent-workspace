@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/rpcpipe"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/rpcpipe"
 )
 
 func runRPC(args []string, stdin io.Reader, stdout, stderr io.Writer) int {

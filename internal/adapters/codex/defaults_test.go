@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
+	"github.com/giovaniif/crew/internal/adapters/codex"
 )
 
 func TestReadDefaultsTakesModelAndEffortFromConfig(t *testing.T) {

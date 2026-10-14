@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/onboard"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/onboard"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const bin = "/opt/agentws/bin/agentws"

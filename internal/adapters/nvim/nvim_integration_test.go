@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/nvim"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/nvim"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func startNvim(t *testing.T) string {

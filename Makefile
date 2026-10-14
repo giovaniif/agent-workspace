@@ -1,6 +1,6 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
-VERSION_PKG := github.com/giovaniif/agent-workspace/internal/version
+VERSION_PKG := github.com/giovaniif/crew/internal/version
 LDFLAGS := -X $(VERSION_PKG).Version=$(VERSION) -X $(VERSION_PKG).Commit=$(COMMIT)
 GO_TEST_FLAGS ?= -p 2
 GREMLINS ?= $(shell go env GOPATH)/bin/gremlins

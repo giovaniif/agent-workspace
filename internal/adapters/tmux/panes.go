@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 func (h *Host) ensureSession(ctx context.Context) error {
