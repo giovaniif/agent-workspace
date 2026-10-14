@@ -283,7 +283,7 @@ public struct CLILink: Sendable {
         let files = FileManager.default
         guard let destination = try? files.destinationOfSymbolicLink(atPath: path),
               destination != target,
-              destination.contains(".app/Contents/Resources/bin/"),
+              destination.contains("/agentws.app/Contents/Resources/bin/"),
               destination.hasSuffix("/agentws") else { return false }
         do {
             try files.removeItem(atPath: path)
