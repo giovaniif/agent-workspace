@@ -119,7 +119,7 @@ describe("starting a session from the phone", () => {
     server.on("GET", resolveURL("/home/me/api", "ENG-12"), { status: 200, body: golden("work-item-resolved.json") });
     await userEvent.type(await screen.findByLabelText("Work item"), "ENG-12");
     expect(await screen.findByText("Fix the login redirect")).toBeInTheDocument();
-    expect(screen.getByText("eng-12")).toBeInTheDocument();
+    expect(screen.getByText("api-12")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start session" })).toBeEnabled();
   });
 
@@ -129,7 +129,7 @@ describe("starting a session from the phone", () => {
     server.on("GET", resolveURL("/home/me/api", url), { status: 400, body: golden("work-item-bad.json") });
     await userEvent.type(await screen.findByLabelText("Work item"), url);
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("unsupported link: use a Linear issue or GitHub pull request URL");
+    expect(alert).toHaveTextContent("unsupported link: use a GitHub pull request URL");
     expect(screen.getByRole("button", { name: "Start session" })).toBeDisabled();
     expect(server.calls.some((c) => c.method === "POST")).toBe(false);
   });

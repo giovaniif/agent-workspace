@@ -23,11 +23,11 @@ func TestNewArgsBecomeSessionParams(t *testing.T) {
 	if got != want {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}
-	got, err = parseNewArgs([]string{"https://linear.app/acme/issue/ENG-1"}, io.Discard)
+	got, err = parseNewArgs([]string{"https://github.com/acme/api/pull/1"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := (rpc.NewSessionParams{WorkItem: "https://linear.app/acme/issue/ENG-1", Harness: "claude"}); got != want {
+	if want := (rpc.NewSessionParams{WorkItem: "https://github.com/acme/api/pull/1", Harness: "claude"}); got != want {
 		t.Fatalf("defaults: got %+v, want %+v", got, want)
 	}
 }

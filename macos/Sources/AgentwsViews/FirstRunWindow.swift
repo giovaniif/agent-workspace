@@ -21,6 +21,7 @@ public struct FirstRunView: View {
     @State private var store: ViewStore?
     @State private var linkNote: String?
     @State private var notifications: String?
+    @State private var removal: WorkspaceRemoval?
 
     public init(
         appBuild: String, localBinary: String, bundled: @escaping @Sendable (Platform) -> String?,
@@ -298,6 +299,7 @@ public struct FirstRunView: View {
             guard setup.error == nil, self.setup === setup, flow.kind == kind else { return }
             self.store?.stop()
             let store = ViewStore(endpoint: kind.endpoint(localBinary: localBinary), build: appBuild)
+            store.start()
             let settings = ServerSettings(caller: store)
             self.store = store
             self.settings = settings
@@ -327,13 +329,34 @@ public struct FirstRunView: View {
                     Text(notice).font(.callout).foregroundStyle(.green)
                 }
                 ForEach(settings.workspaces) { workspace in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(workspace.root).font(Metrics.code)
-                        Text(workspace.summary).font(.caption).foregroundStyle(.secondary)
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(workspace.root).font(Metrics.code)
+                            Text(workspace.summary).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Remove") { askRemove(workspace.root) }
+                            .disabled(settings.busy)
+                    }
+                    .contextMenu {
+                        Button("Remove from agentws…") { askRemove(workspace.root) }
                     }
                 }
             }
         }
+        .confirmationDialog(removal?.title ?? "", isPresented: Binding(get: { removal != nil }, set: { if !$0 { removal = nil } }), presenting: removal) { item in
+            Button(item.button, role: .destructive) {
+                guard let settings else { return }
+                Task { await settings.removeWorkspace(item.root) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { item in
+            Text(item.message)
+        }
+    }
+
+    private func askRemove(_ root: String) {
+        removal = WorkspaceRemoval(root: root, sessions: store?.state?.sessions ?? [])
     }
 
     private var done: some View {
