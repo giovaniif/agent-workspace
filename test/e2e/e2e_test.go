@@ -79,13 +79,13 @@ func setup(env *testscript.Env, fakes string) error {
 		"CREW_TMUX_SOCKET":     socket,
 		"CREW_TEST_CLOCK":      "+5h",
 		"CREW_TEST_PR_POLL":    "100ms",
-		"GIT_CONFIG_GLOBAL":       "/dev/null",
-		"GIT_CONFIG_SYSTEM":       "/dev/null",
-		"GIT_AUTHOR_NAME":         "t",
-		"GIT_AUTHOR_EMAIL":        "t@example.com",
-		"GIT_COMMITTER_NAME":      "t",
-		"GIT_COMMITTER_EMAIL":     "t@example.com",
-		"GIT_TERMINAL_PROMPT":     "0",
+		"GIT_CONFIG_GLOBAL":    "/dev/null",
+		"GIT_CONFIG_SYSTEM":    "/dev/null",
+		"GIT_AUTHOR_NAME":      "t",
+		"GIT_AUTHOR_EMAIL":     "t@example.com",
+		"GIT_COMMITTER_NAME":   "t",
+		"GIT_COMMITTER_EMAIL":  "t@example.com",
+		"GIT_TERMINAL_PROMPT":  "0",
 	} {
 		env.Setenv(k, v)
 	}

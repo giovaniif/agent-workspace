@@ -66,7 +66,7 @@ func TestRunExitCode(t *testing.T) {
 			"data/notes":   "# a heading, not a script\n",
 			"README.md":    "# Title\n",
 			"x.golden":     "# not code\n",
-			"bin/crew":  "\x7fELF # binary\n",
+			"bin/crew":     "\x7fELF # binary\n",
 			"vendor/v.go":  "// vendored\npackage v\n",
 			".git/hook.sh": "#!/bin/sh\n# git's own\n",
 		}, 0},
