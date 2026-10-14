@@ -23,7 +23,7 @@ struct BrowserTests {
         #expect(BrowserAddress.url(from: input, host: host) == url)
     }
 
-    @Test(arguments: ["", "   ", "not a url", "javascript:alert(1)", "file:///etc/passwd"])
+    @Test(arguments: ["", "   ", "not a url", "javascript:alert(1)", "file:///etc/passwd", "localhost:99999", "localhost:0", "localhost:abc"])
     func aBadAddressIsRefused(input: String) {
         #expect(BrowserAddress.url(from: input, host: "devbox") == nil)
     }
