@@ -139,7 +139,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - With a daemon that does not have `config.get` or `device.list` (`unknown_method`), those groups are empty and show a note.
   - You cannot set the cleanup interval, stale-limit age, worktree location and setup recipes. They are fixed in the daemon, or they are in the `.agentws.toml` of each repo.
 - Shell and nvim views (`ShellNvim.swift`):
-  - `MainView` is the view switcher (Terminal, Review, Shell, nvim).
+  - `MainView` is the view switcher (Terminal, Review, Shell, nvim, Browser).
   - `Toolbar.views(session:)` gives the tabs. With no selected session, Review, Shell and nvim are grey and have a tooltip (`Toolbar.needsSession`). A click on one, or its shortcut, shows that text as the window message. Thus a click never does nothing.
   - `EmptyMain` is the main column with no session: "Waiting for the daemon", "No sessions yet" or "Select a session", with a New session button.
   - `ShellNvim` (main actor, over `Caller`) calls `shell.focus` for ⌘T and ⇧⌘T. ⌘T is for the selected session: the daemon selects its first worktree, else the root of the session. ⇧⌘T shows the same shell as a popup over the current view.
@@ -147,6 +147,16 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - It keeps the shell and nvim pane of each session. Thus the main column draws that pane instead of the pane of the agent.
   - When you press the shortcut again, select Terminal or select a different session, only the view changes back. The shell and nvim continue to run.
   - Test: `swift test --filter 'Shell|Nvim'`.
+- Browser view (`Browser.swift`, view `BrowserPane`; [ADR 0051](../docs/adr/0051-browser-in-mac-app.md)):
+  - `MainView.browser` is the fifth tab. `ShellNvim.showBrowser()` selects it. A change of session goes back to Terminal, as for the shell.
+  - `Browser` keeps one `BrowserPage` for each session: tabs, the selected tab, the `DevicePreset` (Desktop, iPad, iPhone) and `agentControl`.
+  - `BrowserAddress.url(from:host:)` reads the address bar. A bare port (`3000`, `:3000`) and `localhost:<port>` open on the server host. A name with a dot gets `https://`. Other schemes than `http` and `https` are refused.
+  - `BrowserHost.of` gives the server host: `localhost` for This Mac, else the SSH host without the user.
+  - `BrowserLinks.ports` changes the TCP ports of the worktrees of the session into quick links (`api :3000`).
+  - `BrowserProfiles` keeps the profiles, the default profile and the profile of each session in `UserDefaults` (`browser.profiles`, `browser.default`, `browser.sessions`). The `Default` profile always exists. A name must not be empty or used.
+  - `BrowserWebViews` (macOS only) keeps one `WKWebView` for each tab. Each profile has its own `WKWebsiteDataStore(forIdentifier:)`. `Default` uses the default store. A clone copies the cookies of the source store.
+  - While `agentControl` is on, the tab shows "An agent controls this tab" and a Take over button.
+  - Test: `swift test --filter Browser`. `SnapshotTests` draws `browser-latte`, `browser-mocha` and `browser-iphone`.
 - Attention (`Attention.swift`, screen 4; views `PermissionCardView`, `AttentionMenuView`, `UserNotifier`):
   - `NoticeStream` keeps a `notify.stream` process (with backoff, as `ViewStore` does) and gives each notice to `Attention`.
   - The `Notifier` port posts a banner (Go field names) as one notification for each session. The session ID is the request and thread identifier, so a newer banner replaces the older one. `remove` withdraws it.

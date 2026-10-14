@@ -96,6 +96,13 @@ struct SnapshotTests {
         }
     }
 
+    @Test func theBrowserViewShowsTabsPortLinksAndTheAgentBanner() throws {
+        let rep = try shoot("browser-latte", .seededBrowser())
+        #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
+        _ = try shoot("browser-mocha", .seededBrowser(), dark: true)
+        _ = try shoot("browser-iphone", .seededBrowser(device: .iphone, agent: false))
+    }
+
     @Test func theInspectorCanBeHidden() throws {
         _ = try shoot("window-no-inspector", .seeded(inspector: false))
     }
