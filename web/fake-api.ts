@@ -290,6 +290,15 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           });
           return;
         }
+        if (req.method === "GET" && path === "/api/v1/session-options") {
+          send(res, 200, {
+            harnesses: [
+              { harness: "claude", default_model: "opus", default_effort: "high" },
+              { harness: "codex", default_model: "gpt-6.1-sol", default_effort: "medium" },
+            ],
+          });
+          return;
+        }
         if (req.method === "GET" && path === "/api/v1/work-items/resolve") {
           const query = new URL(req.url ?? "", "http://fake").searchParams;
           const item = query.get("item") ?? "";

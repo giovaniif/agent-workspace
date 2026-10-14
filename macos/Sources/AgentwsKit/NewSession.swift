@@ -9,6 +9,20 @@ public struct HarnessOptions: Codable, Sendable, Equatable {
     @NullAsEmpty public var efforts: [String]
     public var model: String
     public var effort: String
+    public var defaultModel: String?
+    public var defaultEffort: String?
+
+    enum CodingKeys: String, CodingKey {
+        case harness, name, tag, models, efforts, model, effort
+        case defaultModel = "default_model", defaultEffort = "default_effort"
+    }
+}
+
+public enum DefaultLabel {
+    public static func text(_ value: String?) -> String {
+        let name = (value ?? "").trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? "default" : "default (\(name))"
+    }
 }
 
 public struct SessionOptions: Codable, Sendable, Equatable {
@@ -134,6 +148,10 @@ public struct NewSessionForm: Sendable, Equatable {
     }
 
     public var chosen: HarnessOptions? { harnesses.first { $0.harness == harness } }
+
+    public var defaultModelLabel: String { DefaultLabel.text(chosen?.defaultModel) }
+
+    public var defaultEffortLabel: String { DefaultLabel.text(chosen?.defaultEffort) }
 
     public var harness: String {
         get { chosenHarness }

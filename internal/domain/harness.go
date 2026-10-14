@@ -17,6 +17,9 @@ type HarnessSpec struct {
 	Switch  SwitchForm
 	Models  []string
 	Efforts []string
+
+	DefaultModel  string
+	DefaultEffort string
 }
 
 var harnessTable = []HarnessSpec{
@@ -27,6 +30,9 @@ var harnessTable = []HarnessSpec{
 		Switch:  SwitchSlash,
 		Models:  []string{"opus", "sonnet", "haiku"},
 		Efforts: []string{"low", "medium", "high", "xhigh", "max"},
+
+		DefaultModel:  "opus",
+		DefaultEffort: "high",
 		Hooks: map[string]HarnessEventKind{
 			"SessionStart":      EventSessionStart,
 			"UserPromptSubmit":  EventUserPromptSubmit,
@@ -47,6 +53,9 @@ var harnessTable = []HarnessSpec{
 		Switch:  SwitchPicker,
 		Models:  []string{"gpt-6.1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5.5"},
 		Efforts: []string{"low", "medium", "high", "xhigh", "max"},
+
+		DefaultModel:  "gpt-6.1-sol",
+		DefaultEffort: "medium",
 		Hooks: map[string]HarnessEventKind{
 			"SessionStart":      EventSessionStart,
 			"UserPromptSubmit":  EventUserPromptSubmit,

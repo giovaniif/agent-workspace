@@ -280,9 +280,6 @@ func (m Model) pickers(keep *int, at int) []string {
 	effort := d.efforts[d.effort]
 	if effort == "" {
 		effort = defaultLabel(m.defaultEffort())
-		if m.chosenHarness() == domain.HarnessOmp {
-			effort = "Default"
-		}
 	}
 	cols := []struct {
 		f     field
@@ -371,7 +368,7 @@ func (m Model) modelPieces() []piece {
 	}
 	label := d.model
 	if label == "" {
-		label = "Default"
+		label = defaultLabel(m.defaultModelName())
 	}
 	return []piece{{s.bold, "‹ " + label + " ›"}}
 }
@@ -643,9 +640,14 @@ func harnessName(h domain.Harness) string {
 
 func defaultLabel(name string) string {
 	if name == "" {
-		return "default"
+		return "Default"
 	}
-	return "default · " + name
+	return domain.DefaultLabel(name)
+}
+
+func (m Model) defaultModelName() string {
+	model, _ := domain.ResolveDefault(m.chosenHarness(), m.opts.HarnessDefaults[m.chosenHarness()].Model, "")
+	return model
 }
 
 func (m Model) defaultModel() string {
@@ -665,8 +667,6 @@ func (m Model) defaultModel() string {
 
 func (m Model) defaultEffort() string {
 	d := m.opts.HarnessDefaults[m.chosenHarness()]
-	if d.Effort != "" {
-		return d.Effort
-	}
-	return d.EffortByModel[m.defaultModel()]
+	_, effort := domain.ResolveDefault(m.chosenHarness(), "", cmp.Or(d.Effort, d.EffortByModel[m.defaultModel()]))
+	return effort
 }

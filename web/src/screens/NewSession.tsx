@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { listWorkspaces, resolveWorkItem, startSession, type WorkItemResolved, type WorkspaceList } from "../api";
+import { listWorkspaces, resolveWorkItem, sessionOptions, startSession, type HarnessOptions, type WorkItemResolved, type WorkspaceList } from "../api";
 import type { AppEnv } from "../App";
-import { effortChoices, harnesses, loadChoices, modelChoices, saveChoices } from "../newsession";
+import { defaultLabel, effortChoices, harnesses, loadChoices, modelChoices, saveChoices } from "../newsession";
 
 type Resolution = { state: "idle" } | { state: "checking" } | { state: "ok"; item: WorkItemResolved } | { state: "bad"; message: string };
 
@@ -31,6 +31,18 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [defaults, setDefaults] = useState<HarnessOptions[]>([]);
+
+  useEffect(() => {
+    let live = true;
+    sessionOptions(env.fetch, token).then(
+      (options) => live && setDefaults(options.harnesses ?? []),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [env.fetch, token]);
 
   useEffect(() => {
     let live = true;
@@ -97,6 +109,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
     }
   }
 
+  const harnessDefault = defaults.find((h) => h.harness === harness);
   const roots = workspaces.state === "ready" ? workspaces.list.workspaces : [];
   const canStart = !busy && !!workspace && resolution.state !== "bad";
 
@@ -186,7 +199,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
             value={model}
             onChange={(e) => setModel(e.target.value)}
             list="model-choices"
-            placeholder="Default"
+            placeholder={defaultLabel(harnessDefault?.default_model)}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
@@ -200,7 +213,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
         <label>
           Effort
           <select value={effort} onChange={(e) => setEffort(e.target.value)}>
-            <option value="">Default</option>
+            <option value="">{defaultLabel(harnessDefault?.default_effort)}</option>
             {effortChoices.map((e) => (
               <option key={e} value={e}>
                 {e}

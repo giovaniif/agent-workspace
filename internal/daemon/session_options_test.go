@@ -29,12 +29,17 @@ func sessionOptions(t *testing.T, opts ...daemon.Option) rpc.SessionOptions {
 func TestSessionOptionsListTheHarnessesWithTheirConfiguredDefaults(t *testing.T) {
 	t.Setenv("HOME", "/srv/me")
 	got := sessionOptions(t,
-		daemon.WithStartDefaults(map[domain.Harness]daemon.StartDefaults{domain.HarnessCodex: {Model: "gpt-6-sol", Effort: "high"}}))
+		daemon.WithStartDefaults(map[domain.Harness]daemon.StartDefaults{domain.HarnessCodex: {Model: "gpt-6-sol", Effort: "high"}}),
+		daemon.WithHarnessConfig(func() map[domain.Harness]daemon.StartDefaults {
+			return map[domain.Harness]daemon.StartDefaults{domain.HarnessClaude: {Model: "sonnet"}}
+		}))
 	claudeSpec, codexSpec := domain.Spec(domain.HarnessClaude), domain.Spec(domain.HarnessCodex)
 	want := rpc.SessionOptions{
 		Harnesses: []rpc.HarnessOptions{
-			{Harness: "claude", Name: claudeSpec.Name, Tag: claudeSpec.Tag, Models: claudeSpec.Models, Efforts: claudeSpec.Efforts},
-			{Harness: "codex", Name: codexSpec.Name, Tag: codexSpec.Tag, Models: codexSpec.Models, Efforts: codexSpec.Efforts, Model: "gpt-6-sol", Effort: "high"},
+			{Harness: "claude", Name: claudeSpec.Name, Tag: claudeSpec.Tag, Models: claudeSpec.Models, Efforts: claudeSpec.Efforts,
+				DefaultModel: "sonnet", DefaultEffort: "high"},
+			{Harness: "codex", Name: codexSpec.Name, Tag: codexSpec.Tag, Models: codexSpec.Models, Efforts: codexSpec.Efforts, Model: "gpt-6-sol", Effort: "high",
+				DefaultModel: "gpt-6.1-sol", DefaultEffort: "medium"},
 		},
 		Home: "/srv/me",
 	}

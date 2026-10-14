@@ -159,6 +159,23 @@ struct NewSessionTests {
         #expect(model.form.harness == "claude")
     }
 
+    @Test func thePickersNameWhatDefaultMeans() async throws {
+        let caller = NewSessionCaller()
+        caller.replies["session.options"] = .success("""
+        {"harnesses":[
+          {"harness":"claude","name":"Claude Code","tag":"CC","models":["opus"],"efforts":["high"],"model":"","effort":"","default_model":"opus","default_effort":"high"},
+          {"harness":"omp","name":"Oh My Pi","tag":"OMP","models":null,"efforts":null,"model":"","effort":""}
+        ],"home":"/src"}
+        """)
+        let model = NewSession(caller: caller)
+        await model.load(state: nil)
+        #expect(model.form.defaultModelLabel == "default (opus)")
+        #expect(model.form.defaultEffortLabel == "default (high)")
+        model.form.choose(harness: "omp")
+        #expect(model.form.defaultModelLabel == "default")
+        #expect(model.form.defaultEffortLabel == "default")
+    }
+
     @Test func optionsWithoutALauncherLimitDecode() throws {
         let options = try JSONDecoder().decode(SessionOptions.self, from: Data(NewSessionFixtures.options.utf8))
         #expect(options.harnesses.map(\.harness) == ["claude", "codex"])

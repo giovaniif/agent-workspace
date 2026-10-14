@@ -296,6 +296,9 @@ type HarnessOptions struct {
 	Efforts []string `json:"efforts"`
 	Model   string   `json:"model"`
 	Effort  string   `json:"effort"`
+
+	DefaultModel  string `json:"default_model,omitempty"`
+	DefaultEffort string `json:"default_effort,omitempty"`
 }
 
 type SessionOptions struct {

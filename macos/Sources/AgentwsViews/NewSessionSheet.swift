@@ -175,18 +175,18 @@ public struct NewSessionSheet: View {
     }
 
     private var modelPicker: some View {
-        choicePicker(selection: $model.form.model, choices: model.form.chosen?.models ?? [])
+        choicePicker(selection: $model.form.model, choices: model.form.chosen?.models ?? [], blank: model.form.defaultModelLabel)
     }
 
     private var effortPicker: some View {
-        choicePicker(selection: $model.form.effort, choices: model.form.chosen?.efforts ?? [])
+        choicePicker(selection: $model.form.effort, choices: model.form.chosen?.efforts ?? [], blank: model.form.defaultEffortLabel)
     }
 
-    private func choicePicker(selection: Binding<String>, choices: [String]) -> some View {
+    private func choicePicker(selection: Binding<String>, choices: [String], blank: String) -> some View {
         let current = selection.wrappedValue
         let all = current.isEmpty || choices.contains(current) ? choices : choices + [current]
         return Picker("", selection: selection) {
-            Text("default").tag("")
+            Text(blank).tag("")
             ForEach(all, id: \.self) { Text($0).tag($0) }
         }
         .labelsHidden()
