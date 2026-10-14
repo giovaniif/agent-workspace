@@ -155,6 +155,7 @@ type Daemon struct {
 	tx       *transcripts
 	push     app.PushProvider
 	presence presenceCfg
+	browser  browserHub
 }
 
 func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
@@ -446,6 +447,7 @@ func (d *Daemon) handle(c *conn) {
 			delete(s.views, c)
 			s.dropClientView(c, time.Now())
 		})
+		d.browser.drop(c)
 		if d.tx != nil {
 			d.tx.dropConn(c)
 		}
@@ -593,6 +595,12 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.pushMethod(req)
 	case rpc.MethodDeviceViewing:
 		return d.deviceViewing(c, req)
+	case rpc.MethodBrowserAttach:
+		return d.browserAttach(c, req)
+	case rpc.MethodBrowserReply:
+		return d.browserReply(c, req)
+	case rpc.MethodBrowserCommand:
+		return d.browserCommand(req)
 	case rpc.MethodClientViewing:
 		return d.clientViewing(c, req)
 	default:

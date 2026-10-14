@@ -102,4 +102,5 @@ Do not let clean layers add latency. Apply these rules:
 | Ports refresh (netstat + lsof) | < 50 ms, at most every 5 s |
 | `session.new` + `session.focus` (no recipe) | < 1 s |
 | Discovery over 15 repos | < 300 ms |
+| Browser command through the daemon, without the work of the browser | < 5 ms (`BenchmarkBrowserRoundTrip`) |
 | Clone a 1 GB `node_modules` | < 5 s, < 50 MB |

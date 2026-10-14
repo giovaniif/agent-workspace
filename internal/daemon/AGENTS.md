@@ -274,6 +274,15 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
   - The worker logs other failures (by host, never the endpoint URL) and does not try them again.
   - A full queue drops the push.
 
+## Browser
+
+`go test ./internal/daemon/ -run Browser -bench BrowserRoundTrip`. The protocol is in [internal/rpc/](../rpc/AGENTS.md). See [ADR 0051](../../docs/adr/0051-browser-in-mac-app.md).
+
+- `browserHub` keeps the attached connection and the calls that wait, under its own mutex. It is not loop state. Only the pane lookup of `browser.command` goes through the loop.
+- `browser.command` waits on its own connection goroutine. Thus a slow page never blocks the loop or other connections.
+- When the attached connection closes, or a new attach replaces it, each call that waits on it fails at once.
+- The daemon keeps no browser state and never logs args or results.
+
 ## Shell and nvim
 
 `go test ./... -run Shell -tags integration` runs the shell tests: the daemon against real tmux, and the split, popup and key pass-through of the tmux adapter. The shell and nvim tests need `tmux` and `nvim`. See [ADR 0029](../../docs/adr/0029-shell-and-nvim.md).

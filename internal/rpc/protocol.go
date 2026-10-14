@@ -471,6 +471,7 @@ type Response struct {
 	Diff       *Diff            `json:"diff,omitempty"`
 	Notice     *Notice          `json:"notice,omitempty"`
 	Transcript *TranscriptEvent `json:"transcript,omitempty"`
+	Browser    *BrowserCall     `json:"browser,omitempty"`
 	Error      *Error           `json:"error,omitempty"`
 	Build      string           `json:"build,omitempty"`
 }

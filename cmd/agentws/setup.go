@@ -50,10 +50,23 @@ func runSetup(args []string, stdout, stderr io.Writer, env func(string) string, 
 	cfg := codex.SetupConfig{Dir: dir, Command: self}
 	if *remove {
 		res, err := codex.Remove(cfg)
-		return reportSetup(res, err, filepath.Join(dir, "hooks.json"), "removed the agentws hooks from", "nothing to remove in", "", stdout, stderr)
+		code := reportSetup(res, err, filepath.Join(dir, "hooks.json"), "removed the agentws hooks from", "nothing to remove in", "", stdout, stderr)
+		return skillStep(code, removeSkill(dir, stdout), stderr)
 	}
 	res, err := codex.Setup(cfg)
-	return reportSetup(res, err, filepath.Join(dir, "hooks.json"), "merged the agentws hooks into", "already set up in", codex.TrustStep, stdout, stderr)
+	code := reportSetup(res, err, filepath.Join(dir, "hooks.json"), "merged the agentws hooks into", "already set up in", codex.TrustStep, stdout, stderr)
+	return skillStep(code, installSkill(dir, stdout), stderr)
+}
+
+func skillStep(code int, err error, stderr io.Writer) int {
+	if code != 0 {
+		return code
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "agentws setup codex: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 func reportSetup(res codex.SetupResult, err error, hooks, changed, unchanged, after string, stdout, stderr io.Writer) int {
