@@ -87,7 +87,7 @@ func TestPREventCarriesTheLinkAndFailingChecks(t *testing.T) {
 }
 
 func TestSessionAutomationEvents(t *testing.T) {
-	s := func(state AgentState) Session { return Session{ID: "s1", State: state, Dir: "/w/api"} }
+	s := func(state AgentState) Session { return Session{ID: "s1", State: state, Dir: "/w/api-wt/fix-login"} }
 	cases := []struct {
 		name     string
 		old, new Session
@@ -102,7 +102,7 @@ func TestSessionAutomationEvents(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			evs := SessionAutomationEvents(tc.old, tc.new, "fix login")
+			evs := SessionAutomationEvents(tc.old, tc.new, "fix login", "/w/api")
 			if got := eventNames(evs); !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("got %v, want %v", got, tc.want)
 			}
@@ -112,6 +112,15 @@ func TestSessionAutomationEvents(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestSessionAutomationEventsUseTheDirWithoutARepo(t *testing.T) {
+	old := Session{ID: "s1", State: StateRunning, Dir: "/w/api"}
+	next := Session{ID: "s1", State: StateDone, Dir: "/w/api"}
+	evs := SessionAutomationEvents(old, next, "fix login", "")
+	if len(evs) != 1 || evs[0].Repo != "/w/api" {
+		t.Fatalf("events %+v", evs)
 	}
 }
 
