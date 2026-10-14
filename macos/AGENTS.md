@@ -199,6 +199,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     3. It runs `agentws setup daemon`.
     4. If it replaced the binary of a running daemon, it restarts the service (`systemctl --user restart agentws-daemon.service`, or `launchctl kickstart -k` on a Mac). It never stops the service, so tmux sessions continue.
   - `Checklist.items` changes the probe into the rows of the Servers tab, with fix-its: Set up, Update server, the linger command `sudo loginctl enable-linger <user>`, `ssh -t <host> gh auth login`.
+  - Each row of the workspace step has Remove (also in its context menu). `WorkspaceRemoval` gives the confirmation: it says that no files, worktrees or branches are deleted, and it names the live sessions whose `Dir` is in the workspace. The new-session sheet has "Manage workspaces…", which opens Settings › Workspaces (the Settings tab is stored in `settings.tab`). Test: `swift test --filter WorkspaceRemoval`.
   - Hooks and the workspace step use `ServerSettings` over the `ViewStore` of the new server. The workspace step uses the workspace path field (`ServerSettings.path`).
   - `swift test --filter Servers` runs the suite. Its fake `ssh`, `uname` and `systemctl` scripts run the remote side locally against a temp home.
 - Tests decode `internal/view/testdata/view-subscribe-*.json` (the Go goldens) and check that each non-null field round-trips. Transport tests put fake `agentws` and `ssh` scripts on `PATH`. The fake `ssh` blocks on `/dev/tty` if it does not get `BatchMode=yes`.

@@ -1,6 +1,6 @@
 {
   "error": {
     "code": "bad_request",
-    "message": "unsupported link: use a Linear issue or GitHub pull request URL"
+    "message": "unsupported link: use a GitHub pull request URL"
   }
 }
