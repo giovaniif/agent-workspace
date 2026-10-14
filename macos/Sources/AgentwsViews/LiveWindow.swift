@@ -47,6 +47,7 @@ public struct LiveWindow: View {
     @State private var profileName = ""
 #if canImport(WebKit)
     @State private var webViews = BrowserWebViews()
+    @State private var cookieImport: BrowserProfile?
     @State private var agentLink: Task<Void, Never>?
 #endif
     @Environment(\.controlActiveState) private var activeState
@@ -125,6 +126,9 @@ public struct LiveWindow: View {
             .onDisappear {
                 agentLink?.cancel()
                 agentLink = nil
+            }
+            .sheet(item: $cookieImport) { profile in
+                CookieImportSheet(profile: profile, store: webViews.store(for: profile.id).httpCookieStore) { cookieImport = nil }
             }
 #else
         let layered = content
@@ -459,6 +463,10 @@ public struct LiveWindow: View {
             profilePrompt = .clone
         case .makeDefault:
             profiles.setDefault(profiles.profile(for: id).id)
+        case .importCookies:
+#if canImport(WebKit)
+            cookieImport = profiles.profile(for: id)
+#endif
         case .takeOver:
             page.takeOver()
         }
