@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"encoding/json"
 	"slices"
 	"strconv"
 	"time"
@@ -26,14 +25,14 @@ func (e MateTurn) apply(s *state) rpc.Diff {
 }
 
 func (s *state) gateHook(h rpc.Hook, now time.Time) rpc.HookReply {
-	if kind, ok := hookEvent(h); !ok || kind != domain.EventPreToolUse {
+	if kind, ok := hookEvent(h); !ok || kind != domain.EventPreToolUse || h.Action == nil {
 		return rpc.HookReply{}
 	}
 	session, ok := domain.SessionOnPane(s.sessionList(), h.Pane)
 	if !ok || session.Mate == nil {
 		return rpc.HookReply{}
 	}
-	action := gateAction(h, session)
+	action := *h.Action
 	decision := domain.Gate(session.Mate.Authority, session.Mate.Owner, action, s.sessionApprovals(session.ID), now)
 	if decision.Allow {
 		if decision.Use >= 0 {
@@ -44,18 +43,6 @@ func (s *state) gateHook(h rpc.Hook, now time.Time) rpc.HookReply {
 	}
 	s.addPendingApproval(session.ID, action, now)
 	return rpc.HookReply{Output: domain.GateDenyOutput(action)}
-}
-
-func gateAction(h rpc.Hook, session domain.Session) domain.Action {
-	var p struct {
-		ToolName  string          `json:"tool_name"`
-		ToolInput json.RawMessage `json:"tool_input"`
-	}
-	_ = json.Unmarshal(h.Payload, &p)
-	if h.Action != nil && h.Action.Dangerous() {
-		return *h.Action
-	}
-	return domain.ClassifyAction(domain.Harness(h.Harness), p.ToolName, p.ToolInput, domain.ActionScope{Root: session.Dir})
 }
 
 func (s *state) sessionApprovals(sessionID string) []domain.Approval {

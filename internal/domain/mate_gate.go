@@ -116,6 +116,8 @@ var writeTools = map[string]string{
 
 func classifyTool(tool string, fields map[string]json.RawMessage, scope ActionScope) ActionKind {
 	switch {
+	case tool == "Grep" && isSecretPath(stringField(fields, "path")):
+		return ActionSecret
 	case readTools[tool]:
 		return ActionSafe
 	case tool == "Read":
@@ -470,7 +472,8 @@ func (c *shellCtx) words(words []string) ActionKind {
 	case "env":
 		rest := skipFlags(args, "uCS")
 		for _, f := range args {
-			if f == "-S" || strings.HasPrefix(f, "--split-string") {
+			if f == "-S" || f == "-C" || strings.HasPrefix(f, "--split-string") || strings.HasPrefix(f, "--chdir") ||
+				(strings.HasPrefix(f, "-") && !strings.HasPrefix(f, "--") && strings.ContainsAny(f, "CS")) {
 				return ActionUnknown
 			}
 		}
@@ -496,7 +499,10 @@ func (c *shellCtx) words(words []string) ActionKind {
 	case "sudo", "su", "doas":
 		return ActionUnknown
 	case "eval":
-		return c.nested(strings.Join(args, " "))
+		c.depth++
+		k := c.script(strings.Join(args, " "))
+		c.depth--
+		return k
 	case "sh", "bash", "zsh", "dash", "ksh":
 		return c.shell(args)
 	}
@@ -533,11 +539,10 @@ var safePrograms = map[string]bool{
 	"echo": true, "printf": true, "pwd": true, "true": true, "false": true, "test": true, "[": true, "which": true,
 	"type": true, "date": true, "sleep": true, "basename": true, "dirname": true, "realpath": true, "readlink": true,
 	"stat": true, "file": true, "du": true, "df": true, "tree": true, "diff": true, "cmp": true, "comm": true,
-	"jq": true, "yq": true, "awk": true, "xxd": true, "od": true, "hexdump": true, "md5sum": true, "sha256sum": true,
+	"jq": true, "yq": true, "xxd": true, "od": true, "hexdump": true, "md5sum": true, "sha256sum": true,
 	"shasum": true, "seq": true, "nl": true, "fold": true, "column": true, "paste": true, "join": true, "tac": true,
 	"rev": true, "go": true, "gofmt": true, "goimports": true, "golangci-lint": true, "gopls": true, "make": true,
-	"cmake": true, "ninja": true, "npx": true, "node": true, "deno": true, "tsc": true, "python": true,
-	"python3": true, "pip": true, "pip3": true, "pytest": true, "ruff": true, "black": true, "mypy": true,
+	"cmake": true, "ninja": true, "tsc": true, "pip": true, "pip3": true, "pytest": true, "ruff": true, "black": true, "mypy": true,
 	"rustc": true, "rustfmt": true, "java": true, "javac": true, "mvn": true, "gradle": true, "swift": true,
 	"export": true, "unset": true, "set": true, ":": true, "shellcheck": true, "staticcheck": true,
 }
@@ -596,6 +601,15 @@ func (c *shellCtx) program(name string, args []string) ActionKind {
 			}
 		}
 		return ActionSafe
+	case name == "python" || name == "python3" || name == "node" || name == "deno":
+		return interpreterKind(name, args)
+	case name == "awk":
+		for _, a := range args {
+			if strings.Contains(a, "system") || strings.ContainsAny(a, "|>") || strings.Contains(a, "getline") {
+				return ActionUnknown
+			}
+		}
+		return ActionSafe
 	case name == "find":
 		return c.find(args)
 	case name == "sed":
@@ -647,6 +661,47 @@ func (c *shellCtx) program(name string, args []string) ActionKind {
 		return ActionSafe
 	}
 	return ActionUnknown
+}
+
+func interpreterKind(name string, args []string) ActionKind {
+	if name == "deno" {
+		switch firstArg(args) {
+		case "eval", "repl":
+			return ActionUnknown
+		}
+	}
+	for _, a := range args {
+		if !strings.HasPrefix(a, "-") {
+			return ActionSafe
+		}
+		if a == "-c" || a == "-e" || a == "-p" || a == "-" || strings.HasPrefix(a, "--eval") || strings.HasPrefix(a, "--print") ||
+			(!strings.HasPrefix(a, "--") && strings.ContainsAny(a[1:], "cep")) {
+			return ActionUnknown
+		}
+	}
+	return ActionUnknown
+}
+
+var gitRunsCommand = []string{
+	"alias", "sshcommand", "fsmonitor", "hookspath", "editor", "external", "textconv", "helper", "program",
+	"filter.", "askpass", "proxycommand", "uploadpack", "receivepack", "sequence.", "difftool", "mergetool",
+	"tool.", "cmd",
+}
+
+var gitSafePagers = map[string]bool{"cat": true, "less": true, "more": true, "": true}
+
+func gitKeyRunsCommand(kv string) bool {
+	lower := strings.ToLower(kv)
+	key, val, _ := strings.Cut(lower, "=")
+	for _, k := range gitRunsCommand {
+		if strings.Contains(key, k) {
+			return true
+		}
+	}
+	if strings.Contains(key, "pager") {
+		return !gitSafePagers[val]
+	}
+	return false
 }
 
 func (c *shellCtx) writeAll(paths []string) ActionKind {
@@ -759,7 +814,7 @@ func (c *shellCtx) git(args []string) ActionKind {
 			}
 			args = args[1:]
 		case f == "-c" && len(args) > 0:
-			if strings.HasPrefix(strings.ToLower(args[0]), "alias.") {
+			if gitKeyRunsCommand(args[0]) {
 				return ActionUnknown
 			}
 			args = args[1:]
@@ -788,12 +843,20 @@ func (c *shellCtx) git(args []string) ActionKind {
 		}
 	case sub == "config":
 		for _, a := range rest {
-			if strings.Contains(strings.ToLower(a), "alias") {
+			if gitKeyRunsCommand(a) {
 				return ActionUnknown
 			}
 			switch a {
 			case "--global", "--system", "--file", "-f":
 				k = ActionOutsideWorktree
+			}
+		}
+	case sub == "submodule" && slicesContain(rest, "foreach"), sub == "bisect" && firstArg(rest) == "run":
+		return ActionUnknown
+	case sub == "rebase":
+		for _, a := range rest {
+			if a == "-x" || strings.HasPrefix(a, "--exec") || (strings.HasPrefix(a, "-x") && !strings.HasPrefix(a, "--")) {
+				return ActionUnknown
 			}
 		}
 	case !gitSafe[sub]:
@@ -849,6 +912,15 @@ func ghKind(args []string) ActionKind {
 	return ActionExternalWrite
 }
 
+func slicesContain(args []string, s string) bool {
+	for _, a := range args {
+		if a == s {
+			return true
+		}
+	}
+	return false
+}
+
 func ghAPIKind(args []string) ActionKind {
 	for i, a := range args {
 		switch {
@@ -864,34 +936,61 @@ func ghAPIKind(args []string) ActionKind {
 			if !strings.EqualFold(a[2:], "GET") {
 				return ActionExternalWrite
 			}
-		case a == "-f" || a == "-F" || a == "--field" || a == "--raw-field" || a == "--input":
+		case strings.HasPrefix(a, "-f") || strings.HasPrefix(a, "-F") || strings.HasPrefix(a, "--field") ||
+			strings.HasPrefix(a, "--raw-field") || strings.HasPrefix(a, "--input"):
 			return ActionExternalWrite
 		}
 	}
 	return ActionSafe
 }
 
+func curlWriteMethod(m string) bool {
+	m = strings.ToUpper(m)
+	return m != "GET" && m != "HEAD"
+}
+
+const curlValueFlags = "oHAeuxwrbcKEmzCYyQ"
+
 func curlKind(args []string) ActionKind {
 	for i, a := range args {
 		switch {
-		case a == "-X" || a == "--request":
-			if i+1 < len(args) {
-				m := strings.ToUpper(args[i+1])
-				if m != "GET" && m != "HEAD" {
-					return ActionExternalWrite
-				}
-			}
-		case strings.HasPrefix(a, "-X") && len(a) > 2:
-			m := strings.ToUpper(a[2:])
-			if m != "GET" && m != "HEAD" {
+		case a == "--request" && i+1 < len(args):
+			if curlWriteMethod(args[i+1]) {
 				return ActionExternalWrite
 			}
-		case a == "-d" || strings.HasPrefix(a, "--data") || a == "-F" || strings.HasPrefix(a, "--form") ||
-			a == "--json" || a == "-T" || a == "--upload-file":
+		case strings.HasPrefix(a, "--request="):
+			if curlWriteMethod(strings.TrimPrefix(a, "--request=")) {
+				return ActionExternalWrite
+			}
+		case strings.HasPrefix(a, "--data") || strings.HasPrefix(a, "--form") || strings.HasPrefix(a, "--json") ||
+			strings.HasPrefix(a, "--upload-file"):
 			return ActionExternalWrite
+		case strings.HasPrefix(a, "-") && !strings.HasPrefix(a, "--"):
+			if curlShortKind(a[1:], args[i+1:]) {
+				return ActionExternalWrite
+			}
 		}
 	}
 	return ActionSafe
+}
+
+func curlShortKind(group string, next []string) bool {
+	for j := 0; j < len(group); j++ {
+		ch := group[j]
+		switch {
+		case ch == 'd' || ch == 'F' || ch == 'T':
+			return true
+		case ch == 'X':
+			m := group[j+1:]
+			if m == "" && len(next) > 0 {
+				m = next[0]
+			}
+			return curlWriteMethod(m)
+		case strings.IndexByte(curlValueFlags, ch) >= 0:
+			return false
+		}
+	}
+	return false
 }
 
 func (c *shellCtx) resolve(p string) string {
@@ -932,6 +1031,9 @@ func isSecretPath(p string) bool {
 	}
 	lower := strings.ToLower(p)
 	base := path.Base(lower)
+	if strings.ContainsAny(lower, "*?[") {
+		return globMatchesSecret(lower)
+	}
 	if strings.HasPrefix(base, ".env") || base == ".netrc" || base == "credentials" || base == "secrets.env" ||
 		strings.HasPrefix(base, "id_rsa") || strings.HasPrefix(base, "id_ed25519") || strings.HasPrefix(base, "id_ecdsa") ||
 		strings.HasSuffix(base, ".pem") || strings.HasSuffix(base, ".key") {
@@ -940,6 +1042,30 @@ func isSecretPath(p string) bool {
 	for _, dir := range []string{".ssh/", ".aws/", ".gnupg/", "secrets/", ".config/gh/"} {
 		if strings.HasPrefix(lower, dir) || strings.Contains(lower, "/"+dir) {
 			return true
+		}
+	}
+	return false
+}
+
+var secretSamples = []string{
+	".env", ".env.local", ".netrc", "credentials", "secrets.env", "id_rsa", "id_ed25519", "id_ecdsa", "x.pem", "x.key",
+}
+
+var secretDirs = []string{".ssh", ".aws", ".gnupg", "secrets", "gh"}
+
+func globMatchesSecret(p string) bool {
+	parts := strings.Split(p, "/")
+	base := parts[len(parts)-1]
+	for _, s := range secretSamples {
+		if ok, err := path.Match(base, s); err != nil || ok {
+			return true
+		}
+	}
+	for _, part := range parts[:len(parts)-1] {
+		for _, d := range secretDirs {
+			if ok, err := path.Match(part, d); err != nil || ok {
+				return true
+			}
 		}
 	}
 	return false
