@@ -416,6 +416,9 @@ public struct LiveWindow: View {
         webViews.report = { tab, url, title in
             browser.pages.values.first { page in page.tabs.contains { $0.id == tab } }?.update(tab, url: url, title: title)
         }
+        webViews.loading = { tab in
+            browser.pages.values.first { page in page.tabs.contains { $0.id == tab } }?.loading(tab)
+        }
         webViews.profile = { tab in
             let session = browser.pages.first { $0.value.tabs.contains { $0.id == tab } }?.key ?? ""
             return profiles.profile(for: session).id
