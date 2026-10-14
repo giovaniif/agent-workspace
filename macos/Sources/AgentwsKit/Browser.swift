@@ -107,7 +107,7 @@ public final class BrowserPage {
     public private(set) var selected: String
     public var device: DevicePreset = .desktop
     public private(set) var agentControl = false
-    private var pending: Set<String> = []
+    @ObservationIgnored private var pending: Set<String> = []
 
     public init() {
         let tab = BrowserTab()
