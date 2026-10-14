@@ -20,6 +20,10 @@ enum SessionPrompt {
     }
 }
 
+enum ProfilePrompt {
+    case new, clone
+}
+
 public struct LiveWindow: View {
     @State private var store: ViewStore
     @State private var nav = Navigator()
@@ -37,6 +41,13 @@ public struct LiveWindow: View {
     @State private var prompt: SessionPrompt?
     @State private var renameText = ""
     @State private var choiceRequest = 0
+    @State private var browser = Browser()
+    @State private var profiles = BrowserProfiles()
+    @State private var profilePrompt: ProfilePrompt?
+    @State private var profileName = ""
+#if canImport(WebKit)
+    @State private var webViews = BrowserWebViews()
+#endif
     @Environment(\.controlActiveState) private var activeState
     private let server: String
     private let router: WindowRouter
@@ -82,15 +93,49 @@ public struct LiveWindow: View {
         explanation ?? attention?.message ?? commands.message
     }
 
+    private func makeScene(at now: Date) -> WindowScene {
+        let pane = nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 }
+        var scene = WindowScene(
+            state: store.state, connection: store.connection, selected: nav.selected, filter: filter,
+            inspector: inspector, endedExpanded: endedExpanded, server: server, now: now, focusFilter: focusFilter,
+            review: reviewScreen, view: panes.view, pane: pane,
+            popup: panes.popup, paneError: panes.error, card: attention?.card, message: windowMessage, servers: servers
+        )
+        scene.browser = browserChrome()
+        return scene
+    }
+
+    private var profileAlertTitle: String {
+        profilePrompt == .clone ? "Clone profile" : "New browser profile"
+    }
+
+    private var profileAlertShown: Binding<Bool> {
+        Binding(get: { profilePrompt != nil }, set: { if !$0 { profilePrompt = nil } })
+    }
+
+    private func browserLayer(_ content: some View) -> some View {
+#if canImport(WebKit)
+        let layered = content
+            .environment(\.agentwsBrowser, webViews)
+            .onAppear { bindWebViews() }
+#else
+        let layered = content
+#endif
+        return layered.alert(profileAlertTitle, isPresented: profileAlertShown) {
+            TextField("Name", text: $profileName)
+            Button("Create") { createProfile() }
+                .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { profilePrompt = nil }
+        }
+    }
+
     public var body: some View {
+        browserLayer(window)
+    }
+
+    private var window: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            let scene = WindowScene(
-                state: store.state, connection: store.connection, selected: nav.selected, filter: filter,
-                inspector: inspector, endedExpanded: endedExpanded, server: server, now: context.date, focusFilter: focusFilter,
-                review: reviewScreen, view: panes.view,
-                pane: nav.selected.map { panes.pane(session: $0, agent: "") }.flatMap { $0.isEmpty ? nil : $0 },
-                popup: panes.popup, paneError: panes.error, card: attention?.card, message: windowMessage, servers: servers
-            )
+            let scene = makeScene(at: context.date)
             MainWindow(scene: scene, actions: actions)
                 .background { shortcuts(scene) }
         }
@@ -330,6 +375,108 @@ public struct LiveWindow: View {
             review = nil
             guard let id = nav.selected, panes.view != .nvim else { return }
             Task { await panes.toggleNvim(session: id) }
+        case .browser:
+            review = nil
+            panes.showBrowser()
+        }
+    }
+
+    private var browserHost: String {
+        BrowserHost.of(servers.first { $0.name == server } ?? .thisMac)
+    }
+
+    private func browserChrome() -> BrowserChrome? {
+        guard panes.view == .browser, let id = nav.selected else { return nil }
+        let links = store.state.map { BrowserLinks.ports(session: id, state: $0, host: browserHost) } ?? []
+        return BrowserChrome(page: browser.page(session: id), profile: profiles.profile(for: id), profiles: profiles.profiles, links: links)
+    }
+
+#if canImport(WebKit)
+    private func bindWebViews() {
+        let browser = browser
+        let profiles = profiles
+        webViews.report = { tab, url, title in
+            browser.pages.values.first { page in page.tabs.contains { $0.id == tab } }?.update(tab, url: url, title: title)
+        }
+        webViews.loading = { tab in
+            browser.pages.values.first { page in page.tabs.contains { $0.id == tab } }?.loading(tab)
+        }
+        webViews.profile = { tab in
+            let session = browser.pages.first { $0.value.tabs.contains { $0.id == tab } }?.key ?? ""
+            return profiles.profile(for: session).id
+        }
+    }
+#endif
+
+    private func browse(_ action: BrowserAction) {
+        guard let id = nav.selected else { return explain(.browser) }
+        let page = browser.page(session: id)
+        switch action {
+        case let .navigate(input):
+            if !page.navigate(input, host: browserHost) { explanation = "Not an address: " + input }
+        case let .open(url):
+            page.open(url)
+        case let .select(tab):
+            page.select(tab)
+        case let .close(tab):
+            page.close(tab)
+#if canImport(WebKit)
+            webViews.close(tab)
+#endif
+        case .back, .forward, .reload:
+#if canImport(WebKit)
+            let web = webViews.webView(for: page.selected)
+            if action == .back { web?.goBack() } else if action == .forward { web?.goForward() } else { web?.reload() }
+#endif
+        case let .device(device):
+            page.device = device
+        case let .profile(profile):
+            profiles.assign(session: id, profile: profile)
+            reopenTabs(page)
+        case .newProfile:
+            profileName = ""
+            profilePrompt = .new
+        case .cloneProfile:
+            profileName = profiles.profile(for: id).name + " copy"
+            profilePrompt = .clone
+        case .makeDefault:
+            profiles.setDefault(profiles.profile(for: id).id)
+        case .takeOver:
+            page.takeOver()
+        }
+    }
+
+    private func reopenTabs(_ page: BrowserPage) {
+#if canImport(WebKit)
+        for tab in page.tabs { webViews.close(tab.id) }
+#endif
+    }
+
+    private func createProfile() {
+        guard let kind = profilePrompt, let id = nav.selected else { return }
+        profilePrompt = nil
+        let source = profiles.profile(for: id)
+        do {
+            let made = try (kind == .clone ? profiles.clone(source.id, name: profileName) : profiles.create(profileName))
+            let page = browser.page(session: id)
+#if canImport(WebKit)
+            if kind == .clone {
+                let webViews = webViews
+                let profiles = profiles
+                Task {
+                    await webViews.clone(from: source.id, to: made.id)
+                    profiles.assign(session: id, profile: made.id)
+                    for tab in page.tabs { webViews.close(tab.id) }
+                }
+                return
+            }
+#endif
+            profiles.assign(session: id, profile: made.id)
+            reopenTabs(page)
+        } catch ProfileRefusal.taken(let name) {
+            explanation = "A profile named \(name) already exists"
+        } catch {
+            explanation = "A profile needs a name"
         }
     }
 
@@ -385,6 +532,7 @@ public struct LiveWindow: View {
         a.hunk = { key, index, action in reviewTask { await $0.hunk(key, index: index, action: action) } }
         a.openInNvim = { openInNvim() }
         a.showView = { show($0) }
+        a.browser = { browse($0) }
         a.closePopup = { panes.closePopup() }
         a.dismissError = { review?.screen.error = nil }
         a.answer = { choice in
