@@ -31,6 +31,11 @@ type automationDoc struct {
 	Precheck string   `toml:"precheck"`
 	Session  string   `toml:"session"`
 	Enabled  *bool    `toml:"enabled"`
+	Filter   struct {
+		Repo   string `toml:"repo"`
+		Branch string `toml:"branch"`
+		Author string `toml:"author"`
+	} `toml:"filter"`
 }
 
 func LoadAutomations(path string) ([]domain.Automation, []string) {
@@ -56,7 +61,7 @@ func LoadAutomations(path string) ([]domain.Automation, []string) {
 		a := domain.Automation{
 			Name: d.Name, Agent: d.Agent, Model: d.Model, Effort: d.Effort, Target: d.Target,
 			Prompt: d.Prompt, Schedule: d.Schedule, Timezone: d.Timezone, On: d.On,
-			Precheck: d.Precheck, Session: d.Session, Enabled: d.Enabled == nil || *d.Enabled, Source: path,
+			Precheck: d.Precheck, Session: d.Session, Filter: domain.AutomationFilter(d.Filter), Enabled: d.Enabled == nil || *d.Enabled, Source: path,
 		}
 		if err := domain.ValidateAutomation(a); err != nil {
 			problems = append(problems, fmt.Sprintf("%s: %v", path, err))

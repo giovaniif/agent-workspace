@@ -55,6 +55,11 @@ func (e TaskChanged) apply(s *state) rpc.Diff {
 }
 
 func (e WorktreeChanged) apply(s *state) rpc.Diff {
+	if old, found := s.worktrees[e.Worktree.ID]; found {
+		s.automationEvents(domain.WorktreeAutomationEvents(&old, e.Worktree))
+	} else {
+		s.automationEvents(domain.WorktreeAutomationEvents(nil, e.Worktree))
+	}
 	s.worktrees[e.Worktree.ID] = e.Worktree
 	stored := e.Worktree
 	stored.Ports = nil
@@ -70,12 +75,14 @@ func (e SessionChanged) apply(s *state) rpc.Diff {
 		s.store.DeleteSession(e.Session.ID)
 		return rpc.Diff{RemovedSession: e.Session.ID}
 	}
+	s.sessionAutomationEvents(e.Session)
 	s.sessions[e.Session.ID] = e.Session
 	s.store.PutSession(e.Session)
 	return rpc.Diff{Session: &e.Session}
 }
 
 func (e SessionHooked) apply(s *state) rpc.Diff {
+	s.sessionAutomationEvents(e.Session)
 	s.sessions[e.Session.ID] = e.Session
 	s.store.PutSession(e.Session)
 	kept := append(s.events[e.Event.SessionID], e.Event)
@@ -127,6 +134,7 @@ type state struct {
 	projects        map[string]domain.Project
 	automationRuns  map[string]domain.AutomationRun
 	automationTrust map[string]string
+	autoEvents      chan domain.AutomationEvent
 	shellTabs       map[string]domain.ShellTab
 	activeTabs      map[string]string
 	orphanPanes     []app.PaneID
@@ -299,6 +307,9 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	go d.cleanupEvery(ctx)
 	if d.auto.scheduleEvery > 0 {
 		go d.runSchedules(ctx)
+		events := make(chan domain.AutomationEvent, automationEventBuffer)
+		d.st.autoEvents = events
+		go d.runAutomationEvents(ctx, events)
 	}
 	loopDone := make(chan struct{})
 	go func() {

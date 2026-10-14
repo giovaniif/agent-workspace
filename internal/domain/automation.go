@@ -2,26 +2,28 @@ package domain
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 	"slices"
 	"strings"
 )
 
 type Automation struct {
-	Name     string   `json:"name"`
-	Agent    string   `json:"agent"`
-	Model    string   `json:"model,omitempty"`
-	Effort   string   `json:"effort,omitempty"`
-	Target   string   `json:"target,omitempty"`
-	Prompt   string   `json:"prompt"`
-	Schedule string   `json:"schedule,omitempty"`
-	Timezone string   `json:"timezone,omitempty"`
-	On       []string `json:"on,omitempty"`
-	Precheck string   `json:"precheck,omitempty"`
-	Session  string   `json:"session,omitempty"`
-	Enabled  bool     `json:"enabled"`
-	Source   string   `json:"source"`
-	Trusted  bool     `json:"trusted,omitempty"`
+	Name     string           `json:"name"`
+	Agent    string           `json:"agent"`
+	Model    string           `json:"model,omitempty"`
+	Effort   string           `json:"effort,omitempty"`
+	Target   string           `json:"target,omitempty"`
+	Prompt   string           `json:"prompt"`
+	Schedule string           `json:"schedule,omitempty"`
+	Timezone string           `json:"timezone,omitempty"`
+	On       []string         `json:"on,omitempty"`
+	Precheck string           `json:"precheck,omitempty"`
+	Filter   AutomationFilter `json:"filter,omitzero"`
+	Session  string           `json:"session,omitempty"`
+	Enabled  bool             `json:"enabled"`
+	Source   string           `json:"source"`
+	Trusted  bool             `json:"trusted,omitempty"`
 }
 
 const (
@@ -82,6 +84,9 @@ func ValidateAutomation(a Automation) error {
 		if _, err := ParseSchedule(a.Schedule); err != nil {
 			return fail("%v", err)
 		}
+	}
+	if _, err := path.Match(a.Filter.Branch, ""); err != nil {
+		return fail("filter branch %q is not a glob: %v", a.Filter.Branch, err)
 	}
 	for _, ev := range a.On {
 		if !slices.Contains(AutomationEvents, ev) {

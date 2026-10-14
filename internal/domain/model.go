@@ -64,6 +64,7 @@ type PullRequest struct {
 	Title  string
 	URL    string
 	Head   string
+	Author string `json:",omitempty"`
 	State  PRState
 	Checks CheckState
 

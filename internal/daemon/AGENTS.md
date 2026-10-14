@@ -146,6 +146,11 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - `domain.ScheduleDecision`: a due run that is late by 15 min or less runs once. An older one is recorded as `missed`, once, for the newest missed time.
   - If the session of the last run is still live, the run is recorded as `skipped` (except with `session = "reuse"`).
   - In a DST gap, a run starts at the first time after the gap. In a repeated hour, it starts once.
+- **Events.** `on = [...]` starts a run when the loop sees a change (`domain.WorktreeAutomationEvents`, `domain.SessionAutomationEvents`): `pr.opened`, `pr.ci_failed`, `pr.review_requested`, `pr.merged`, `worktree.created`, `session.finished` and `session.needs_attention`.
+  - The loop only puts the event in a bounded queue. A worker matches it (`domain.MatchAutomationEvent`) and starts the run off the loop. A full queue drops the event and logs it.
+  - `[automation.filter]` takes `repo` (a name or a path), `branch` (a glob) and `author` (the GitHub login of the PR). A repo automation sees only the events of its repo.
+  - The PR link (or the session task) is `{{work_item}}`. A text that describes the event is `{{event}}`.
+  - There is one run for each automation and subject (the PR link, the session or the worktree) at a time. While that run is live, a new event records a `skipped` run.
 
 ## Codex fallback
 
