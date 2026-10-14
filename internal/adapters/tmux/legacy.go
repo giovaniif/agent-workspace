@@ -16,6 +16,9 @@ func HasAgentPanes(ctx context.Context, socket string) (bool, error) {
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return false, nil
+		}
 		var exit *exec.ExitError
 		if ctx.Err() == nil && errors.As(err, &exit) && noServer(stderr.String()) {
 			return false, nil
