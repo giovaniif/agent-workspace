@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 512">
+  <rect width="512" height="512" rx="120.32" fill="#eff1f5"/>
+  <circle cx="168.96" cy="194.56" r="107.52" fill="#1e66f5"/>
+  <circle cx="343.04" cy="194.56" r="107.52" fill="#fe640b" fill-opacity="0.9"/>
+  <circle cx="256" cy="363.52" r="51.2" fill="#4c4f69"/>
+  <text x="600" y="350" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="280" font-weight="600" letter-spacing="-6" fill="#4c4f69">crew</text>
+</svg>

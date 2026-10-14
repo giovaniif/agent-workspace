@@ -32,7 +32,7 @@ export type ClientsLike = {
   openWindow: (url: string) => Promise<unknown>;
 };
 
-const fallbackTitle = "agentws";
+const fallbackTitle = "crew";
 const fallbackBody = "needs you";
 
 function text(value: unknown): string {

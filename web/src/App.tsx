@@ -127,7 +127,7 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
 }
 
 const refusedNotice =
-  "This device was removed from agentws, or the server rejected its login. Pair it again with a new code from agentws remote pair.";
+  "This device was removed from crew, or the server rejected its login. Pair it again with a new code from crew remote pair.";
 
 export function App({ env }: { env: AppEnv }) {
   const [auth, setAuth] = useState<Auth | null>(() => loadAuth(env.storage));

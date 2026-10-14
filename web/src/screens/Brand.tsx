@@ -1,8 +1,11 @@
 export function Brand({ host }: { host: string }) {
   return (
     <div className="brand">
-      <img src="/icon.svg" alt="" />
-      <span>agentws · {host}</span>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcSet="/crew-wordmark-mocha.svg" />
+        <img src="/crew-wordmark.svg" alt="crew" />
+      </picture>
+      <span className="host">{host}</span>
     </div>
   );
 }

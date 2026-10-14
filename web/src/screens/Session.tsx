@@ -130,6 +130,12 @@ function OlderRow({ t, loading, failed, onLoad }: { t: Transcript; loading: bool
   );
 }
 
+const browserCommand = /\b(crew|agentws) browser\b/;
+
+export function usesBrowser(messages: Message[]): boolean {
+  return messages.some((m) => m.role === "tool" && browserCommand.test(m.tool?.summary ?? ""));
+}
+
 function Chat({ id, client, api, status, children }: { id: string; client: StreamClient; api: Authed; status: StreamStatus; children?: ReactNode }) {
   const [t, setT] = useState<Transcript>(emptyTranscript);
   const [loadError, setLoadError] = useState("");
@@ -266,6 +272,11 @@ function Chat({ id, client, api, status, children }: { id: string; client: Strea
         <MessageLine key={m.id} message={m} />
       ))}
       {watchError ? <p className="error">{"Live updates stopped: " + watchError}</p> : null}
+      {usesBrowser(t.messages) ? (
+        <p className="browser-note" role="note">
+          This session uses the browser of the Mac app. The phone app cannot show that browser. Open the session in the Mac app to see it.
+        </p>
+      ) : null}
       <div className="chat-end">{children}</div>
     </div>
   );

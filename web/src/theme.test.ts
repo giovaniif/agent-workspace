@@ -69,6 +69,37 @@ describe("the Latte palette", () => {
   });
 });
 
+describe("the Mocha palette", () => {
+  const dark = css.match(/@media \(prefers-color-scheme: dark\)\s*{\s*:root\s*{([^}]*)}/)?.[1] ?? "";
+  const palette: Record<string, string> = {};
+  for (const m of dark.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) {
+    palette[m[1]] = m[2];
+  }
+
+  it("is the dark scheme of the app", () => {
+    expect(css).toMatch(/color-scheme:\s*light dark/);
+    expect(palette.base).toBe("#1e1e2e");
+    expect(palette.blue).toBe("#89b4fa");
+  });
+
+  it.each([
+    ["text", "base"],
+    ["text", "mantle"],
+    ["text", "selected"],
+    ["subtext", "base"],
+    ["subtext", "mantle"],
+    ["red", "base"],
+    ["on-accent", "red"],
+    ["link", "base"],
+    ["link", "mantle"],
+    ["on-accent", "blue"],
+  ])("%s text on %s meets 4.5:1", (fg, bg) => {
+    expect(palette[fg], fg).toBeDefined();
+    expect(palette[bg], bg).toBeDefined();
+    expect(contrast(palette[fg], palette[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe("touch targets", () => {
   it.each([".session-card", ".back", ".retry", ".new-session", ".choice", ".interrupt", ".queued-action", ".permission-choice", ".load-older", ".tool summary", ".automation-row button", ".run-actions button"])("%s is at least 44px tall", (selector) => {
     expect(parseInt(rule(selector)["min-height"] ?? "0", 10)).toBeGreaterThanOrEqual(44);
