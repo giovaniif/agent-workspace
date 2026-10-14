@@ -315,3 +315,166 @@ func TestGateDenialOutputIsAClaudeDeny(t *testing.T) {
 		t.Fatalf("%+v", h)
 	}
 }
+
+func TestClassifyShellEdgeCases(t *testing.T) {
+	cases := []struct {
+		cmd  string
+		want ActionKind
+	}{
+		{"wget https://example.com/a", ActionSafe},
+		{"wget --post-data=a=1 https://x", ActionExternalWrite},
+		{"wget --method=PUT https://x", ActionExternalWrite},
+		{"dd if=a of=b", ActionSafe},
+		{"dd if=a of=/dev/sda", ActionOutsideWorktree},
+		{"dd if=a", ActionSafe},
+		{"docker build .", ActionSafe},
+		{"docker run -v /:/h alpine", ActionUnknown},
+		{"podman push x", ActionDeploy},
+		{"kubectl get pods", ActionSafe},
+		{"kubectl delete pod x", ActionDeploy},
+		{"terraform plan", ActionSafe},
+		{"helm list", ActionSafe},
+		{"wrangler dev", ActionSafe},
+		{"cargo publish", ActionDeploy},
+		{"cargo test", ActionSafe},
+		{"yarn publish", ActionDeploy},
+		{"pnpm install", ActionSafe},
+		{"gem push x.gem", ActionDeploy},
+		{"gh auth status", ActionSafe},
+		{"gh auth login", ActionUnknown},
+		{"gh secret list", ActionSecret},
+		{"gh search repos x", ActionSafe},
+		{"gh", ActionSafe},
+		{"gh -R o/r pr view 1", ActionSafe},
+		{"gh pr checks 1", ActionSafe},
+		{"gh pr close 1", ActionExternalWrite},
+		{"gh api --method=GET repos/o/r", ActionSafe},
+		{"gh api --method=POST repos/o/r", ActionExternalWrite},
+		{"gh api --method GET repos/o/r", ActionSafe},
+		{"gh api -XGET repos/o/r", ActionSafe},
+		{"gh api -XPATCH repos/o/r", ActionExternalWrite},
+		{"gh api -F a=1 x", ActionExternalWrite},
+		{"gh api --input f x", ActionExternalWrite},
+		{"curl -XGET https://x", ActionSafe},
+		{"curl -XPUT https://x", ActionExternalWrite},
+		{"curl -X HEAD https://x", ActionSafe},
+		{"curl --request DELETE https://x", ActionExternalWrite},
+		{"curl --json '{}' https://x", ActionExternalWrite},
+		{"curl -T f https://x", ActionExternalWrite},
+		{"sed -i -e s/a/b/ /etc/x", ActionOutsideWorktree},
+		{"sed -i s/a/b/ main.go", ActionSafe},
+		{"sed --in-place=.bak s/a/b/ ../x", ActionOutsideWorktree},
+		{"sed -n -i s/a/b/", ActionSafe},
+		{"cp -t /tmp a b", ActionOutsideWorktree},
+		{"cp --target-directory=/tmp a", ActionOutsideWorktree},
+		{"cp -r /usr/share/x ./x", ActionSafe},
+		{"cp -r", ActionSafe},
+		{"ln -s /etc/hosts h", ActionSafe},
+		{"install -m 755 a /usr/local/bin/a", ActionOutsideWorktree},
+		{"timeout -s KILL 5 git push", ActionPush},
+		{"timeout", ActionSafe},
+		{"nice -n 10 git push", ActionPush},
+		{"env -S 'git push'", ActionUnknown},
+		{"env --split-string='git push'", ActionUnknown},
+		{"env -u HOME git push", ActionPush},
+		{"bash script.sh", ActionUnknown},
+		{"bash -c", ActionUnknown},
+		{"bash -e -c 'git push'", ActionPush},
+		{"bash --norc -c 'git push'", ActionPush},
+		{"sh", ActionUnknown},
+		{"xargs -I {} git push", ActionPush},
+		{"git --git-dir=/w/other/.git log", ActionOutsideWorktree},
+		{"git --work-tree=/w/api status", ActionSafe},
+		{"git -c alias.x=push x", ActionUnknown},
+		{"git", ActionSafe},
+		{"git branch -m new", ActionSafe},
+		{"git branch -vD x", ActionDeleteBranch},
+		{"git branch --list", ActionSafe},
+		{"git config --system x y", ActionOutsideWorktree},
+		{"git config -f /tmp/c x y", ActionOutsideWorktree},
+		{"git -C /w/other push", ActionPush},
+		{"cd && rm x", ActionOutsideWorktree},
+		{"cd - && rm x", ActionOutsideWorktree},
+		{"cd sub && rm x", ActionSafe},
+		{"cd /w/api/sub && rm ../x", ActionSafe},
+		{"rm -rf .", ActionOutsideWorktree},
+		{"rmdir /w/api", ActionOutsideWorktree},
+		{"rm -- -x", ActionSafe},
+		{"go test 2>&1 | tee out.txt", ActionSafe},
+		{"go test &> /tmp/log", ActionOutsideWorktree},
+		{"go test &>> /tmp/log", ActionOutsideWorktree},
+		{"go test >&2", ActionSafe},
+		{"go test 1>&-", ActionSafe},
+		{"cat < .env", ActionSecret},
+		{"cat < main.go", ActionSafe},
+		{"echo > ", ActionUnknown},
+		{"echo > ; ls", ActionUnknown},
+		{"echo > & ls", ActionUnknown},
+		{"echo > > x", ActionUnknown},
+		{"echo hi # git push", ActionSafe},
+		{"# git push\nls", ActionSafe},
+		{"echo a\\\nb", ActionSafe},
+		{"echo a\\", ActionUnknown},
+		{"echo \"a\\\"b\"", ActionSafe},
+		{"echo \"$(git push)\"", ActionUnknown},
+		{"echo \"unterminated", ActionUnknown},
+		{"echo hi > /dev/null", ActionSafe},
+		{"touch ~/x", ActionOutsideWorktree},
+		{"touch /w/api", ActionSafe},
+		{"touch /w/api-x", ActionOutsideWorktree},
+		{"cat id_rsa.pub", ActionSecret},
+		{"cat server.pem", ActionSecret},
+		{"cat .ssh/config", ActionSecret},
+		{"cat ~/.netrc", ActionSecret},
+		{"find -delete", ActionSafe},
+		{"find '(' -name x ')' -delete", ActionSafe},
+		{"find ( -name x ) -delete", ActionUnknown},
+		{"find . -fprint /tmp/x", ActionUnknown},
+		{"ssh-keygen", ActionUnknown},
+		{"aws s3 ls", ActionExternalWrite},
+		{"vault read x", ActionSecret},
+		{"! git push", ActionPush},
+		{"a=1", ActionSafe},
+		{"=x ls", ActionUnknown},
+		{"A-B=1 ls", ActionUnknown},
+		{"_a9Z=1 ls", ActionSafe},
+	}
+	for _, c := range cases {
+		got := ClassifyAction(HarnessClaude, "Bash", bashInput(c.cmd), testScope)
+		if got.Kind != c.want {
+			t.Errorf("%q: got %s, want %s", c.cmd, got.Kind, c.want)
+		}
+	}
+}
+
+func TestClassifyDeepNestingIsUnknown(t *testing.T) {
+	cmd := "git push"
+	for range maxShellDepth + 2 {
+		b, _ := json.Marshal(cmd)
+		cmd = "sh -c " + string(b)
+	}
+	if got := ClassifyShell(cmd, testScope); got != ActionUnknown {
+		t.Fatalf("got %s", got)
+	}
+}
+
+func TestClassifyPatchAndCommandEdgeCases(t *testing.T) {
+	cases := []struct {
+		tool, input string
+		want        ActionKind
+	}{
+		{"apply_patch", `{"input":"*** Begin Patch\n*** Update File: a.go\n*** Move to: /tmp/a.go\n*** End Patch"}`, ActionOutsideWorktree},
+		{"apply_patch", `{}`, ActionUnknown},
+		{"shell", `{"command":[]}`, ActionUnknown},
+		{"exec_command", `{"command":"ls"}`, ActionSafe},
+		{"local_shell", `{"command":["rm","-rf","/"]}`, ActionOutsideWorktree},
+		{"ApplyPatch", `{"command":"*** Update File: .env\n"}`, ActionSecret},
+		{"Read", `{"file_path":"main.go"}`, ActionSafe},
+		{"Bash", `null`, ActionUnknown},
+	}
+	for _, c := range cases {
+		if got := ClassifyAction(HarnessCodex, c.tool, json.RawMessage(c.input), testScope); got.Kind != c.want {
+			t.Errorf("%s %s: got %s, want %s", c.tool, c.input, got.Kind, c.want)
+		}
+	}
+}
