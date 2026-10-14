@@ -51,7 +51,7 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
   - With `AGENTWS_FAKE_STREAM=revoked`, it does the same, but `GET /api/v1/workspaces` answers 401. This gives the pairing screen with its signed-out note.
 
   It controls Playwright's Chromium from stdin steps: `device <Playwright device>` (default `iPhone 15`), `mode browser|installed` (installed sets `navigator.standalone`), `goto <path>`, `fill <label>=<text>`, `click <button name>`, `see <text>`, `wait <ms>`, `shot <file>` (full page, relative to the cwd). `device` and `mode` start a fresh browser context. Playwright is pinned in `web/package.json`. Install its browser one time with `cd web && npx playwright install chromium`. Push the images to the orphan `pr-assets` branch, as for `screenshot`.
-- **`install.sh`**: installs a release as `crew`, makes `crew` a symlink to it, and removes an old `crew` binary only after the new binary runs. It also copies `nvim/lua` and `nvim/plugin` to `${XDG_DATA_HOME:-~/.local/share}/agentws/nvim`. To try a release build:
+- **`install.sh`**: installs the newest beta or stable release (an alpha only with `CREW_VERSION`) as `crew`, makes `agentws` a symlink to it, and removes an old `agentws` binary only after the new binary runs. It also copies `nvim/lua` and `nvim/plugin` to `${XDG_DATA_HOME:-~/.local/share}/crew/nvim`. To try a release build:
   1. Run `goreleaser release --snapshot --clean`.
   2. Serve `dist/` with `python3 -m http.server`.
   3. Run `scripts/install.sh` with `CREW_DOWNLOAD_BASE`, a temp `CREW_INSTALL_DIR` and a temp `XDG_DATA_HOME`.
