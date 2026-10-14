@@ -20,7 +20,7 @@ func TestInstallWritesTheBrowserSkillOnceAndRemoveTakesItAway(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: agentws-browser", "agentws browser snapshot", "agentws browser click @e1", "agentws browser screenshot", "no browser: the macOS app is not connected"} {
+	for _, want := range []string{"name: agentws-browser", "crew browser snapshot", "crew browser click @e1", "crew browser screenshot", "no browser: the macOS app is not connected"} {
 		if !strings.Contains(string(body), want) {
 			t.Errorf("SKILL.md has no %q", want)
 		}

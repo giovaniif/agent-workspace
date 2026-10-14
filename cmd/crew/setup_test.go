@@ -90,7 +90,7 @@ func TestSetupCodexAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T)
 	if code, _, errOut := setupCodex(t, dir); code != 0 {
 		t.Fatalf("code %d: %s", code, errOut)
 	}
-	if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") {
+	if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "crew browser snapshot") {
 		t.Fatalf("skill: %v", err)
 	}
 	if code, _, _ := setupCodex(t, dir, "--remove"); code != 0 {

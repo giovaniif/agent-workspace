@@ -362,7 +362,7 @@ func TestInstallAlsoTeachesClaudeAndCodexTheBrowserCommands(t *testing.T) {
 		filepath.Join(w.root, "claude", "skills", "agentws-browser", "SKILL.md"),
 		filepath.Join(w.root, "codex", "skills", "agentws-browser", "SKILL.md"),
 	} {
-		if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") {
+		if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "crew browser snapshot") {
 			t.Errorf("%s: %v", file, err)
 		}
 	}
