@@ -25,20 +25,22 @@ struct BuildTests {
         #expect(throws: AgentwsError.self) { try Build.read(binary: agentws, environment: bin.environment) }
     }
 
-    @Test func agentwsBinaryInTheEnvironmentWins() {
-        let found = Build.binary(environment: ["AGENTWS_BINARY": "/opt/agentws"], resources: "/App/Contents/Resources", arch: "arm64") { _ in true }
-        #expect(found == "/opt/agentws")
+    @Test func crewBinaryInTheEnvironmentWins() {
+        let found = Build.binary(environment: ["CREW_BINARY": "/opt/crew", "AGENTWS_BINARY": "/opt/agentws"], resources: "/App/Contents/Resources", arch: "arm64") { _ in true }
+        #expect(found == "/opt/crew")
+        let legacy = Build.binary(environment: ["AGENTWS_BINARY": "/opt/agentws"], resources: "/App/Contents/Resources", arch: "arm64") { _ in true }
+        #expect(legacy == "/opt/agentws")
     }
 
     @Test func theBundledDarwinBuildForTheArchComesNext() {
         let found = Build.binary(environment: [:], resources: "/App/Contents/Resources", arch: "x86_64") { _ in true }
-        #expect(found == "/App/Contents/Resources/bin/darwin_amd64/agentws")
-        let arm = Build.binary(environment: ["AGENTWS_BINARY": ""], resources: "/App/Contents/Resources", arch: "arm64") { _ in true }
-        #expect(arm == "/App/Contents/Resources/bin/darwin_arm64/agentws")
+        #expect(found == "/App/Contents/Resources/bin/darwin_amd64/crew")
+        let arm = Build.binary(environment: ["CREW_BINARY": ""], resources: "/App/Contents/Resources", arch: "arm64") { _ in true }
+        #expect(arm == "/App/Contents/Resources/bin/darwin_arm64/crew")
     }
 
     @Test func withoutABundledBuildItFallsBackToThePath() {
-        #expect(Build.binary(environment: [:], resources: "/App/Contents/Resources", arch: "arm64") { _ in false } == "agentws")
-        #expect(Build.binary(environment: [:], resources: nil, arch: "arm64") { _ in true } == "agentws")
+        #expect(Build.binary(environment: [:], resources: "/App/Contents/Resources", arch: "arm64") { _ in false } == "crew")
+        #expect(Build.binary(environment: [:], resources: nil, arch: "arm64") { _ in true } == "crew")
     }
 }

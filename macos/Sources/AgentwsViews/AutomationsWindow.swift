@@ -34,10 +34,10 @@ public struct AutomationsScene {
     public var selectedRow: AutomationRow? { rows.first { $0.id == selected } }
 
     public static func seeded(tab: AutomationTab = .overview) -> AutomationsScene {
-        var fix = Automation(name: "fix-ci", agent: "claude", prompt: "Fix the CI of {{work_item}}.\nKeep the change small.", source: "~/.agentws/config.toml")
+        var fix = Automation(name: "fix-ci", agent: "claude", prompt: "Fix the CI of {{work_item}}.\nKeep the change small.", source: "~/.crew/config.toml")
         fix.on = ["pr.ci_failed"]
         fix.effort = "high"
-        var deps = Automation(name: "deps", agent: "codex", prompt: "Update the dependencies and open a PR.", enabled: false, source: "~/.agentws/config.toml")
+        var deps = Automation(name: "deps", agent: "codex", prompt: "Update the dependencies and open a PR.", enabled: false, source: "~/.crew/config.toml")
         deps.schedule = "weekly mon 09:00"
         let audit = Automation(name: "audit", agent: "claude", prompt: "Audit the api for leaked secrets.", source: "/src/api/.agentws.toml")
         let runs = [
@@ -372,7 +372,7 @@ public struct AutomationEditSheet: View {
                 .font(.system(.body, design: .monospaced))
                 .frame(minHeight: 120)
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.3)))
-            Text("Saved to \(configPath). agentws keeps a backup of the old file.").font(.caption).foregroundStyle(.secondary)
+            Text("Saved to \(configPath). crew keeps a backup of the old file.").font(.caption).foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { cancel() }.keyboardShortcut(.cancelAction)

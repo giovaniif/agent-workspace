@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
-out="${1:-build/agentws.dmg}"
+out="${1:-build/crew.dmg}"
 stage="$(mktemp -d)"
 work="$(mktemp -d)"
 trap 'rm -rf "$stage" "$work"' EXIT
-cp -R build/agentws.app "$stage/agentws.app"
+cp -R build/crew.app "$stage/crew.app"
 ln -s /Applications "$stage/Applications"
-cp build/agentws.app/Contents/Resources/AppIcon.icns "$stage/.VolumeIcon.icns"
-hdiutil create -volname agentws -srcfolder "$stage" -fs HFS+ -format UDRW "$work/rw.dmg"
+cp build/crew.app/Contents/Resources/AppIcon.icns "$stage/.VolumeIcon.icns"
+hdiutil create -volname crew -srcfolder "$stage" -fs HFS+ -format UDRW "$work/rw.dmg"
 mkdir "$work/mnt"
 hdiutil attach "$work/rw.dmg" -mountpoint "$work/mnt" -nobrowse -noautoopen
 SetFile -a C "$work/mnt"

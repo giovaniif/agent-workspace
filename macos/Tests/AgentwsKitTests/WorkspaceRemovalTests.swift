@@ -25,8 +25,8 @@ struct WorkspaceRemovalTests {
 
     @Test func theConfirmationSaysThatNoFilesAreDeleted() {
         let removal = WorkspaceRemoval(root: "/home/me", sessions: [])
-        #expect(removal.title == "Remove /home/me from agentws?")
-        #expect(removal.message == "agentws stops using this workspace. No files, worktrees or branches on the server are deleted.")
+        #expect(removal.title == "Remove /home/me from crew?")
+        #expect(removal.message == "crew stops using this workspace. No files, worktrees or branches on the server are deleted.")
         #expect(removal.button == "Remove")
     }
 

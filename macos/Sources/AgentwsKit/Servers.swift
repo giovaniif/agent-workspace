@@ -5,7 +5,7 @@ public enum ServerKind: Codable, Hashable, Sendable, Identifiable {
     case thisMac
     case ssh(host: String)
 
-    public static let remoteBinary = "~/.local/bin/agentws"
+    public static let remoteBinary = "~/.local/bin/crew"
 
     public var id: String { name }
 
@@ -78,6 +78,7 @@ public struct Probe: Equatable, Sendable {
     public var user = ""
     public var home = ""
     public var build: String?
+    public var legacy = false
     public var daemon: DaemonCheck?
     public var tools: Set<String> = []
     public var ghSignedIn = false
@@ -96,6 +97,7 @@ public struct Probe: Equatable, Sendable {
             case "user": probe.user = value
             case "home": probe.home = value
             case "build": probe.build = value.isEmpty ? nil : value
+            case "legacy": probe.legacy = value == "1"
             case "daemon": probe.daemon = try? JSONDecoder().decode(DaemonCheck.self, from: Data(value.utf8))
             case "tool": probe.tools.insert(value)
             case "gh": probe.ghSignedIn = value == "signed-in"
@@ -139,11 +141,11 @@ public enum Checklist {
         }
         switch probe.build {
         case nil:
-            items.append(CheckItem(id: "agentws", title: "agentws", state: .failed, detail: "not installed", fix: "Set up"))
+            items.append(CheckItem(id: "crew", title: "crew", state: .failed, detail: "not installed", fix: "Set up"))
         case let build? where build != appBuild:
-            items.append(CheckItem(id: "agentws", title: "agentws", state: .warning, detail: "build \(build), the app is \(appBuild)", fix: "Update server"))
+            items.append(CheckItem(id: "crew", title: "crew", state: .warning, detail: "build \(build), the app is \(appBuild)", fix: "Update server"))
         case let build?:
-            items.append(CheckItem(id: "agentws", title: "agentws", state: .ok, detail: build))
+            items.append(CheckItem(id: "crew", title: "crew", state: .ok, detail: build))
         }
         items.append(daemon(probe))
         for tool in ["git", "tmux"] {
@@ -306,16 +308,16 @@ public final class ServerSetup {
         await run {
             let before = try await self.refresh()
             guard let platform = before.platform else {
-                throw ServerSetupError(message: "agentws has no build for \(before.kernel) \(before.machine); it runs on Linux and macOS, amd64 or arm64")
+                throw ServerSetupError(message: "crew has no build for \(before.kernel) \(before.machine); it runs on Linux and macOS, amd64 or arm64")
             }
             var replaced = false
-            if self.server.isRemote, before.build != self.appBuild {
+            if self.server.isRemote, before.build != self.appBuild || before.legacy {
                 try await self.install(platform)
                 replaced = true
             }
             let binary = try self.binary(platform)
             let daemon = try await self.shell.run("\(binary) setup daemon", input: nil)
-            guard daemon.status == 0 else { throw self.failure("agentws setup daemon", daemon) }
+            guard daemon.status == 0 else { throw self.failure("crew setup daemon", daemon) }
             if replaced, before.daemon?.running == true {
                 let restart = try await self.shell.run(Self.restart(platform), input: nil)
                 guard restart.status == 0 else { throw self.failure("restarting the daemon", restart) }
@@ -330,36 +332,37 @@ public final class ServerSetup {
 
     private static func restart(_ platform: Platform) -> String {
         platform.os == "darwin"
-            ? #"launchctl kickstart -k "gui/$(id -u)/dev.agentws.daemon""#
-            : #"export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"; export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"; systemctl --user restart agentws-daemon.service"#
+            ? #"launchctl kickstart -k "gui/$(id -u)/dev.crew.daemon""#
+            : #"export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"; export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"; systemctl --user restart crew-daemon.service"#
     }
 
     private func binary(_ platform: Platform) throws -> String {
-        if server.isRemote { return #""$HOME/.local/bin/agentws""# }
-        guard let path = bundled(platform) else { throw ServerSetupError(message: "this app has no bundled agentws for \(platform.directory)") }
+        if server.isRemote { return #""$HOME/.local/bin/crew""# }
+        guard let path = bundled(platform) else { throw ServerSetupError(message: "this app has no bundled crew for \(platform.directory)") }
         return shellQuote(path)
     }
 
     private func install(_ platform: Platform) async throws {
         guard let path = bundled(platform), let data = FileManager.default.contents(atPath: path) else {
-            throw ServerSetupError(message: "this app has no bundled agentws for \(platform.directory)")
+            throw ServerSetupError(message: "this app has no bundled crew for \(platform.directory)")
         }
-        let script = #"set -e; d="$HOME/.local/bin"; mkdir -p "$d"; t="$d/.agentws.$$"; cat > "$t"; chmod 755 "$t"; mv -f "$t" "$d/agentws""#
+        let script = #"set -e; d="$HOME/.local/bin"; mkdir -p "$d"; t="$d/.crew.$$"; cat > "$t"; chmod 755 "$t"; mv -f "$t" "$d/crew"; if [ -e "$d/agentws" ] && [ ! -L "$d/agentws" ]; then rm -f "$d/agentws"; fi; ln -sfn crew "$d/agentws""#
         let result = try await shell.run(script, input: data)
-        guard result.status == 0 else { throw failure("copying agentws to ~/.local/bin", result) }
+        guard result.status == 0 else { throw failure("copying crew to ~/.local/bin", result) }
     }
 
     private func refresh() async throws -> Probe {
         let binary: String
         if server.isRemote {
-            binary = #""$HOME/.local/bin/agentws""#
+            binary = #""$HOME/.local/bin/crew""#
         } else {
-            binary = shellQuote(bundled(Platform(kernel: "Darwin", machine: Self.machine)!) ?? "agentws")
+            binary = shellQuote(bundled(Platform(kernel: "Darwin", machine: Self.machine)!) ?? "crew")
         }
         let script = """
         PATH="$PATH:$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin"
         echo "kernel=$(uname -s)"; echo "machine=$(uname -m)"; echo "user=$(id -un)"; echo "home=$HOME"
         b=\(binary)
+        \(server.isRemote ? #"[ -x "$b" ] || { b="$HOME/.local/bin/agentws"; [ -x "$b" ] && echo legacy=1; }"# : "")
         if [ -x "$b" ]; then echo "build=$("$b" version --build 2>/dev/null)"; echo "daemon=$("$b" setup daemon --check 2>/dev/null)"; fi
         for t in git tmux gh; do command -v "$t" >/dev/null 2>&1 && echo "tool=$t"; done
         command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 && echo gh=signed-in
@@ -388,7 +391,7 @@ public final class ServerSetup {
     private func failure(_ what: String, _ result: RunResult) -> ServerSetupError {
         let said = result.error.trimmingCharacters(in: .whitespacesAndNewlines)
         if server.isRemote, result.status == 255, said.contains("Permission denied") {
-            return ServerSetupError(message: "Could not log in to \(server.name) without a password. agentws runs ssh -o BatchMode=yes, so set up key login (ssh-copy-id \(server.name)), load the key into ssh-agent, or use Tailscale SSH. ssh said: \(said)")
+            return ServerSetupError(message: "Could not log in to \(server.name) without a password. crew runs ssh -o BatchMode=yes, so set up key login (ssh-copy-id \(server.name)), load the key into ssh-agent, or use Tailscale SSH. ssh said: \(said)")
         }
         return ServerSetupError(message: "\(what) failed (exit \(result.status))\(said.isEmpty ? "" : ": \(said)")")
     }
@@ -444,7 +447,7 @@ public struct FirstRunFlow: Equatable, Sendable {
     public var primaryTitle: String {
         switch step {
         case .welcome: "Get started"
-        case .done: "Open agentws"
+        case .done: "Open crew"
         default: "Continue"
         }
     }

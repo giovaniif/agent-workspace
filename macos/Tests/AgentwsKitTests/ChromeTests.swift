@@ -90,7 +90,7 @@ struct ChromeTests {
         #expect(ConnectionBanner(.live) == nil)
         #expect(ConnectionBanner(.idle) == nil)
         let unavailable = ConnectionBanner(.unavailable("no agentws daemon is running"))
-        #expect(unavailable?.title == "No agentws daemon · retrying")
+        #expect(unavailable?.title == "No crew daemon · retrying")
         #expect(unavailable?.detail == "no agentws daemon is running")
         #expect(unavailable?.retrying == true)
         #expect(unavailable?.action == nil)

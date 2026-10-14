@@ -46,7 +46,7 @@ public struct LiveAutomationsWindow: View {
             }, cancel: { running = nil })
         }
         .sheet(item: $editing) { edit in
-            AutomationEditSheet(draft: edit.draft, configPath: "~/.agentws/config.toml", save: { draft in
+            AutomationEditSheet(draft: edit.draft, configPath: "~/.crew/config.toml", save: { draft in
                 editing = nil
                 Task {
                     if await model?.save(draft) == true {

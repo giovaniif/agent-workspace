@@ -105,4 +105,31 @@ struct SettingsTests {
         #expect(throws: CLILinkError.self) { try link.remove() }
         #expect(link.status == .elsewhere(other))
     }
+
+    @Test func theCLILinkIsCrewOnPATH() {
+        #expect(CLILink.standardPath == "/usr/local/bin/crew")
+        #expect(CLILink.legacyPath == "/usr/local/bin/agentws")
+    }
+
+    @Test func anAgentwsLinkThatTheOldAppMadeNowPointsAtCrew() throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("crew-cli-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let target = dir.appendingPathComponent("crew.app/Contents/Resources/bin/darwin_arm64/crew").path
+        let legacy = dir.appendingPathComponent("agentws").path
+        try FileManager.default.createSymbolicLink(atPath: legacy, withDestinationPath: "/Applications/agentws.app/Contents/Resources/bin/darwin_arm64/agentws")
+        #expect(CLILink.adoptLegacy(path: legacy, target: target))
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: legacy) == target)
+        #expect(!CLILink.adoptLegacy(path: legacy, target: target))
+
+        let mine = dir.appendingPathComponent("mine").path
+        try FileManager.default.createSymbolicLink(atPath: mine, withDestinationPath: "/opt/bin/agentws")
+        #expect(!CLILink.adoptLegacy(path: mine, target: target))
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: mine) == "/opt/bin/agentws")
+        #expect(!CLILink.adoptLegacy(path: dir.appendingPathComponent("none").path, target: target))
+
+        let other = dir.appendingPathComponent("other").path
+        try FileManager.default.createSymbolicLink(atPath: other, withDestinationPath: "/Applications/Other.app/Contents/Resources/bin/darwin_arm64/agentws")
+        #expect(!CLILink.adoptLegacy(path: other, target: target))
+    }
 }

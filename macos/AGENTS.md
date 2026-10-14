@@ -11,12 +11,14 @@ The native Mac app ([ADR 0049](../docs/adr/0049-macos-app.md), UX in [docs/macos
     - Settings work the same way: `SettingsView` draws a `SettingsScene` and calls `SettingsActions`. `LiveSettings` connects them to `SettingsStore` and `ServerSettings`.
   - `Sources/AgentwsApp`: the executable target of the app (SwiftUI, and AppKit where necessary). Its UI code is inside `#if canImport(SwiftUI)`, so `swift build` and `swift test` still work on Linux.
   - `Tests/AgentwsKitTests`: Swift Testing tests of `AgentwsKit`.
-- `Info.plist` and `build-app`: `build-app [release|debug]` builds `AgentwsApp` and wraps it into `build/agentws.app` (bundle id `dev.agentws.app`). It signs the app ad-hoc (`codesign -s -`). There is no Developer ID and no notarization. These environment variables apply:
-  - `AGENTWS_APP_VERSION` (default `v0.0.0`) is the release tag. Its numeric part becomes `CFBundleShortVersionString`, and the full tag becomes `AgentwsVersion`.
-  - `AGENTWS_APP_BUILD` (default `0`, the workflow run number in CI) is `CFBundleVersion`.
-  - `AGENTWS_APP_BINARIES` points to a directory with `<os>_<arch>/agentws` for `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`. `build-app` copies them into `Contents/Resources/bin/<os>_<arch>/agentws`. Without it, the app has no bundled `agentws`. This is correct for local UI work.
+- `Info.plist` and `build-app`: `build-app [release|debug]` builds `AgentwsApp` and wraps it into `build/crew.app` (bundle id `dev.crew.app`, display name crew). It signs the app ad-hoc (`codesign -s -`). There is no Developer ID and no notarization. These environment variables apply:
+  - `CREW_APP_VERSION` (default `v0.0.0`; `AGENTWS_APP_VERSION` is the fallback) is the release tag. Its numeric part becomes `CFBundleShortVersionString`, and the full tag becomes `AgentwsVersion`.
+  - `CREW_APP_BUILD` (default `0`, the workflow run number in CI) is `CFBundleVersion`.
+  - `CREW_APP_BINARIES` points to a directory with `<os>_<arch>/crew` for `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`. `build-app` copies them into `Contents/Resources/bin/<os>_<arch>/crew`. Without it, the app has no bundled `crew`. This is correct for local UI work.
 - App icon: `AppIcon.png` (1024 px) comes from `web/public/icon.svg`. `npm run icons` in `web/` makes it again. `build-app` makes `Contents/Resources/AppIcon.icns` from it with `sips` and `iconutil` (16 px to 1024 px, with `@2x`). `CFBundleIconFile` in `Info.plist` points to it.
-- `build-dmg [out]`: wraps `build/agentws.app` and an `/Applications` link into an unsigned DMG (default `build/agentws.dmg`). The DMG uses the same icon as its volume icon (`.VolumeIcon.icns`).
+- Menu bar icon: `build-app` copies `docs/images/brand/crewTemplate.png` and `crewTemplate@2x.png` into `Contents/Resources`. `MenuLabel` shows them as a template image, so macOS tints them for the menu bar. Without them, it shows an SF Symbol.
+- First launch after the rename: `DefaultsMigration.run` copies the `UserDefaults` of the old domain `dev.agentws.app` (servers, settings, shortcuts, browser profiles) one time. A key that the new domain has already stays. `CLILink.adoptLegacy` points an `/usr/local/bin/agentws` link that an old app made (into an `.app` bundle) at the bundled `crew`. It never changes a different link or file.
+- `build-dmg [out]`: wraps `build/crew.app` and an `/Applications` link into an unsigned DMG (default `build/crew.dmg`, volume name crew). The DMG uses the same icon as its volume icon (`.VolumeIcon.icns`).
 
 ## Release
 
@@ -25,7 +27,7 @@ The `macos-app` job in `.github/workflows/release.yml` does these steps:
 1. It unpacks the goreleaser archives.
 2. It runs `build-app` with the release tag as the version.
 3. It checks that the bundled darwin binary reports that tag.
-4. It builds `agentws_<tag>.dmg` and uploads it to the GitHub release.
+4. It builds `crew_<tag>.dmg` and uploads it to the GitHub release.
 
 The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` or the workflow, and on `workflow_dispatch`. Then goreleaser runs with `--snapshot`, and the DMG is only a workflow artifact. There is no Apple Developer account, so the app is ad-hoc signed and not notarized (issue #235). Gatekeeper blocks the first launch until the user clears the quarantine flag (see the README).
 
@@ -84,9 +86,9 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `status` is the line under the box: the resolved path and `single repo`, `orchestration root · N repos`, `worktree`, `folder` or `no such folder`.
   - Test: `swift test --filter WorkspacePath`.
 - Build (`Build.swift`): `Build.read(binary:)` runs `<binary> version --build`. The result is the exact string that the daemon compares in the handshake. The app reads it from the `agentws` that it talks to, in this order:
-  1. `$AGENTWS_BINARY`
-  2. the bundled `Contents/Resources/bin/darwin_<arch>/agentws` (`Build.binary`)
-  3. `agentws` on `PATH`.
+  1. `$CREW_BINARY`, else `$AGENTWS_BINARY`
+  2. the bundled `Contents/Resources/bin/darwin_<arch>/crew` (`Build.binary`)
+  3. `crew` on `PATH`.
 
   If this fails, the app sends `unknown`, and the `version_mismatch` of the daemon shows the stopped banner.
 - Review (`Review.swift`, `ReviewScreen.swift`, `ReviewController.swift`, `SeedReview.swift`):
@@ -135,7 +137,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - each combo without ⌘ or ⌃, so a focused terminal keeps plain keys.
 
     `restoreDefault` skips a default that a different action now has.
-  - `CLILink` links `/usr/local/bin/agentws` to the `agentws` of the app. It never replaces or removes a file that it did not make.
+  - `CLILink` links `/usr/local/bin/crew` to the `crew` of the app. It never replaces or removes a file that it did not make.
   - Workspaces and Agents are for each server. `ServerSettings` calls `workspace.list/add/remove` and `onboarding.status/install/remove/nvim` through `Caller` (the protocol that `ReviewController` uses, and `ViewStore` conforms to). `onboarding.remove` first copies the hook file to a backup.
   - The `config.toml` settings of the server (`ServerConfig.swift`) come from `config.get`. `config.set` saves them one key at a time. It backs up the file and keeps the comments of the user (see [internal/daemon/](../internal/daemon/AGENTS.md#config)). `ConfigFields` lists them for each tab:
     - Workspaces: the read-only worktree location beside `config.toml` and the cleanup schedule.
@@ -197,7 +199,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - A `stale` or `not_found` answer clears the card and the banner, and shows "That prompt is gone; nothing was sent."
     - Allow is the first choice. Always is the next choice that starts with "Yes".
   - `AttentionMenu` supplies the menu bar extra (Needs you, Done · unread, Working, quota meters) and the Dock badge (sessions that need you).
-  - `BridgeAgents` finds `~/Library/LaunchAgents/dev.agentws.bridge.*.plist` and builds `agentws setup bridge --remove <host>`. The menu offers it only for a bridge to the server that the app talks to.
+  - `BridgeAgents` finds `~/Library/LaunchAgents/dev.crew.bridge.*.plist` (and `dev.agentws.bridge.*.plist` that `crew setup` did not move yet) and builds `agentws setup bridge --remove <host>`. The menu offers it only for a bridge to the server that the app talks to.
   - The app starts the store, notifier and stream from the menu bar label. Thus all of it works when all windows are closed.
   - Without permission, `UserNotifier` works with less function (ad-hoc signed, not notarized, or run outside the bundle). `problem` tells why, and the menu and badge still work.
   - `swift test --filter Attention` runs the suite.
@@ -213,12 +215,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `Snapshot.renderFirstRun` draws each step (`first-run-<n>[-dark].png`).
   - Hosts come from `~/.ssh/config` (`SSHConfig.hosts`, without wildcards) or a typed `user@host`. `SSHConfig.target` refuses options and spaces.
   - `ServerSetup` runs each remote step through `ProcessShell`: `ssh -T -o BatchMode=yes -o ConnectTimeout=10 <host> sh -c '<script>'`. Thus a host that asks for a password fails immediately (exit 255), with a message about key, agent or Tailscale SSH login.
-  - The probe prints `uname -s`/`-m`, user, home, the installed build (`~/.local/bin/agentws version --build`) and `setup daemon --check`. It also prints which of git, tmux and gh exist, and if gh is signed in.
+  - The probe prints `uname -s`/`-m`, user, home, the installed build (`~/.local/bin/crew version --build`, else the old `~/.local/bin/agentws` on a server that runs an alpha) and `setup daemon --check`. It also prints which of git, tmux and gh exist, and if gh is signed in.
   - `setUp` does these steps:
-    1. It copies the bundled `Contents/Resources/bin/<os>_<arch>/agentws` through the stdin of the same ssh to a temp file in `~/.local/bin`.
-    2. It `mv`s the file into place (atomic). If the build already matches, it skips this, so a second run changes nothing.
-    3. It runs `agentws setup daemon`.
-    4. If it replaced the binary of a running daemon, it restarts the service (`systemctl --user restart agentws-daemon.service`, or `launchctl kickstart -k` on a Mac). It never stops the service, so tmux sessions continue.
+    1. It copies the bundled `Contents/Resources/bin/<os>_<arch>/crew` through the stdin of the same ssh to a temp file in `~/.local/bin`.
+    2. It `mv`s the file into place as `crew` (atomic), and makes `~/.local/bin/agentws` a symlink to it. An old `agentws` binary there goes away. If the build already matches, it skips this, so a second run changes nothing.
+    3. It runs `crew setup daemon`. This also runs the migration from agentws (see [cmd/crew/](../cmd/crew/AGENTS.md)).
+    4. If it replaced the binary of a running daemon, it restarts the service (`systemctl --user restart crew-daemon.service`, or `launchctl kickstart -k` of `dev.crew.daemon` on a Mac). It never stops the service, so tmux sessions continue.
   - `Checklist.items` changes the probe into the rows of the Servers tab, with fix-its: Set up, Update server, the linger command `sudo loginctl enable-linger <user>`, `ssh -t <host> gh auth login`.
   - Each row of the workspace step has Remove (also in its context menu). `WorkspaceRemoval` gives the confirmation: it says that no files, worktrees or branches are deleted, and it names the live sessions whose `Dir` is in the workspace. The new-session sheet has "Manage workspaces…", which opens Settings › Workspaces (the Settings tab is stored in `settings.tab`). Test: `swift test --filter WorkspaceRemoval`.
   - Hooks and the workspace step use `ServerSettings` over the `ViewStore` of the new server. The workspace step uses the workspace path field (`ServerSettings.path`).
@@ -233,7 +235,7 @@ The app target is a SwiftPM executable and `build-app`, not an `.xcodeproj`. All
 
 - `swift test` (in `macos/`): the `AgentwsKit` tests. On Linux, install a toolchain with [swiftly](https://www.swift.org/install/linux/) (`swiftly install latest`).
 - `swift test --filter AgentwsKitTests.ProtocolTests`: one suite. `swift test --filter Terminal` runs the terminal suites. Their fake `tmux` scripts use control mode.
-- `macos/build-app` (macOS only): makes `macos/build/agentws.app`. `open macos/build/agentws.app` runs it. `open macos/build/agentws.app --args --demo` shows the seeded window without a daemon.
+- `macos/build-app` (macOS only): makes `macos/build/crew.app`. `open macos/build/crew.app` runs it. `open macos/build/crew.app --args --demo` shows the seeded window without a daemon.
 - CI's `macos` job runs both on `macos-15`.
 
 ## Tests

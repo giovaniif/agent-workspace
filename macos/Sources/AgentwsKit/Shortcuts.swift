@@ -142,7 +142,7 @@ public enum ShortcutRefusal: Error, Equatable, Sendable {
 
     public func message(for combo: KeyCombo) -> String {
         switch self {
-        case .unsupportedKey: "\(combo.display) is not a key agentws can bind"
+        case .unsupportedKey: "\(combo.display) is not a key crew can bind"
         case .taken(let holder): "\(combo.display) is already used by \(holder)"
         case .needsModifier: "\(combo.display) needs ⌘ or ⌃, so the terminal keeps plain keys"
         }

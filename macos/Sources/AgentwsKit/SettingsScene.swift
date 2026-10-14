@@ -65,7 +65,7 @@ public struct SettingsScene: Sendable, Equatable {
                 WorkspaceInfo(root: "~/code/notes", kind: "single", repos: [RepoInfo(name: "notes", path: "~/code/notes", branch: "main")]),
             ],
             cliLink: .linked,
-            config: ServerConfig(path: "~/.agentws/config.toml", values: [
+            config: ServerConfig(path: "~/.crew/config.toml", values: [
                 "fallback.threshold": "20", "push.away_after": "2m",
                 "defaults.claude.model": "opus", "defaults.claude.effort": "high", "theme.blue": "#1e66f5",
             ]),
@@ -78,7 +78,7 @@ public struct SettingsScene: Sendable, Equatable {
             selectedServer: .ssh(host: "devbox"),
             checklist: [
                 CheckItem(id: "ssh", title: "SSH", state: .ok, detail: "devbox reachable · 38 ms · Linux x86_64"),
-                CheckItem(id: "agentws", title: "agentws", state: .warning, detail: "build v0.9.0 1a2b3c, the app is v1.0.0 4d5e6f", fix: "Update server"),
+                CheckItem(id: "crew", title: "crew", state: .warning, detail: "build v0.9.0 1a2b3c, the app is v1.0.0 4d5e6f", fix: "Update server"),
                 CheckItem(id: "daemon", title: "Daemon", state: .warning, detail: "running, but linger is off: the daemon and every session stop at logout", command: "sudo loginctl enable-linger me"),
                 CheckItem(id: "git", title: "git", state: .ok, detail: "found"),
                 CheckItem(id: "tmux", title: "tmux", state: .ok, detail: "found"),

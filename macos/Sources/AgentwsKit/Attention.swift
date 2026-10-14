@@ -409,11 +409,12 @@ public struct BridgeAgent: Sendable, Equatable {
 }
 
 public enum BridgeAgents {
-    public static let prefix = "dev.agentws.bridge."
+    public static let prefix = "dev.crew.bridge."
+    public static let legacyPrefix = "dev.agentws.bridge."
 
     public static func find(in directory: URL) -> [BridgeAgent] {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
-        return names.filter { $0.hasPrefix(prefix) && $0.hasSuffix(".plist") }.sorted().compactMap { name in
+        return names.filter { ($0.hasPrefix(prefix) || $0.hasPrefix(legacyPrefix)) && $0.hasSuffix(".plist") }.sorted().compactMap { name in
             guard let data = FileManager.default.contents(atPath: directory.appendingPathComponent(name).path),
                   let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
                   let program = plist["ProgramArguments"] as? [String],

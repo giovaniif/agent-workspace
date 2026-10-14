@@ -201,7 +201,7 @@ struct ToolbarStrip: View {
         HStack(spacing: Metrics.gutter) {
             Image(systemName: "sidebar.left").foregroundStyle(theme(.subtext))
             VStack(alignment: .leading, spacing: 1) {
-                Text(scene.session?.name ?? "agentws").font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                Text(scene.session?.name ?? "crew").font(.system(size: 13, weight: .semibold)).lineLimit(1)
                 Text(scene.session?.where ?? "").font(Metrics.mono).foregroundStyle(theme(.subtext)).lineLimit(1)
             }
             .frame(minWidth: 160, alignment: .leading)

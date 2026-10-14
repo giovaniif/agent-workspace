@@ -12,12 +12,12 @@ public struct WorkspaceRemoval: Sendable, Equatable, Identifiable {
         live = sessions.filter { !$0.ended && ($0.dir == root || $0.dir.hasPrefix(prefix)) }.count
     }
 
-    public var title: String { "Remove \(root) from agentws?" }
+    public var title: String { "Remove \(root) from crew?" }
 
     public var button: String { "Remove" }
 
     public var message: String {
-        let safe = "agentws stops using this workspace. No files, worktrees or branches on the server are deleted."
+        let safe = "crew stops using this workspace. No files, worktrees or branches on the server are deleted."
         switch live {
         case 0: return safe
         case 1: return "1 live session uses this workspace. " + safe
