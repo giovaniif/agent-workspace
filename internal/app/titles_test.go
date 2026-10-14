@@ -10,7 +10,7 @@ import (
 )
 
 func TestNamingResolversTakeTheFirstAnswer(t *testing.T) {
-	task := domain.Task{Source: domain.TaskLinear, Ref: "ENG-1"}
+	task := domain.Task{Source: domain.TaskPR, Ref: "api#1"}
 	boom := errors.New("boom")
 	cases := []struct {
 		name      string

@@ -65,7 +65,7 @@ func nextTask(t *testing.T, diffs <-chan rpc.Diff, within time.Duration) domain.
 	for {
 		select {
 		case d := <-diffs:
-			if d.Task != nil && (d.Task.IssueTitle == "Fix the login redirect" || d.Task.PRTitle != "") {
+			if d.Task != nil && (d.Task.PRTitle != "") {
 				return *d.Task
 			}
 		case <-deadline:
@@ -74,10 +74,10 @@ func nextTask(t *testing.T, diffs <-chan rpc.Diff, within time.Duration) domain.
 	}
 }
 
-func TestNamingLinearSessionShowsTheIssueTitleWithinTwoSeconds(t *testing.T) {
+func TestNamingPRSessionShowsThePRTitleWithinTwoSeconds(t *testing.T) {
 	r := startNaming(t, &fakeTitles{title: "Fix the login redirect"})
 	start := time.Now()
-	s := r.newSession(t, "https://linear.app/acme/issue/ENG-1/login")
+	s := r.newSession(t, "https://github.com/acme/api/pull/1")
 	task := nextTask(t, r.diffs, 2*time.Second)
 	if task.ID != s.TaskID || domain.NameFor(task, nil) != "Fix the login redirect" {
 		t.Fatalf("task %+v", task)
@@ -85,7 +85,7 @@ func TestNamingLinearSessionShowsTheIssueTitleWithinTwoSeconds(t *testing.T) {
 	if took := time.Since(start); took > 2*time.Second {
 		t.Errorf("took %v", took)
 	}
-	if got := r.titles.calls(); len(got) != 1 || got[0].Ref != "ENG-1" {
+	if got := r.titles.calls(); len(got) != 1 || got[0].Ref != "api#1" {
 		t.Errorf("resolver asked %+v", got)
 	}
 }
@@ -101,9 +101,9 @@ func TestNamingPRSessionGetsThePRTitle(t *testing.T) {
 func TestNamingTextSessionsAndRepeatsAreNotResolved(t *testing.T) {
 	r := startNaming(t, &fakeTitles{title: "Fix the login redirect"})
 	r.newSession(t, "tidy up the parser")
-	r.newSession(t, "https://linear.app/acme/issue/ENG-1/login")
+	r.newSession(t, "https://github.com/acme/api/pull/1")
 	nextTask(t, r.diffs, 2*time.Second)
-	r.newSession(t, "https://linear.app/acme/issue/ENG-1/login")
+	r.newSession(t, "https://github.com/acme/api/pull/1")
 	if err := r.c.Call(context.Background(), rpc.MethodStatus, nil, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -112,10 +112,10 @@ func TestNamingTextSessionsAndRepeatsAreNotResolved(t *testing.T) {
 	}
 }
 
-func TestNamingResolverFailureKeepsTheGuessedTitle(t *testing.T) {
+func TestNamingResolverFailureLeavesTheTitleEmpty(t *testing.T) {
 	titles := &fakeTitles{err: errors.New("offline")}
 	r := startNaming(t, titles)
-	s := r.newSession(t, "https://linear.app/acme/issue/ENG-1/fix-login")
+	s := r.newSession(t, "https://github.com/acme/api/pull/1")
 	deadline := time.Now().Add(2 * time.Second)
 	for len(titles.calls()) == 0 && time.Now().Before(deadline) {
 		time.Sleep(5 * time.Millisecond)
@@ -123,8 +123,8 @@ func TestNamingResolverFailureKeepsTheGuessedTitle(t *testing.T) {
 	if err := r.c.Call(context.Background(), rpc.MethodStatus, nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := r.task(t, s.TaskID).IssueTitle; got != "fix login" {
-		t.Errorf("issue title = %q, want the URL's guess", got)
+	if got := r.task(t, s.TaskID); got.PRTitle != "" {
+		t.Errorf("task = %+v, want no title", got)
 	}
 }
 
@@ -170,13 +170,13 @@ func TestNamingRenameErrors(t *testing.T) {
 func TestNamingResolvedTitleDoesNotUndoAPinMadeMeanwhile(t *testing.T) {
 	titles := &fakeTitles{title: "Fix the login redirect", gate: make(chan struct{})}
 	r := startNaming(t, titles)
-	s := r.newSession(t, "https://linear.app/acme/issue/ENG-1/login")
+	s := r.newSession(t, "https://github.com/acme/api/pull/1")
 	if err := r.c.Call(context.Background(), rpc.MethodSessionRename, rpc.SessionRenameParams{ID: s.ID, Name: "mine"}, nil); err != nil {
 		t.Fatal(err)
 	}
 	close(titles.gate)
 	task := nextTask(t, r.diffs, 2*time.Second)
-	if task.PinnedName != "mine" || task.IssueTitle != "Fix the login redirect" || domain.NameFor(task, nil) != "mine" {
+	if task.PinnedName != "mine" || task.PRTitle != "Fix the login redirect" || domain.NameFor(task, nil) != "mine" {
 		t.Fatalf("task %+v", task)
 	}
 }
