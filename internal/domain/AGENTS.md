@@ -42,6 +42,7 @@ Pure types and rules. This package does no IO and does not import other `interna
   - `NewDevice`: 32 random bytes as base64url, stored as `HashDeviceToken`.
   - `CheckDeviceToken` (constant time), `RevokeDevice`, `Device.Seen` (a maximum of one time each minute), `DeviceName`, `NewDeviceID`, `PairURL`.
 - `ParseBrowserCommand(args)` and `BrowserCommands()`: the commands and arguments of `agentws browser` (see [ADR 0051](../../docs/adr/0051-browser-in-mac-app.md)).
+- Automations ([ADR 0050](../../docs/adr/0050-automations.md)): `ValidateAutomation`, `MergeAutomations` (a repo automation replaces the global one with the same name) and `ExpandPrompt` (`{{context}}`, `{{work_item}}`, `{{repo}}`, `{{branch}}`, `{{event}}`; context without `{{context}}` goes at the end).
 - `MergeLoginPath(current, login)`: the PATH of the daemon, and the entries of the login shell that it does not have. Current entries come first (see [internal/daemon/](../daemon/AGENTS.md)).
 - Registered projects: `NewProject(workspace, name, setup)`, `ProjectOf(projects, path)`, `ProjectOfWorktree` (by main checkout, then by path) and `ProjectRows` (the sidebar rows, by name, with the worktrees of each). See [internal/daemon/](../daemon/AGENTS.md#projects).
 - Tabs of a project worktree:

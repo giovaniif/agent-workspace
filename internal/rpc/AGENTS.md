@@ -75,6 +75,10 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - Values are strings. Unset keys are absent.
   - `config.set` validates with `domain.ConfigLiteral` (else `bad_request`). An empty value removes the key. See [internal/daemon/](../daemon/AGENTS.md#config).
   - Without `WithConfig`, both answer `unavailable`.
+- `automation.list` (`{"repo"}` → `{"automations","problems"}`) reads the `[[automation]]` tables of `config.toml` and of `<repo>/.agentws.toml` on the connection goroutine. See [ADR 0050](../../docs/adr/0050-automations.md).
+  - With `repo`, a repo automation replaces the global one with the same name (`domain.MergeAutomations`). Without `repo`, the list has the global automations, then the automations of each registered repo.
+  - An automation that `domain.ValidateAutomation` refuses is not in the list. Its error is in `problems`, with the file path.
+  - `automation.show` (`{"name","repo"}` → an automation) uses the same list. An unknown name is `not_found`.
 - Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `launcher.enqueue`, `launcher.drop`, `launcher.retarget`, `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
   - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.agentws-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
 - Workspace and project methods:

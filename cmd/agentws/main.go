@@ -64,6 +64,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runReview(args[1:], stdout, stderr)
 	case cmd == "notify":
 		return runNotify(args[1:], stdout, stderr)
+	case cmd == "automation":
+		return runAutomation(args[1:], stdout, stderr)
 	case cmd == "focus":
 		return runFocus(args[1:], stderr)
 	case cmd == "remote":
@@ -99,5 +101,5 @@ func buildCommit() string {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|review|browser|focus|notify|remote|serve|rpc|cleanup|version [--build]]")
+	fmt.Fprintln(w, "usage: agentws [daemon|workspace|worktree|pr|setup|setup-worktree|tui|debug|hook|statusline|new|automation|review|browser|focus|notify|remote|serve|rpc|cleanup|version [--build]]")
 }
