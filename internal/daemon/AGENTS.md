@@ -76,10 +76,9 @@ A worktree that a project holds is a container of tabs: the agent that made it, 
 See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
 - **Start.** `n` in the TUI or `agentws new` calls `session.new`.
-  - The work item is a Linear issue URL, a GitHub PR URL or text. A URL of a different shape stays text (`domain.ParseWorkItem`).
+  - The work item is a GitHub PR URL or text. A URL of a different shape stays text (`domain.ParseWorkItem`).
   - A single repo gets one worktree at `$AGENTWS_HOME/worktrees/<repo>/<slug>`, branched from `origin/<default>`, and its setup recipe runs.
   - An orchestration root starts at the root with no worktree (`domain.PlanSessionStart`).
-  - The work item is the first prompt of the agent.
 - **First prompt.** `session.new` takes an optional `prompt`.
   - A fresh session is `idle` when its pane exists, but the harness is still booting. Thus the daemon queues the text in `State.Sends` and holds it (`state.booting`).
   - The hold stays until the first `SessionStart` or `UserPromptSubmit` hook of the harness. Both Claude and Codex install `SessionStart`. Then the text goes out through the normal `session.send` path.
@@ -119,20 +118,11 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
 ## Naming
 
-`go test ./... -run Naming` runs all naming tests: domain rules, resolvers, the Linear and `gh` adapters (against a mocked API and a fake `gh`), the daemon and the TUI.
+`go test ./... -run Naming` runs all naming tests: domain rules, resolvers, the `gh` adapter (against a fake `gh`), the daemon and the TUI.
 
-- The name comes from the work item. It is resolved off the loop: after `session.new`, a worker asks `app.TitleResolvers` and merges the title into the task. The resolvers are the Linear API, with the `[linear] token = "..."` from `$AGENTWS_HOME/config.toml`, then `gh pr view`.
+- The name comes from the work item. It is resolved off the loop: after `session.new`, a worker asks `app.TitleResolvers` and merges the title into the task. The resolver is `gh pr view`.
 - Tests never read the token.
 - In the TUI, `R` calls `session.rename` (`{"id","name"}`) to rename and pin. `A` calls `session.unpin` (`{"id"}`). See [ADR 0026](../../docs/adr/0026-session-naming.md).
-
-## Launcher
-
-`go test ./... -run Launcher -tags integration` runs the domain, daemon and TUI launcher tests and the integration test. The integration test uses real repos and tmux and a fake Linear server. Nothing gets to Linear. See [ADR 0031](../../docs/adr/0031-linear-launcher.md).
-
-- `L` calls `launcher.enqueue` (`{"workspace","input","harness","model","effort"}` → `{"queued","rejected"}`) with the Linear URLs in the input.
-- `launcher.drop` (`{"id"}`) and `launcher.retarget` (`{"id","harness","model","effort"}`) edit a waiting item. `c` moves queued issues to Codex when offered. `X` clears the queue.
-- The daemon holds the queue (`State.Queue`, `Diff.Queue`). A worker empties it by `domain.DrainLauncher`, with `[launcher] max_parallel` in `$AGENTWS_HOME/config.toml` (default 3). Each item starts through the `session.new` path.
-- The sidebar lists the queue with the `OfferFallbacks` offer.
 
 ## Config
 
@@ -144,7 +134,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - Before it writes, it parses the result again. The result must hold exactly the new value.
   - It refuses a key that is set in a different way (an inline table, dotted keys), with a message to edit it by hand. It never touches a file that does not parse.
 - **Backup.** A changed file is first copied to `config.toml.agentws-<UTC time>.bak` (mode 600). Then it is replaced atomically with its old mode. If you set the value that it already has, nothing is written and there is no backup. A missing file is created without a backup.
-- **Live.** After a write, the daemon reloads `[defaults.<harness>]`, `[launcher] max_parallel` and `[push] away_after`. `[push] away_after` reloads only when presence runs. To turn it on from `"0"`, restart. The TUI reads `[fallback]` and `[theme]` when it starts.
+- **Live.** After a write, the daemon reloads `[defaults.<harness>]` and `[push] away_after`. `[push] away_after` reloads only when presence runs. To turn it on from `"0"`, restart. The TUI reads `[fallback]` and `[theme]` when it starts.
 
 ## Codex fallback
 

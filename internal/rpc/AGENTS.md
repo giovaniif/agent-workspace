@@ -20,7 +20,7 @@ The transport is a Unix socket at `$AGENTWS_HOME/agentws.sock`. It carries one J
 - `subscribe` answers with the full `State` at `seq`. Then it sends one `diff` for each change, starting at `seq+1`.
   - A diff sets exactly one of `workspace`, `task`, `worktree`, `session`, and replaces that entity by key.
   - The one exception is a hook. Its diff sets `session` and `event` together. The daemon appends `event` to the events of its session.
-  - List diffs set `queue` (the launcher queue) or `sends` (the queued `session.send` texts) to the whole list.
+  - List diffs set `sends` (the queued `session.send` texts) to the whole list.
   - `State.events` holds the last 20 events of each session. Domain structs encode with their Go field names.
 - A diff can also set `removed_workspace` (a root), `removed_worktree` (an ID) or `removed_session` (an ID). The client then drops that entity. For a session, it also drops the events.
   - `revoked_device` (an ID) tells that a paired device was revoked. Clients without devices ignore it.
@@ -63,15 +63,14 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - `session.prompt` and `session.answer` need `WithHarnesses`.
 - `session.resolve` (`{"workspace","work_item"}` → `{"source","ref","title","worktree","workspace"}`) tells what `session.new` would start, but does not start it.
   - It checks the item with `domain.CheckWorkItem` (`bad_request`).
-  - It finds a Linear or PR title through the title resolvers, off the event loop. If that fails, it returns `not_found`.
+  - It finds a PR title through the title resolvers, off the event loop. If that fails, it returns `not_found`.
   - It names the worktree as `session.new` does. It registers nothing.
-- `session.options` (`{}` → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort"}],"max_parallel","home"}`) tells what a new-session form offers. `home` is the home folder of the server, so a client can read a typed `~/` or relative path.
+- `session.options` (`{}` → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort"}],"home"}`) tells what a new-session form offers. `home` is the home folder of the server, so a client can read a typed `~/` or relative path.
   - There is one entry for each registered harness, in `domain.Harnesses()` order. Each entry has its `domain.Spec` models and efforts.
   - `model` and `effort` come from `[defaults.<harness>]` in `$AGENTWS_HOME/config.toml` (`daemon.LoadStartDefaults`). The daemon reads them at start and again after each `config.set`. They are empty when unset.
-  - `max_parallel` is the launcher limit (default 3).
   - The new-session sheet of the Mac app uses it, because the app cannot read the config of a remote server.
 - `config.get` (`{}` → `{"path","values":{"<table>.<key>":"<value>"}}`) and `config.set` (`{"key","value"}` → the same) work on the settings in `$AGENTWS_HOME/config.toml` that clients can change.
-  - `domain.ConfigKeys` lists them: `launcher.max_parallel`, `fallback.threshold`, `push.away_after`, `defaults.<harness>.model`/`effort`, `theme.<colour>`.
+  - `domain.ConfigKeys` lists them: `fallback.threshold`, `push.away_after`, `defaults.<harness>.model`/`effort`, `theme.<colour>`.
   - Values are strings. Unset keys are absent.
   - `config.set` validates with `domain.ConfigLiteral` (else `bad_request`). An empty value removes the key. See [internal/daemon/](../daemon/AGENTS.md#config).
   - Without `WithConfig`, both answer `unavailable`.
@@ -79,7 +78,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - With `repo`, a repo automation replaces the global one with the same name (`domain.MergeAutomations`). Without `repo`, the list has the global automations, then the automations of each registered repo.
   - An automation that `domain.ValidateAutomation` refuses is not in the list. Its error is in `problems`, with the file path.
   - `automation.show` (`{"name","repo"}` → an automation) uses the same list. An unknown name is `not_found`.
-- Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `launcher.enqueue`, `launcher.drop`, `launcher.retarget`, `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
+- Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
   - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.agentws-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
 - Workspace and project methods:
   - `workspace.add` (`{"path": abs}` → `Workspace`).

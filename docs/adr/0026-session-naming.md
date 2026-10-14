@@ -1,6 +1,6 @@
 # ADR 0026: Session naming
 
-Status: accepted, 2026-09-30.
+Status: accepted, 2026-09-30. The Linear parts are superseded by [ADR 0050](0050-remove-linear.md) on 2026-10-13.
 
 ## Decision
 

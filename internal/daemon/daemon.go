@@ -113,9 +113,6 @@ type state struct {
 	listeners       []domain.Listener
 	requestTurn     func(session string, dirs []string, sent *domain.ReviewDraft) bool
 	viewed          map[string]domain.ViewedMark
-	queue           []domain.LaunchItem
-	launched        map[string]bool
-	kickLauncher    func()
 	scopes          map[string]domain.ReviewScope
 	drafts          map[string]domain.ReviewDraft
 	awaiting        map[string]domain.ReviewDraft
@@ -153,7 +150,6 @@ type Daemon struct {
 	cl       cleanupWorker
 	disk     DiskDeps
 	onboard  app.Onboarder
-	lc       launcherCfg
 	cfg      configCfg
 	term     terminals
 	tx       *transcripts
@@ -179,7 +175,6 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		usage:      map[string]*usageJob{},
 		hints:      newWorktreeHints(),
 		viewed:     map[string]domain.ViewedMark{},
-		launched:   map[string]bool{},
 		scopes:     map[string]domain.ReviewScope{},
 		drafts:     map[string]domain.ReviewDraft{},
 		awaiting:   map[string]domain.ReviewDraft{},
@@ -239,9 +234,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		wt:       worktreeScanner{every: DefaultWorktreePoll, prEvery: DefaultPRPoll, baselined: map[string]bool{}},
 		ports:    portScanner{every: DefaultPortsPoll},
 		cl:       cleanupWorker{kick: make(chan struct{}, 1)},
-		lc:       launcherCfg{kick: make(chan struct{}, 1)},
 	}
-	st.kickLauncher = d.kickLauncher
 	st.requestUsage = func(sessionID, path string, force bool) { d.requestUsage(st, sessionID, path, force) }
 	st.sendSwitches = d.sendSwitches
 	st.sendDraft = d.sendDraft
@@ -293,7 +286,6 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	go d.snapshotTurns(ctx)
 	d.cl.schedule()
 	go d.cleanupEvery(ctx)
-	go d.runLauncher(ctx)
 	loopDone := make(chan struct{})
 	go func() {
 		d.loop(ctx)
@@ -364,12 +356,6 @@ func (s *state) emit(e Event) {
 		now, has := s.sessions[id]
 		if !has || now.Transcript != prev.Transcript {
 			s.transcriptMoved(id, now.Transcript, !has)
-		}
-	}
-	switch e.(type) {
-	case SessionChanged, SessionHooked:
-		if len(s.queue) > 0 {
-			s.kickLauncher()
 		}
 	}
 	for c, id := range s.subs {
@@ -550,8 +536,6 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.endSession(req)
 	case rpc.MethodResumeSession:
 		return d.resumeSession(req)
-	case rpc.MethodLauncherEnqueue, rpc.MethodLauncherDrop, rpc.MethodLauncherRetarget:
-		return d.launcherMethod(req)
 	case rpc.MethodSessionSend, rpc.MethodSessionUnsend, rpc.MethodSessionInterrupt:
 		return d.sessionInput(req)
 	case rpc.MethodSessionPrompt:
@@ -633,7 +617,6 @@ func (s *state) snapshot() rpc.State {
 		Sessions:    sorted(s.sessions),
 		Events:      flatten(s.events),
 		Subagents:   append([]domain.Subagent{}, s.subagents...),
-		Queue:       append([]domain.LaunchItem{}, s.queue...),
 		Drafts:      s.draftList(),
 		Projects:    sorted(s.projects),
 		Sends:       append([]domain.QueuedSend{}, s.sends...),

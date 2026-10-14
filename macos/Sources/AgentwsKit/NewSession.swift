@@ -13,12 +13,7 @@ public struct HarnessOptions: Codable, Sendable, Equatable {
 
 public struct SessionOptions: Codable, Sendable, Equatable {
     @NullAsEmpty public var harnesses: [HarnessOptions]
-    public var maxParallel: Int
     public var home: String?
-
-    enum CodingKeys: String, CodingKey {
-        case harnesses, maxParallel = "max_parallel", home
-    }
 }
 
 public struct WorkItemResolved: Codable, Sendable, Equatable {
@@ -50,19 +45,6 @@ struct ResolveParams: Encodable, Sendable {
     }
 }
 
-public struct LauncherEnqueueParams: Encodable, Sendable, Equatable {
-    public var workspace: String
-    public var input: String
-    public var harness: String
-    public var model: String
-    public var effort: String
-}
-
-public struct LauncherEnqueued: Decodable, Sendable, Equatable {
-    @NullAsEmpty public var queued: [String]
-    @NullAsEmpty public var rejected: [String]
-}
-
 struct StartedSession: Decodable, Sendable {
     var id: String
 
@@ -76,11 +58,6 @@ struct SessionID: Encodable, Sendable {
 }
 
 struct Ignored: Decodable, Sendable {}
-
-public enum NewSessionTab: Sendable, Equatable, Hashable {
-    case session
-    case launcher
-}
 
 @MainActor
 final class OfflineCaller: Caller {
@@ -130,41 +107,12 @@ public struct WorkItemCard: Sendable, Equatable {
     init(_ resolved: WorkItemResolved, worktrees: [Worktree]) {
         let ref = resolved.ref ?? ""
         switch resolved.source {
-        case "linear": source = ["Linear", ref].filter { !$0.isEmpty }.joined(separator: " ")
         case "pr": source = ["PR", ref].filter { !$0.isEmpty }.joined(separator: " ")
         default: source = "Text"
         }
         title = resolved.title ?? ""
         branch = resolved.worktree
         existing = worktrees.first { $0.branch == resolved.worktree }?.path
-    }
-}
-
-public struct LaunchRow: Sendable, Equatable, Identifiable {
-    public var id: String
-    public var ref: String
-    public var harness: String
-    public var status: String
-
-    public init(id: String, ref: String, harness: String, status: String) {
-        self.id = id
-        self.ref = ref
-        self.harness = harness
-        self.status = status
-    }
-
-    public static func rows(_ queue: [JSONValue]) -> [LaunchRow] {
-        queue.compactMap { value in
-            guard case let .object(item) = value else { return nil }
-            var harness = ""
-            if case let .object(request)? = item["Request"] {
-                let name = request["Harness"]?.string ?? ""
-                harness = name == "codex" ? "CX" : name == "claude" ? "CC" : name.uppercased()
-            }
-            let err = item["Err"]?.string ?? ""
-            let status = !err.isEmpty ? "failed: " + err : (item["Starting"]?.bool ?? false) ? "starting" : "queued"
-            return LaunchRow(id: item["ID"]?.string ?? "", ref: item["Ref"]?.string ?? "", harness: harness, status: status)
-        }
     }
 }
 
@@ -176,7 +124,6 @@ public struct NewSessionForm: Sendable, Equatable {
     private var chosenHarness = ""
     public var model = ""
     public var effort = ""
-    public var launchInput = ""
 
     public init() {}
 
@@ -227,10 +174,6 @@ public struct NewSessionForm: Sendable, Equatable {
         NewSessionParams(workspace: workspace, workItem: trimmedWorkItem, harness: harness, model: model, effort: effort)
     }
 
-    public var enqueue: LauncherEnqueueParams {
-        LauncherEnqueueParams(workspace: workspace, input: launchInput, harness: harness, model: model, effort: effort)
-    }
-
     public func warning(limits: [JSONValue]) -> QuotaWarning? {
         let quotas = limits.compactMap { value -> (harness: String, label: String, left: Int, low: Bool)? in
             guard case let .object(q) = value else { return nil }
@@ -252,17 +195,14 @@ public struct NewSessionForm: Sendable, Equatable {
 @Observable
 public final class NewSession: Identifiable {
     public var form = NewSessionForm()
-    public private(set) var maxParallel = 0
     public private(set) var limits: [JSONValue] = []
     @ObservationIgnored private var syncedRoots: Set<String> = []
     @ObservationIgnored private var latestWorkspaces: [Workspace]?
     @ObservationIgnored private var pendingAdded: WorkspaceInfo?
-    public private(set) var queue: [LaunchRow] = []
     public private(set) var card: WorkItemCard?
     public private(set) var resolveError: String?
     public private(set) var failure: String?
     public private(set) var starting = false
-    public private(set) var launchNote: String?
     public private(set) var loadError: String?
     public private(set) var addError: String?
     public private(set) var adding = false
@@ -302,9 +242,7 @@ public final class NewSession: Identifiable {
             var loaded = NewSessionForm(workspaces: all, options: options)
             syncedRoots = Set(all.map(\.root))
             loaded.workItem = form.workItem
-            loaded.launchInput = form.launchInput
             form = loaded
-            maxParallel = options.maxParallel
             if let home = options.home, !home.isEmpty { path.home = home }
             if latestWorkspaces == nil { observe(state) } else { observeLists(state) }
             loadError = nil
@@ -333,21 +271,16 @@ public final class NewSession: Identifiable {
 
     private func observeLists(_ state: ViewState?) {
         limits = state?.limits ?? []
-        queue = LaunchRow.rows(state?.queue ?? [])
     }
 
     static func preview(
-        form: NewSessionForm, maxParallel: Int, limits: [JSONValue], queue: [LaunchRow],
-        card: WorkItemCard?, failure: String?, launchNote: String?
+        form: NewSessionForm, limits: [JSONValue], card: WorkItemCard?, failure: String?
     ) -> NewSession {
         let model = NewSession(caller: OfflineCaller())
         model.form = form
-        model.maxParallel = maxParallel
         model.limits = limits
-        model.queue = queue
         model.card = card
         model.failure = failure
-        model.launchNote = launchNote
         return model
     }
 
@@ -390,19 +323,6 @@ public final class NewSession: Identifiable {
         }
     }
 
-    public func enqueue() async {
-        guard !form.launchInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !form.harness.isEmpty else { return }
-        do {
-            let result: LauncherEnqueued = try await caller.call("launcher.enqueue", params: form.enqueue)
-            var parts = ["Queued \(result.queued.count)"]
-            if !result.rejected.isEmpty { parts.append("not a Linear issue: " + result.rejected.joined(separator: ", ")) }
-            launchNote = parts.joined(separator: " · ")
-            form.launchInput = ""
-        } catch {
-            launchNote = Self.message(error)
-        }
-    }
-
     static func message(_ error: Error) -> String {
         switch error {
         case let AgentwsError.rpc(rpc): rpc.message
@@ -415,7 +335,7 @@ public final class NewSession: Identifiable {
 
 extension Seed {
     public static let setupFailure = """
-    setup /Users/me/.agentws/worktrees/api/eng-212: bun install --frozen-lockfile: exit status 1
+    setup /Users/me/.agentws/worktrees/api/api-212: bun install --frozen-lockfile: exit status 1
     bun install v1.2.4
     error: lockfile had changes, but lockfile is frozen
     note: try re-running without --frozen-lockfile and commit the updated lockfile
@@ -432,24 +352,18 @@ extension Seed {
                            efforts: ["low", "medium", "high", "xhigh", "max"], model: "opus", effort: "high"),
             HarnessOptions(harness: "codex", name: "Codex", tag: "CX", models: ["gpt-6-sol", "gpt-5.5"],
                            efforts: ["low", "medium", "high"], model: "gpt-6-sol", effort: "high"),
-        ], maxParallel: 3)
+        ])
         let decoded = (try? JSONDecoder().decode([Workspace].self, from: Data(workspaces.utf8))) ?? []
         var form = NewSessionForm(workspaces: present ? decoded : [], options: options)
-        form.workItem = "https://linear.app/acme/issue/ENG-212/login-redirect-loop"
-        form.launchInput = "https://linear.app/acme/issue/ENG-214/rate-limit-headers\nhttps://linear.app/acme/issue/ENG-215/audit-log-export"
+        form.workItem = "https://github.com/acme/api/pull/212"
         let quota = { (harness: String, label: String, left: Int) -> JSONValue in
             .object(["Harness": .string(harness), "label": .string(label), "LeftPercent": .number(Double(left)), "low": .bool(left < 20)])
         }
         let model = NewSession.preview(
-            form: form, maxParallel: 3,
+            form: form,
             limits: [quota("claude", "5h", 12), quota("claude", "7d", 48), quota("codex", "7d", 71)],
-            queue: [
-                LaunchRow(id: "q1", ref: "ENG-210", harness: "CC", status: "starting"),
-                LaunchRow(id: "q2", ref: "ENG-211", harness: "CX", status: "queued"),
-                LaunchRow(id: "q3", ref: "ENG-209", harness: "CC", status: "failed: no such issue"),
-            ],
-            card: WorkItemCard(source: "Linear ENG-212", title: "Fix the login redirect loop", branch: "eng-212", existing: nil),
-            failure: failure, launchNote: nil
+            card: WorkItemCard(source: "PR api#212", title: "Fix the login redirect loop", branch: "api-212", existing: nil),
+            failure: failure
         )
         if !present {
             model.path.home = "/Users/me"

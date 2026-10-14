@@ -91,21 +91,6 @@ func TestFallbackOfferNeedsACodexFigureThatIsNotLowItself(t *testing.T) {
 	}
 }
 
-func TestFallbackOffersForAQueueAnswerPerRequest(t *testing.T) {
-	queue := []StartRequest{
-		{Harness: HarnessClaude, Model: "opus"},
-		{Harness: HarnessCodex, Model: "gpt-5"},
-		{Harness: HarnessClaude, Model: "sonnet"},
-	}
-	got := OfferFallbacks(lowClaudeQuotas(10, 80), FallbackConfig{Models: map[string]string{"opus": "gpt-5-pro"}}, queue)
-	if len(got) != 2 || got[0].Request.Model != "gpt-5-pro" || got[2].Request.Model != "" {
-		t.Fatalf("got %+v", got)
-	}
-	if _, ok := got[1]; ok {
-		t.Fatal("offered a fallback for a codex request")
-	}
-}
-
 func TestFallbackOfferStaysOnCodexWhenOmpHasMoreLeft(t *testing.T) {
 	quotas := append(lowClaudeQuotas(10, 50), Quota{Harness: HarnessOmp, Window: "five_hour", LeftPercent: 90})
 	got, ok := OfferFallback(quotas, FallbackConfig{}, StartRequest{Harness: HarnessClaude})

@@ -79,19 +79,9 @@ func WithTitle(task Task, title string) (Task, bool) {
 	if title == "" {
 		return task, false
 	}
-	switch task.Source {
-	case TaskLinear:
-		if task.IssueTitle == title {
-			return task, false
-		}
-		task.IssueTitle = title
-	case TaskPR:
-		if task.PRTitle == title {
-			return task, false
-		}
-		task.PRTitle = title
-	default:
+	if task.Source != TaskPR || task.PRTitle == title {
 		return task, false
 	}
+	task.PRTitle = title
 	return task, true
 }

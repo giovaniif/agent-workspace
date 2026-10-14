@@ -23,7 +23,6 @@ func configDaemon(t *testing.T, body string) (*rpc.Client, string) {
 	}
 	_, sock := start(t, &memStore{},
 		daemon.WithHarnesses(&fakeHost{}, claude.Adapter{}, codex.Adapter{}),
-		daemon.WithLauncher(0),
 		daemon.WithConfig(path))
 	return dial(t, sock), path
 }
@@ -43,13 +42,13 @@ func backups(t *testing.T, path string) []string {
 	return got
 }
 
-func TestConfigGetReadsTheSettableKeys(t *testing.T) {
-	c, path := configDaemon(t, "[launcher]\nmax_parallel = 3\n[defaults.codex]\nmodel = \"gpt-6-sol\"\n[theme]\nblue = \"#000000\"\n[linear]\ntoken = \"secret\"\n")
+func TestConfigGetReadsTheSettableKeysAndIgnoresAnOldLauncherTable(t *testing.T) {
+	c, path := configDaemon(t, "[launcher]\nmax_parallel = 3\n[fallback]\nthreshold = 30\n[defaults.codex]\nmodel = \"gpt-6-sol\"\n[theme]\nblue = \"#000000\"\n[tracker]\ntoken = \"secret\"\n")
 	var got rpc.ConfigValues
 	if err := c.Call(context.Background(), rpc.MethodConfigGet, struct{}{}, &got); err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{"launcher.max_parallel": "3", "defaults.codex.model": "gpt-6-sol", "theme.blue": "#000000"}
+	want := map[string]string{"fallback.threshold": "30", "defaults.codex.model": "gpt-6-sol", "theme.blue": "#000000"}
 	if got.Path != path || len(got.Values) != len(want) {
 		t.Fatalf("got %+v, want %v at %s", got, want, path)
 	}
@@ -61,17 +60,17 @@ func TestConfigGetReadsTheSettableKeys(t *testing.T) {
 }
 
 func TestConfigSetBacksUpAndKeepsTheUsersComments(t *testing.T) {
-	before := "# my settings\n[launcher]\nmax_parallel = 2 # two\n\n[ui]\nmouse = false\nunknown = \"kept\"\n"
+	before := "# my settings\n[fallback]\nthreshold = 2 # two\n\n[ui]\nmouse = false\nunknown = \"kept\"\n"
 	c, path := configDaemon(t, before)
-	got, err := setConfig(c, "launcher.max_parallel", "5")
+	got, err := setConfig(c, "fallback.threshold", "5")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Values["launcher.max_parallel"] != "5" {
+	if got.Values["fallback.threshold"] != "5" {
 		t.Fatalf("reply %+v", got)
 	}
 	after, _ := os.ReadFile(path)
-	if string(after) != "# my settings\n[launcher]\nmax_parallel = 5\n\n[ui]\nmouse = false\nunknown = \"kept\"\n" {
+	if string(after) != "# my settings\n[fallback]\nthreshold = 5\n\n[ui]\nmouse = false\nunknown = \"kept\"\n" {
 		t.Fatalf("file now %q", after)
 	}
 	saved := backups(t, path)
@@ -84,8 +83,8 @@ func TestConfigSetBacksUpAndKeepsTheUsersComments(t *testing.T) {
 }
 
 func TestConfigSetOfTheSameValueWritesNothing(t *testing.T) {
-	c, path := configDaemon(t, "[launcher]\nmax_parallel = 5\n")
-	if _, err := setConfig(c, "launcher.max_parallel", "5"); err != nil {
+	c, path := configDaemon(t, "[fallback]\nthreshold = 5\n")
+	if _, err := setConfig(c, "fallback.threshold", "5"); err != nil {
 		t.Fatal(err)
 	}
 	if saved := backups(t, path); len(saved) != 0 {
@@ -107,9 +106,9 @@ func TestConfigSetCreatesAMissingFileWithoutABackup(t *testing.T) {
 }
 
 func TestConfigSetRefusesAnInvalidValue(t *testing.T) {
-	before := "[launcher]\nmax_parallel = 2\n"
+	before := "[fallback]\nthreshold = 2\n"
 	c, path := configDaemon(t, before)
-	_, err := setConfig(c, "launcher.max_parallel", "zero")
+	_, err := setConfig(c, "fallback.threshold", "zero")
 	var rerr *rpc.Error
 	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeBadRequest {
 		t.Fatalf("err %v", err)
@@ -138,15 +137,9 @@ func TestConfigSetChangesTheNewSessionDefaultsWithoutARestart(t *testing.T) {
 	if _, err := setConfig(c, "defaults.codex.model", "gpt-6-luna"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := setConfig(c, "launcher.max_parallel", "7"); err != nil {
-		t.Fatal(err)
-	}
 	var got rpc.SessionOptions
 	if err := c.Call(context.Background(), rpc.MethodSessionOptions, struct{}{}, &got); err != nil {
 		t.Fatal(err)
-	}
-	if got.MaxParallel != 7 {
-		t.Fatalf("max_parallel %d", got.MaxParallel)
 	}
 	for _, h := range got.Harnesses {
 		if h.Harness == "codex" && h.Model != "gpt-6-luna" {

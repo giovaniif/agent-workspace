@@ -69,8 +69,7 @@ func TestNewSessionPopupLooksLikeTheMockup(t *testing.T) {
 
 func TestNewSessionPopupPreviewsTheWorkItem(t *testing.T) {
 	cases := []struct{ input, want string }{
-		{"https://linear.app/acme/issue/ENG-9/add-search", "ENG-9 · add search · session will be named after it"},
-		{"https://linear.app/acme/issue/ENG-9", "ENG-9 · title from Linear · session will be named after it"},
+		{"https://linear.app/acme/issue/ENG-9", "text · session named “https://linear.app/acme/issue/ENG-9”"},
 		{"https://github.com/acme/api/pull/12", "api#12 · session will be named after the PR"},
 		{"fix the flaky upload test", "text · session named “fix the flaky upload test”"},
 	}
@@ -79,6 +78,14 @@ func TestNewSessionPopupPreviewsTheWorkItem(t *testing.T) {
 		if out := screen(typeText(m, c.input)); !strings.Contains(out, c.want) {
 			t.Errorf("%s: no %q:\n%s", c.input, c.want, out)
 		}
+	}
+}
+
+func TestNewSessionPopupPlaceholderNamesOnlyAPROrText(t *testing.T) {
+	m, _ := popupModel(t, repoWorkspaces(rpc.State{}), 100)
+	m = pressCmd(m, keyTab)
+	if out := screen(m); !strings.Contains(out, "a GitHub PR or a few words") {
+		t.Fatalf("placeholder:\n%s", out)
 	}
 }
 

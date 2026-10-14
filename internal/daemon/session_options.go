@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -45,11 +44,10 @@ func LoadStartDefaults(path string) (map[domain.Harness]StartDefaults, error) {
 }
 
 func (d *Daemon) sessionOptions() rpc.SessionOptions {
-	var maxParallel int
 	var defaults map[domain.Harness]StartDefaults
-	d.query(func(*state) { maxParallel, defaults = d.lc.maxParallel, d.hs.defaults })
+	d.query(func(*state) { defaults = d.hs.defaults })
 	home, _ := os.UserHomeDir()
-	out := rpc.SessionOptions{MaxParallel: cmp.Or(maxParallel, domain.DefaultMaxParallel), Home: home}
+	out := rpc.SessionOptions{Home: home}
 	for _, h := range domain.Harnesses() {
 		if _, ok := d.hs.adapters[h]; !ok {
 			continue

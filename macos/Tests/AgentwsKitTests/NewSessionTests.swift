@@ -30,7 +30,7 @@ enum NewSessionFixtures {
     {"harnesses":[
       {"harness":"claude","name":"Claude Code","tag":"CC","models":["opus","sonnet","haiku"],"efforts":["low","medium","high","xhigh","max"],"model":"opus","effort":"xhigh"},
       {"harness":"codex","name":"Codex","tag":"CX","models":["gpt-6-sol","gpt-5.5"],"efforts":["low","medium","high"],"model":"gpt-6-sol","effort":"high"}
-    ],"max_parallel":4,"home":"/src"}
+    ],"home":"/src"}
     """
 
     static func workspaces() throws -> [Workspace] {
@@ -154,11 +154,15 @@ struct NewSessionTests {
         caller.replies["session.options"] = .success(NewSessionFixtures.options)
         let model = NewSession(caller: caller)
         model.form.workItem = "fix the login redirect"
-        model.form.launchInput = "https://linear.app/acme/issue/ENG-1/a"
         await model.load(state: nil)
         #expect(model.form.workItem == "fix the login redirect")
-        #expect(model.form.launchInput == "https://linear.app/acme/issue/ENG-1/a")
         #expect(model.form.harness == "claude")
+    }
+
+    @Test func optionsWithoutALauncherLimitDecode() throws {
+        let options = try JSONDecoder().decode(SessionOptions.self, from: Data(NewSessionFixtures.options.utf8))
+        #expect(options.harnesses.map(\.harness) == ["claude", "codex"])
+        #expect(options.home == "/src")
     }
 
     @Test func defaultsComeFromTheServersDefaultsTables() async throws {
@@ -170,7 +174,6 @@ struct NewSessionTests {
         #expect(model.form.model == "gpt-6-sol")
         #expect(model.form.effort == "high")
         #expect(model.form.chosen?.models == ["gpt-6-sol", "gpt-5.5"])
-        #expect(model.maxParallel == 4)
     }
 
     @Test func aLowHarnessOffersOneSwitchToTheOther() async throws {
@@ -202,7 +205,7 @@ struct NewSessionTests {
         ("/src/api", "fix the login redirect"),
         ("/src/acme", "rename the billing tables"),
         ("/src/api", "https://github.com/acme/api/pull/42"),
-        ("/src/acme", "https://linear.app/acme/issue/ENG-7/billing"),
+        ("/src/acme", "https://github.com/acme/web/pull/7"),
     ])
     func startSendsTheFormAndFocusesTheNewSession(workspace: String, item: String) async throws {
         let caller = NewSessionCaller()
@@ -246,15 +249,15 @@ struct NewSessionTests {
         let caller = NewSessionCaller()
         let model = try await NewSessionFixtures.loaded(caller)
         caller.replies["session.resolve"] = .success(
-            #"{"source":"linear","ref":"ENG-7","title":"Billing export","worktree":"42-login-redirect","workspace":"/src/acme"}"#
+            #"{"source":"pr","ref":"web#7","title":"Billing export","worktree":"42-login-redirect","workspace":"/src/acme"}"#
         )
-        model.form.workItem = "https://linear.app/acme/issue/ENG-7/billing"
+        model.form.workItem = "https://github.com/acme/web/pull/7"
         await model.resolve(in: Seed.window)
         #expect(caller.params("session.resolve") == .object([
-            "workspace": .string("/src/acme"), "work_item": .string("https://linear.app/acme/issue/ENG-7/billing"),
+            "workspace": .string("/src/acme"), "work_item": .string("https://github.com/acme/web/pull/7"),
         ]))
         #expect(model.card == WorkItemCard(
-            source: "Linear ENG-7", title: "Billing export", branch: "42-login-redirect", existing: "/w/api-42-login-redirect"
+            source: "PR web#7", title: "Billing export", branch: "42-login-redirect", existing: "/w/api-42-login-redirect"
         ))
     }
 
@@ -270,35 +273,6 @@ struct NewSessionTests {
         await model.resolve(in: nil)
         #expect(model.resolveError == nil)
         #expect(caller.calls.filter { $0.method == "session.resolve" }.count == 1)
-    }
-
-    @Test func theLauncherQueuesSeveralLinearIssues() async throws {
-        let caller = NewSessionCaller()
-        let model = try await NewSessionFixtures.loaded(caller)
-        caller.replies["launcher.enqueue"] = .success("{\"queued\":[\"q1\",\"q2\"],\"rejected\":[\"https://example.com/x\"]}")
-        let input = "https://linear.app/acme/issue/ENG-1/a\nhttps://linear.app/acme/issue/ENG-2/b https://example.com/x"
-        model.form.launchInput = input
-        await model.enqueue()
-        #expect(caller.params("launcher.enqueue") == .object([
-            "workspace": .string("/src/acme"), "input": .string(input), "harness": .string("claude"),
-            "model": .string("opus"), "effort": .string("xhigh"),
-        ]))
-        #expect(model.launchNote == "Queued 2 · not a Linear issue: https://example.com/x")
-        #expect(model.form.launchInput == "")
-    }
-
-    @Test func theQueueShowsEachItemAndItsStatus() throws {
-        let json = """
-        [{"ID":"q1","Ref":"ENG-1","URL":"u1","Workspace":"/src/acme","Request":{"Harness":"claude","Model":"opus","Effort":"high"},"Starting":true,"Err":""},
-         {"ID":"q2","Ref":"ENG-2","URL":"u2","Workspace":"/src/acme","Request":{"Harness":"codex","Model":"","Effort":""},"Starting":false,"Err":""},
-         {"ID":"q3","Ref":"ENG-3","URL":"u3","Workspace":"/src/acme","Request":{"Harness":"claude","Model":"","Effort":""},"Starting":false,"Err":"no such issue"}]
-        """
-        let queue = try JSONDecoder().decode([JSONValue].self, from: Data(json.utf8))
-        #expect(LaunchRow.rows(queue) == [
-            LaunchRow(id: "q1", ref: "ENG-1", harness: "CC", status: "starting"),
-            LaunchRow(id: "q2", ref: "ENG-2", harness: "CX", status: "queued"),
-            LaunchRow(id: "q3", ref: "ENG-3", harness: "CC", status: "failed: no such issue"),
-        ])
     }
 
     @Test func aServerWithNoWorkspacesSaysSoAndCannotStart() async throws {

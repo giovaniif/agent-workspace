@@ -33,7 +33,6 @@ public struct LiveWindow: View {
     @State private var focusFilter = 0
     @State private var review: ReviewController?
     @State private var newSession: NewSession?
-    @State private var newSessionTab = NewSessionTab.session
     @State private var panes: ShellNvim
     @State private var windowID = UUID().uuidString
     @State private var commands: SessionCommands
@@ -166,7 +165,7 @@ public struct LiveWindow: View {
         .onChange(of: router.newSessionRequested, initial: true) {
             guard router.newSessionRequested else { return }
             router.newSessionRequested = false
-            openNewSession(.session)
+            openNewSession()
         }
         .onChange(of: router.shellSeq, initial: true) {
             guard let shell = router.shell else { return }
@@ -191,7 +190,7 @@ public struct LiveWindow: View {
         }
         .sheet(item: $newSession) { model in
             NewSessionSheet(
-                model: model, tab: $newSessionTab, server: server, state: store.state,
+                model: model, server: server, state: store.state,
                 started: { id in
                     newSession = nil
                     review = nil
@@ -277,8 +276,7 @@ public struct LiveWindow: View {
         }
     }
 
-    private func openNewSession(_ tab: NewSessionTab) {
-        newSessionTab = tab
+    private func openNewSession() {
         guard newSession == nil else { return }
         let model = NewSession(caller: store)
         newSession = model
@@ -522,7 +520,7 @@ public struct LiveWindow: View {
             reconcile(filter: value)
         }
         a.toggleInspector = { inspector.toggle() }
-        a.newSession = { openNewSession(.session) }
+        a.newSession = { openNewSession() }
         a.toggleEnded = { endedExpanded.toggle() }
         a.reconnect = {
             store.stop()
@@ -600,8 +598,7 @@ public struct LiveWindow: View {
             Button("") { reviewTask { await $0.send() } }
                 .keyboardShortcut(.return, modifiers: [.command, .shift])
             bound(.nvimAtFile) { editor() }
-            bound(.newSession) { openNewSession(.session) }
-            bound(.linearLauncher) { openNewSession(.launcher) }
+            bound(.newSession) { openNewSession() }
             bound(.shellSplit) { toggleShell(popup: false) }
             bound(.shellPopup) { toggleShell(popup: true) }
             bound(.rename) { onSelected(.rename) }

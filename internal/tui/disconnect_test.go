@@ -42,7 +42,6 @@ func TestQuitWhileDisconnectedQuitsWithoutCallingTheDaemon(t *testing.T) {
 		{"the model picker", []string{"M"}, true},
 		{"the resume picker", []string{"u"}, true},
 		{"the rename field", []string{"R"}, false},
-		{"the launcher", []string{"L"}, false},
 		{"the new-session dialog", []string{"n"}, false},
 	}
 	for _, o := range overlays {

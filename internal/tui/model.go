@@ -128,9 +128,7 @@ type Model struct {
 	renaming *renamePrompt
 	drafts   map[string]domain.ReviewDraft
 
-	queue     []domain.LaunchItem
-	launching *launchInput
-	launches  int
+	launches int
 
 	dialog  *dialog
 	dialogs int
@@ -279,9 +277,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.proj != nil {
 			return m.projectsKey(msg)
 		}
-		if m.launching != nil {
-			return m.launcherKey(msg)
-		}
 		if m.renaming != nil {
 			return m.renameKey(msg)
 		}
@@ -304,9 +299,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.proj != nil {
 			return m.projectPaste(msg.Content), nil
 		}
-		if m.launching != nil {
-			return m.launcherPaste(msg.Content), nil
-		}
 		if m.renaming != nil {
 			return m.renamePaste(msg.Content), nil
 		}
@@ -320,16 +312,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pending = msg.session.ID
 		m.choosePending()
 		return m, m.showNew(msg.session.ID)
-	case launchSentMsg:
-		if m.launching != nil && m.launching.seq == msg.seq {
-			m.launching = nil
-		}
-	case launchFailedMsg:
-		if m.launching != nil && m.launching.seq == msg.seq {
-			in := *m.launching
-			in.busy, in.err = false, msg.err.Error()
-			m.launching = &in
-		}
 	case dirsListedMsg:
 		return m.gotDirs(msg), nil
 	case startFailedMsg:
@@ -366,7 +348,6 @@ func (m *Model) load(st rpc.State) {
 	m.events = map[string][]domain.SessionEvent{}
 	m.subagents = map[string][]domain.Subagent{}
 	m.taskOrder = nil
-	m.queue = st.Queue
 	m.drafts = map[string]domain.ReviewDraft{}
 	for _, d := range st.Drafts {
 		m.putDraft(d)
@@ -443,9 +424,6 @@ func (m *Model) apply(d rpc.Diff) {
 		m.sessions[d.Session.ID] = *d.Session
 	case d.Subagent != nil:
 		m.putSubagent(*d.Subagent)
-		return
-	case d.Queue != nil:
-		m.queue = *d.Queue
 		return
 	default:
 		return
@@ -583,18 +561,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if m.opts.Onboard != nil {
 			return m, m.openSetup(setupPopupRetries)
 		}
-	case "L":
-		if m.opts.Calls != nil {
-			return m.openLauncher(), nil
-		}
 	case "P":
 		if m.opts.Calls != nil {
 			return m.openProjects(), nil
 		}
-	case "c":
-		return m, m.takeQueueOffers()
-	case "X":
-		return m, m.clearQueue()
 	case "x":
 		if cur >= 0 && m.opts.Calls != nil {
 			m.ending = m.selected

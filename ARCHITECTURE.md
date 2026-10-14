@@ -28,7 +28,7 @@ This document gives the top-level design of `agentws`. [FEATURES.md](FEATURES.md
 cmd/agentws            main: subcommands (daemon, tui, hook, setup, new, cleanup, ...)
 internal/domain        pure types and rules. No IO, no imports from other internal packages.
 internal/app           use cases + ports (interfaces the use cases need)
-internal/adapters/...  tmux, git, github, linear, claude, codex, sqlite, notify, procs (lsof/ports), nvim, fs, setup, onboard
+internal/adapters/...  tmux, git, github, claude, codex, sqlite, notify, procs (lsof/ports), nvim, fs, setup, onboard
 internal/daemon        socket server, event loop, workers; wires adapters into app
 internal/rpc           protocol types + client (used by tui, hook, cli, nvim)
 internal/tui           Bubble Tea models; talks only to rpc.Client
@@ -66,12 +66,12 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` and `serve` t
 |---|---|
 | CLI, hook process, startup cost | [cmd/agentws/AGENTS.md](cmd/agentws/AGENTS.md) |
 | Protocol, methods, build handshake, client | [internal/rpc/AGENTS.md](internal/rpc/AGENTS.md) |
-| Daemon process, event loop, workspaces, sessions, naming, launcher, fallback, attention, worktrees and PRs, ports, cleanup schedule, review sends, shell and nvim | [internal/daemon/AGENTS.md](internal/daemon/AGENTS.md) |
+| Daemon process, event loop, workspaces, sessions, naming, fallback, attention, worktrees and PRs, ports, cleanup schedule, review sends, shell and nvim | [internal/daemon/AGENTS.md](internal/daemon/AGENTS.md) |
 | Domain rules: state machine, discovery, attribution, review | [internal/domain/AGENTS.md](internal/domain/AGENTS.md) |
 | Use cases, ports, cleanup execution, disk sizes | [internal/app/AGENTS.md](internal/app/AGENTS.md) |
 | Sidebar, limits bar, theme, review viewer, disk view | [internal/tui/AGENTS.md](internal/tui/AGENTS.md) |
 | Remote API for the phone app (`agentws serve`) | [internal/serve/AGENTS.md](internal/serve/AGENTS.md) |
-| Harness adapters, notify, procs, fs, github, linear, sqlite | [internal/adapters/AGENTS.md](internal/adapters/AGENTS.md) |
+| Harness adapters, notify, procs, fs, github, sqlite | [internal/adapters/AGENTS.md](internal/adapters/AGENTS.md) |
 | Repo facts, worktree listing, review diffs, turns, hunks | [internal/adapters/git/AGENTS.md](internal/adapters/git/AGENTS.md) |
 | tmux server and keys | [internal/adapters/tmux/AGENTS.md](internal/adapters/tmux/AGENTS.md) |
 | Worktree setup recipes | [internal/adapters/setup/AGENTS.md](internal/adapters/setup/AGENTS.md) |

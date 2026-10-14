@@ -29,7 +29,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 ## Model
 
 - **Workspace:** a folder that the tool manages. It is a single repo, or an orchestration root that holds several service repos. The tool finds the repos automatically: each child folder with its own `.git` directory is a repo, symlinks included. A child whose `.git` is a file is a worktree, not a repo.
-- **Task:** a work item, for example a Linear issue, a PR or free text. Sessions are grouped under it.
+- **Task:** a work item, for example a PR or free text. Sessions are grouped under it.
 - **Session:** one agent (Claude, Codex or omp) that runs in one terminal. Its working directory is the workspace root. Thus the root `AGENTS.md`/`CLAUDE.md`, skills and memory apply. A session can have any number of worktrees.
 - **Worktree:** one repo at one branch, with its own PR, checks, port, and cleanup. A session can hold several worktrees in the same repo, one per subtask.
 
@@ -45,9 +45,9 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 **Sessions**
 - The sidebar has vertical rows grouped by task. Each row shows the state glyph, harness, model, effort and context left of a session. A session row expands to show its worktrees. Each worktree shows its repo, subtask, PR and check status (for example `api:shares #42 ✓`).
 - The session header shows every PR the session owns, each with its check status.
-- The tool names sessions automatically from the PR, then the Linear issue, then the task. The name of a text task is a 2-4 word summary of its first prompt. `R` renames and pins a name, `A` unpins it. The name is the work item, never the current activity of the agent.
+- The tool names sessions automatically from the PR, then the task. The name of a text task is a 2-4 word summary of its first prompt. `R` renames and pins a name, `A` unpins it. The name is the work item, never the current activity of the agent.
 - Keyboard-first navigation: go to a session by number, to the next waiting session, or to the last session.
-- The new-session dialog takes only the workspace, work item (Linear issue, PR or text), harness, model and effort. The default workspace is the last one used.
+- The new-session dialog takes only the workspace, work item (PR or text), harness, model and effort. The default workspace is the last one used.
   - You never select repos or create worktrees yourself. The agent creates them. The tool finds each one and attaches it to the session.
   - Single-repo workspace: the session starts in one fresh worktree branched from `origin/main`, with the repo's setup recipe already run.
   - Orchestration root: the session starts at the root, and the agent creates worktrees in the service repos it needs.
@@ -101,8 +101,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 
   `agentws pr <session> [--json]` shows it. babysit-pr reads it, and does not poll `gh` (see ADR 0024).
 - A subagent tree for each session under its sidebar row, from the subagent hooks of the harness. Only Claude has it today. There are no stop and steer controls, because no harness gives them for each subagent (see ADR 0019).
-- A Linear launcher: `L` takes one or more issue URLs and starts a worktree and a session for each. A maximum of `[launcher] max_parallel` (default 3) start at the same time. The others wait in a queue and start when sessions finish. See ADR 0031.
-- When the Claude quota is low, offer to start queued work in Codex.
+- When the Claude quota is low, offer to start the new session in Codex.
 - Mouse:
   - Click a session to select it and go to its pane.
   - Click key hints and buttons, select from lists, open review files, put the review cursor or drag a range, and scroll with the wheel.

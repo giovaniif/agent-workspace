@@ -72,14 +72,13 @@ A sheet (⌘N) with these fields, in this order:
 
 1. Server.
 2. Workspace. The last used one is preselected. It shows "orchestration root · 14 repos" or "single repo".
-3. Work item: a Linear issue, a PR link or text. The sheet resolves it live into a card that names the branch and any existing worktree.
+3. Work item: a PR link or text. The sheet resolves it live into a card that names the branch and any existing worktree.
 4. Agent (Claude Code · Codex).
 5. Model.
 6. Effort.
 
 There is no first-prompt field: you type the first prompt in the terminal of the session. When the selected harness is low on quota, a warning appears, with one button to switch harness. ⌘↩ starts, Esc cancels. There are no repo or worktree pickers: the agent creates worktrees.
 
-The Linear launcher (TUI `L`) is a second tab in the same sheet. Paste several issue URLs, and see the queue and `max_parallel`.
 
 ## Attention (screen 4)
 
@@ -105,7 +104,7 @@ Settings tabs (screens 7a–7f):
 
 - **General:** open at login, server to connect at launch, menu bar and Dock (what the icon and badge count), ended sessions shown, confirm on end, show worktrees and subagents, the `agentws` CLI on PATH, updates.
 - **Servers:** below.
-- **Workspaces** (per server): repos discovered, worktree location, auto-cleanup and its interval, setup recipes per repo (`.agentws.toml`), launcher `max_parallel`.
+- **Workspaces** (per server): repos discovered, worktree location, auto-cleanup and its interval, setup recipes per repo (`.agentws.toml`).
 - **Agents** (per server): Claude Code and Codex install, hooks (with backup, removable), status line, Codex trust, default model and effort; quota warning threshold, Codex fallback offer, stale-limit age; nvim and its plugin.
 - **Notifications:** banner and sound per event (permission, waiting, done, limit or API error), skip the session in view, muted sessions, and phones: the hold-while-present window (`[push] away_after`), paired devices with revoke, pair a phone.
 - **Appearance:** Latte, Mocha or match system, accent, `[theme]` overrides from `config.toml`, terminal font, size, line height and cursor with a live preview, sidebar density, default diff layout.
@@ -139,7 +138,6 @@ For "This Mac", steps 3–4 become: link the bundled `agentws` into `/usr/local/
 | Last session | — | ⌘[ |
 | Filter sessions | — | ⌘K |
 | New session | `n` | ⌘N |
-| Linear launcher | `L` | ⇧⌘N |
 | Review | `r` | ⌘R |
 | Shell in worktree (split / popup) | `t` / `T` | ⌘T / ⇧⌘T |
 | nvim at file | `e` | ⌘E |

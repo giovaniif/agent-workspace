@@ -105,14 +105,10 @@ func (d *Daemon) writeConfig(key, value, literal string) error {
 
 func (d *Daemon) applyConfig() {
 	defaults, errDefaults := LoadStartDefaults(d.cfg.path)
-	maxParallel, errParallel := LoadMaxParallel(d.cfg.path)
 	awayAfter, errAway := LoadAwayAfter(d.cfg.path)
 	d.query(func(s *state) {
 		if errDefaults == nil {
 			d.hs.defaults = defaults
-		}
-		if errParallel == nil {
-			d.lc.maxParallel = maxParallel
 		}
 		if errAway == nil && d.presence.activity != nil {
 			s.presence.AwayAfter = awayAfter

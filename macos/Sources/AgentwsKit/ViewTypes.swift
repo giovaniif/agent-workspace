@@ -267,7 +267,6 @@ public struct ViewState: Codable, Sendable, Equatable {
     public var worktrees: [Worktree]
     public var sessions: [Session]
     public var limits: [JSONValue]
-    public var queue: [JSONValue]
     public var sends: [QueuedSend]
     public var events: [SessionEvent]
     public var subagents: [Subagent]
@@ -297,7 +296,6 @@ public struct ViewDiff: Codable, Sendable, Equatable {
     public var worktree: Worktree?
     public var session: Session?
     public var limits: [JSONValue]?
-    public var queue: [JSONValue]?
     public var sends: [QueuedSend]?
     public var event: SessionEvent?
     public var subagent: Subagent?
@@ -311,7 +309,7 @@ public struct ViewDiff: Codable, Sendable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case seq, removedWorkspace = "removed_workspace", removedWorktree = "removed_worktree"
-        case removedSession = "removed_session", workspace, task, worktree, session, limits, queue, sends
+        case removedSession = "removed_session", workspace, task, worktree, session, limits, sends
         case event, subagent, draft, comment, reclaimable
         case removedProject = "removed_project", project
     }

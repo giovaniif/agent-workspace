@@ -24,7 +24,6 @@ extension ViewState {
             drafts.removeAll { $0.session == id }
         }
         if let l = diff.limits { limits = l }
-        if let q = diff.queue { queue = q }
         if let s = diff.sends { sends = s }
         if let e = diff.event { append(e) }
         if let a = diff.subagent { Self.upsert(&subagents, a) { $0.sessionID == a.sessionID && $0.id == a.id } }

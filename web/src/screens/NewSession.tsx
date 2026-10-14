@@ -139,7 +139,7 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
           <input
             value={item}
             onChange={(e) => setItem(e.target.value)}
-            placeholder="Linear or PR URL, or what to do"
+            placeholder="PR URL, or what to do"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}

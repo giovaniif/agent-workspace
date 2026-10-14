@@ -14,7 +14,6 @@ import (
 	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
 	gitadapter "github.com/giovaniif/agent-workspace/internal/adapters/git"
 	"github.com/giovaniif/agent-workspace/internal/adapters/github"
-	"github.com/giovaniif/agent-workspace/internal/adapters/linear"
 	"github.com/giovaniif/agent-workspace/internal/adapters/notify"
 	"github.com/giovaniif/agent-workspace/internal/adapters/nvim"
 	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
@@ -70,14 +69,6 @@ func Run(ctx context.Context, home string) (err error) {
 	if err != nil {
 		log.Printf("notify.json ignored: %v", err)
 	}
-	linearToken, err := linear.LoadToken(filepath.Join(home, "config.toml"))
-	if err != nil {
-		log.Printf("linear token ignored: %v", err)
-	}
-	maxParallel, err := LoadMaxParallel(filepath.Join(home, "config.toml"))
-	if err != nil {
-		log.Printf("launcher max_parallel ignored: %v", err)
-	}
 	startDefaults, err := LoadStartDefaults(filepath.Join(home, "config.toml"))
 	if err != nil {
 		log.Printf("new-session defaults ignored: %v", err)
@@ -97,12 +88,11 @@ func Run(ctx context.Context, home string) (err error) {
 		WithHarnesses(host, claude.Adapter{}, codex.Adapter{}, omp.Adapter{}),
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithProjectSetup(setup.Shell{Out: os.Stderr}),
-		WithLauncher(maxParallel),
 		WithStartDefaults(startDefaults),
 		WithConfig(filepath.Join(home, "config.toml")),
 		WithNotifier(banners, notify.New(), sounds),
 		WithWorktrees(gitadapter.Worktrees{}, &github.Finder{}),
-		WithTitles(app.TitleResolvers{linear.Client{Token: linearToken}, github.Titles{}}),
+		WithTitles(app.TitleResolvers{github.Titles{}}),
 		WithProcessTable(procs.Table{}),
 		WithReview(gitadapter.Review{}),
 		WithCleanup(cleanup, DefaultCleanupEvery),

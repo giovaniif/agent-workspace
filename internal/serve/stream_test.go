@@ -105,7 +105,6 @@ func streamState() rpc.State {
 			{SessionID: "s2", Kind: domain.EventUserPromptSubmit, At: at.Add(-10 * time.Minute)},
 			{SessionID: "s2", Kind: domain.EventStop, Text: "Added the retry to the client.", At: at.Add(-5*time.Minute - 48*time.Second)}},
 		Subagents: []domain.Subagent{{SessionID: "s1", ID: "a1"}},
-		Queue:     []domain.LaunchItem{{ID: "q1", Ref: "#42", Workspace: "/home/me/api"}},
 		Drafts:    []domain.ReviewDraft{{Session: "s1"}},
 		Sends:     []domain.QueuedSend{{ID: "m1", Session: "s1", Text: "and add a test", QueuedAt: at}},
 	}
