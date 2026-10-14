@@ -116,6 +116,7 @@ public enum Toolbar {
         case .review: "Start or select a session to review its changes"
         case .shell: "Start or select a session to open a shell in its worktree"
         case .nvim: "Start or select a session to open nvim in its worktree"
+        case .browser: "Start or select a session to open its browser"
         }
     }
 
