@@ -45,6 +45,27 @@ deps = "clone"
 	}
 }
 
+func TestRecipeLoadAcceptsAutomationTables(t *testing.T) {
+	repo := t.TempDir()
+	writeFile(t, filepath.Join(repo, ".agentws.toml"), `
+[setup]
+run = ["make"]
+
+[[automation]]
+name = "audit"
+agent = "claude"
+prompt = "Audit {{repo}}"
+on = ["pr.opened"]
+`)
+	got, found, err := setup.Recipes{}.Load(repo)
+	if err != nil || !found {
+		t.Fatalf("Load = %v, %v", found, err)
+	}
+	if !reflect.DeepEqual(got.Run, []string{"make"}) {
+		t.Errorf("Run = %v", got.Run)
+	}
+}
+
 func TestRecipeLoadWithoutFileIsNotAnError(t *testing.T) {
 	_, found, err := setup.Recipes{}.Load(t.TempDir())
 	if err != nil || found {
