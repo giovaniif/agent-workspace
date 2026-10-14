@@ -1,5 +1,5 @@
 
-      Set up agentws                                                        esc skip 
+      Set up crew                                                           esc skip 
      
       Agents › Claude Code › Neovim › Done                                           
      
@@ -9,7 +9,7 @@
       │   [ ] Codex         not set up                                             │
       │   [ ] Oh My Pi      not set up                                             │
       ╰────────────────────────────────────────────────────────────────────────────╯
-      agentws reads their hooks to show what each session is doing. Pick any of      
-      them; you set up each one next.                                                
+      crew reads their hooks to show what each session is doing. Pick any of them;   
+      you set up each one next.                                                      
      
       ↑/↓ move · space pick                                       esc skip   ⏎ next  

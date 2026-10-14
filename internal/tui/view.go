@@ -213,7 +213,7 @@ func (m Model) view(content string) tea.View {
 
 func (m Model) topBar() string {
 	s := m.styles
-	left := []piece{{s.brand, " agentws"}}
+	left := []piece{{s.brand, " crew"}}
 	for _, slot := range []struct{ name, val string }{{"claude", m.top.Claude}, {"codex", m.top.Codex}} {
 		if slot.val != "" {
 			left = append(left, piece{s.bold, "  " + slot.name + " "}, piece{s.text, slot.val})

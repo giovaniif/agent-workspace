@@ -568,7 +568,7 @@ func (m Model) startsAt() []string {
 		bar := piece{s.dim, " ▌ "}
 		return []string{
 			m.line(false, []piece{bar, {s.bold, "Starts in " + filepath.Base(space.Root)}}, nil),
-			m.line(false, []piece{bar, {s.sub, "agentws checks whether it is one repo or a folder of repos when you create"}}, nil),
+			m.line(false, []piece{bar, {s.sub, "crew checks whether it is one repo or a folder of repos when you create"}}, nil),
 		}
 	}
 	plan := domain.PlanSessionStart(space, domain.TaskSlug(domain.ParseWorkItem(d.workItem)), "", nil)

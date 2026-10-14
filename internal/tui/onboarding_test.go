@@ -80,7 +80,7 @@ func TestSetupPickStepShowsEachHarnessState(t *testing.T) {
 	o.Harnesses[domain.HarnessCodex] = domain.HarnessSetup{Installed: true, File: "/Users/me/.codex/hooks.json"}
 	m, _ := setupModel(t, o)
 	out := screen(m)
-	mustShow(t, out, "Set up agentws", "esc skip", "Which agents do you use?", "Claude Code", "not set up", "Codex", "set up", "⏎ next")
+	mustShow(t, out, "Set up crew", "esc skip", "Which agents do you use?", "Claude Code", "not set up", "Codex", "set up", "⏎ next")
 	if strings.Contains(out, "SESSIONS") {
 		t.Fatalf("the setup screen draws the sidebar:\n%s", out)
 	}
@@ -96,7 +96,7 @@ func TestSetupPickStepHasARowPerCatalogHarness(t *testing.T) {
 	m = pressCmd(pressCmd(pressCmd(m, keyUp), keyUp), keySpace)
 	mustShow(t, screen(m), "[ ] Claude Code", "[x] Oh My Pi")
 	m = pressCmd(m, keyEnter)
-	mustShow(t, screen(m), "Oh My Pi", "/Users/me/.omp/agent/hooks/post/agentws.ts", "agentws setup omp --remove", "⏎ install")
+	mustShow(t, screen(m), "Oh My Pi", "/Users/me/.omp/agent/hooks/post/agentws.ts", "crew setup omp --remove", "⏎ install")
 	m = pressCmd(m, keyEnter)
 	if !slices.Equal(f.installed, []domain.Harness{domain.HarnessOmp}) {
 		t.Fatalf("installed = %v", f.installed)
@@ -107,7 +107,7 @@ func TestSetupPickStepHasARowPerCatalogHarness(t *testing.T) {
 func TestSetupInstallsOnlyThePickedHarnessesOnConfirmation(t *testing.T) {
 	m, f := setupModel(t, freshMachine())
 	m = pressCmd(m, keyEnter)
-	mustShow(t, screen(m), "Claude Code", "/Users/me/.claude/settings.json", "settings.json.agentws-backup", "agentws setup claude --remove", "⏎ install")
+	mustShow(t, screen(m), "Claude Code", "/Users/me/.claude/settings.json", "settings.json.agentws-backup", "crew setup claude --remove", "⏎ install")
 	if len(f.installed) != 0 {
 		t.Fatalf("installed before confirmation: %v", f.installed)
 	}
@@ -153,10 +153,10 @@ func TestSetupNvimStep(t *testing.T) {
 			"require('agentws').setup({})",
 			"/Users/me/.config/nvim/plugin/agentws.lua",
 			"local dir = '/Users/me/.local/share/agentws/nvim'",
-			"agentws setup nvim --remove",
+			"crew setup nvim --remove",
 			"⏎ write it",
 		}, nil},
-		{"configured", domain.NvimSetup{OnPath: true, Configured: true}, []string{"✓ the agentws plugin is configured"}, []string{"prepend"}},
+		{"configured", domain.NvimSetup{OnPath: true, Configured: true}, []string{"✓ the crew plugin is configured"}, []string{"prepend"}},
 		{"no nvim", domain.NvimSetup{}, []string{"optional", "nvim is not on PATH", "brew install neovim", "⏎ next"}, []string{"prepend", "s skip"}},
 		{"no plugin dir", domain.NvimSetup{OnPath: true, PluginDir: "/Users/me/.local/share/agentws/nvim", ConfigFile: "/c/init.lua"}, []string{"plugin files are not at /Users/me/.local/share/agentws/nvim", "install script"}, nil},
 	}
@@ -181,7 +181,7 @@ func TestSetupFinishOrEscRecordsCompletionAndQuits(t *testing.T) {
 	m, f := setupModel(t, freshMachine())
 	m = pressCmd(pressCmd(m, keySpace), keyEnter)
 	m = pressCmd(m, key("s"))
-	mustShow(t, screen(m), "You're set", "agentws setup")
+	mustShow(t, screen(m), "You're set", "crew setup")
 	next, cmd := m.Update(keyEnter)
 	if !quits(runUntilQuit(next.(tui.Model), cmd)) || f.finished != 1 {
 		t.Fatalf("finish: finished %d", f.finished)
@@ -250,9 +250,9 @@ func TestSetupDoneOpensNothingUntilS(t *testing.T) {
 func TestSetupOpensInlineWhenThePopupCannot(t *testing.T) {
 	c := &fakeCaller{err: errors.New("no client is attached"), failOn: rpc.MethodClientPopup}
 	m, _ := sidebarWithSetup(t, freshMachine(), c)
-	mustShow(t, screen(m), "Set up agentws", "Which agents do you use?")
+	mustShow(t, screen(m), "Set up crew", "Which agents do you use?")
 	m = pressCmd(m, keyEsc)
-	if out := screen(m); strings.Contains(out, "Set up agentws") || !strings.Contains(out, "SESSIONS") {
+	if out := screen(m); strings.Contains(out, "Set up crew") || !strings.Contains(out, "SESSIONS") {
 		t.Fatalf("esc did not close the inline setup:\n%s", out)
 	}
 }
@@ -267,7 +267,7 @@ func TestSetupNvimStepAddsTheBlockOnlyOnConfirmation(t *testing.T) {
 	if f.nvimInstalls != 1 {
 		t.Fatalf("installs = %d", f.nvimInstalls)
 	}
-	mustShow(t, screen(m), "✓ wrote /Users/me/.config/nvim/plugin/agentws.lua", "agentws setup nvim --remove", "⏎ next")
+	mustShow(t, screen(m), "✓ wrote /Users/me/.config/nvim/plugin/agentws.lua", "crew setup nvim --remove", "⏎ next")
 	mustShow(t, screen(pressCmd(m, keyEnter)), "You're set", "plugin configured")
 
 	m, f = setupModel(t, freshMachine())
@@ -287,7 +287,7 @@ func TestAlreadySetUpMachinesSkipTheWalkthroughAndRecordIt(t *testing.T) {
 	if len(c.methods()) != 0 || f.finished != 1 {
 		t.Fatalf("calls %v, finished %d", c.methods(), f.finished)
 	}
-	if strings.Contains(screen(m), "Set up agentws") {
+	if strings.Contains(screen(m), "Set up crew") {
 		t.Fatalf("walkthrough shown:\n%s", screen(m))
 	}
 }

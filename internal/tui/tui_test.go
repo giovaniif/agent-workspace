@@ -271,7 +271,7 @@ func TestQuestionMarkTogglesHelp(t *testing.T) {
 func TestEmptyTopBarSlotsAreHidden(t *testing.T) {
 	out := screen(newModel(nil, nil))
 	top := strings.SplitN(out, "\n", 2)[0]
-	if !strings.Contains(top, "agentws") || !strings.Contains(top, "21:42") {
+	if !strings.Contains(top, "crew") || !strings.Contains(top, "21:42") {
 		t.Fatalf("top bar = %q", top)
 	}
 	if strings.Contains(top, "claude") || strings.Contains(top, "codex") || strings.Contains(top, "disk") {

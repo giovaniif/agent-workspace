@@ -5,7 +5,7 @@ LDFLAGS := -X $(VERSION_PKG).Version=$(VERSION) -X $(VERSION_PKG).Commit=$(COMMI
 GO_TEST_FLAGS ?= -p 2
 GREMLINS ?= $(shell go env GOPATH)/bin/gremlins
 
-.PHONY: build test lint bench mutate e2e dev web
+.PHONY: build test lint bench mutate e2e dev web readme-shots
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o bin/crew ./cmd/crew
@@ -30,6 +30,9 @@ e2e:
 
 dev:
 	SEED=$(SEED) FAKES=$(FAKES) ./scripts/dev
+
+readme-shots:
+	./scripts/readme-shots
 
 web:
 	cd web && npm ci --no-audit --no-fund --ignore-scripts

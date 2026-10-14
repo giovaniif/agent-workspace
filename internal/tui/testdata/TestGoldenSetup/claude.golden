@@ -1,14 +1,14 @@
 
-      Set up agentws                                                        esc skip 
+      Set up crew                                                           esc skip 
      
       Agents › Claude Code › Codex › Neovim › Done                                   
      
       Claude Code                                                         not set up 
      
       ▌ Changes /Users/me/.claude/settings.json                                      
-      ▌ Adds the agentws hooks and wraps your status line. Your own hooks and status 
+      ▌ Adds the crew hooks and wraps your status line. Your own hooks and status    
       ▌ line keep running.                                                           
       ▌ Backup  /Users/me/.claude/settings.json.agentws-backup                       
-      ▌ Undo    agentws setup claude --remove                                        
+      ▌ Undo    crew setup claude --remove                                           
      
       s skip                                                   esc skip   ⏎ install  

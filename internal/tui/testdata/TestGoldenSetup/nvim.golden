@@ -1,5 +1,5 @@
 
-      Set up agentws                                                        esc skip 
+      Set up crew                                                           esc skip 
      
       Agents › Claude Code › Codex › Neovim › Done                                   
      
@@ -15,6 +15,6 @@
         dofile(dir .. '/plugin/agentws.lua')
         require('agentws').setup({})
      
-      ▌ Undo    agentws setup nvim --remove                                          
+      ▌ Undo    crew setup nvim --remove                                             
      
       s skip                                                  esc skip   ⏎ write it  
