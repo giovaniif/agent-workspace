@@ -43,7 +43,7 @@ The Mac is on networks that the server cannot reach. An agent must not use the b
 - The server host of the session is allowed, on all TCP ports. For This Mac, this is `localhost`. Thus dev servers open.
 - Other hosts are allowed only when they resolve to public addresses. Loopback, private, link-local, CGNAT (`100.64.0.0/10`) and multicast addresses are refused.
 - A refused navigation stops, and the command fails with the reason. The app does not follow the redirect.
-- When the user takes over, the policy stops for that tab until the next agent command. The user can open each address.
+- When the user takes over, the policy stops for user navigation only. The user can open each address. Before an agent command returns page content, the app checks the current address of the tab and of each frame with this policy. If this check fails, `snapshot` and `screenshot` fail with the reason.
 
 ### No Mac app means no browser
 
