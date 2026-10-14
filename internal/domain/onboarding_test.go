@@ -106,7 +106,7 @@ func TestOnboardingReadsTheOldClaudeAndCodexKeys(t *testing.T) {
 func TestOnboardingRoundTripsEveryHarness(t *testing.T) {
 	in := Onboarding{Done: true, Harnesses: map[Harness]HarnessSetup{
 		HarnessClaude: {Installed: true, File: "/c"},
-		HarnessOmp:    {Err: "boom", File: "/o/agentws.ts"},
+		HarnessOmp:    {Err: "boom", File: "/o/crew.ts"},
 	}}
 	b, err := json.Marshal(in)
 	if err != nil {
@@ -163,17 +163,17 @@ func TestNvimOfferForEachSetup(t *testing.T) {
 }
 
 func TestNvimSnippetPointsAtThePluginDir(t *testing.T) {
-	lua := NvimSnippet("/Users/me/.local/share/agentws/nvim", "/Users/me/.config/nvim/init.lua")
+	lua := NvimSnippet("/Users/me/.local/share/crew/nvim", "/Users/me/.config/nvim/init.lua")
 	want := []string{
-		"vim.opt.runtimepath:prepend('/Users/me/.local/share/agentws/nvim')",
-		"require('agentws').setup({})",
+		"vim.opt.runtimepath:prepend('/Users/me/.local/share/crew/nvim')",
+		"require('crew').setup({})",
 	}
 	if !reflect.DeepEqual(lua, want) {
 		t.Errorf("lua snippet = %q, want %q", lua, want)
 	}
 
-	vim := NvimSnippet("/opt/agentws/nvim", "/home/me/.config/nvim/init.vim")
-	if len(vim) != 4 || vim[0] != "lua << EOF" || vim[3] != "EOF" || vim[1] != "vim.opt.runtimepath:prepend('/opt/agentws/nvim')" {
+	vim := NvimSnippet("/opt/crew/nvim", "/home/me/.config/nvim/init.vim")
+	if len(vim) != 4 || vim[0] != "lua << EOF" || vim[3] != "EOF" || vim[1] != "vim.opt.runtimepath:prepend('/opt/crew/nvim')" {
 		t.Errorf("vimscript snippet = %q", vim)
 	}
 

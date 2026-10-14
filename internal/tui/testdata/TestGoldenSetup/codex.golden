@@ -7,7 +7,7 @@
      
       ▌ Changes /Users/me/.codex/hooks.json                                          
       ▌ Adds the crew hooks. Your other hooks stay as they are.                      
-      ▌ Backup  /Users/me/.codex/hooks.json.agentws-<time>.bak                       
+      ▌ Backup  /Users/me/.codex/hooks.json.crew-<time>.bak                          
       ▌ Undo    crew setup codex --remove                                            
      
       ▌ ! One more step in Codex                                                     

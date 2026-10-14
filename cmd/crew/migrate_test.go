@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,18 +20,19 @@ type migrateRig struct {
 	cmds  []string
 	alive bool
 	goos  string
+	self  string
 }
 
 func newMigrateRig(t *testing.T) *migrateRig {
 	t.Helper()
-	return &migrateRig{user: t.TempDir(), goos: "linux"}
+	return &migrateRig{user: t.TempDir(), goos: "linux", self: "/new/bin/crew"}
 }
 
 func (r *migrateRig) run(services bool) {
 	r.log.Reset()
 	m := migration{
 		UserHome: r.user,
-		Self:     "/new/bin/crew",
+		Self:     r.self,
 		Env:      func(string) string { return "" },
 		Log:      &r.log,
 		Live:     func(string) bool { return r.alive },
@@ -162,26 +164,122 @@ func TestMigrateLeavesHarnessConfigWithoutAgentwsHooksAlone(t *testing.T) {
 	}
 }
 
-func TestMigrateMovesTheNvimPluginDirAndUpdatesTheSetupFile(t *testing.T) {
+const legacyNvimSetup = "-- agentws: written by agentws setup nvim; agentws setup nvim --remove deletes this file.\nlocal dir = '%s'\nvim.opt.runtimepath:prepend(dir)\ndofile(dir .. '/plugin/agentws.lua')\nrequire('agentws').setup({})\n"
+
+func TestMigrateMovesTheNvimPluginDirAndReplacesTheSetupFile(t *testing.T) {
 	r := newMigrateRig(t)
 	oldPlugin := r.path(".local", "share", "agentws", "nvim")
-	writeFile(t, filepath.Join(oldPlugin, "plugin", "agentws.lua"), "-- plugin\n")
-	setupFile := r.path(".config", "nvim", "plugin", "agentws.lua")
-	writeFile(t, setupFile, domain.NvimSetupFile(oldPlugin))
+	writeFile(t, filepath.Join(oldPlugin, "plugin", "crew.lua"), "-- plugin\n")
+	oldSetup := r.path(".config", "nvim", "plugin", "agentws.lua")
+	legacy := fmt.Sprintf(legacyNvimSetup, oldPlugin)
+	writeFile(t, oldSetup, legacy)
 	r.run(false)
 	newPlugin := r.path(".local", "share", "crew", "nvim")
-	if got := readFile(t, filepath.Join(newPlugin, "plugin", "agentws.lua")); got != "-- plugin\n" {
+	if got := readFile(t, filepath.Join(newPlugin, "plugin", "crew.lua")); got != "-- plugin\n" {
 		t.Fatalf("plugin = %q", got)
 	}
 	if target, err := os.Readlink(r.path(".local", "share", "agentws")); err != nil || target != r.path(".local", "share", "crew") {
 		t.Fatalf("old plugin link = %q, %v", target, err)
 	}
-	if got := readFile(t, setupFile); got != domain.NvimSetupFile(newPlugin) {
+	if got := readFile(t, r.path(".config", "nvim", "plugin", "crew.lua")); got != domain.NvimSetupFile(newPlugin) {
 		t.Fatalf("setup file:\n%s", got)
+	}
+	if exists(oldSetup) {
+		t.Fatal("the old setup file still loads")
+	}
+	if got := readFile(t, oldSetup+".bak"); got != legacy {
+		t.Fatalf("backup:\n%s", got)
 	}
 	r.run(false)
 	if r.log.Len() != 0 {
 		t.Fatalf("second run logged %q", r.log.String())
+	}
+}
+
+func TestMigrateReplacesAnOldNvimSetupFileEvenWhenThePluginDirMovedEarlier(t *testing.T) {
+	r := newMigrateRig(t)
+	newPlugin := r.path(".local", "share", "crew", "nvim")
+	writeFile(t, filepath.Join(newPlugin, "plugin", "crew.lua"), "-- plugin\n")
+	oldSetup := r.path(".config", "nvim", "plugin", "agentws.lua")
+	writeFile(t, oldSetup, fmt.Sprintf(legacyNvimSetup, r.path(".local", "share", "agentws", "nvim")))
+	r.run(false)
+	if got := readFile(t, r.path(".config", "nvim", "plugin", "crew.lua")); got != domain.NvimSetupFile(newPlugin) {
+		t.Fatalf("setup file:\n%s", got)
+	}
+	if exists(oldSetup) || !exists(oldSetup+".bak") {
+		t.Fatal("the old setup file was not moved aside")
+	}
+}
+
+func TestMigrateLeavesAnNvimFileOfTheUsersAlone(t *testing.T) {
+	r := newMigrateRig(t)
+	writeFile(t, filepath.Join(r.path(".local", "share", "crew", "nvim"), "plugin", "crew.lua"), "-- plugin\n")
+	writeFile(t, r.path(".config", "nvim", "plugin", "agentws.lua"), "my own file\n")
+	r.run(false)
+	if got := readFile(t, r.path(".config", "nvim", "plugin", "agentws.lua")); got != "my own file\n" {
+		t.Fatalf("changed: %q", got)
+	}
+	if exists(r.path(".config", "nvim", "plugin", "crew.lua")) {
+		t.Fatal("wrote a setup file next to a file of the user")
+	}
+}
+
+func TestMigrateReplacesTheOldOmpHookWithABackup(t *testing.T) {
+	r := newMigrateRig(t)
+	oldHook := r.path(".omp", "agent", "hooks", "post", "agentws.ts")
+	legacy := "// agentws: written by agentws setup omp; agentws setup omp --remove deletes this file.\nconst agentws = \"/old/bin/agentws\";\n"
+	writeFile(t, oldHook, legacy)
+	r.run(false)
+	if got := readFile(t, r.path(".omp", "agent", "hooks", "post", "crew.ts")); !strings.Contains(got, `const crew = "/new/bin/crew";`) {
+		t.Fatalf("crew hook:\n%s", got)
+	}
+	if exists(oldHook) {
+		t.Fatal("the old hook still runs")
+	}
+	if got := readFile(t, oldHook+".bak"); got != legacy {
+		t.Fatalf("backup:\n%s", got)
+	}
+}
+
+func TestMigrateLeavesAnOmpHookOfTheUsersAlone(t *testing.T) {
+	r := newMigrateRig(t)
+	oldHook := r.path(".omp", "agent", "hooks", "post", "agentws.ts")
+	writeFile(t, oldHook, "export default () => {}\n")
+	r.run(false)
+	if got := readFile(t, oldHook); got != "export default () => {}\n" {
+		t.Fatalf("changed: %q", got)
+	}
+	if exists(r.path(".omp", "agent", "hooks", "post", "crew.ts")) {
+		t.Fatal("installed a hook next to a hook of the user")
+	}
+}
+
+func TestMigrateRemovesTheAgentwsLinkToTheBinary(t *testing.T) {
+	r := newMigrateRig(t)
+	bin := r.path("bin")
+	r.self = filepath.Join(bin, "crew")
+	writeFile(t, r.self, "binary")
+	if err := os.Symlink("crew", filepath.Join(bin, "agentws")); err != nil {
+		t.Fatal(err)
+	}
+	r.run(false)
+	if _, err := os.Lstat(filepath.Join(bin, "agentws")); !os.IsNotExist(err) {
+		t.Fatalf("link left: %v", err)
+	}
+	if readFile(t, r.self) != "binary" {
+		t.Fatal("the binary changed")
+	}
+}
+
+func TestMigrateKeepsAnOldAgentwsBinary(t *testing.T) {
+	r := newMigrateRig(t)
+	bin := r.path("bin")
+	r.self = filepath.Join(bin, "crew")
+	writeFile(t, r.self, "binary")
+	writeFile(t, filepath.Join(bin, "agentws"), "old binary")
+	r.run(false)
+	if got := readFile(t, filepath.Join(bin, "agentws")); got != "old binary" {
+		t.Fatalf("old binary = %q", got)
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 
 func TestInstallWritesTheBrowserSkillOnceAndRemoveTakesItAway(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "skills", "agentws-browser", "SKILL.md")
+	file := filepath.Join(dir, "skills", "crew-browser", "SKILL.md")
 	changed, err := skill.Install(dir)
 	if err != nil || !changed {
 		t.Fatalf("install: %v %v", changed, err)
@@ -20,7 +20,7 @@ func TestInstallWritesTheBrowserSkillOnceAndRemoveTakesItAway(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: agentws-browser", "crew browser snapshot", "crew browser click @e1", "crew browser screenshot", "no browser: the macOS app is not connected"} {
+	for _, want := range []string{"name: crew-browser", "crew browser snapshot", "crew browser click @e1", "crew browser screenshot", "no browser: the macOS app is not connected"} {
 		if !strings.Contains(string(body), want) {
 			t.Errorf("SKILL.md has no %q", want)
 		}
@@ -48,7 +48,7 @@ func TestInstallWritesTheBrowserSkillOnceAndRemoveTakesItAway(t *testing.T) {
 	}
 }
 
-func TestASkillFileThatAgentwsDidNotWriteIsNeverTouched(t *testing.T) {
+func TestASkillFileThatCrewDidNotWriteIsNeverTouched(t *testing.T) {
 	dir := t.TempDir()
 	file := skill.Path(dir)
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
@@ -68,7 +68,7 @@ func TestASkillFileThatAgentwsDidNotWriteIsNeverTouched(t *testing.T) {
 	}
 }
 
-func TestAnOlderAgentwsSkillIsReplaced(t *testing.T) {
+func TestAnOlderCrewSkillIsReplaced(t *testing.T) {
 	dir := t.TempDir()
 	file := skill.Path(dir)
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {

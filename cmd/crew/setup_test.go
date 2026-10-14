@@ -86,7 +86,7 @@ func TestSetupRejectsAnUnknownHarness(t *testing.T) {
 
 func TestSetupCodexAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "skills", "agentws-browser", "SKILL.md")
+	file := filepath.Join(dir, "skills", "crew-browser", "SKILL.md")
 	if code, _, errOut := setupCodex(t, dir); code != 0 {
 		t.Fatalf("code %d: %s", code, errOut)
 	}

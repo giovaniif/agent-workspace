@@ -97,7 +97,7 @@ func itoa(n int) string {
 func TestSetupClaudeAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("CLAUDE_CONFIG_DIR", dir)
-	file := filepath.Join(dir, "skills", "agentws-browser", "SKILL.md")
+	file := filepath.Join(dir, "skills", "crew-browser", "SKILL.md")
 	var out, errOut bytes.Buffer
 	if code := run([]string{"setup", "claude"}, &out, &errOut); code != 0 {
 		t.Fatalf("setup: code %d, %s", code, errOut.String())

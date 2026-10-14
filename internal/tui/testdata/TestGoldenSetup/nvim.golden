@@ -5,15 +5,15 @@
      
       Neovim  optional                                                               
      
-      ⏎ writes /Users/me/.config/nvim/plugin/agentws.lua                             
+      ⏎ writes /Users/me/.config/nvim/plugin/crew.lua                                
       nvim loads every file in plugin/ at startup, whatever else your config uses    
       (init.lua, init.vim, lazy.nvim), so nothing of yours is edited.                
      
-        -- agentws: written by agentws setup nvim; agentws setup nvim --remove deletes this file.
-        local dir = '/Users/me/.local/share/agentws/nvim'
+        -- crew: written by crew setup nvim; crew setup nvim --remove deletes this file.
+        local dir = '/Users/me/.local/share/crew/nvim'
         vim.opt.runtimepath:prepend(dir)
-        dofile(dir .. '/plugin/agentws.lua')
-        require('agentws').setup({})
+        dofile(dir .. '/plugin/crew.lua')
+        require('crew').setup({})
      
       ▌ Undo    crew setup nvim --remove                                             
      
