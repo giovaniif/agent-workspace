@@ -24,7 +24,7 @@ archives:
     files:
       - README.md
       - src: build/alias/agentws
-        dst: agentws
+        strip_parent: true
       - nvim/lua/**/*
       - nvim/plugin/*
 
