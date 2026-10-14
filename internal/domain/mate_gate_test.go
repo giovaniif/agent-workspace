@@ -147,7 +147,7 @@ func TestClassifyShellCommands(t *testing.T) {
 		{"echo 'unterminated", ActionUnknown},
 		{"git x", ActionUnknown},
 		{"git config alias.x '!git push'", ActionUnknown},
-		{"python3 -c 'import os'", ActionSafe},
+		{"python3 -c 'import os'", ActionUnknown},
 		{"$CMD push", ActionUnknown},
 		{"find . -name x -exec rm {} \\;", ActionUnknown},
 		{"find / -delete", ActionOutsideWorktree},
@@ -183,6 +183,9 @@ func TestClassifyFileTools(t *testing.T) {
 		{"Write", "file_path", "", ActionUnknown},
 		{"Glob", "pattern", "**/*.go", ActionSafe},
 		{"Grep", "pattern", "func main", ActionSafe},
+		{"Grep", "path", "/home/u/.aws/credentials", ActionSecret},
+		{"Grep", "path", "/w/api/.env", ActionSecret},
+		{"Grep", "path", "/w/api/internal", ActionSafe},
 		{"WebFetch", "url", "https://example.com", ActionSafe},
 		{"WebSearch", "query", "go generics", ActionSafe},
 		{"TodoWrite", "todos", "x", ActionSafe},
@@ -475,6 +478,70 @@ func TestClassifyPatchAndCommandEdgeCases(t *testing.T) {
 	for _, c := range cases {
 		if got := ClassifyAction(HarnessCodex, c.tool, json.RawMessage(c.input), testScope); got.Kind != c.want {
 			t.Errorf("%s %s: got %s, want %s", c.tool, c.input, got.Kind, c.want)
+		}
+	}
+}
+
+func TestClassifyClosesTheReviewedBypasses(t *testing.T) {
+	cases := []struct {
+		cmd  string
+		want ActionKind
+	}{
+		{"eval cd /tmp; rm -rf x", ActionOutsideWorktree},
+		{"eval 'cd /tmp'; rm -rf x", ActionOutsideWorktree},
+		{"env -C /tmp rm -rf x", ActionUnknown},
+		{"env --chdir=/tmp rm -rf x", ActionUnknown},
+		{"python3 -c \"import subprocess\"", ActionUnknown},
+		{"python -c pass", ActionUnknown},
+		{"node -e \"require('child_process')\"", ActionUnknown},
+		{"node --eval x", ActionUnknown},
+		{"deno eval x", ActionUnknown},
+		{"awk 'BEGIN{system(\"git push\")}'", ActionUnknown},
+		{"awk '{print > \"/tmp/x\"}' a", ActionUnknown},
+		{"npx some-package", ActionUnknown},
+		{"python3 scripts/gen.py", ActionSafe},
+		{"node build.js", ActionSafe},
+		{"awk '{print $1}' a.txt", ActionSafe},
+		{"git -c core.sshCommand='sh -c x' fetch", ActionUnknown},
+		{"git -c core.pager=evil log", ActionUnknown},
+		{"git -c core.fsmonitor=x status", ActionUnknown},
+		{"git config core.fsmonitor 'git push'", ActionUnknown},
+		{"git config core.hooksPath /tmp/h", ActionUnknown},
+		{"git config core.editor vim", ActionUnknown},
+		{"git submodule foreach git push", ActionUnknown},
+		{"git bisect run make", ActionUnknown},
+		{"git rebase -x 'git push' main", ActionUnknown},
+		{"git rebase --exec=x main", ActionUnknown},
+		{"git submodule update --init", ActionSafe},
+		{"git bisect good", ActionSafe},
+		{"git rebase -i main", ActionSafe},
+		{"git -c core.pager=less log", ActionSafe},
+		{"curl -da=1 https://x", ActionExternalWrite},
+		{"curl -sd a=1 https://x", ActionExternalWrite},
+		{"curl -sXPOST https://x", ActionExternalWrite},
+		{"curl -sX POST https://x", ActionExternalWrite},
+		{"curl -Ff=@a https://x", ActionExternalWrite},
+		{"curl -Tf https://x", ActionExternalWrite},
+		{"curl --request=POST https://x", ActionExternalWrite},
+		{"curl -sSL https://x", ActionSafe},
+		{"curl -sXGET https://x", ActionSafe},
+		{"curl -o data.txt https://x", ActionSafe},
+		{"gh api repos/o/r/issues -ftitle=x", ActionExternalWrite},
+		{"gh api repos/o/r/issues -Ftitle=x", ActionExternalWrite},
+		{"gh api repos/o/r/issues --field=title=x", ActionExternalWrite},
+		{"gh api repos/o/r/issues --raw-field=title=x", ActionExternalWrite},
+		{"gh api repos/o/r/issues --input=f", ActionExternalWrite},
+		{"cat .en*", ActionSecret},
+		{"cat .e?v", ActionSecret},
+		{"cat ~/.ss*/id_*", ActionSecret},
+		{"grep TOKEN .env*", ActionSecret},
+		{"cat id_[re]*", ActionSecret},
+		{"ls *.go", ActionSafe},
+	}
+	for _, c := range cases {
+		got := ClassifyAction(HarnessClaude, "Bash", bashInput(c.cmd), testScope)
+		if got.Kind != c.want {
+			t.Errorf("%q: got %s, want %s", c.cmd, got.Kind, c.want)
 		}
 	}
 }

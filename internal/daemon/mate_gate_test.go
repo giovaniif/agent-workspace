@@ -79,13 +79,13 @@ func TestOwnerTurnOfAMateRunsAGitPush(t *testing.T) {
 	}
 }
 
-func TestMateGateClassifiesWhenTheHookSentNoAction(t *testing.T) {
+func TestMateGateLetsACallThroughAndRecordsNoApprovalWhenTheHookSentNoAction(t *testing.T) {
 	_, c, _ := mateOn(t, &domain.MateSeat{Name: "ada", Owner: "UOWNER", Authority: "UOTHER"})
-	if reply := preToolUse(t, c, "git push", false); !strings.Contains(string(reply.Output), "deny") {
+	if reply := preToolUse(t, c, "git push", false); len(reply.Output) != 0 {
 		t.Fatalf("reply %s", reply.Output)
 	}
-	if reply := preToolUse(t, c, "go test ./...", false); len(reply.Output) != 0 {
-		t.Fatalf("safe reply %s", reply.Output)
+	if got := pendingApprovals(t, c); len(got) != 0 {
+		t.Fatalf("approvals %+v", got)
 	}
 }
 
