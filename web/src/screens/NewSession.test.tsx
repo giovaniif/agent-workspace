@@ -178,7 +178,7 @@ describe("starting a session from the phone", () => {
       effort: "high",
       prompt: "start with the tests",
     });
-    expect(JSON.parse(storage.getItem("agentws.new") ?? "{}")).toEqual({
+    expect(JSON.parse(storage.getItem("crew.new") ?? "{}")).toEqual({
       workspace: "/home/me/web",
       harness: "codex",
       model: "gpt-5.5",

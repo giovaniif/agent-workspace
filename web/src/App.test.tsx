@@ -32,7 +32,7 @@ describe("in a browser tab", () => {
   it("explains Add to Home Screen and shows the code instead of pairing", () => {
     const { server, env } = setup({ installed: false });
     render(<App env={env} />);
-    expect(screen.getByRole("heading", { name: "Add agentws to your Home Screen" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Add crew to your Home Screen" })).toBeInTheDocument();
     expect(screen.getByText(/Add to Home Screen, then Add/)).toBeInTheDocument();
     expect(screen.getByLabelText("Pairing code")).toHaveTextContent("ABCD 2345");
     expect(screen.queryByRole("button", { name: "Pair" })).not.toBeInTheDocument();
@@ -42,7 +42,7 @@ describe("in a browser tab", () => {
   it("still explains installing without a code in the URL", () => {
     const { env } = setup({ installed: false, hash: "" });
     render(<App env={env} />);
-    expect(screen.getByRole("heading", { name: "Add agentws to your Home Screen" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Add crew to your Home Screen" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Pairing code")).not.toBeInTheDocument();
   });
 });
