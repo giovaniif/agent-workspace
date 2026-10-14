@@ -140,7 +140,7 @@ func TestSetupServeIsLinuxAndMacOSOnly(t *testing.T) {
 
 func TestSetupServeUsageOnBadArguments(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := runSetup([]string{"serve", "--cert", "/c"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: agentws setup serve") {
+	if code := runSetup([]string{"serve", "--cert", "/c"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup serve") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }

@@ -45,7 +45,7 @@ func TestReviewCommentNeedsASessionAFileALineAndABody(t *testing.T) {
 	for name, args := range cases {
 		t.Run(name, func(t *testing.T) {
 			var stderr bytes.Buffer
-			if code := run(append([]string{"review", "comment"}, args...), io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: agentws review comment") {
+			if code := run(append([]string{"review", "comment"}, args...), io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: crew review comment") {
 				t.Fatalf("exit %d, stderr %q", code, stderr.String())
 			}
 		})

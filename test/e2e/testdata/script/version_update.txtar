@@ -3,7 +3,7 @@ mkdir $AGENTWS_HOME
 cp release.json $AGENTWS_HOME/release.json
 exec agentws version
 stdout 'v9\.0\.0-alpha\.1 is available'
-stdout 'agentws daemon stop'
+stdout 'crew daemon stop'
 
 env AGENTWS_NO_UPDATE_CHECK=1
 exec agentws version

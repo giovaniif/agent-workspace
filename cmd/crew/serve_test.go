@@ -50,7 +50,7 @@ func TestServeUsage(t *testing.T) {
 	t.Setenv("AGENTWS_HOME", shortHome(t))
 	for _, args := range [][]string{{"serve", "extra"}, {"serve", "--nope"}} {
 		var stderr bytes.Buffer
-		if code := run(args, io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: agentws serve") {
+		if code := run(args, io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: crew serve") {
 			t.Fatalf("%v: exit %d, stderr %q", args, code, stderr.String())
 		}
 	}

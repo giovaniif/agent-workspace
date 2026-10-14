@@ -47,7 +47,7 @@ func TestSetupBridgeRemoveNamesTheSameAgent(t *testing.T) {
 
 func TestSetupBridgeNeedsOneHost(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := runSetup([]string{"bridge"}, &bytes.Buffer{}, &stderr, func(string) string { return "" }, "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: agentws setup bridge") {
+	if code := runSetup([]string{"bridge"}, &bytes.Buffer{}, &stderr, func(string) string { return "" }, "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup bridge") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }

@@ -127,7 +127,7 @@ func TestRemoteDevicesListsThemAndRevokeRemovesOne(t *testing.T) {
 func TestRemoteUsage(t *testing.T) {
 	for _, args := range [][]string{{"remote"}, {"remote", "nope"}, {"remote", "revoke"}, {"remote", "devices", "x"}} {
 		var stderr bytes.Buffer
-		if code := run(args, io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: agentws remote") {
+		if code := run(args, io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: crew remote") {
 			t.Errorf("%v: exit %d, stderr %q", args, code, stderr.String())
 		}
 	}

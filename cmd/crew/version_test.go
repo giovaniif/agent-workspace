@@ -17,7 +17,7 @@ func TestVersionTellsAboutNewerRelease(t *testing.T) {
 		t.Fatalf("exit %d", code)
 	}
 	got := out.String()
-	for _, want := range []string{"agentws v0.1.0-alpha.2 (commit abc)", "v0.1.0-alpha.3 is available", "agentws daemon stop"} {
+	for _, want := range []string{"crew v0.1.0-alpha.2 (commit abc)", "v0.1.0-alpha.3 is available", "crew daemon stop"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("output %q lacks %q", got, want)
 		}
@@ -39,7 +39,7 @@ func TestVersionQuietWhenCurrentOrCheckFails(t *testing.T) {
 	} {
 		var out bytes.Buffer
 		runVersion("v0.1.0-alpha.2", "abc", latest, &out)
-		if got := out.String(); got != "agentws v0.1.0-alpha.2 (commit abc)\n" {
+		if got := out.String(); got != "crew v0.1.0-alpha.2 (commit abc)\n" {
 			t.Errorf("output = %q", got)
 		}
 	}

@@ -217,7 +217,7 @@ func TestSetupDaemonMakesARelativeAgentwsHomeAbsolute(t *testing.T) {
 func TestSetupDaemonRefusesArguments(t *testing.T) {
 	f := newDaemonSetupFixture(t, "linux", "yes")
 	for _, args := range [][]string{{"extra"}, {"--bogus"}, {"--check", "--remove"}} {
-		if code, _, errOut := f.run(t, "linux", t.TempDir(), args...); code != 2 || !strings.Contains(errOut, "usage: agentws setup daemon") {
+		if code, _, errOut := f.run(t, "linux", t.TempDir(), args...); code != 2 || !strings.Contains(errOut, "usage: crew setup daemon") {
 			t.Errorf("%q: code %d err %q", args, code, errOut)
 		}
 	}
@@ -228,7 +228,7 @@ func TestSetupDaemonRefusesArguments(t *testing.T) {
 
 func TestSetupDaemonIsReachableFromSetup(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := runSetup([]string{"daemon", "extra"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: agentws setup daemon") {
+	if code := runSetup([]string{"daemon", "extra"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup daemon") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }

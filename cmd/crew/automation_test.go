@@ -59,7 +59,7 @@ func TestPrintAutomationShowsEveryFieldAndThePrompt(t *testing.T) {
 
 func TestRunAutomationWithoutASubcommandPrintsUsage(t *testing.T) {
 	var out, errOut bytes.Buffer
-	if code := runAutomation(nil, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "usage: agentws automation") {
+	if code := runAutomation(nil, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "usage: crew automation") {
 		t.Errorf("code %d, stderr %q", code, errOut.String())
 	}
 	if code := runAutomation([]string{"show"}, &out, &errOut); code != 2 {

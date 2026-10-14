@@ -25,7 +25,7 @@ func TestSetupOmpWritesTheHookFileOnce(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "hooks", "post", "agentws.ts")
 	code, out, errOut := setupOmp(t, dir)
-	if code != 0 || errOut != "" || out != "wrote the agentws hook file "+file+"\n" {
+	if code != 0 || errOut != "" || out != "wrote the crew hook file "+file+"\n" {
 		t.Fatalf("code %d, stdout %q, stderr %q", code, out, errOut)
 	}
 	body, err := os.ReadFile(file)
@@ -41,7 +41,7 @@ func TestSetupOmpRemoveDeletesOnlyOurFile(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "hooks", "post", "agentws.ts")
 	setupOmp(t, dir)
-	if code, out, _ := setupOmp(t, dir, "--remove"); code != 0 || out != "removed the agentws hook file "+file+"\n" {
+	if code, out, _ := setupOmp(t, dir, "--remove"); code != 0 || out != "removed the crew hook file "+file+"\n" {
 		t.Fatalf("code %d, stdout %q", code, out)
 	}
 	if _, err := os.Stat(file); !os.IsNotExist(err) {

@@ -37,13 +37,13 @@ grep '^ci$' api-other/npm-args
 ! exists api-other/node_modules
 
 ! exec agentws setup-worktree api
-stderr 'agentws setup-worktree: .*is the main checkout'
+stderr 'crew setup-worktree: .*is the main checkout'
 
 ! exec agentws setup-worktree
-stderr '^usage: agentws setup-worktree <path>$'
+stderr '^usage: crew setup-worktree <path>$'
 
 ! exec agentws setup-worktree elsewhere
-stderr '^agentws setup-worktree: .*elsewhere'
+stderr '^crew setup-worktree: .*elsewhere'
 
 -- api/package-lock.json --
 {}

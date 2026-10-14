@@ -79,7 +79,7 @@ func TestSetupRejectsAnUnknownHarness(t *testing.T) {
 	if code := runSetup([]string{"vim"}, &out, &errOut, func(string) string { return "" }, "agentws"); code != 2 {
 		t.Fatalf("code %d", code)
 	}
-	if !strings.Contains(errOut.String(), "usage: agentws setup") {
+	if !strings.Contains(errOut.String(), "usage: crew setup") {
 		t.Fatalf("stderr %q", errOut.String())
 	}
 }

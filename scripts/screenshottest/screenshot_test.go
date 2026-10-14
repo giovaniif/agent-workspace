@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-const fakeAgentws = `#!/bin/sh
+const fakeCrew = `#!/bin/sh
 onboarded=no
-[ -e "$AGENTWS_HOME/onboarded" ] && onboarded=yes
-echo "agentws $* HOME=$HOME XDG_CONFIG_HOME=$XDG_CONFIG_HOME XDG_DATA_HOME=$XDG_DATA_HOME CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR CODEX_HOME=$CODEX_HOME onboarded=$onboarded" >> "$SHOT_LOG"
+[ -e "$CREW_HOME/onboarded" ] && onboarded=yes
+echo "crew $* HOME=$HOME XDG_CONFIG_HOME=$XDG_CONFIG_HOME XDG_DATA_HOME=$XDG_DATA_HOME CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR CODEX_HOME=$CODEX_HOME onboarded=$onboarded" >> "$SHOT_LOG"
 `
 
 const fakeTmux = `#!/bin/sh
@@ -41,7 +41,7 @@ func runScreenshot(t *testing.T, steps func(realHome string) string) (string, st
 	root := t.TempDir()
 	write(t, filepath.Join(root, "scripts/screenshot"), string(script), 0o755)
 	write(t, filepath.Join(root, "Makefile"), "build:\n\t@true\n", 0o644)
-	write(t, filepath.Join(root, "bin/agentws"), fakeAgentws, 0o755)
+	write(t, filepath.Join(root, "bin/crew"), fakeCrew, 0o755)
 	fakes := t.TempDir()
 	write(t, filepath.Join(fakes, "tmux"), fakeTmux, 0o755)
 	write(t, filepath.Join(fakes, "freeze"), fakeFreeze, 0o755)
@@ -80,7 +80,7 @@ func TestScreenshotDaemonAndPaneNeverUseTheRealHome(t *testing.T) {
 				t.Fatalf("%q is unset in %q", key, line)
 			}
 		}
-		if strings.HasPrefix(line, "agentws daemon start") {
+		if strings.HasPrefix(line, "crew daemon start") {
 			daemon = line
 		}
 	}
@@ -93,7 +93,7 @@ func TestScreenshotDaemonAndPaneNeverUseTheRealHome(t *testing.T) {
 
 func TestScreenshotRefusesARunStepWithTheRealHome(t *testing.T) {
 	log, realHome, err := runScreenshot(t, func(realHome string) string {
-		return "run env HOME=" + realHome + " agentws tui\n"
+		return "run env HOME=" + realHome + " crew tui\n"
 	})
 	if err == nil {
 		t.Fatalf("a run step with HOME=%s was accepted", realHome)

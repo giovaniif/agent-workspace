@@ -31,7 +31,7 @@ func TestRpcWithNoDaemonPrintsUnavailableAndExitsNonZeroWithoutStartingOne(t *te
 	}
 	time.Sleep(100 * time.Millisecond)
 	if _, err := os.Stat(rpc.SocketPath(home)); err == nil {
-		t.Fatal("agentws rpc started a daemon")
+		t.Fatal("crew rpc started a daemon")
 	}
 }
 
@@ -72,7 +72,7 @@ func TestRpcCopiesLinesBothWaysAndExitsZeroWhenTheSocketCloses(t *testing.T) {
 			t.Fatalf("exit %d, stderr %q", code, stderr.String())
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("agentws rpc kept running after the socket closed")
+		t.Fatal("crew rpc kept running after the socket closed")
 	}
 	if line := <-got; line != "{\"v\":1,\"id\":1,\"method\":\"subscribe\"}\n" {
 		t.Fatalf("daemon got %q", line)
@@ -105,7 +105,7 @@ func TestRpcEndsTheConnectionWhenStdinCloses(t *testing.T) {
 			t.Fatalf("exit %d, stderr %q", code, stderr.String())
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("agentws rpc did not end after stdin closed")
+		t.Fatal("crew rpc did not end after stdin closed")
 	}
 }
 

@@ -40,7 +40,7 @@ func TestNotifyBridgeNeedsExactlyOneHost(t *testing.T) {
 
 func TestNotifyUnknownSubcommandIsUsage(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := runNotify([]string{"bogus"}, &bytes.Buffer{}, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: agentws notify") {
+	if code := runNotify([]string{"bogus"}, &bytes.Buffer{}, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: crew notify") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }

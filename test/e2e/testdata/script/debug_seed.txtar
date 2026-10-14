@@ -6,4 +6,4 @@ stdout '^sessions 3$'
 stdout '^worktrees 6$'
 
 ! exec agentws debug seed zero
-stderr 'usage: agentws debug seed <count>'
+stderr 'usage: crew debug seed <count>'

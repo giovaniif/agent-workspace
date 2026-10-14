@@ -96,7 +96,7 @@ func TestBrowserCLIRefusesBadArgumentsWithUsage(t *testing.T) {
 	if code := run([]string{"browser", "--session", "s1", "click", "e1"}, io.Discard, &stderr); code != 2 {
 		t.Fatalf("exit %d", code)
 	}
-	if !strings.Contains(stderr.String(), "not an element ref") || !strings.Contains(stderr.String(), "usage: agentws browser") {
+	if !strings.Contains(stderr.String(), "not an element ref") || !strings.Contains(stderr.String(), "usage: crew browser") {
 		t.Fatalf("stderr %q", stderr.String())
 	}
 }
