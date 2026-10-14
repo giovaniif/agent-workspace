@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/giovaniif/crew/internal/adapters/chromium"
 	"github.com/giovaniif/crew/internal/adapters/claude"
 	"github.com/giovaniif/crew/internal/adapters/codex"
 	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
@@ -111,6 +112,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithOnboarding(onboard.FromEnv(home, self, os.Getenv)),
 		WithTranscripts(Transcripts(wsfs.Transcripts{}), wsfs.Transcripts{}),
 		WithPush(webpush.New(filepath.Join(home, "vapid"), nil)),
+		WithHeadlessBrowser(chromium.FromEnv(), filepath.Join(home, "browser", "profiles", "default", "cookies.json"), DefaultHeadlessReap),
 	}
 	awayAfter, err := LoadAwayAfter(filepath.Join(home, "config.toml"))
 	if err != nil {
