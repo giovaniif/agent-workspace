@@ -32,7 +32,7 @@ func Install(dir string) (bool, error) {
 	case err == nil && bytes.Equal(got, body):
 		return false, nil
 	case err == nil && !strings.Contains(string(got), Marker):
-		return false, fmt.Errorf("%s exists and agentws did not write it; move it away to install the browser skill", file)
+		return false, fmt.Errorf("%s exists and crew did not write it; move it away to install the browser skill", file)
 	case err != nil && !errors.Is(err, fs.ErrNotExist):
 		return false, err
 	}
@@ -55,7 +55,7 @@ func Remove(dir string) (bool, error) {
 		return false, err
 	}
 	if !strings.Contains(string(got), Marker) {
-		return false, fmt.Errorf("%s exists and agentws did not write it; it stays", file)
+		return false, fmt.Errorf("%s exists and crew did not write it; it stays", file)
 	}
 	if err := os.Remove(file); err != nil {
 		return false, err

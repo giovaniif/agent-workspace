@@ -76,7 +76,7 @@ func TestSetupCodexFailsOnBrokenHooksFile(t *testing.T) {
 
 func TestSetupRejectsAnUnknownHarness(t *testing.T) {
 	var out, errOut bytes.Buffer
-	if code := runSetup([]string{"vim"}, &out, &errOut, func(string) string { return "" }, "agentws"); code != 2 {
+	if code := runSetup([]string{"vim"}, &out, &errOut, func(string) string { return "" }, "crew"); code != 2 {
 		t.Fatalf("code %d", code)
 	}
 	if !strings.Contains(errOut.String(), "usage: crew setup") {

@@ -92,7 +92,7 @@ type bridge struct {
 func parseBridge(args []string) (bridge, error) {
 	fs := flag.NewFlagSet("bridge", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	remote := fs.String("remote-bin", "agentws", "")
+	remote := fs.String("remote-bin", "crew", "")
 	if err := fs.Parse(args); err != nil {
 		return bridge{}, err
 	}

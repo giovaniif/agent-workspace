@@ -170,7 +170,7 @@ func (s *state) newSessionInput(root string, parsed domain.Task) newSessionInput
 	if root == "" {
 		ws, found := domain.LastUsedWorkspace(sorted(s.workspaces))
 		if !found {
-			in.missing = "no workspace to start in; add one with `agentws workspace add`"
+			in.missing = "no workspace to start in; add one with `crew workspace add`"
 			return in
 		}
 		in.ws = ws

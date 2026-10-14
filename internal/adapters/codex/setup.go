@@ -156,7 +156,7 @@ func (f *hooksFile) save(cfg SetupConfig) (SetupResult, error) {
 		if cfg.Now != nil {
 			now = cfg.Now
 		}
-		res.Backup = fmt.Sprintf("%s.agentws-%s.bak", f.path, now().UTC().Format("20060102T150405Z"))
+		res.Backup = fmt.Sprintf("%s.crew-%s.bak", f.path, now().UTC().Format("20060102T150405Z"))
 		if err := os.WriteFile(res.Backup, f.raw, 0o600); err != nil {
 			return SetupResult{}, err
 		}
@@ -172,7 +172,7 @@ func (f *hooksFile) save(cfg SetupConfig) (SetupResult, error) {
 	if err := os.MkdirAll(cfg.Dir, 0o700); err != nil {
 		return SetupResult{}, err
 	}
-	tmp := f.path + ".agentws-tmp"
+	tmp := f.path + ".crew-tmp"
 	if err := os.WriteFile(tmp, out, 0o600); err != nil {
 		return SetupResult{}, err
 	}

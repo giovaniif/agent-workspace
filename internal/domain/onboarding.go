@@ -92,7 +92,7 @@ func (s OnboardStep) Harness() (Harness, bool) {
 	return "", false
 }
 
-const CodexTrustStep = "Codex runs a hook only after you trust it. Start codex and accept the review prompt for the new agentws hooks, or open /hooks and trust them there."
+const CodexTrustStep = "Codex runs a hook only after you trust it. Start codex and accept the review prompt for the new crew hooks, or open /hooks and trust them there."
 
 func OnboardSteps(picked []Harness) []OnboardStep {
 	steps := []OnboardStep{OnboardPick}
