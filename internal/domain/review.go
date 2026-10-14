@@ -64,7 +64,7 @@ func RangeFor(scope ReviewScope, f RangeFacts) (DiffRange, error) {
 	return DiffRange{}, ErrUnknownScope
 }
 
-const turnPrefix = "refs/agentws/turns/"
+const turnPrefix = "refs/crew/turns/"
 
 func WorktreeKey(path string) string {
 	sum := sha1.Sum([]byte(filepath.Clean(path)))
@@ -97,6 +97,9 @@ type turn struct {
 
 func parseTurn(ref string) (turn, bool) {
 	rest, ok := strings.CutPrefix(ref, turnPrefix)
+	if !ok {
+		rest, ok = strings.CutPrefix(ref, LegacyTurnPrefix)
+	}
 	if !ok {
 		return turn{}, false
 	}

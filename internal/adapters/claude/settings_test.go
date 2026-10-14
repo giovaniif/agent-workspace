@@ -231,3 +231,9 @@ func hookCommands(t *testing.T, settings []byte) map[string][]string {
 	}
 	return out
 }
+
+func TestTheSettingsBackupIsNamedAfterCrew(t *testing.T) {
+	if got := claude.BackupPath("/c/settings.json"); got != "/c/settings.json.crew-backup" {
+		t.Fatalf("BackupPath = %s", got)
+	}
+}

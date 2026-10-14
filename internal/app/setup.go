@@ -10,7 +10,7 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 )
 
-const recipeFile = ".agentws.toml"
+const recipeFile = domain.RepoConfigFile
 
 const modulesDir = "node_modules"
 

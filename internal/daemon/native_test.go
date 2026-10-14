@@ -15,8 +15,8 @@ import (
 func TestNativeClientHandsOutTheControlModeArgvAndMapsPanesToSessions(t *testing.T) {
 	d, path := start(t, &memStore{})
 	host := &fakeClientHost{native: app.NativeClient{
-		Session: "agentws-native-1",
-		Argv:    []string{"tmux", "-L", "agentws", "-C", "attach-session", "-t", "=agentws-native-1"},
+		Session: "crew-native-1",
+		Argv:    []string{"tmux", "-L", "crew", "-C", "attach-session", "-t", "=crew-native-1"},
 		Panes: []app.NativePane{
 			{Pane: "%3", Window: "@2", Cols: 120, Rows: 40, MouseAny: true, MouseSGR: true},
 			{Pane: "%9", Window: "@5", Cols: 120, Rows: 40, Alternate: true},
@@ -36,7 +36,7 @@ func TestNativeClientHandsOutTheControlModeArgvAndMapsPanesToSessions(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Session != "agentws-native-1" || !slices.Equal(got.Argv, host.native.Argv) {
+	if got.Session != "crew-native-1" || !slices.Equal(got.Argv, host.native.Argv) {
 		t.Fatalf("reply = %+v; want the host's session and argv", got)
 	}
 	want := []rpc.NativePane{

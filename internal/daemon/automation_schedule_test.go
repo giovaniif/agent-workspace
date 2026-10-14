@@ -156,7 +156,7 @@ func TestAutomationScheduleRunsAMissedRunInsideTheGrace(t *testing.T) {
 func TestAutomationScheduleOfARepoWaitsForTrust(t *testing.T) {
 	repo := t.TempDir()
 	body := "[[automation]]\nname = \"repo-tick\"\nagent = \"claude\"\ntarget = \"workspace\"\nprompt = \"Tick.\"\nschedule = \"* * * * *\"\ntimezone = \"UTC\"\n"
-	if err := os.WriteFile(filepath.Join(repo, ".agentws.toml"), []byte(body), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(repo, ".crew.toml"), []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t0 := time.Date(2026, 10, 13, 10, 0, 30, 0, time.UTC)

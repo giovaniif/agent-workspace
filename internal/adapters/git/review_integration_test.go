@@ -141,14 +141,14 @@ func TestReviewTurnRefsStayOutOfBranchesAndGoWithTheWorktree(t *testing.T) {
 	if got := gitOut(t, repo, "branch", "--all"); got != branches {
 		t.Errorf("git branch changed:\n%s\nwas\n%s", got, branches)
 	}
-	refs := strings.Fields(gitOut(t, repo, "for-each-ref", "--format=%(refname)", "refs/agentws/"))
+	refs := strings.Fields(gitOut(t, repo, "for-each-ref", "--format=%(refname)", "refs/crew/"))
 	want := []string{domain.TurnRef("s1", repo, 1), domain.TurnRef("s1", wt, 2)}
 	sort.Strings(want)
 	if !reflect.DeepEqual(refs, want) {
 		t.Errorf("refs = %v, want %v", refs, want)
 	}
 	for _, r := range strings.Fields(gitOut(t, repo, "for-each-ref", "--format=%(refname)")) {
-		if !strings.HasPrefix(r, "refs/heads/") && !strings.HasPrefix(r, "refs/remotes/") && !strings.HasPrefix(r, "refs/agentws/") {
+		if !strings.HasPrefix(r, "refs/heads/") && !strings.HasPrefix(r, "refs/remotes/") && !strings.HasPrefix(r, "refs/crew/") {
 			t.Errorf("unexpected ref %s", r)
 		}
 	}
@@ -157,7 +157,7 @@ func TestReviewTurnRefsStayOutOfBranchesAndGoWithTheWorktree(t *testing.T) {
 	if err := app.DropTurns(ctx, g, repo, wt); err != nil {
 		t.Fatal(err)
 	}
-	refs = strings.Fields(gitOut(t, repo, "for-each-ref", "--format=%(refname)", "refs/agentws/"))
+	refs = strings.Fields(gitOut(t, repo, "for-each-ref", "--format=%(refname)", "refs/crew/"))
 	if want := []string{domain.TurnRef("s1", repo, 1)}; !reflect.DeepEqual(refs, want) {
 		t.Errorf("after removal refs = %v, want %v", refs, want)
 	}

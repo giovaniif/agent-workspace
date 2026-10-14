@@ -128,7 +128,7 @@ func Run(ctx context.Context, home string) (err error) {
 	}
 	d.SetClientHost(host)
 
-	sock := rpc.SocketPath(home)
+	sock := rpc.ListenPath(home)
 	if err := os.Remove(sock); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}

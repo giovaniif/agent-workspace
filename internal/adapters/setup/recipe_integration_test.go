@@ -58,7 +58,7 @@ func project(t *testing.T, recipe string) (main, worktree string) {
 	writeFile(t, filepath.Join(main, ".env.example"), "TOKEN=changeme\n")
 	writeFile(t, filepath.Join(main, ".cache", "warm"), "warm")
 	writeFile(t, filepath.Join(main, "node_modules", "left-pad", "index.js"), "module.exports = 1")
-	writeFile(t, filepath.Join(main, ".agentws.toml"), recipe)
+	writeFile(t, filepath.Join(main, ".crew.toml"), recipe)
 
 	worktree = filepath.Join(tmp, "api-feature")
 	gitIn(t, main, "worktree", "add", "-q", "-b", "feature", worktree)

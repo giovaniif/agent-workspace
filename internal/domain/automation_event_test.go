@@ -141,8 +141,8 @@ func TestMatchAutomationEvent(t *testing.T) {
 		{"branch glob miss", func(a *Automation) { a.Filter.Branch = "fix/*" }, false},
 		{"author", func(a *Automation) { a.Filter.Author = "ana" }, true},
 		{"other author", func(a *Automation) { a.Filter.Author = "bob" }, false},
-		{"repo automation sees only its repo", func(a *Automation) { a.Source = "/w/web/.agentws.toml" }, false},
-		{"repo automation in its repo", func(a *Automation) { a.Source = "/w/api/.agentws.toml" }, true},
+		{"repo automation sees only its repo", func(a *Automation) { a.Source = "/w/web/.crew.toml" }, false},
+		{"repo automation in its repo", func(a *Automation) { a.Source = "/w/api/.crew.toml" }, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

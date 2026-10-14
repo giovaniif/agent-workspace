@@ -17,7 +17,7 @@ func TestRecipeSetupWithoutRecipeDoesNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(report.Lines, []string{"no recipe in /repos/api/.agentws.toml"}) || len(w.ops) != 0 {
+	if !reflect.DeepEqual(report.Lines, []string{"no recipe in /repos/api/.crew.toml"}) || len(w.ops) != 0 {
 		t.Errorf("lines = %q, ops = %q", report.Lines, w.ops)
 	}
 }

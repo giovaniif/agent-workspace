@@ -15,7 +15,7 @@ func TestReviewRangeFor(t *testing.T) {
 		want  DiffRange
 		err   error
 	}{
-		{"last turn diffs from the latest snapshot", ScopeLastTurn, RangeFacts{LatestTurn: "refs/agentws/turns/s/k/3"}, DiffRange{From: "refs/agentws/turns/s/k/3"}, nil},
+		{"last turn diffs from the latest snapshot", ScopeLastTurn, RangeFacts{LatestTurn: "refs/crew/turns/s/k/3"}, DiffRange{From: "refs/crew/turns/s/k/3"}, nil},
 		{"last turn without a prompt yet", ScopeLastTurn, RangeFacts{DefaultBranch: "main"}, DiffRange{}, ErrNoTurn},
 		{"uncommitted diffs from HEAD", ScopeUncommitted, RangeFacts{LatestTurn: "x"}, DiffRange{From: "HEAD"}, nil},
 		{"branch diffs from the merge base with origin", ScopeBranch, RangeFacts{DefaultBranch: "trunk"}, DiffRange{From: "origin/trunk", MergeBase: true}, nil},
@@ -60,10 +60,10 @@ func TestReviewTurnRefs(t *testing.T) {
 		t.Fatalf("WorktreeKey must tell worktrees apart and ignore a trailing slash: %q %q", key, WorktreeKey(other))
 	}
 	ref := TurnRef("s1", wt, 7)
-	if ref != "refs/agentws/turns/s1/"+key+"/7" {
+	if ref != "refs/crew/turns/s1/"+key+"/7" {
 		t.Fatalf("TurnRef = %q", ref)
 	}
-	if got := TurnRef("a/b c", wt, 1); strings.ContainsAny(strings.TrimPrefix(got, "refs/agentws/turns/"), " ~^:?*[\\") || strings.Count(got, "/") != 5 {
+	if got := TurnRef("a/b c", wt, 1); strings.ContainsAny(strings.TrimPrefix(got, "refs/crew/turns/"), " ~^:?*[\\") || strings.Count(got, "/") != 5 {
 		t.Errorf("TurnRef with an unsafe session id = %q", got)
 	}
 
@@ -73,7 +73,7 @@ func TestReviewTurnRefs(t *testing.T) {
 		TurnRef("s1", wt, 9),
 		TurnRef("s2", wt, 30),
 		TurnRef("s1", other, 40),
-		"refs/agentws/turns/s1/" + key + "/junk",
+		"refs/crew/turns/s1/" + key + "/junk",
 		"refs/heads/main",
 	}
 	latest, n := LatestTurn(refs, "s1", wt)
@@ -88,7 +88,7 @@ func TestReviewTurnRefs(t *testing.T) {
 		t.Errorf("OlderTurns = %v, want %v", older, want)
 	}
 	of := TurnsOfWorktree(refs, wt)
-	want := []string{TurnRef("s1", wt, 2), TurnRef("s1", wt, 10), TurnRef("s1", wt, 9), TurnRef("s2", wt, 30), "refs/agentws/turns/s1/" + key + "/junk"}
+	want := []string{TurnRef("s1", wt, 2), TurnRef("s1", wt, 10), TurnRef("s1", wt, 9), TurnRef("s2", wt, 30), "refs/crew/turns/s1/" + key + "/junk"}
 	if !reflect.DeepEqual(of, want) {
 		t.Errorf("TurnsOfWorktree = %v, want %v", of, want)
 	}
