@@ -16,7 +16,7 @@ func WithAutomationSchedule(every time.Duration) Option {
 }
 
 func automationRepoOf(a domain.Automation) string {
-	if filepath.Base(a.Source) == repoConfigFile {
+	if filepath.Base(a.Source) == domain.RepoConfigFile {
 		return filepath.Dir(a.Source)
 	}
 	return ""

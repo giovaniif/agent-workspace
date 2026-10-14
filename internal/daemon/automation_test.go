@@ -38,7 +38,7 @@ prompt = "x"
 func automationRepo(t *testing.T, body string) string {
 	t.Helper()
 	repo := t.TempDir()
-	if err := os.WriteFile(filepath.Join(repo, ".agentws.toml"), []byte(body), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(repo, ".crew.toml"), []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -79,7 +79,7 @@ func TestAutomationListForARepoLetsTheRepoReplaceAGlobalByName(t *testing.T) {
 		t.Fatalf("got %+v", got.Automations)
 	}
 	deps := got.Automations[0]
-	wantSource := filepath.Join(repo, ".agentws.toml")
+	wantSource := filepath.Join(repo, ".crew.toml")
 	if deps.Name != "deps" || deps.Agent != "codex" || deps.Model != "" || deps.Source != wantSource {
 		t.Errorf("deps = %+v, want the repo one from %s", deps, wantSource)
 	}
@@ -148,5 +148,21 @@ func TestAutomationSaveRefusesAnInvalidAutomation(t *testing.T) {
 	}
 	if len(backups(t, path)) != 0 {
 		t.Error("an invalid save wrote the file")
+	}
+}
+
+func TestAutomationListAdoptsAnOldRepoConfig(t *testing.T) {
+	repo := t.TempDir()
+	body := "[[automation]]\nname = \"deps\"\nagent = \"codex\"\nprompt = \"Repo deps\"\n"
+	if err := os.WriteFile(filepath.Join(repo, ".agentws.toml"), []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, _ := configDaemon(t, globalAutomations)
+	got := listAutomations(t, c, repo)
+	if len(got.Automations) == 0 || got.Automations[0].Name != "deps" || got.Automations[0].Source != filepath.Join(repo, ".crew.toml") {
+		t.Fatalf("automations = %+v, want deps from the adopted .crew.toml", got.Automations)
+	}
+	if _, err := os.Stat(filepath.Join(repo, ".agentws.toml.bak")); err != nil {
+		t.Fatalf("no backup of the old config: %v", err)
 	}
 }

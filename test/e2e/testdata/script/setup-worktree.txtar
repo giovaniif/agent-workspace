@@ -57,7 +57,7 @@ TOKEN=changeme
 warm
 -- api/node_modules/left-pad/index.js --
 module.exports = 1
--- api/.agentws.toml --
+-- api/.crew.toml --
 [setup]
 copy = [".env.example"]
 link = [".cache"]

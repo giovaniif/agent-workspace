@@ -11,6 +11,11 @@ const (
 	LegacyHomeDirName = ".agentws"
 	TmuxServer        = "crew"
 	LegacyTmuxServer  = "agentws"
+	LegacyEnvPrefix   = "AGENTWS_"
+
+	RepoConfigFile       = ".crew.toml"
+	LegacyRepoConfigFile = ".agentws.toml"
+	LegacyTurnPrefix     = "refs/agentws/turns/"
 )
 
 type HomeFacts struct {

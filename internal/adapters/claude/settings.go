@@ -17,7 +17,7 @@ var HookEvents = []string{
 
 const hookMarker = " hook --harness claude --event "
 
-func BackupPath(settings string) string { return settings + ".agentws-backup" }
+func BackupPath(settings string) string { return settings + ".crew-backup" }
 
 func HookCommand(bin, event string) string { return shellQuote(bin) + hookMarker + event }
 

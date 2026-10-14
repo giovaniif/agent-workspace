@@ -73,7 +73,7 @@ func (Review) PointRef(ctx context.Context, dir, ref, tree string) error {
 }
 
 func (Review) TurnRefs(ctx context.Context, dir string) ([]string, error) {
-	out, err := output(ctx, dir, "for-each-ref", "--format=%(refname)", "refs/agentws/turns/")
+	out, err := output(ctx, dir, "for-each-ref", "--format=%(refname)", "refs/crew/turns/", "refs/agentws/turns/")
 	if err != nil {
 		return nil, err
 	}

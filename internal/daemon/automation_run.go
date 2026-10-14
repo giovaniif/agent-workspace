@@ -83,7 +83,7 @@ func (d *Daemon) automationRepo(a domain.Automation, repo string) string {
 	if repo != "" {
 		return filepath.Clean(repo)
 	}
-	if filepath.Base(a.Source) == repoConfigFile {
+	if filepath.Base(a.Source) == domain.RepoConfigFile {
 		return filepath.Dir(a.Source)
 	}
 	var root string

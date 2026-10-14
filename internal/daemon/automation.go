@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
 	"io/fs"
 	"maps"
 	"os"
@@ -16,8 +17,6 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 	"github.com/giovaniif/crew/internal/rpc"
 )
-
-const repoConfigFile = ".agentws.toml"
 
 type automationDoc struct {
 	Name     string   `toml:"name"`
@@ -104,12 +103,14 @@ func (d *Daemon) loadAutomationList(repo string) rpc.AutomationList {
 		global, problems = LoadAutomations(d.cfg.path)
 	}
 	if repo != "" {
-		local, more := LoadAutomations(filepath.Join(repo, repoConfigFile))
+		wsfs.AdoptRepoConfig(repo)
+		local, more := LoadAutomations(filepath.Join(repo, domain.RepoConfigFile))
 		return rpc.AutomationList{Automations: domain.MergeAutomations(global, local), Problems: append(problems, more...)}
 	}
 	out := domain.MergeAutomations(global, nil)
 	for _, r := range d.registeredRepos() {
-		local, more := LoadAutomations(filepath.Join(r, repoConfigFile))
+		wsfs.AdoptRepoConfig(r)
+		local, more := LoadAutomations(filepath.Join(r, domain.RepoConfigFile))
 		out = append(out, local...)
 		problems = append(problems, more...)
 	}

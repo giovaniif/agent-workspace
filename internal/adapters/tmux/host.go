@@ -15,17 +15,18 @@ import (
 
 const (
 	DefaultSocket = "crew"
-	sessionName   = "agentws"
-	managedOption = "@agentws"
 	placeholder   = "tail -f /dev/null"
 	emptyState    = `printf 'No session in view.\n\nPress n to start one.\n'; exec tail -f /dev/null`
 
 	FocusSidebarKey = `C-\`
 )
 
-const titleFormat = "#{?@agentws_title, #{q/h:@agentws_title} ,}"
+func titleFormat(n names) string {
+	return "#{?" + n.titleOption + ", #{q/h:" + n.titleOption + "} ,}"
+}
 
-const configContents = `set -g status off
+func configContents(n names) string {
+	return `set -g status off
 set -g prefix None
 unbind-key -a
 bind-key -n C-\\ select-pane -t :.0
@@ -34,8 +35,9 @@ set -g remain-on-exit off
 set -g history-limit 50000
 set -g default-terminal "tmux-256color"
 set -g pane-border-status top
-` + "set -g pane-border-format \"" + titleFormat + "\"\n" + `bind -n M-t if -F '#{m:agentws-popup-*,#{session_name}}' 'detach-client' 'send-keys M-t'
+` + "set -g pane-border-format \"" + titleFormat(n) + "\"\n" + `bind -n M-t if -F '#{m:` + n.popupPrefix + `*,#{session_name}}' 'detach-client' 'send-keys M-t'
 `
+}
 
 const mouseOn = `set -g mouse on
 bind -n MouseDown1Pane select-pane -t = \; send -M
@@ -54,11 +56,11 @@ bind -T copy-mode Escape send -X cancel
 
 const mouseOff = "set -g mouse off\n"
 
-func config(noMouse bool) string {
+func config(n names, noMouse bool) string {
 	if noMouse {
-		return configContents + mouseOff
+		return configContents(n) + mouseOff
 	}
-	return configContents + mouseOn
+	return configContents(n) + mouseOn
 }
 
 type Config struct {
@@ -68,6 +70,7 @@ type Config struct {
 }
 
 type Host struct {
+	n          names
 	socket     string
 	configPath string
 	noMouse    bool
@@ -87,7 +90,7 @@ func New(cfg Config) *Host {
 	if socket == "" {
 		socket = DefaultSocket
 	}
-	return &Host{socket: socket, configPath: cfg.ConfigPath, noMouse: cfg.NoMouse}
+	return &Host{n: namesFor(socket), socket: socket, configPath: cfg.ConfigPath, noMouse: cfg.NoMouse}
 }
 
 func (h *Host) Close(ctx context.Context) error {
@@ -147,7 +150,7 @@ func (h *Host) ensureConfig() error {
 			h.configErr = err
 			return
 		}
-		h.configErr = os.WriteFile(h.configPath, []byte(config(h.noMouse)), 0o644)
+		h.configErr = os.WriteFile(h.configPath, []byte(config(h.n, h.noMouse)), 0o644)
 	})
 	return h.configErr
 }

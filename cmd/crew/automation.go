@@ -154,7 +154,7 @@ func yesNo(b bool) string {
 
 func printAutomations(w io.Writer, list rpc.AutomationList) {
 	if len(list.Automations) == 0 {
-		fmt.Fprintln(w, "no automations. Add [[automation]] tables to $CREW_HOME/config.toml or a repo's .agentws.toml.")
+		fmt.Fprintln(w, "no automations. Add [[automation]] tables to $CREW_HOME/config.toml or a repo's .crew.toml.")
 	} else {
 		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(tw, "NAME\tAGENT\tTARGET\tTRIGGER\tENABLED\tSOURCE")

@@ -71,7 +71,7 @@ func serveLive(t *testing.T, home, socket, fakeAgent string, extra ...daemon.Opt
 		t.Fatal(err)
 	}
 	d.SetClientHost(host)
-	path := filepath.Join(home, "agentws.sock")
+	path := filepath.Join(home, "crew.sock")
 	_ = os.Remove(path)
 	ln, err := net.Listen("unix", path)
 	if err != nil {

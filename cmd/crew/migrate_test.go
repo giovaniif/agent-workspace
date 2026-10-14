@@ -267,3 +267,57 @@ func TestMigrateServicesPutsTheOldServiceBackWhenTheHomeCannotMove(t *testing.T)
 		t.Fatalf("log %q", r.log.String())
 	}
 }
+
+func TestMigrateDropsTheStaleRuntimeFilesOfAnOldDaemon(t *testing.T) {
+	r := newMigrateRig(t)
+	writeFile(t, r.path(".agentws", "state.db"), "sessions")
+	for _, name := range []string{"agentws.sock", "agentws.pid", "agentws.lock"} {
+		writeFile(t, r.path(".agentws", name), "")
+	}
+	r.run(false)
+	if got := readFile(t, r.path(".crew", "state.db")); got != "sessions" {
+		t.Fatalf("state.db = %q", got)
+	}
+	for _, name := range []string{"agentws.sock", "agentws.pid", "agentws.lock"} {
+		if exists(r.path(".crew", name)) {
+			t.Errorf("%s is still in ~/.crew", name)
+		}
+	}
+}
+
+func TestMigrateKeepsTheRuntimeFilesWhileAnOldDaemonRuns(t *testing.T) {
+	r := newMigrateRig(t)
+	r.alive = true
+	writeFile(t, r.path(".agentws", "agentws.sock"), "")
+	r.run(false)
+	if !exists(r.path(".agentws", "agentws.sock")) {
+		t.Fatal("the socket of a live daemon was removed")
+	}
+}
+
+func TestMigrateMovesTheOldClaudeSettingsBackup(t *testing.T) {
+	r := newMigrateRig(t)
+	writeFile(t, r.path(".claude", "settings.json"), "{}")
+	writeFile(t, r.path(".claude", "settings.json.agentws-backup"), `{"theme":"light"}`)
+	r.run(false)
+	if got := readFile(t, claude.BackupPath(r.path(".claude", "settings.json"))); got != `{"theme":"light"}` {
+		t.Fatalf("backup = %q", got)
+	}
+	if exists(r.path(".claude", "settings.json.agentws-backup")) {
+		t.Fatal("the old backup name is still there")
+	}
+}
+
+func TestMigrateKeepsANewClaudeBackupThatAlreadyExists(t *testing.T) {
+	r := newMigrateRig(t)
+	writeFile(t, r.path(".claude", "settings.json"), "{}")
+	writeFile(t, r.path(".claude", "settings.json.agentws-backup"), "old")
+	writeFile(t, claude.BackupPath(r.path(".claude", "settings.json")), "new")
+	r.run(false)
+	if got := readFile(t, claude.BackupPath(r.path(".claude", "settings.json"))); got != "new" {
+		t.Fatalf("backup = %q", got)
+	}
+	if got := readFile(t, r.path(".claude", "settings.json.agentws-backup")); got != "old" {
+		t.Fatalf("old backup = %q", got)
+	}
+}

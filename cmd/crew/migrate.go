@@ -101,6 +101,10 @@ func (m migration) run(ctx context.Context) {
 		started = m.stopLegacyServices(ctx)
 	}
 	ready := m.moveHome()
+	if ready {
+		m.dropStaleRuntimeFiles()
+	}
+	m.moveClaudeBackup()
 	m.rewriteHooks()
 	m.moveNvim()
 	for _, s := range started {
@@ -124,7 +128,7 @@ func exists(path string) bool {
 
 func (m migration) moveHome() bool {
 	old, home := m.oldHome(), m.newHome()
-	switch domain.PlanHomeMove(realDir(old), exists(home), m.Live(rpc.SocketPath(old))) {
+	switch domain.PlanHomeMove(realDir(old), exists(home), m.Live(rpc.LegacySocketPath(old)) || m.Live(rpc.ListenPath(old))) {
 	case domain.HomeMoveDir:
 		if err := moveAndLink(old, home); err != nil {
 			m.logf("could not move %s to %s: %v", old, home, err)
@@ -145,6 +149,29 @@ func moveAndLink(old, home string) error {
 		return err
 	}
 	return os.Symlink(home, old)
+}
+
+func (m migration) dropStaleRuntimeFiles() {
+	home := m.newHome()
+	if m.Live(rpc.LegacySocketPath(home)) {
+		return
+	}
+	for _, name := range []string{"agentws.sock", "agentws.pid", "agentws.lock"} {
+		_ = os.Remove(filepath.Join(home, name))
+	}
+}
+
+func (m migration) moveClaudeBackup() {
+	settings := filepath.Join(m.or("CLAUDE_CONFIG_DIR", filepath.Join(m.UserHome, ".claude")), "settings.json")
+	old := settings + ".agentws-backup"
+	if !exists(old) || exists(claude.BackupPath(settings)) {
+		return
+	}
+	if err := os.Rename(old, claude.BackupPath(settings)); err != nil {
+		m.logf("could not move %s to %s: %v", old, claude.BackupPath(settings), err)
+		return
+	}
+	m.logf("moved %s to %s", old, claude.BackupPath(settings))
 }
 
 func (m migration) rewriteHooks() {
