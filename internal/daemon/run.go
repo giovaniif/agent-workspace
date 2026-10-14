@@ -89,6 +89,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithHarnesses(host, claude.Adapter{}, codex.Adapter{}, omp.Adapter{}),
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithProjectSetup(setup.Shell{Out: os.Stderr}),
+		WithAutomationPrecheck(setup.Shell{Out: os.Stderr}),
 		WithStartDefaults(startDefaults),
 		WithHarnessConfig(readHarnessConfig),
 		WithConfig(filepath.Join(home, "config.toml")),

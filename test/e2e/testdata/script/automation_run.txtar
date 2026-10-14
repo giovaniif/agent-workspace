@@ -1,0 +1,39 @@
+repo api
+mkdir $AGENTWS_HOME
+cp config.toml $AGENTWS_HOME/config.toml
+exec agentws workspace add api
+
+exec agentws automation list
+stdout '^fix-ci\s+claude\s+new-worktree\s+manual\s+yes\s'
+
+cd api
+exec agentws automation run guarded
+stdout '\sskipped\s+-\s+precheck failed'
+
+exec agentws automation run --work-item 'red build' fix-ci only the lint job
+stdout '\sfix-ci\s+manual\s.*\ssucceeded\s'
+eventually 'only the lint job\n\z' cat $AGENTWS_E2E/received
+cmp $AGENTWS_E2E/received $WORK/want.txt
+
+exec agentws automation runs fix-ci
+stdout 'succeeded'
+! stdout 'skipped'
+
+-- config.toml --
+[[automation]]
+name = "fix-ci"
+agent = "claude"
+prompt = "Fix the CI of {{work_item}} in {{repo}}."
+
+[[automation]]
+name = "guarded"
+agent = "claude"
+prompt = "Never runs."
+precheck = "false"
+-- claude.steps --
+hook SessionStart
+read received
+-- want.txt --
+Fix the CI of red build in api.
+
+only the lint job

@@ -520,3 +520,20 @@ func TestDevicePushSubscriptionPersistsWithItsDevice(t *testing.T) {
 		t.Fatalf("devices %+v", snap.Devices)
 	}
 }
+
+func TestAutomationRunsPersistAndAnUpdateReplacesTheRun(t *testing.T) {
+	s, path := openTemp(t)
+	at := time.Date(2026, 10, 13, 9, 0, 0, 0, time.UTC)
+	run := domain.AutomationRun{ID: "r1", Automation: "fix", Trigger: domain.AutomationTriggerManual, Context: "lint", Start: at, Outcome: domain.AutomationSucceeded, SessionID: "s1"}
+	s.PutAutomationRun(run)
+	run.End = at.Add(time.Hour)
+	s.PutAutomationRun(run)
+	s = reopen(t, s, path)
+	snap, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(snap.AutomationRuns, []domain.AutomationRun{run}) {
+		t.Fatalf("runs %+v", snap.AutomationRuns)
+	}
+}

@@ -63,14 +63,25 @@ func (d *Daemon) launch(req rpc.Request) (*rpc.Response, bool) {
 	if err := json.Unmarshal(req.Params, &p); err != nil {
 		return errorResponse(req.ID, rpc.CodeBadRequest, "launch params: "+err.Error()), true
 	}
+	session, rerr, ok := d.launchSession(p)
+	switch {
+	case !ok:
+		return nil, false
+	case rerr != nil:
+		return errorResponse(req.ID, rerr.Code, rerr.Message), true
+	}
+	return result(req.ID, session), true
+}
+
+func (d *Daemon) launchSession(p rpc.LaunchParams) (domain.Session, *rpc.Error, bool) {
 	adapter, ok := d.hs.adapters[domain.Harness(p.Harness)]
 	if !ok || d.hs.host == nil {
-		return errorResponse(req.ID, rpc.CodeBadRequest, "no harness "+p.Harness), true
+		return domain.Session{}, &rpc.Error{Code: rpc.CodeBadRequest, Message: "no harness " + p.Harness}, true
 	}
 	spec := adapter.Launch(app.LaunchRequest{Name: p.Name, Dir: p.Dir, Model: p.Model, Effort: p.Effort, Prompt: p.Prompt})
 	pane, err := d.hs.host.Create(context.Background(), spec)
 	if err != nil {
-		return errorResponse(req.ID, rpc.CodeLaunchFailed, err.Error()), true
+		return domain.Session{}, &rpc.Error{Code: rpc.CodeLaunchFailed, Message: err.Error()}, true
 	}
 	session := domain.Session{
 		ID:      newID(),
@@ -85,13 +96,13 @@ func (d *Daemon) launch(req rpc.Request) (*rpc.Response, bool) {
 		task := domain.Task{ID: newID(), Source: domain.TaskText, Text: p.Name}
 		session.TaskID = task.ID
 		if !d.commit(TaskChanged{Task: task}) {
-			return nil, false
+			return domain.Session{}, nil, false
 		}
 	}
 	if !d.commit(SessionChanged{Session: session}) {
-		return nil, false
+		return domain.Session{}, nil, false
 	}
-	return result(req.ID, session), true
+	return session, nil, true
 }
 
 func newID() string {
