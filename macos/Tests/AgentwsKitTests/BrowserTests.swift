@@ -96,6 +96,19 @@ struct BrowserTests {
         #expect(page.selectedTab?.label == "devbox:3000")
     }
 
+    @Test func aLateReportOfTheOldPageDoesNotUndoANewAddress() throws {
+        let page = BrowserPage()
+        let id = try #require(page.selectedTab).id
+        page.update(id, url: "http://devbox:3000/old", title: "Old")
+        page.navigate("3001", host: "devbox")
+        page.update(id, url: "http://devbox:3000/old", title: "Old, renamed")
+        #expect(page.selectedTab?.url == "http://devbox:3001/")
+        page.loading(id)
+        page.update(id, url: "http://devbox:3001/login", title: "Log in")
+        #expect(page.selectedTab?.url == "http://devbox:3001/login")
+        #expect(page.selectedTab?.title == "Log in")
+    }
+
     @Test func theUserTakesOverFromTheAgent() {
         let page = BrowserPage()
         page.agentStarted()
