@@ -16,13 +16,14 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/adapters/loginshell"
 	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
 	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
 const setupDaemonUsage = "usage: crew setup daemon [--remove | --check]"
 
 const (
-	daemonUnitName   = "agentws-daemon"
-	daemonAgentLabel = "dev.agentws.daemon"
+	daemonUnitName   = "crew-daemon"
+	daemonAgentLabel = "dev.crew.daemon"
 )
 
 type daemonCheck struct {
@@ -110,7 +111,7 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 func daemonService(env func(string) string, self, userHome string, uid int, goos string) serveService {
 	home := domain.Env(env, "HOME")
 	if home == "" {
-		home = filepath.Join(userHome, ".agentws")
+		home = rpc.DefaultHome(userHome)
 	}
 	if abs, err := filepath.Abs(home); err == nil {
 		home = abs

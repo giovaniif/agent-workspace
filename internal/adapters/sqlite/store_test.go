@@ -246,7 +246,7 @@ func TestDefaultPathHonoursAgentwsHome(t *testing.T) {
 	}
 	t.Setenv("AGENTWS_HOME", "")
 	t.Setenv("HOME", "/home/u")
-	if p, _ := DefaultPath(); p != "/home/u/.agentws/state.db" {
+	if p, _ := DefaultPath(); p != "/home/u/.crew/state.db" {
 		t.Errorf("path = %q", p)
 	}
 }

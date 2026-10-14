@@ -38,10 +38,10 @@ func newDaemonSetupFixture(t *testing.T, goos, linger string) *daemonSetupFixtur
 	}
 	if goos == "darwin" {
 		f.manager = fakeTool(t, f.bin, "launchctl", "exit 0")
-		f.path = filepath.Join(f.home, "Library", "LaunchAgents", "dev.agentws.daemon.plist")
+		f.path = filepath.Join(f.home, "Library", "LaunchAgents", "dev.crew.daemon.plist")
 	} else {
 		f.manager = fakeTool(t, f.bin, "systemctl", "exit 0")
-		f.path = filepath.Join(f.home, ".config", "systemd", "user", "agentws-daemon.service")
+		f.path = filepath.Join(f.home, ".config", "systemd", "user", "crew-daemon.service")
 	}
 	fakeTool(t, f.bin, "loginctl", "echo Linger="+linger)
 	t.Setenv("PATH", f.bin+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -103,7 +103,7 @@ func daemonLifecycle(t *testing.T, goos string) {
 		t.Fatalf("service file still there: %v", err)
 	}
 	calls, _ := os.ReadFile(f.manager)
-	if goos == "linux" && !strings.Contains(string(calls), "disable --now agentws-daemon.service") {
+	if goos == "linux" && !strings.Contains(string(calls), "disable --now crew-daemon.service") {
 		t.Fatalf("remove did not stop the unit: %q", calls)
 	}
 	if goos == "darwin" && !strings.Contains(string(calls), "bootout") {

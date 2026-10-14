@@ -547,11 +547,17 @@ func Home() (string, error) {
 	if home := domain.Env(os.Getenv, "HOME"); home != "" {
 		return home, nil
 	}
-	home, err := os.UserHomeDir()
+	user, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".agentws"), nil
+	return DefaultHome(user), nil
+}
+
+func DefaultHome(user string) string {
+	_, err := os.Lstat(filepath.Join(user, domain.HomeDirName))
+	old, oldErr := os.Lstat(filepath.Join(user, domain.LegacyHomeDirName))
+	return domain.ResolveHome(domain.HomeFacts{User: user, NewExists: err == nil, OldDir: oldErr == nil && old.IsDir()})
 }
 
 func SocketPath(home string) string { return filepath.Join(home, "agentws.sock") }

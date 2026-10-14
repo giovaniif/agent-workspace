@@ -14,13 +14,14 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
 	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
 	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
 const setupServeUsage = "usage: crew setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"
 
 const (
-	serveUnitName   = "agentws-serve"
-	serveAgentLabel = "dev.agentws.serve"
+	serveUnitName   = "crew-serve"
+	serveAgentLabel = "dev.crew.serve"
 )
 
 type serveService struct {
@@ -122,7 +123,7 @@ func setupServeService(args []string, env func(string) string, self, userHome st
 	fs.Visit(func(f *flag.Flag) { given[f.Name] = true })
 	home := domain.Env(env, "HOME")
 	if home == "" {
-		home = filepath.Join(userHome, ".agentws")
+		home = rpc.DefaultHome(userHome)
 	}
 	program := []string{self, "serve"}
 	if !*remove {

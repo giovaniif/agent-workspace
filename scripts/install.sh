@@ -50,7 +50,13 @@ if [ -e "$dir/agentws" ] && [ ! -L "$dir/agentws" ]; then
 fi
 ln -sfn crew "$dir/agentws"
 echo "installed crew $tag to $dir/crew ($dir/agentws links to it)"
-share=${XDG_DATA_HOME:-$HOME/.local/share}/agentws
+data=${XDG_DATA_HOME:-$HOME/.local/share}
+share=$data/crew
+if [ -d "$data/agentws" ] && [ ! -L "$data/agentws" ] && [ ! -e "$share" ]; then
+  mv "$data/agentws" "$share"
+  ln -s "$share" "$data/agentws"
+  echo "moved $data/agentws to $share; $data/agentws links to it for one release"
+fi
 mkdir -p "$share"
 rm -rf "$share/nvim"
 mv "$tmp/nvim" "$share/nvim"

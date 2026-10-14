@@ -76,3 +76,16 @@ Hooks call `agentws hook`. It writes one message to the socket and exits. It nev
   - The first seeded session also gets three subagents: one is nested, two are running. Its PR is open with failing checks, so `agentws pr seed-session-1` shows a PR board.
 - `agentws debug session [--once] <id>` prints the state, harness, pane, model, effort, context left and limit used of a session. Then it prints each change until you interrupt it. `--once` prints only the current line.
 - `agentws debug launch --harness claude --dir <dir> [--model m] [--effort e]` opens a harness pane in any dir, with no task or worktree.
+
+## Migration from agentws
+
+`crew`, `crew tui`, `crew daemon`, `crew serve` and `crew setup` run `migrateState` (`migrate.go`) before they start. It does not run when `CREW_HOME` or `AGENTWS_HOME` is set. It writes one `crew:` line on stderr for each step that it does. A second run changes nothing and writes nothing. The rules are in `internal/domain/migrate.go`.
+
+1. **Services** (only `crew setup`): for each `agentws-daemon`, `agentws-serve` or `dev.agentws.*` file in the systemd user dir or `~/Library/LaunchAgents`, it keeps a `.bak` copy, writes the `crew` file (`domain.RewriteServiceFile`), stops and removes the old service, and starts the new service after the other steps.
+2. **Home:** it moves `~/.agentws` to `~/.crew` and makes `~/.agentws` a symlink to it. If a daemon answers on the old socket, it does not move the dir and tells you to run `crew daemon stop`. Until the move, `rpc.Home` uses `~/.agentws`. If both dirs exist, it uses `~/.crew` and does not change `~/.agentws`.
+3. **Hooks:** if `settings.json` of Claude or `hooks.json` of Codex runs `agentws hook`, it runs the normal setup merge with the `crew` binary. The merge makes a backup first.
+4. **nvim:** it moves `$XDG_DATA_HOME/agentws` to `$XDG_DATA_HOME/crew`, makes a symlink, and points the nvim setup file at the new dir.
+
+The daemon uses the tmux server `crew`. While the old `agentws` server has a parked agent pane, the daemon uses the old server, so that no session stops (`domain.TmuxSocket`, `tmux.HasAgentPanes`).
+
+Tests: `go test ./cmd/crew/ ./internal/domain/ ./internal/rpc/ -run 'Migrate|Home|Tmux|Legacy|Rewrite'` and `go test -tags integration ./internal/adapters/tmux/ -run HasAgentPanes`.
