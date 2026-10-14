@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
-	"github.com/giovaniif/agent-workspace/internal/adapters/skill"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/skill"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func claudeSettingsPath(env func(string) string) (string, error) {

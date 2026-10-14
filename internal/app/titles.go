@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 type TitleResolver interface {

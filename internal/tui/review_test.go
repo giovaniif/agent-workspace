@@ -12,9 +12,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/exp/golden"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/tui"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/tui"
 )
 
 const resolversDiff = `diff --git a/src/graphql/public/resolvers.ts b/src/graphql/public/resolvers.ts

@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
-	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
-	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
-	gitadapter "github.com/giovaniif/agent-workspace/internal/adapters/git"
-	"github.com/giovaniif/agent-workspace/internal/adapters/sqlite"
-	"github.com/giovaniif/agent-workspace/internal/adapters/tmux"
-	"github.com/giovaniif/agent-workspace/internal/daemon"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/codex"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
+	gitadapter "github.com/giovaniif/crew/internal/adapters/git"
+	"github.com/giovaniif/crew/internal/adapters/sqlite"
+	"github.com/giovaniif/crew/internal/adapters/tmux"
+	"github.com/giovaniif/crew/internal/daemon"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func gitIn(t *testing.T, dir string, args ...string) string {

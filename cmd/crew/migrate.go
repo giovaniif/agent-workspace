@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
-	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
-	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
-	"github.com/giovaniif/agent-workspace/internal/adapters/onboard"
-	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/codex"
+	"github.com/giovaniif/crew/internal/adapters/launchd"
+	"github.com/giovaniif/crew/internal/adapters/onboard"
+	"github.com/giovaniif/crew/internal/adapters/systemd"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 type migration struct {

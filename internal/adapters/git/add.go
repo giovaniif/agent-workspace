@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 type Adder struct{}

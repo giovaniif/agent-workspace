@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func parseNetstat(out string) []domain.Listener {

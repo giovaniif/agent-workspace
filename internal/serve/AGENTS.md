@@ -1,6 +1,6 @@
 # internal/serve
 
-`agentws serve` is the HTTP and WebSocket API that the phone app (PWA) talks to. It is a separate process. Like the TUI, it gets to the daemon only through `rpc`. It gives an allowlist of the daemon methods, never a passthrough. See [ADR 0046](../../docs/adr/0046-remote-app.md). Pairing and revocation on the daemon side are in [internal/daemon/](../daemon/AGENTS.md).
+`crew serve` is the HTTP and WebSocket API that the phone app (PWA) talks to. It is a separate process. Like the TUI, it gets to the daemon only through `rpc`. It gives an allowlist of the daemon methods, never a passthrough. See [ADR 0046](../../docs/adr/0046-remote-app.md). Pairing and revocation on the daemon side are in [internal/daemon/](../daemon/AGENTS.md).
 
 Tests:
 
@@ -17,7 +17,7 @@ Golden responses are in `testdata/`. To make them again, run `go test ./internal
 ## Listening
 
 - `serve.Options{Addr, Cert, Key, SelfSigned, CertDir}`. `Check` is the rule: plain HTTP only on a loopback address (`localhost`, `127.0.0.0/8`, `::1`), for all values of the other flags. Use `--cert` and `--key` together. `--self-signed` replaces them.
-- `--self-signed` keeps `cert.pem` and `key.pem` (600) in `$AGENTWS_HOME/serve`.
+- `--self-signed` keeps `cert.pem` and `key.pem` (600) in `$CREW_HOME/serve`.
   - The certificate is valid for 5 years. It covers `localhost`, `127.0.0.1`, `::1`, `host.docker.internal`, the hostname and the `--addr` host.
   - serve uses it again while it has 30 days or more left and covers the address. Thus a proxy that trusts it continues to work after restarts.
   - serve replaces it for a new `--addr` host, or near expiry. Then set the proxy to trust the new certificate.
@@ -25,7 +25,7 @@ Golden responses are in `testdata/`. To make them again, run `go test ./internal
 
 ## Log
 
-`Config.Log` (stdout under `agentws serve`) gets one line for these events:
+`Config.Log` (stdout under `crew serve`) gets one line for these events:
 
 - A stream that closes with a code that is not 1000 or 1001: `stream closed <code> from <addr>: <reason>`.
 - A 401 response: `<method> <path> 401 unauthorized from <addr>: <message>`. The path does not include its query.

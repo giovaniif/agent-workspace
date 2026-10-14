@@ -1,6 +1,6 @@
 # Architecture
 
-This document gives the top-level design of `agentws`. [FEATURES.md](FEATURES.md) tells what it does. The details of each subsystem are in the `AGENTS.md` of the directory that owns it (see [Subsystems](#subsystems)). The rules for contributors are in [AGENTS.md](AGENTS.md).
+This document gives the top-level design of `crew`. [FEATURES.md](FEATURES.md) tells what it does. The details of each subsystem are in the `AGENTS.md` of the directory that owns it (see [Subsystems](#subsystems)). The rules for contributors are in [AGENTS.md](AGENTS.md).
 
 ## Stack
 
@@ -9,12 +9,12 @@ This document gives the top-level design of `agentws`. [FEATURES.md](FEATURES.md
 - **Syntax highlighting:** chroma's lexer engine with a curated set of its lexers in `internal/syntax/lexers/`. Do not use its `lexers`/`styles` packages: their init makes each hook slower.
 - **Git:** the `git` CLI through exec. Do not use a Go git library.
 - **GitHub:** the `gh` CLI (`gh api graphql`). It uses the user's `gh` auth. Each poll is one GraphQL request, with backoff.
-- **Terminals:** the `tmux` CLI on a dedicated server (`tmux -L agentws`) with its own config. Only `internal/adapters/tmux` controls it. See [docs/adr/0003-tmux-terminal-host.md](docs/adr/0003-tmux-terminal-host.md).
-- **Config:** `github.com/BurntSushi/toml` reads the per-repo `.agentws.toml` setup recipe and `$AGENTWS_HOME/config.toml`.
-- **Storage:** SQLite through `modernc.org/sqlite` (no cgo), with embedded migrations and write-behind. The file is `$AGENTWS_HOME/state.db` (default `~/.agentws`). See [docs/adr/0004-sqlite-store.md](docs/adr/0004-sqlite-store.md).
-- **IPC:** a Unix socket at `$AGENTWS_HOME/agentws.sock`. It carries newline-delimited JSON: request/response calls and a subscribe stream for state updates. See [docs/adr/0005-daemon-rpc.md](docs/adr/0005-daemon-rpc.md).
+- **Terminals:** the `tmux` CLI on a dedicated server (`tmux -L crew`) with its own config. Only `internal/adapters/tmux` controls it. See [docs/adr/0003-tmux-terminal-host.md](docs/adr/0003-tmux-terminal-host.md).
+- **Config:** `github.com/BurntSushi/toml` reads the per-repo `.agentws.toml` setup recipe and `$CREW_HOME/config.toml`.
+- **Storage:** SQLite through `modernc.org/sqlite` (no cgo), with embedded migrations and write-behind. The file is `$CREW_HOME/state.db` (default `~/.crew`). See [docs/adr/0004-sqlite-store.md](docs/adr/0004-sqlite-store.md).
+- **IPC:** a Unix socket at `$CREW_HOME/agentws.sock`. It carries newline-delimited JSON: request/response calls and a subscribe stream for state updates. See [docs/adr/0005-daemon-rpc.md](docs/adr/0005-daemon-rpc.md).
 - **Notifications:** `terminal-notifier` if it is on `PATH`, else `osascript`. See [docs/adr/0016-notifications-and-attention.md](docs/adr/0016-notifications-and-attention.md).
-- **nvim:** a small Lua plugin in `nvim/` talks to the daemon through `agentws` CLI calls. Each session has a long-lived nvim that the daemon controls through `nvim --listen`. See [docs/adr/0029-shell-and-nvim.md](docs/adr/0029-shell-and-nvim.md).
+- **nvim:** a small Lua plugin in `nvim/` talks to the daemon through `crew` CLI calls. Each session has a long-lived nvim that the daemon controls through `nvim --listen`. See [docs/adr/0029-shell-and-nvim.md](docs/adr/0029-shell-and-nvim.md).
 - **Tooling:**
   - `go test` and `golangci-lint`.
   - `testscript` for the e2e suite, and `gremlins` for mutation testing.
@@ -32,7 +32,7 @@ internal/adapters/...  tmux, git, github, claude, codex, sqlite, notify, procs (
 internal/daemon        socket server, event loop, workers; wires adapters into app
 internal/rpc           protocol types + client (used by tui, hook, cli, nvim)
 internal/tui           Bubble Tea models; talks only to rpc.Client
-internal/serve         agentws serve: HTTP and WebSocket API for the phone app; talks only to rpc
+internal/serve         crew serve: HTTP and WebSocket API for the phone app; talks only to rpc
 nvim/                  Lua plugin
 scripts/               repo tooling: lint-comments, lint-agents, tdd-check, mutate, bench-hook, dev
 test/e2e               testscript suite with fake claude, codex and gh
@@ -46,10 +46,10 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` and `serve` t
 
 ## Process model and data flow
 
-- **Daemon.** There is one long-lived `agentws daemon` for each `AGENTWS_HOME`. A `flock` guards it. One goroutine event loop owns all in-memory state. The daemon writes SQLite in the background after each change, and reads never go to disk. Git, gh, tmux, `lsof` and `du` run on workers or connection goroutines, never on the loop.
-- **Hooks in.** Claude and Codex hooks run `agentws hook`. It writes one `hook` message to the socket and exits. The daemon maps the pane to a session and the hook to a harness-neutral event. Then it applies `Session.Apply` and does its effects (banners, queued sends).
+- **Daemon.** There is one long-lived `crew daemon` for each `CREW_HOME`. A `flock` guards it. One goroutine event loop owns all in-memory state. The daemon writes SQLite in the background after each change, and reads never go to disk. Git, gh, tmux, `lsof` and `du` run on workers or connection goroutines, never on the loop.
+- **Hooks in.** Claude and Codex hooks run `crew hook`. It writes one `hook` message to the socket and exits. The daemon maps the pane to a session and the hook to a harness-neutral event. Then it applies `Session.Apply` and does its effects (banners, queued sends).
 - **State out.** Each change increments `seq` and sends a diff to all subscribers. The TUI subscribes, keeps a snapshot and renders from it. A second connection makes the calls, so diffs never delay a key.
-- **Panes.** The tmux server and the daemon own the panes of the sessions. Thus, when you quit the TUI, nothing changes. `agentws` attaches to a client layout: the TUI is on the left, and the daemon swaps the session in view into the main slot.
+- **Panes.** The tmux server and the daemon own the panes of the sessions. Thus, when you quit the TUI, nothing changes. `crew` attaches to a client layout: the TUI is on the left, and the daemon swaps the session in view into the main slot.
 - **Workers.**
   - Worktree scan (10 s).
   - PR poll (60 s, one GraphQL request).
@@ -70,7 +70,7 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` and `serve` t
 | Domain rules: state machine, discovery, attribution, review | [internal/domain/AGENTS.md](internal/domain/AGENTS.md) |
 | Use cases, ports, cleanup execution, disk sizes | [internal/app/AGENTS.md](internal/app/AGENTS.md) |
 | Sidebar, limits bar, theme, review viewer, disk view | [internal/tui/AGENTS.md](internal/tui/AGENTS.md) |
-| Remote API for the phone app (`agentws serve`) | [internal/serve/AGENTS.md](internal/serve/AGENTS.md) |
+| Remote API for the phone app (`crew serve`) | [internal/serve/AGENTS.md](internal/serve/AGENTS.md) |
 | Harness adapters, notify, procs, fs, github, sqlite | [internal/adapters/AGENTS.md](internal/adapters/AGENTS.md) |
 | Repo facts, worktree listing, review diffs, turns, hunks | [internal/adapters/git/AGENTS.md](internal/adapters/git/AGENTS.md) |
 | tmux server and keys | [internal/adapters/tmux/AGENTS.md](internal/adapters/tmux/AGENTS.md) |
@@ -83,7 +83,7 @@ Dependency rule: `domain` ← `app` ← `adapters`/`daemon`. `tui` and `serve` t
 Do not let clean layers add latency. Apply these rules:
 
 - **One state owner.** One goroutine event loop in the daemon owns the in-memory state. The daemon writes SQLite in the background after each change. Reads never go to disk.
-- **Push, do not poll, for agent state.** Hooks call `agentws hook`. It writes one message to the socket and exits in 50 ms or less. It never blocks the agent. If the daemon is down, the hook drops the event and logs it to `hook.log`. `scripts/bench-hook.sh` checks the wall-time budget in CI. See [docs/adr/0006-hook-ingestion.md](docs/adr/0006-hook-ingestion.md).
+- **Push, do not poll, for agent state.** Hooks call `crew hook`. It writes one message to the socket and exits in 50 ms or less. It never blocks the agent. If the daemon is down, the hook drops the event and logs it to `hook.log`. `scripts/bench-hook.sh` checks the wall-time budget in CI. See [docs/adr/0006-hook-ingestion.md](docs/adr/0006-hook-ingestion.md).
 - **TUI renders from a snapshot.** The daemon pushes state diffs. The TUI never runs git, gh or tmux on the render path.
 - **Put heavy work in workers:** `du`, cleanup, diffs and PR polling run in a bounded pool with debounce. The diff cache uses the tree hash in its key.
 - **Batch git:** one `git status --porcelain=v2 -z` for each worktree for each burst of changes. fsnotify starts it with a 300 ms debounce.
@@ -93,7 +93,7 @@ Do not let clean layers add latency. Apply these rules:
 
 | Path | Budget |
 |---|---|
-| `agentws hook` process wall time | < 20 ms p95 |
+| `crew hook` process wall time | < 20 ms p95 |
 | Hook event → sidebar updated | < 150 ms |
 | Keypress → frame | < 16 ms |
 | Switch session (swap pane) | < 60 ms |

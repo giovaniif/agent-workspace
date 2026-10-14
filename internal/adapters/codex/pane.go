@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 const maxAncestors = 64

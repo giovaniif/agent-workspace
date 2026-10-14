@@ -1,6 +1,6 @@
 # agent-workspace
 
-`agentws` is a terminal workspace that runs Claude Code and Codex sessions in parallel. Each session works in git worktrees. The tool gives each session a local, PR-style review pane. `agentws` is one Go binary. It is the daemon, the TUI, the CLI and the hook handler.
+`crew` is a terminal workspace that runs Claude Code and Codex sessions in parallel. Each session works in git worktrees. The tool gives each session a local, PR-style review pane. `crew` is one Go binary. It is the daemon, the TUI, the CLI and the hook handler.
 
 - What it does: [FEATURES.md](FEATURES.md)
 - How it is built, the layers and the performance budgets: [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -14,20 +14,20 @@ Claude Code and Codex load an `AGENTS.md` from each directory they work in. Here
 
 | Directory | Covers |
 |---|---|
-| [cmd/crew/](cmd/crew/AGENTS.md) | CLI subcommands, the hook process, startup cost, `agentws pr` JSON golden |
+| [cmd/crew/](cmd/crew/AGENTS.md) | CLI subcommands, the hook process, startup cost, `crew pr` JSON golden |
 | [internal/domain/](internal/domain/AGENTS.md) | the pure rules (state machine, naming, cleanup, discovery, review, ports, disk), review prompt golden |
 | [internal/app/](internal/app/AGENTS.md) | use cases and ports, cleanup execution, disk sizes |
 | [internal/daemon/](internal/daemon/AGENTS.md) | process files, event loop, sessions, attention and banners, launcher, naming, fallback, worktree scan and PRs, ports, cleanup schedule, shell and nvim methods |
 | [internal/rpc/](internal/rpc/AGENTS.md) | the socket protocol, methods, errors, build handshake, client |
-| [internal/serve/](internal/serve/AGENTS.md) | `agentws serve`: the HTTP and WebSocket API for the phone app, its routes, auth, stream frames, TLS |
+| [internal/serve/](internal/serve/AGENTS.md) | `crew serve`: the HTTP and WebSocket API for the phone app, its routes, auth, stream frames, TLS |
 | [internal/view/](internal/view/AGENTS.md) | the derived view shared by `serve` and `view.subscribe`: names, banners, order, PR board, goldens |
-| [internal/syntax/](internal/syntax/AGENTS.md) | the curated chroma lexers the TUI and `agentws rpc` share, review spans |
+| [internal/syntax/](internal/syntax/AGENTS.md) | the curated chroma lexers the TUI and `crew rpc` share, review spans |
 | [internal/tui/](internal/tui/AGENTS.md) | sidebar, limits bar, theme and defaults, review viewer, disk view, goldens |
 | [internal/adapters/](internal/adapters/AGENTS.md) | Claude and Codex adapters and their `setup`, notify, procs, fs, github, sqlite |
 | [internal/adapters/git/](internal/adapters/git/AGENTS.md) | git CLI use, repo facts, worktree listing, review diffs, turn snapshots, hunks |
-| [internal/adapters/tmux/](internal/adapters/tmux/AGENTS.md) | the `agentws` tmux server, layout, shell panes, keys |
+| [internal/adapters/tmux/](internal/adapters/tmux/AGENTS.md) | the `crew` tmux server, layout, shell panes, keys |
 | [internal/adapters/setup/](internal/adapters/setup/AGENTS.md) | `.agentws.toml` setup recipes |
-| [internal/adapters/onboard/](internal/adapters/onboard/AGENTS.md) | the first-run walkthrough and `agentws setup nvim` |
+| [internal/adapters/onboard/](internal/adapters/onboard/AGENTS.md) | the first-run walkthrough and `crew setup nvim` |
 | [nvim/](nvim/AGENTS.md) | the Lua plugin |
 | [scripts/](scripts/AGENTS.md) | `lint-comments`, `lint-agents`, `tdd-check`, `mutate`, `bench-hook.sh`, `dev`, `screenshot`, `web-screenshot`, `install.sh` |
 | [web/](web/AGENTS.md) | the PWA: toolchain, `make web`, the service worker, pairing |
@@ -50,25 +50,25 @@ Write all prose docs and new ADRs in ASD-STE100 Simplified Technical English. Us
 - `make bench`: benchmarks that guard the performance budgets.
 - `make mutate`: `gremlins` on `domain` and `app`. It fails below 80% efficacy (see [scripts/](scripts/AGENTS.md)).
 - `make e2e`: the core e2e suite. It takes about 5 s and needs `tmux` (see [test/e2e/](test/e2e/AGENTS.md)).
-- `make dev [SEED=3] [FAKES=1]`: runs agentws from this checkout with its own home and tmux socket. It builds again on each change (see [scripts/](scripts/AGENTS.md)).
+- `make dev [SEED=3] [FAKES=1]`: runs crew from this checkout with its own home and tmux socket. It builds again on each change (see [scripts/](scripts/AGENTS.md)).
 - `scripts/tdd-check <base> <head>`: the check that CI's `tdd` job runs (see [scripts/](scripts/AGENTS.md)).
 - `make test`, `make bench` and `make e2e` pass `GO_TEST_FLAGS` (default `-p 2`). This keeps local runs light.
-- Integration tests use `-tags integration`. They need `git` and `tmux`, and they use a temporary `AGENTWS_HOME`. Each tmux test also uses its own tmux socket.
+- Integration tests use `-tags integration`. They need `git` and `tmux`, and they use a temporary `CREW_HOME`. Each tmux test also uses its own tmux socket.
   - Run them with `go test -p 2 -tags integration ./...`. CI runs them the same way.
   - Before the tests, CI runs `go vet -tags integration -composites=false ./...`. Thus an integration-tagged file that does not compile fails the build. `-composites=false` is necessary because chroma's positional rule tables fail the unkeyed-fields check.
   - When a port changes, update the `-tags integration` fakes too (`*_fake_test.go`).
-- Tests that start a daemon use a short `AGENTWS_HOME` under `/tmp`, because macOS limits Unix socket paths to 104 bytes.
-- For runs by hand, use a temporary `AGENTWS_HOME` and `AGENTWS_TMUX_SOCKET`. `AGENTWS_TMUX_SOCKET` points the daemon at another tmux server. Thus the real `~/.agentws` and the `agentws` tmux server do not change.
+- Tests that start a daemon use a short `CREW_HOME` under `/tmp`, because macOS limits Unix socket paths to 104 bytes.
+- For runs by hand, use a temporary `CREW_HOME` and `CREW_TMUX_SOCKET`. `CREW_TMUX_SOCKET` points the daemon at another tmux server. Thus the real `~/.crew` and the `crew` tmux server do not change.
 - `domain`, `app`, `tui`, `rpc` and `daemon` must not import `os/exec` (depguard). Only `internal/adapters/tmux` runs tmux, and only `internal/daemon` can import it.
 
 ## Rules
 
 - **Layers:** `domain` has no IO and no imports from other `internal/*` packages. `app` depends only on `domain` and defines the ports. Adapters implement those ports. `tui` talks only to `rpc`. Lint enforces this. If lint fails, fix the design, not the lint config.
 - **Rules live in `domain`:** put state transitions, naming and cleanup decisions in `domain` as pure, table-tested functions. Do not put them in adapters or the TUI.
-- **Nothing slow on hot paths:** do not use exec, disk or network calls in `agentws hook`, in TUI rendering or in the daemon event loop. Send heavy work to workers. Keep the budgets in ARCHITECTURE.md. If a change can break a budget, add or update a benchmark.
+- **Nothing slow on hot paths:** do not use exec, disk or network calls in `crew hook`, in TUI rendering or in the daemon event loop. Send heavy work to workers. Keep the budgets in ARCHITECTURE.md. If a change can break a budget, add or update a benchmark.
 - **Shell out, do not reimplement:** use the `git`, `gh` and `tmux` CLIs. Do not use a Go git library.
 - **Never destroy user work:** cleanup code backs up uncommitted changes before it removes anything. It never deletes branches. It never touches a worktree that a process uses. Each change to cleanup needs tests for these cases.
-- **Do not change the user's setup:** the tmux adapter uses only the `agentws` tmux server. Setup commands merge into the `~/.claude` and `~/.codex` config idempotently. They back up the file first, and you can undo them. Tests never touch the real `~/.claude`, `~/.codex` or `~/.config/nvim`.
+- **Do not change the user's setup:** the tmux adapter uses only the `crew` tmux server. Setup commands merge into the `~/.claude` and `~/.codex` config idempotently. They back up the file first, and you can undo them. Tests never touch the real `~/.claude`, `~/.codex` or `~/.config/nvim`.
 
 ## Tests: TDD, enforced by CI
 

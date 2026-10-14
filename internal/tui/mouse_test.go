@@ -9,8 +9,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/tui"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/tui"
 )
 
 func spot(t testing.TB, m tui.Model, text string) (int, int) {

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 var cleanupNow = time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)

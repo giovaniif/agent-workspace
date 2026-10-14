@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func ReconcilePanes(ctx context.Context, host TerminalHost, sessions []domain.Session) ([]domain.Session, error) {

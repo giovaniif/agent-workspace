@@ -3,7 +3,7 @@ package claude
 import (
 	"encoding/json"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func Event(name string, payload []byte) (domain.HarnessEventKind, bool) {

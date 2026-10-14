@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/setup"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/setup"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func writeFile(t *testing.T, path, body string) {

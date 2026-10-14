@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 var (

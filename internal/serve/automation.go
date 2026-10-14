@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func listAutomations(r *http.Request, d Daemon) (any, error) {

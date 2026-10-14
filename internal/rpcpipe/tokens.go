@@ -3,8 +3,8 @@ package rpcpipe
 import (
 	"encoding/json"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/syntax"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/syntax"
 )
 
 type object map[string]json.RawMessage

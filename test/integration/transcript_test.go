@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
-	"github.com/giovaniif/agent-workspace/internal/adapters/sqlite"
-	"github.com/giovaniif/agent-workspace/internal/daemon"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
+	"github.com/giovaniif/crew/internal/adapters/sqlite"
+	"github.com/giovaniif/crew/internal/daemon"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func claudeUser(id, text string) string {

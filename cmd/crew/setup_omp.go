@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
+	"github.com/giovaniif/crew/internal/adapters/omp"
 )
 
 func runSetupOmp(args []string, stdout, stderr io.Writer, env func(string) string, self string) int {

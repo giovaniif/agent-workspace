@@ -15,41 +15,41 @@ linters:
           files:
             - "**/internal/domain/**"
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal
+            - pkg: github.com/giovaniif/crew/internal
               desc: domain has no imports from other internal packages
         app:
           files:
             - "**/internal/app/**"
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal/adapters
+            - pkg: github.com/giovaniif/crew/internal/adapters
               desc: app depends only on domain
-            - pkg: github.com/giovaniif/agent-workspace/internal/daemon
+            - pkg: github.com/giovaniif/crew/internal/daemon
               desc: app depends only on domain
-            - pkg: github.com/giovaniif/agent-workspace/internal/rpc
+            - pkg: github.com/giovaniif/crew/internal/rpc
               desc: app depends only on domain
-            - pkg: github.com/giovaniif/agent-workspace/internal/tui
+            - pkg: github.com/giovaniif/crew/internal/tui
               desc: app depends only on domain
         tui:
           files:
             - "**/internal/tui/**"
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal/adapters
+            - pkg: github.com/giovaniif/crew/internal/adapters
               desc: tui talks only to rpc
-            - pkg: github.com/giovaniif/agent-workspace/internal/app
+            - pkg: github.com/giovaniif/crew/internal/app
               desc: tui talks only to rpc
-            - pkg: github.com/giovaniif/agent-workspace/internal/daemon
+            - pkg: github.com/giovaniif/crew/internal/daemon
               desc: tui talks only to rpc
         serve:
           files:
             - "**/internal/serve/**"
           list-mode: lax
           allow:
-            - github.com/giovaniif/agent-workspace/internal/rpc
-            - github.com/giovaniif/agent-workspace/internal/domain
-            - github.com/giovaniif/agent-workspace/internal/serve
-            - github.com/giovaniif/agent-workspace/internal/view
+            - github.com/giovaniif/crew/internal/rpc
+            - github.com/giovaniif/crew/internal/domain
+            - github.com/giovaniif/crew/internal/serve
+            - github.com/giovaniif/crew/internal/view
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal
+            - pkg: github.com/giovaniif/crew/internal
               desc: serve talks to the daemon only through rpc and may import domain types
             - pkg: os/exec
               desc: serve runs nothing; cmd/crew starts the daemon
@@ -58,11 +58,11 @@ linters:
             - "**/internal/view/**"
           list-mode: lax
           allow:
-            - github.com/giovaniif/agent-workspace/internal/rpc
-            - github.com/giovaniif/agent-workspace/internal/domain
-            - github.com/giovaniif/agent-workspace/internal/view
+            - github.com/giovaniif/crew/internal/rpc
+            - github.com/giovaniif/crew/internal/domain
+            - github.com/giovaniif/crew/internal/view
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal
+            - pkg: github.com/giovaniif/crew/internal
               desc: the derived view reads rpc state and applies domain rules, nothing else
             - pkg: os/exec
               desc: the derived view runs nothing
@@ -71,11 +71,11 @@ linters:
             - "**/internal/rpcpipe/**"
           list-mode: lax
           allow:
-            - github.com/giovaniif/agent-workspace/internal/rpc
-            - github.com/giovaniif/agent-workspace/internal/view
-            - github.com/giovaniif/agent-workspace/internal/syntax
+            - github.com/giovaniif/crew/internal/rpc
+            - github.com/giovaniif/crew/internal/view
+            - github.com/giovaniif/crew/internal/syntax
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal
+            - pkg: github.com/giovaniif/crew/internal
               desc: the stdio bridge reaches the daemon only through rpc
             - pkg: os/exec
               desc: the stdio bridge never starts a daemon
@@ -103,7 +103,7 @@ linters:
             - "!**/internal/daemon/**"
             - "!**/internal/adapters/tmux/**"
           deny:
-            - pkg: github.com/giovaniif/agent-workspace/internal/adapters/tmux
+            - pkg: github.com/giovaniif/crew/internal/adapters/tmux
               desc: only the daemon wires the tmux adapter
 
 formatters:

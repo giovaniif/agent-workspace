@@ -7,8 +7,8 @@ import (
 	"runtime/debug"
 	"slices"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/version"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/version"
 )
 
 var stubs []string

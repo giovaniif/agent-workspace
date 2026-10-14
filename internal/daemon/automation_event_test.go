@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/daemon"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/daemon"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const ciFailed = `

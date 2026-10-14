@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/version"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/version"
 )
 
 func checkBuild(method string, resp Response) error {

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func (p Probe) nvimSetupFile() string { return filepath.Join(p.NvimConfigDir, "plugin", "agentws.lua") }

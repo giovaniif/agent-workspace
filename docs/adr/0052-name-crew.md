@@ -67,3 +67,7 @@ The two large circles are the agents. The dot is the user, below them.
 - The work items of #349 rename the CLI, the module, the state, the Mac app, the PWA, the docs and the repository.
 - The Mac app continues to show an SF Symbol in the menu bar. The rename of the Mac app (#349) adds the template image to the app bundle and uses it.
 - Users of ChromeOS who also use Chromebrew must use the full path of the binary.
+
+## Note on older ADRs
+
+ADRs 0001 to 0051 keep the name agentws, because they record decisions as they were made. Read agentws in them as crew. The commands, paths and environment variables that they name have crew forms now (`crew`, `~/.crew`, `CREW_*`). The `agentws` binary link and the `AGENTWS_*` variables work for one release. The repo file `.agentws.toml`, the socket file `agentws.sock` and the tmux session name in the server keep their names.

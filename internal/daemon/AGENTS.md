@@ -4,11 +4,11 @@ Socket server, event loop and workers. This package connects the adapters to `ap
 
 ## Process
 
-`agentws daemon` runs in the foreground until SIGINT/SIGTERM. `agentws daemon start` starts it detached (`setsid`, output to `$AGENTWS_HOME/daemon.log`) and waits for the socket. `daemon status` prints pid, uptime, and session and worktree counts. If no daemon runs, it exits 1 with `not running`, and it never starts one. `daemon stop` sends SIGTERM and waits until the pid file is removed.
+`crew daemon` runs in the foreground until SIGINT/SIGTERM. `crew daemon start` starts it detached (`setsid`, output to `$CREW_HOME/daemon.log`) and waits for the socket. `daemon status` prints pid, uptime, and session and worktree counts. If no daemon runs, it exits 1 with `not running`, and it never starts one. `daemon stop` sends SIGTERM and waits until the pid file is removed.
 
 On start, before all other work, the daemon adds the PATH entries of the login shell that its own PATH does not have (`loginshell.Path` with a 1 s cap, `domain.MergeLoginPath`). If this fails, the daemon logs it and does not change PATH. tmux gives each new pane the PATH of the daemon. The process that started the daemon (a bare `ssh`, launchd, systemd) can be without `~/.local/bin` and similar entries (#153). The e2e `login_path.txtar` covers this.
 
-Files in `$AGENTWS_HOME` (default `~/.agentws`):
+Files in `$CREW_HOME` (default `~/.crew`):
 
 | File | Purpose |
 |---|---|
@@ -75,9 +75,9 @@ A worktree that a project holds is a container of tabs: the agent that made it, 
 
 See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
-- **Start.** `n` in the TUI or `agentws new` calls `session.new`.
+- **Start.** `n` in the TUI or `crew new` calls `session.new`.
   - The work item is a GitHub PR URL or text. A URL of a different shape stays text (`domain.ParseWorkItem`). It can be empty. Then the session gets its own text task, and its first `UserPromptSubmit` prompt becomes the text of that task (`domain.NameFromPrompt`).
-  - A single repo gets one worktree at `$AGENTWS_HOME/worktrees/<repo>/<slug>`, branched from `origin/<default>`, and its setup recipe runs.
+  - A single repo gets one worktree at `$CREW_HOME/worktrees/<repo>/<slug>`, branched from `origin/<default>`, and its setup recipe runs.
   - An orchestration root starts at the root with no worktree (`domain.PlanSessionStart`).
 - **First prompt.** `session.new` takes an optional `prompt`.
   - A fresh session is `idle` when its pane exists, but the harness is still booting. Thus the daemon queues the text in `State.Sends` and holds it (`state.booting`).
@@ -126,7 +126,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
 ## Config
 
-`go test ./internal/domain/ ./internal/daemon/ -run 'Config|TOML'`. `WithConfig(path)` turns on `config.get` and `config.set` (protocol in [internal/rpc/](../rpc/AGENTS.md)). `Run` passes `$AGENTWS_HOME/config.toml`. They run on the connection goroutine under one mutex, never on the loop.
+`go test ./internal/domain/ ./internal/daemon/ -run 'Config|TOML'`. `WithConfig(path)` turns on `config.get` and `config.set` (protocol in [internal/rpc/](../rpc/AGENTS.md)). `Run` passes `$CREW_HOME/config.toml`. They run on the connection goroutine under one mutex, never on the loop.
 
 - **Editing.** `domain.SetTOMLValue` edits the text line by line. It replaces `key = …` in `[table]`, adds the key at the end of that table, or adds the table at the end.
   - Thus the comments, order and unknown keys of the user stay. A comment on the replaced line itself goes.
@@ -154,7 +154,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 
 ## Codex fallback
 
-`go test ./... -run Fallback`. `[fallback]` in `$AGENTWS_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row, the new-session dialog shows the low-quota warning of `domain.Advise`. `ctrl+s` takes the offer: it switches to the other harness when that harness has reported limits. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).
+`go test ./... -run Fallback`. `[fallback]` in `$CREW_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row, the new-session dialog shows the low-quota warning of `domain.Advise`. `ctrl+s` takes the offer: it switches to the other harness when that harness has reported limits. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).
 
 ## Attention and banners
 
@@ -163,7 +163,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - `EffectNotify` becomes a `domain.Banner` on the loop (`BannerFor`, then `Coalescer`), with no IO.
 - A worker reads a bounded queue and calls `app.Notifier`. For a focused session, it first asks `app.Foreground` if a terminal app is in front. If so, it drops the banner.
 - The title is the session name (`NameFor`, else the harness). The body is `needs permission`, `waiting` or `done`. There is a maximum of one banner for each session every 10 s.
-- `$AGENTWS_HOME/notify.json` sets an optional macOS sound for each event: `{"sounds":{"permission":"Glass"}}`.
+- `$CREW_HOME/notify.json` sets an optional macOS sound for each event: `{"sounds":{"permission":"Glass"}}`.
 - `session.mute` sets `Session.Muted` (the `m` of the TUI). Muted sessions get no banner, but they still become unread.
 - Claude and Codex share one path, and a fixture-driven daemon test covers both. See [ADR 0016](../../docs/adr/0016-notifications-and-attention.md).
 - To test by hand, put stub `osascript` and `terminal-notifier` scripts first on the `PATH` of the daemon. They log their argv, as the e2e ones in `test/e2e/testdata/bin` do. Or fire a maximum of a few real ones.
@@ -195,10 +195,10 @@ See [ADR 0012](../../docs/adr/0012-worktree-detection.md). The rules are in [int
 
 Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `go test -tags integration -run CleanupExec ./...`. See [ADR 0021](../../docs/adr/0021-worktree-cleanup.md). The execution is in [internal/app/](../app/AGENTS.md).
 
-**CAUTION:** Run cleanup only against temp repos with a temp `AGENTWS_HOME`. Do not point it at a real checkout while you test.
+**CAUTION:** Run cleanup only against temp repos with a temp `CREW_HOME`. Do not point it at a real checkout while you test.
 
 - **Facts.** For each worktree: one `git status`, the `origin/HEAD` lookup and `git merge-base --is-ancestor` (`adapters/git`, a maximum of 4 at the same time). Also one `lsof -d cwd` for all of them (`adapters/procs`). The daemon adds if the owner session is live, and the time of its newest event.
-- **When.** Every 10 min, and when the PR poll first sees a merged PR, on a daemon goroutine (never the loop). Each action is added to `$AGENTWS_HOME/cleanup.log`. Backups go to `$AGENTWS_HOME/backups/`, and removed worktrees go to `$AGENTWS_HOME/trash/`.
+- **When.** Every 10 min, and when the PR poll first sees a merged PR, on a daemon goroutine (never the loop). Each action is added to `$CREW_HOME/cleanup.log`. Backups go to `$CREW_HOME/backups/`, and removed worktrees go to `$CREW_HOME/trash/`.
 
 ## Review
 
@@ -221,7 +221,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
   - `next_cleanup`: when the scheduled cleanup runs next.
 - Each `disk.view` also gives the reclaimable total to the loop. The loop keeps it in `State.reclaimable` and publishes a `reclaimable` diff only when it changed. Thus the sidebar footer of the Mac app can show it.
 - `cleanup.worktree` runs `app.Cleanup.RemoveWorktree`.
-- `AGENTWS_DEPS_STORE` names the shared deps store whose size the header shows. The default is the pnpm store, if there is one.
+- `CREW_DEPS_STORE` names the shared deps store whose size the header shows. The default is the pnpm store, if there is one.
 
 ## Transcripts
 
@@ -256,15 +256,15 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 
 ## Web Push
 
-`go test ./internal/domain/ ./internal/app/ ./internal/adapters/webpush/ ./internal/adapters/sqlite/ ./internal/daemon/ ./internal/serve/ -run Push`. `WithPush(app.PushProvider)` turns on `push.key`, `push.subscribe` and the push worker. `Run` passes `webpush.New($AGENTWS_HOME/vapid, nil)`. See [ADR 0046](../../docs/adr/0046-remote-app.md).
+`go test ./internal/domain/ ./internal/app/ ./internal/adapters/webpush/ ./internal/adapters/sqlite/ ./internal/daemon/ ./internal/serve/ -run Push`. `WithPush(app.PushProvider)` turns on `push.key`, `push.subscribe` and the push worker. `Run` passes `webpush.New($CREW_HOME/vapid, nil)`. See [ADR 0046](../../docs/adr/0046-remote-app.md).
 
-- **Keys.** The adapter keeps the VAPID pair as JSON in `$AGENTWS_HOME/vapid` (mode 600). It creates the file on the first `push.key` or send. If it cannot read the file, that is an error, and it does not change the file. To get a new pair, move the file away. Then each device must enable notifications again.
+- **Keys.** The adapter keeps the VAPID pair as JSON in `$CREW_HOME/vapid` (mode 600). It creates the file on the first `push.key` or send. If it cannot read the file, that is an error, and it does not change the file. To get a new pair, move the file away. Then each device must enable notifications again.
 - **Subscriptions** are on the device (`Device.Push`, in the JSON of the `devices` table), one for each device.
   - `push.subscribe` replaces the subscription of the device. It also removes the endpoint from all other devices that had it (the same phone paired again).
   - `device.revoke` deletes the device, and thus its subscription.
   - `push.unsubscribe` (the sign out of the app) clears it.
 - **What is sent.** `announce` gives each banner that passes mute and the coalescer to a bounded queue as `domain.PushFor(banner)`. These are the same banners that `notify.stream` carries (ADR 0016).
-  - The push is `{"title","body","url","tag"}`. If there is no title, it is `agentws`. If there is no body, it is the state word. Thus no push is silent.
+  - The push is `{"title","body","url","tag"}`. If there is no title, it is `crew`. If there is no body, it is the state word. Thus no push is silent.
   - `url` is `/#/sessions/<id>`, and `tag` is the session ID.
   - The terminal-in-front check of the Mac does not apply. Presence (below) replaces it.
   - A withdrawn banner is not withdrawn on the phone.
@@ -311,7 +311,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
   - The split goes below the agent pane and does not take focus. A second toggle parks it.
   - `shell.focus` (same params) shows it if necessary and puts keyboard focus in it, for `s`.
   - `popup` opens it over the attached client.
-  - Panes get `AGENTWS_SESSION` and `AGENTWS_HOME`.
-- **`nvim.toggle`** (`{"session","worktree"}` → `{"pane","socket","shown"}`) swaps the nvim of the session into the main slot, or the agent pane back. The nvim listens on `$AGENTWS_HOME/nvim/<session>.sock`.
+  - Panes get `CREW_SESSION` and `CREW_HOME`.
+- **`nvim.toggle`** (`{"session","worktree"}` → `{"pane","socket","shown"}`) swaps the nvim of the session into the main slot, or the agent pane back. The nvim listens on `$CREW_HOME/nvim/<session>.sock`.
 - **`nvim.open`** adds `{"path","line"}`. It starts nvim on the file, or tells the running nvim through `app.Editor`, then shows it. It first checks `app.Editor.Installed`. Without nvim, the daemon answers `unavailable` with how to install it.
 - **Onboarding.** `onboarding.status`, `onboarding.install`, `onboarding.remove` and `onboarding.finish` run on the connection that asks, never on the loop (see [internal/adapters/onboard/](../adapters/onboard/AGENTS.md)).

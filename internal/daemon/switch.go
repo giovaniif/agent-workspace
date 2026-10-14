@@ -6,9 +6,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const sendSwitchTimeout = 10 * time.Second

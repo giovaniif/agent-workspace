@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/tui"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/tui"
 )
 
 type fakeDaemon struct {

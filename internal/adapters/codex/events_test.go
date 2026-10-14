@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const sessionID = "019a1c2e-7b3d-7000-8a11-2f9d5c0e1a01"

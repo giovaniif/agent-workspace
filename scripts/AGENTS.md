@@ -24,22 +24,22 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
   - **Its tests** are in `scripts/tddcheck`. They build temporary repos and run the script on them.
   - **Local runs.** Before you push, run it locally on a clean tree to check a branch. It refuses uncommitted changes. It resolves both refs to commits first, so `HEAD` works. On exit, pass or fail, it puts back the branch or commit that you started on, with a clean index.
 - **`mutate`** (`make mutate`): runs `gremlins` on `domain` and `app`. It fails below 80% efficacy. It skips a package with no tests. Install it with `go install github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0`.
-- **`bench-hook.sh [bin]`**: times 200 `agentws hook` runs with the daemon up and down. It prints p50/p95 and fails over budget (20 ms / 60 ms p95). Each side gets 20 warmup runs that it does not count, then three rounds of 200. It judges the p95 of the lowest round. A noisy neighbour only adds time, and one bad burst must not fail a fast hook. CI runs it with `BUDGET_SCALE=2`, because its runners start processes about 3x slower.
-- **`dev`** (`make dev [SEED=3] [FAKES=1]`): runs agentws from this checkout and attaches to the dev layout.
-  - It uses its own `CREW_HOME` (`/tmp/crew-dev-$UID`) and tmux socket (`crew-dev`). Thus the installed agentws and `~/.agentws` do not change.
+- **`bench-hook.sh [bin]`**: times 200 `crew hook` runs with the daemon up and down. It prints p50/p95 and fails over budget (20 ms / 60 ms p95). Each side gets 20 warmup runs that it does not count, then three rounds of 200. It judges the p95 of the lowest round. A noisy neighbour only adds time, and one bad burst must not fail a fast hook. CI runs it with `BUDGET_SCALE=2`, because its runners start processes about 3x slower.
+- **`dev`** (`make dev [SEED=3] [FAKES=1]`): runs crew from this checkout and attaches to the dev layout.
+  - It uses its own `CREW_HOME` (`/tmp/crew-dev-$UID`) and tmux socket (`crew-dev`). Thus the installed crew and `~/.crew` do not change.
   - In the background, it polls the Go sources each second. On a change, it builds again, restarts the dev daemon and starts the dev TUI pane again on the new binary. Sessions continue, as they do across all daemon restarts.
   - A failed build does not stop the running instance. It shows the first error on the dev tmux server. The full output goes to `dev.log` in the dev home.
-  - `SEED=n` runs `agentws debug seed n`. `FAKES=1` puts the e2e fake `claude` and `codex` first on `PATH`. They hold their pane and use no quota.
+  - `SEED=n` runs `crew debug seed n`. `FAKES=1` puts the e2e fake `claude` and `codex` first on `PATH`. They hold their pane and use no quota.
   - `scripts/dev stop` stops the watcher and the dev daemon.
   - `CREW_DEV_HOME` and `CREW_DEV_SOCKET` move the instance. Keep the home short and under `/tmp`, because macOS limits Unix socket paths to 104 bytes. See [ADR 0039](../docs/adr/0039-dev-loop-and-build-handshake.md).
 - **`screenshot <out.png> [COLSxROWS] < steps`**: renders a pane to PNG for the body of a UI PR.
-  - It builds, and starts a temporary daemon and tmux server. It runs `agentws tui --new-session` (or a `run <command>` step), with the launch dir set to the cwd.
+  - It builds, and starts a temporary daemon and tmux server. It runs `crew tui --new-session` (or a `run <command>` step), with the launch dir set to the cwd.
   - It plays the stdin steps: `type <text>`, `key <tmux keys>`, `wait <s>`, and `shot <file>` for an intermediate frame. It renders with `freeze` (`go install github.com/charmbracelet/freeze@latest`).
-  - It splits a `run` step like a shell line (quotes kept, no globbing) and shell-quotes each word. A word that is exactly `crew` or `agentws` becomes the built binary. It skips blank lines.
-  - The pane runs with true color. It is rendered on Latte's base (`SHOT_BACKGROUND`, default `#eff1f5`), because agentws paints no background of its own.
-  - All that it starts (daemon, tmux server, pane, popups) runs with a temporary `HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `CLAUDE_CONFIG_DIR` and `CODEX_HOME` in its temp `AGENTWS_HOME`. That home is marked onboarded, so the first-run walkthrough never shows. It builds before it changes `HOME`. It refuses a step that sets a variable to the real `HOME` or a path under it.
-  - Its tests are in `scripts/screenshottest`, with fake `agentws`, `tmux` and `freeze`.
-  - Run it from a demo folder tree, and pass `run env HOME=<demo home> agentws ...`, so that no real paths show. The images are on the orphan `pr-assets` branch, not in main.
+  - It splits a `run` step like a shell line (quotes kept, no globbing) and shell-quotes each word. A word that is exactly `crew` or `crew` becomes the built binary. It skips blank lines.
+  - The pane runs with true color. It is rendered on Latte's base (`SHOT_BACKGROUND`, default `#eff1f5`), because crew paints no background of its own.
+  - All that it starts (daemon, tmux server, pane, popups) runs with a temporary `HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `CLAUDE_CONFIG_DIR` and `CODEX_HOME` in its temp `CREW_HOME`. That home is marked onboarded, so the first-run walkthrough never shows. It builds before it changes `HOME`. It refuses a step that sets a variable to the real `HOME` or a path under it.
+  - Its tests are in `scripts/screenshottest`, with fake `crew`, `tmux` and `freeze`.
+  - Run it from a demo folder tree, and pass `run env HOME=<demo home> crew ...`, so that no real paths show. The images are on the orphan `pr-assets` branch, not in main.
 - **`web-screenshot < steps`**: renders the web app for the body of a PWA PR. It starts the Vite dev server with the fake API on 127.0.0.1 (`WEB_SHOT_PORT`, default 5199). The fake API (`web/fake-api.ts`) does these things:
   - `hello` reports `v1` and build `v0.12.0+demo`.
   - Pairing accepts `ABCD2345`, answers `ZZZZZZZZ` with 429 and all other codes with 401.
@@ -51,7 +51,7 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
   - With `AGENTWS_FAKE_STREAM=revoked`, it does the same, but `GET /api/v1/workspaces` answers 401. This gives the pairing screen with its signed-out note.
 
   It controls Playwright's Chromium from stdin steps: `device <Playwright device>` (default `iPhone 15`), `mode browser|installed` (installed sets `navigator.standalone`), `goto <path>`, `fill <label>=<text>`, `click <button name>`, `see <text>`, `wait <ms>`, `shot <file>` (full page, relative to the cwd). `device` and `mode` start a fresh browser context. Playwright is pinned in `web/package.json`. Install its browser one time with `cd web && npx playwright install chromium`. Push the images to the orphan `pr-assets` branch, as for `screenshot`.
-- **`install.sh`**: installs a release as `crew`, makes `agentws` a symlink to it, and removes an old `agentws` binary only after the new binary runs. It also copies `nvim/lua` and `nvim/plugin` to `${XDG_DATA_HOME:-~/.local/share}/agentws/nvim`. To try a release build:
+- **`install.sh`**: installs a release as `crew`, makes `crew` a symlink to it, and removes an old `crew` binary only after the new binary runs. It also copies `nvim/lua` and `nvim/plugin` to `${XDG_DATA_HOME:-~/.local/share}/agentws/nvim`. To try a release build:
   1. Run `goreleaser release --snapshot --clean`.
   2. Serve `dist/` with `python3 -m http.server`.
   3. Run `scripts/install.sh` with `CREW_DOWNLOAD_BASE`, a temp `CREW_INSTALL_DIR` and a temp `XDG_DATA_HOME`.

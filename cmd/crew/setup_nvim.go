@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/onboard"
+	"github.com/giovaniif/crew/internal/adapters/onboard"
 )
 
 func runSetupNvim(args []string, stdout, stderr io.Writer, env func(string) string, self string) int {

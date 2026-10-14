@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/tmux"
+	"github.com/giovaniif/crew/internal/adapters/tmux"
 )
 
 func TestHasAgentPanesIsTrueOnlyWhileTheServerParksAnAgentPane(t *testing.T) {

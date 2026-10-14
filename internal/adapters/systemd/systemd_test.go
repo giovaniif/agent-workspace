@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
+	"github.com/giovaniif/crew/internal/adapters/systemd"
 )
 
 type systemctl struct {

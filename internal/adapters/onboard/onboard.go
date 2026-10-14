@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
-	"github.com/giovaniif/agent-workspace/internal/adapters/codex"
-	"github.com/giovaniif/agent-workspace/internal/adapters/omp"
-	"github.com/giovaniif/agent-workspace/internal/adapters/skill"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/codex"
+	"github.com/giovaniif/crew/internal/adapters/omp"
+	"github.com/giovaniif/crew/internal/adapters/skill"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const doneFile = "onboarded"

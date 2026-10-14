@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/daemon"
+	"github.com/giovaniif/crew/internal/daemon"
 )
 
 func TestMouseSettingTurnsTheTmuxMouseOff(t *testing.T) {

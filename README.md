@@ -2,7 +2,7 @@
 
 A terminal workspace that runs Claude Code and Codex sessions in parallel. It creates and cleans up git worktrees for you. It lets you review the changes of agents in a local, PR-style pane.
 
-**Status:** alpha. Builds are pre-releases on [GitHub Releases](https://github.com/giovaniif/agent-workspace/releases). Expect problems and breaking changes between alphas. The screens below are design mockups. Their sources are in [docs/design](docs/design).
+**Status:** alpha. Builds are pre-releases on [GitHub Releases](https://github.com/giovaniif/crew/releases). Expect problems and breaking changes between alphas. The screens below are design mockups. Their sources are in [docs/design](docs/design).
 
 ## Install
 
@@ -19,7 +19,7 @@ Without it, banners go through `osascript`.
 Install the newest release (alphas included):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/giovaniif/agent-workspace/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | sh
 ```
 
 The script does these steps:
@@ -33,9 +33,9 @@ Two environment variables change this behavior:
 
 ```sh
 # a specific release
-curl -fsSL https://raw.githubusercontent.com/giovaniif/agent-workspace/main/scripts/install.sh | AGENTWS_VERSION=v0.1.0-alpha.1 sh
+curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | AGENTWS_VERSION=v0.1.0-alpha.1 sh
 # another directory
-curl -fsSL https://raw.githubusercontent.com/giovaniif/agent-workspace/main/scripts/install.sh | AGENTWS_INSTALL_DIR=/usr/local/bin sh
+curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | AGENTWS_INSTALL_DIR=/usr/local/bin sh
 ```
 
 If the install directory is not on your `PATH`, the script tells you. Add it in your shell profile (`~/.zshrc` or `~/.bashrc`):
@@ -65,7 +65,7 @@ Or open the app, then go to System Settings › Privacy & Security › Open Anyw
 `agentws version` prints the installed version. At most one time each day, it also checks GitHub for a newer release. To stop this check, set `AGENTWS_NO_UPDATE_CHECK=1`. `agentws` never updates itself. To upgrade, run the install script again. Then stop the old daemon, so that the new binary starts its own daemon:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/giovaniif/agent-workspace/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/giovaniif/crew/main/scripts/install.sh | sh
 agentws daemon stop
 agentws version
 agentws

@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
-	gitadapter "github.com/giovaniif/agent-workspace/internal/adapters/git"
-	"github.com/giovaniif/agent-workspace/internal/adapters/procs"
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
+	gitadapter "github.com/giovaniif/crew/internal/adapters/git"
+	"github.com/giovaniif/crew/internal/adapters/procs"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 type cleanupRig struct {

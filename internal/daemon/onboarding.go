@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func WithOnboarding(o app.Onboarder) Option {

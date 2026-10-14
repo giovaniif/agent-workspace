@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 var _ app.HunkGit = Review{}

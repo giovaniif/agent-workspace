@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func TestSetupClaudeMergesIntoClaudeConfigDirAndRemoveUndoesIt(t *testing.T) {
@@ -102,7 +102,7 @@ func TestSetupClaudeAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T
 	if code := run([]string{"setup", "claude"}, &out, &errOut); code != 0 {
 		t.Fatalf("setup: code %d, %s", code, errOut.String())
 	}
-	if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") || !strings.Contains(out.String(), file) {
+	if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "crew browser snapshot") || !strings.Contains(out.String(), file) {
 		t.Fatalf("skill: %v, stdout %q", err, out.String())
 	}
 	if code := run([]string{"setup", "claude", "--remove"}, &out, &errOut); code != 0 {

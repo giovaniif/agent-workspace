@@ -16,7 +16,7 @@ builds:
     goos: [darwin, linux]
     goarch: [arm64, amd64]
     ldflags:
-      - -s -w -X github.com/giovaniif/agent-workspace/internal/version.Version={{ .Tag }} -X github.com/giovaniif/agent-workspace/internal/version.Commit={{ .ShortCommit }}
+      - -s -w -X github.com/giovaniif/crew/internal/version.Version={{ .Tag }} -X github.com/giovaniif/crew/internal/version.Commit={{ .ShortCommit }}
 
 archives:
   - formats: [tar.gz]

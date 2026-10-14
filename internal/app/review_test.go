@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const oneFileDiff = "diff --git a/a.go b/a.go\nindex 1..2 100644\n--- a/a.go\n+++ b/a.go\n@@ -1 +1 @@\n-x\n+y\n"

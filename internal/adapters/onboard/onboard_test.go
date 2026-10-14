@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/onboard"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/onboard"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const bin = "/opt/agentws/bin/agentws"
@@ -362,7 +362,7 @@ func TestInstallAlsoTeachesClaudeAndCodexTheBrowserCommands(t *testing.T) {
 		filepath.Join(w.root, "claude", "skills", "agentws-browser", "SKILL.md"),
 		filepath.Join(w.root, "codex", "skills", "agentws-browser", "SKILL.md"),
 	} {
-		if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "agentws browser snapshot") {
+		if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "crew browser snapshot") {
 			t.Errorf("%s: %v", file, err)
 		}
 	}

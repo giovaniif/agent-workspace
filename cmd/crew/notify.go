@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/notify"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/notify"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const notifyUsage = "usage: crew notify stream | crew notify bridge [--remote-bin path] <ssh host>"

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func resolve(t *testing.T, r namingRig, workspace, item string) (rpc.WorkItemResolved, error) {
