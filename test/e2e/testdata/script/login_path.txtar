@@ -1,16 +1,16 @@
 [!barepath] skip 'a real claude or codex is on the bare PATH'
 env HOME=$WORK/home
 env SHELL=/bin/sh
-env PATH=$AGENTWS_E2E_BARE_PATH
+env PATH=$CREW_E2E_BARE_PATH
 
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'add a thing'
+exec crew workspace add api
+exec crew new --workspace api 'add a thing'
 capture SID '^session (\S+) on pane %\d+$'
-eventually ' state=done ' agentws debug session --once $SID
+eventually ' state=done ' crew debug session --once $SID
 
 -- home/.profile --
-PATH="$PATH:$AGENTWS_E2E_FAKES"
+PATH="$PATH:$CREW_E2E_FAKES"
 -- claude.steps --
 hook UserPromptSubmit {"prompt":"add a thing"}
 hook Stop {"last_assistant_message":"Added it."}

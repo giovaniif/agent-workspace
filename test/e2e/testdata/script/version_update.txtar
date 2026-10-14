@@ -1,12 +1,12 @@
-env AGENTWS_NO_UPDATE_CHECK=
-mkdir $AGENTWS_HOME
-cp release.json $AGENTWS_HOME/release.json
-exec agentws version
+env CREW_NO_UPDATE_CHECK=
+mkdir $CREW_HOME
+cp release.json $CREW_HOME/release.json
+exec crew version
 stdout 'v9\.0\.0-alpha\.1 is available'
 stdout 'crew daemon stop'
 
-env AGENTWS_NO_UPDATE_CHECK=1
-exec agentws version
+env CREW_NO_UPDATE_CHECK=1
+exec crew version
 ! stdout 'is available'
 
 -- release.json --

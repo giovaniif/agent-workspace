@@ -17,7 +17,7 @@ func setupOmp(t *testing.T, agentDir string, args ...string) (int, string, strin
 		}
 		return ""
 	}
-	code := runSetup(append([]string{"omp"}, args...), &out, &errOut, env, "/opt/agentws/bin/agentws")
+	code := runSetup(append([]string{"omp"}, args...), &out, &errOut, env, "/opt/crew/bin/crew")
 	return code, out.String(), errOut.String()
 }
 
@@ -29,7 +29,7 @@ func TestSetupOmpWritesTheHookFileOnce(t *testing.T) {
 		t.Fatalf("code %d, stdout %q, stderr %q", code, out, errOut)
 	}
 	body, err := os.ReadFile(file)
-	if err != nil || !strings.Contains(string(body), `"/opt/agentws/bin/agentws"`) {
+	if err != nil || !strings.Contains(string(body), `"/opt/crew/bin/crew"`) {
 		t.Fatalf("hook file %q, %v", body, err)
 	}
 	if code, out, _ := setupOmp(t, dir); code != 0 || out != "already set up in "+file+"\n" {

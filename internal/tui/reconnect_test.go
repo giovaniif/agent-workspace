@@ -144,7 +144,7 @@ func TestDaemonOfAnotherBuildStopsRetryingAndOffersARestart(t *testing.T) {
 	}
 }
 
-func TestDaemonOfAnotherBuildWithoutRestartSaysToRunAgentwsAgain(t *testing.T) {
+func TestDaemonOfAnotherBuildWithoutRestartSaysToRunCrewAgain(t *testing.T) {
 	f := &fakeRedialer{results: []redialResult{{err: rpc.Mismatch("v2", "v1", 2, 1)}}}
 	m, _ := step(t, reconnectingModel(f, &fakeCaller{}, false), tui.DisconnectedMsg{})
 	m, _ = redial(t, m)

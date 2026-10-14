@@ -33,7 +33,7 @@ func TestNotifyBannerIsGroupedBySession(t *testing.T) {
 func TestNotifyBannerActivatesTheClientTerminal(t *testing.T) {
 	r := newRig(t, &memStore{}, nil)
 	r.d.SetClientHost(&fakeClientHost{})
-	if _, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}, Terminal: "com.apple.Terminal"}); err != nil {
+	if _, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}, Terminal: "com.apple.Terminal"}); err != nil {
 		t.Fatal(err)
 	}
 	r.addRunning(t, "s1", domain.HarnessClaude, "%1")
@@ -70,7 +70,7 @@ func TestNotifyFocusingWithdrawsTheBanner(t *testing.T) {
 func TestNotifyAttachFromAnUnknownTerminalActivatesNone(t *testing.T) {
 	r := newRig(t, &memStore{}, nil)
 	r.d.SetClientHost(&fakeClientHost{})
-	tui := rpc.OpenClientParams{Command: []string{"agentws", "tui"}, Terminal: "com.apple.Terminal"}
+	tui := rpc.OpenClientParams{Command: []string{"crew", "tui"}, Terminal: "com.apple.Terminal"}
 	if _, err := r.c.OpenClient(context.Background(), tui); err != nil {
 		t.Fatal(err)
 	}

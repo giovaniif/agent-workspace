@@ -27,7 +27,7 @@ func TestSessionSendAndInterruptReachARealTmuxPane(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	host := tmux.New(tmux.Config{Socket: fmt.Sprintf("agentws-send-%d-%d", os.Getpid(), time.Now().UnixNano()), ConfigPath: filepath.Join(home, "tmux.conf")})
+	host := tmux.New(tmux.Config{Socket: fmt.Sprintf("crew-send-%d-%d", os.Getpid(), time.Now().UnixNano()), ConfigPath: filepath.Join(home, "tmux.conf")})
 	t.Cleanup(func() { _ = host.Close(context.Background()) })
 	ctx := context.Background()
 	pane, err := host.Create(ctx, app.PaneSpec{Name: "agent", Dir: home, Command: []string{"cat", "-v"}})

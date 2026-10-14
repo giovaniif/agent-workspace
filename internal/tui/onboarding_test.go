@@ -21,7 +21,7 @@ var (
 	keySpace = tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 )
 
-var setupCommand = []string{"/bin/agentws", "tui", "--setup"}
+var setupCommand = []string{"/bin/crew", "tui", "--setup"}
 
 func freshMachine() domain.Onboarding {
 	return domain.Onboarding{

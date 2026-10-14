@@ -1,19 +1,19 @@
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'ship part c'
+exec crew workspace add api
+exec crew new --workspace api 'ship part c'
 capture SID '^session (\S+) on pane'
-eventually ' state=done ' agentws debug session --once $SID
-mkdir $AGENTWS_E2E/gates/end
-eventually ' state=idle ' agentws debug session --once $SID
-eventually '/api-c\s+feat-c\s+'$SID'\s' agentws worktree list
+eventually ' state=done ' crew debug session --once $SID
+mkdir $CREW_E2E/gates/end
+eventually ' state=idle ' crew debug session --once $SID
+eventually '/api-c\s+feat-c\s+'$SID'\s' crew worktree list
 capture C '^(\S+/api-c)\s'
 
 cp prs-merged.json prs.json
-eventually '/api-c\s+feat-c\s+'$SID'\s+#8 MERGED' agentws worktree list
-exec agentws cleanup
+eventually '/api-c\s+feat-c\s+'$SID'\s+#8 MERGED' crew worktree list
+exec crew cleanup
 stdout '^backup_then_ask\s+\S+/api-c\s+feat-c\s+1 uncommitted changes'
 exists $C/wip.txt
-exec ls $AGENTWS_HOME/backups
+exec ls $CREW_HOME/backups
 stdout .
 
 -- claude.steps --

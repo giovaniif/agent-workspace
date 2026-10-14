@@ -65,11 +65,11 @@ func TestNotifyFocusCommandFocusesTheSession(t *testing.T) {
 
 func TestNotifyAttachNamesTheTerminalApp(t *testing.T) {
 	env := map[string]string{"__CFBundleIdentifier": "", "TERM_PROGRAM": "iTerm.app"}
-	p := openClientParams("/bin/agentws", "/h", "/w", func(k string) string { return env[k] })
+	p := openClientParams("/bin/crew", "/h", "/w", func(k string) string { return env[k] })
 	if p.Terminal != "com.googlecode.iterm2" {
 		t.Fatalf("terminal %q", p.Terminal)
 	}
-	if p.Command[0] != "/bin/agentws" || p.Env["CREW_HOME"] != "/h" || p.Dir != "/w" {
+	if p.Command[0] != "/bin/crew" || p.Env["CREW_HOME"] != "/h" || p.Dir != "/w" {
 		t.Fatalf("params %+v", p)
 	}
 }

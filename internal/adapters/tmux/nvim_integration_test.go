@@ -24,7 +24,7 @@ func TestNavigationKeysPassThroughNvimAndLeaveItAtTheEdge(t *testing.T) {
 	if _, err := exec.LookPath("nvim"); err != nil {
 		t.Skip("nvim not installed")
 	}
-	dir, err := os.MkdirTemp("/tmp", "agentws-nav")
+	dir, err := os.MkdirTemp("/tmp", "crew-nav")
 	if err != nil {
 		t.Fatal(err)
 	}

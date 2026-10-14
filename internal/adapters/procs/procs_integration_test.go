@@ -24,7 +24,7 @@ import (
 
 var _ app.ProcessTable = procs.Table{}
 
-const helperEnv = "AGENTWS_PROCS_HELPER"
+const helperEnv = "CREW_PROCS_HELPER"
 
 func TestMain(m *testing.M) {
 	switch os.Getenv(helperEnv) {

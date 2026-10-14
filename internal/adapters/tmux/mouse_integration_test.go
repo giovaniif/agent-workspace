@@ -22,7 +22,7 @@ func mouseHost(t *testing.T, noMouse bool) (*tmux.Host, app.Slot) {
 		t.Skip("tmux not installed")
 	}
 	h := tmux.New(tmux.Config{
-		Socket:     fmt.Sprintf("agentws-test-mouse-%d-%d", os.Getpid(), time.Now().UnixNano()),
+		Socket:     fmt.Sprintf("crew-test-mouse-%d-%d", os.Getpid(), time.Now().UnixNano()),
 		ConfigPath: filepath.Join(t.TempDir(), "tmux.conf"),
 		NoMouse:    noMouse,
 	})
@@ -72,7 +72,7 @@ func TestADaemonRestartLoadsTheNewConfigIntoARunningServer(t *testing.T) {
 		t.Skip("tmux not installed")
 	}
 	cfg := tmux.Config{
-		Socket:     fmt.Sprintf("agentws-test-mouse-%d-%d", os.Getpid(), time.Now().UnixNano()),
+		Socket:     fmt.Sprintf("crew-test-mouse-%d-%d", os.Getpid(), time.Now().UnixNano()),
 		ConfigPath: filepath.Join(t.TempDir(), "tmux.conf"),
 		NoMouse:    true,
 	}
@@ -97,7 +97,7 @@ func TestACanceledFirstCommandStillLeavesTheConfigToLoad(t *testing.T) {
 		t.Skip("tmux not installed")
 	}
 	cfg := tmux.Config{
-		Socket:     fmt.Sprintf("agentws-test-mouse-%d-%d", os.Getpid(), time.Now().UnixNano()),
+		Socket:     fmt.Sprintf("crew-test-mouse-%d-%d", os.Getpid(), time.Now().UnixNano()),
 		ConfigPath: filepath.Join(t.TempDir(), "tmux.conf"),
 		NoMouse:    true,
 	}

@@ -50,7 +50,7 @@ func TestFocusKeyReturnsFromTheAgentPaneToTheSidebar(t *testing.T) {
 		t.Fatalf("active pane = %s before the key; want the agent pane, 1", got)
 	}
 
-	outer := fmt.Sprintf("agentws-outer-%d", os.Getpid())
+	outer := fmt.Sprintf("crew-outer-%d", os.Getpid())
 	t.Cleanup(func() { _ = exec.Command("tmux", "-L", outer, "kill-server").Run() })
 	terminal := []string{"-L", outer, "-f", "/dev/null", "new-session", "-d", "-x", "200", "-y", "50", strings.Join(attach, " ")}
 	if out, err := exec.Command("tmux", terminal...).CombinedOutput(); err != nil {
@@ -67,7 +67,7 @@ func TestFocusKeyReturnsFromTheAgentPaneToTheSidebar(t *testing.T) {
 	if got := tmuxOn(t, attach, "list-keys", "-T", "root"); !strings.Contains(got, "select-pane -t :.0") {
 		t.Fatalf("the agentws server has no focus binding:\n%s", got)
 	}
-	other := fmt.Sprintf("agentws-other-%d", os.Getpid())
+	other := fmt.Sprintf("crew-other-%d", os.Getpid())
 	t.Cleanup(func() { _ = exec.Command("tmux", "-L", other, "kill-server").Run() })
 	if out, err := exec.Command("tmux", "-L", other, "-f", "/dev/null", "new-session", "-d", "sleep 60").CombinedOutput(); err != nil {
 		t.Fatalf("other server: %v: %s", err, out)

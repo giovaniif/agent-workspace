@@ -1,22 +1,22 @@
 #!/bin/sh
-harness=${AGENTWS_E2E_HARNESS:-claude}
-steps="$AGENTWS_E2E/$harness.steps"
+harness=${CREW_E2E_HARNESS:-claude}
+steps="$CREW_E2E/$harness.steps"
 
 hook() {
 	payload=$2
 	[ -n "$payload" ] || payload='{}'
-	log="$AGENTWS_HOME/hook.log"
+	log="$CREW_HOME/hook.log"
 	try=0
 	while :; do
 		before=$(cat "$log" 2>/dev/null | wc -l)
-		printf '%s' "$payload" | agentws hook --harness "$harness" --event "$1"
+		printf '%s' "$payload" | crew hook --harness "$harness" --event "$1"
 		after=$(cat "$log" 2>/dev/null | wc -l)
 		[ "$after" -gt "$before" ] || return 0
 		last=$(tail -n 1 "$log")
 		case $last in *"no reply within"*) return 0 ;; esac
 		try=$((try + 1))
 		[ "$try" -lt 5 ] || return 0
-		echo "hook $1 dropped ($last), firing again" >>"$AGENTWS_E2E/$harness.log"
+		echo "hook $1 dropped ($last), firing again" >>"$CREW_E2E/$harness.log"
 	done
 }
 
@@ -27,10 +27,10 @@ tool_payload() {
 
 gate() {
 	i=0
-	while [ ! -e "$AGENTWS_E2E/gates/$1" ]; do
+	while [ ! -e "$CREW_E2E/gates/$1" ]; do
 		i=$((i + 1))
 		if [ "$i" -gt 1500 ]; then
-			echo "gate $1 never opened" >>"$AGENTWS_E2E/$harness.log"
+			echo "gate $1 never opened" >>"$CREW_E2E/$harness.log"
 			exit 1
 		fi
 		sleep 0.02
@@ -50,13 +50,13 @@ while IFS= read -r line <&3; do
 		;;
 	run)
 		hook PreToolUse "$(tool_payload "$rest")"
-		sh -c "$rest" >>"$AGENTWS_E2E/$harness.log" 2>&1
+		sh -c "$rest" >>"$CREW_E2E/$harness.log" 2>&1
 		hook PostToolUse "$(tool_payload "$rest")"
 		;;
 	gate) gate "$rest" ;;
 	read)
 		stty -echo
-		exec cat >"$AGENTWS_E2E/$rest"
+		exec cat >"$CREW_E2E/$rest"
 		;;
 	esac
 done

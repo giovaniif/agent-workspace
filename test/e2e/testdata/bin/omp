@@ -1,2 +1,2 @@
 #!/bin/sh
-AGENTWS_E2E_HARNESS=omp exec "$(dirname "$0")/claude" "$@"
+CREW_E2E_HARNESS=omp exec "$(dirname "$0")/claude" "$@"

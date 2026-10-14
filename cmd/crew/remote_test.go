@@ -18,7 +18,7 @@ import (
 func startRemoteDaemon(t *testing.T) (string, *rpc.Client) {
 	t.Helper()
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	d, err := daemon.New(nopStore{}, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +40,7 @@ func startRemoteDaemon(t *testing.T) (string, *rpc.Client) {
 }
 
 func TestRemotePairWithoutAURLSaysHowToSetOne(t *testing.T) {
-	t.Setenv("AGENTWS_HOME", shortHome(t))
+	t.Setenv("CREW_HOME", shortHome(t))
 	var stdout, stderr bytes.Buffer
 	code := run([]string{"remote", "pair"}, &stdout, &stderr)
 	if code != 1 || !strings.Contains(stderr.String(), "--url") || !strings.Contains(stderr.String(), "[serve]") || !strings.Contains(stderr.String(), "config.toml") {

@@ -21,7 +21,7 @@ func TestSetupNvimWritesAndRemovesItsPluginFile(t *testing.T) {
 	init := filepath.Join(root, "cfg", "nvim", "plugin", "agentws.lua")
 	run := func(args ...string) (int, string) {
 		var out, errOut bytes.Buffer
-		code := runSetup(append([]string{"nvim"}, args...), &out, &errOut, func(k string) string { return env[k] }, "/opt/agentws/bin/agentws")
+		code := runSetup(append([]string{"nvim"}, args...), &out, &errOut, func(k string) string { return env[k] }, "/opt/crew/bin/crew")
 		return code, out.String() + errOut.String()
 	}
 

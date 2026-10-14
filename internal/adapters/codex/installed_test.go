@@ -20,7 +20,7 @@ func TestInstalledIsTrueOnlyAfterSetup(t *testing.T) {
 		t.Errorf("after setup: installed = %v, %v", ok, err)
 	}
 	moved := cfg
-	moved.Command = "/elsewhere/agentws"
+	moved.Command = "/elsewhere/crew"
 	if ok, _ := Installed(moved); ok {
 		t.Error("hooks pointing at another binary count as installed")
 	}

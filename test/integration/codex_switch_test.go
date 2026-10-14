@@ -29,7 +29,7 @@ func TestModelSwitchCodexPickerIsWalkedInARealPane(t *testing.T) {
 	}
 	home := t.TempDir()
 	out := filepath.Join(home, "chosen")
-	socket := fmt.Sprintf("agentws-it-%d-%d", os.Getpid(), time.Now().UnixNano())
+	socket := fmt.Sprintf("crew-it-%d-%d", os.Getpid(), time.Now().UnixNano())
 	host := tmux.New(tmux.Config{Socket: socket, ConfigPath: filepath.Join(home, "tmux.conf")})
 	t.Cleanup(func() { _ = host.Close(context.Background()) })
 	ctx := context.Background()

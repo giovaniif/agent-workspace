@@ -12,32 +12,32 @@ import (
 func envOf(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
 
 func TestSetupServeUnitRunsServeWithThisShellsEnvironment(t *testing.T) {
-	env := envOf(map[string]string{"PATH": "/usr/local/bin:/usr/bin", "CREW_HOME": "/home/me/.agentws"})
-	svc, remove, err := setupServeService([]string{"--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}, env, "/usr/local/bin/agentws", "/home/me", 1000, "linux")
+	env := envOf(map[string]string{"PATH": "/usr/local/bin:/usr/bin", "CREW_HOME": "/home/me/.crew"})
+	svc, remove, err := setupServeService([]string{"--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}, env, "/usr/local/bin/crew", "/home/me", 1000, "linux")
 	if err != nil || remove {
 		t.Fatalf("remove %v err %v", remove, err)
 	}
 	u := svc.unit
-	if u.Name != "crew-serve" || u.Dir != "/home/me/.config/systemd/user" || u.Log != "/home/me/.agentws/serve.log" {
+	if u.Name != "crew-serve" || u.Dir != "/home/me/.config/systemd/user" || u.Log != "/home/me/.crew/serve.log" {
 		t.Fatalf("unit %+v", u)
 	}
-	if want := []string{"/usr/local/bin/agentws", "serve", "--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}; !reflect.DeepEqual(u.Program, want) {
+	if want := []string{"/usr/local/bin/crew", "serve", "--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}; !reflect.DeepEqual(u.Program, want) {
 		t.Fatalf("program %q", u.Program)
 	}
-	if want := map[string]string{"PATH": "/usr/local/bin:/usr/bin", "CREW_HOME": "/home/me/.agentws"}; !reflect.DeepEqual(u.Env, want) {
+	if want := map[string]string{"PATH": "/usr/local/bin:/usr/bin", "CREW_HOME": "/home/me/.crew"}; !reflect.DeepEqual(u.Env, want) {
 		t.Fatalf("env %v", u.Env)
 	}
 }
 
 func TestSetupServeUnitHonoursXDGConfigHome(t *testing.T) {
-	svc, _, err := setupServeService(nil, envOf(map[string]string{"XDG_CONFIG_HOME": "/xdg"}), "/bin/agentws", "/home/me", 1000, "linux")
+	svc, _, err := setupServeService(nil, envOf(map[string]string{"XDG_CONFIG_HOME": "/xdg"}), "/bin/crew", "/home/me", 1000, "linux")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if svc.unit.Dir != "/xdg/systemd/user" {
 		t.Fatalf("dir %q", svc.unit.Dir)
 	}
-	if want := []string{"/bin/agentws", "serve"}; !reflect.DeepEqual(svc.unit.Program, want) {
+	if want := []string{"/bin/crew", "serve"}; !reflect.DeepEqual(svc.unit.Program, want) {
 		t.Fatalf("program %q", svc.unit.Program)
 	}
 	if svc.unit.Env["CREW_HOME"] != "/home/me/.crew" {
@@ -47,7 +47,7 @@ func TestSetupServeUnitHonoursXDGConfigHome(t *testing.T) {
 
 func TestSetupServeAgentOnMacOSIsALaunchdAgent(t *testing.T) {
 	env := envOf(map[string]string{"PATH": "/opt/homebrew/bin:/usr/bin"})
-	svc, _, err := setupServeService([]string{"--self-signed"}, env, "/opt/homebrew/bin/agentws", "/Users/me", 501, "darwin")
+	svc, _, err := setupServeService([]string{"--self-signed"}, env, "/opt/homebrew/bin/crew", "/Users/me", 501, "darwin")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,15 +55,15 @@ func TestSetupServeAgentOnMacOSIsALaunchdAgent(t *testing.T) {
 	if !svc.launchd || a.Label != "dev.crew.serve" || a.Dir != "/Users/me/Library/LaunchAgents" || a.UID != 501 || a.Log != "/Users/me/.crew/serve.log" {
 		t.Fatalf("service %+v", svc)
 	}
-	if want := []string{"/opt/homebrew/bin/agentws", "serve", "--self-signed"}; !reflect.DeepEqual(a.Program, want) {
+	if want := []string{"/opt/homebrew/bin/crew", "serve", "--self-signed"}; !reflect.DeepEqual(a.Program, want) {
 		t.Fatalf("program %q", a.Program)
 	}
 }
 
 func TestSetupServeWritesFlagsInOneOrderSoReorderedArgsChangeNothing(t *testing.T) {
 	env := envOf(nil)
-	a, _, _ := setupServeService([]string{"--key", "/k", "--cert", "/c", "--addr", "[::]:7420"}, env, "/bin/agentws", "/h", 1, "linux")
-	b, _, _ := setupServeService([]string{"--addr", "[::]:7420", "--cert", "/c", "--key", "/k"}, env, "/bin/agentws", "/h", 1, "linux")
+	a, _, _ := setupServeService([]string{"--key", "/k", "--cert", "/c", "--addr", "[::]:7420"}, env, "/bin/crew", "/h", 1, "linux")
+	b, _, _ := setupServeService([]string{"--addr", "[::]:7420", "--cert", "/c", "--key", "/k"}, env, "/bin/crew", "/h", 1, "linux")
 	if !reflect.DeepEqual(a.unit.Program, b.unit.Program) {
 		t.Fatalf("%q vs %q", a.unit.Program, b.unit.Program)
 	}
@@ -74,11 +74,11 @@ func TestSetupServeMakesCertPathsAbsolute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, _, err := setupServeService([]string{"--cert", "certs/m.crt", "--key", "certs/m.key"}, envOf(nil), "/bin/agentws", "/h", 1, "linux")
+	svc, _, err := setupServeService([]string{"--cert", "certs/m.crt", "--key", "certs/m.key"}, envOf(nil), "/bin/crew", "/h", 1, "linux")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"/bin/agentws", "serve", "--cert", filepath.Join(wd, "certs/m.crt"), "--key", filepath.Join(wd, "certs/m.key")}
+	want := []string{"/bin/crew", "serve", "--cert", filepath.Join(wd, "certs/m.crt"), "--key", filepath.Join(wd, "certs/m.key")}
 	if !reflect.DeepEqual(svc.unit.Program, want) {
 		t.Fatalf("program %q", svc.unit.Program)
 	}
@@ -86,8 +86,8 @@ func TestSetupServeMakesCertPathsAbsolute(t *testing.T) {
 
 func TestSetupServeRemoveNamesTheSameService(t *testing.T) {
 	for _, goos := range []string{"linux", "darwin"} {
-		installed, _, _ := setupServeService([]string{"--self-signed"}, envOf(nil), "/bin/agentws", "/h", 1, goos)
-		removed, remove, err := setupServeService([]string{"--remove"}, envOf(nil), "/bin/agentws", "/h", 1, goos)
+		installed, _, _ := setupServeService([]string{"--self-signed"}, envOf(nil), "/bin/crew", "/h", 1, goos)
+		removed, remove, err := setupServeService([]string{"--remove"}, envOf(nil), "/bin/crew", "/h", 1, goos)
 		if err != nil || !remove || removed.unit.Name != installed.unit.Name || removed.agent.Label != installed.agent.Label {
 			t.Fatalf("%s: %+v remove %v err %v", goos, removed, remove, err)
 		}
@@ -110,7 +110,7 @@ func TestSetupServeRefusesWhatServeWouldRefuse(t *testing.T) {
 		"self-signed with a key":     {"--self-signed", "--key", "/k"},
 		"an address with a bad port": {"--addr", "127.0.0.1:http"},
 	} {
-		if _, _, err := setupServeService(args, envOf(nil), "/bin/agentws", "/h", 1, "linux"); err == nil {
+		if _, _, err := setupServeService(args, envOf(nil), "/bin/crew", "/h", 1, "linux"); err == nil {
 			t.Errorf("%s: no error", name)
 		}
 	}
@@ -126,21 +126,21 @@ func TestSetupServeAcceptsLoopbackWithoutTLSAndAnyAddressWithIt(t *testing.T) {
 		{"--remove"},
 		{"--remove", "--addr", "0.0.0.0:7420"},
 	} {
-		if _, _, err := setupServeService(args, envOf(nil), "/bin/agentws", "/h", 1, "linux"); err != nil {
+		if _, _, err := setupServeService(args, envOf(nil), "/bin/crew", "/h", 1, "linux"); err != nil {
 			t.Errorf("%q: %v", args, err)
 		}
 	}
 }
 
 func TestSetupServeIsLinuxAndMacOSOnly(t *testing.T) {
-	if _, _, err := setupServeService(nil, envOf(nil), "/bin/agentws", "/h", 1, "windows"); err == nil {
+	if _, _, err := setupServeService(nil, envOf(nil), "/bin/crew", "/h", 1, "windows"); err == nil {
 		t.Fatal("windows was accepted")
 	}
 }
 
 func TestSetupServeUsageOnBadArguments(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := runSetup([]string{"serve", "--cert", "/c"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/agentws"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup serve") {
+	if code := runSetup([]string{"serve", "--cert", "/c"}, &bytes.Buffer{}, &stderr, envOf(nil), "/bin/crew"); code != 2 || !strings.Contains(stderr.String(), "usage: crew setup serve") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }
@@ -177,7 +177,7 @@ func serveLifecycle(t *testing.T, goos, servicePath string, manager *fakeService
 	env := envOf(map[string]string{"CREW_HOME": filepath.Join(t.TempDir(), "home"), "PATH": os.Getenv("PATH")})
 	run := func(args ...string) (int, string, string) {
 		var stdout, stderr bytes.Buffer
-		code := runSetupServe(args, &stdout, &stderr, env, "/bin/agentws", goos)
+		code := runSetupServe(args, &stdout, &stderr, env, "/bin/crew", goos)
 		return code, stdout.String(), stderr.String()
 	}
 
@@ -245,30 +245,30 @@ func TestSetupServeLifecycleOnLaunchd(t *testing.T) {
 }
 
 func TestSetupServePassesTheUrlThroughAfterTheOtherFlags(t *testing.T) {
-	svc, _, err := setupServeService([]string{"--url", "https://agent.example.com", "--self-signed", "--addr", "0.0.0.0:7420"}, envOf(nil), "/bin/agentws", "/h", 1, "linux")
+	svc, _, err := setupServeService([]string{"--url", "https://agent.example.com", "--self-signed", "--addr", "0.0.0.0:7420"}, envOf(nil), "/bin/crew", "/h", 1, "linux")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"/bin/agentws", "serve", "--addr", "0.0.0.0:7420", "--self-signed", "--url", "https://agent.example.com"}
+	want := []string{"/bin/crew", "serve", "--addr", "0.0.0.0:7420", "--self-signed", "--url", "https://agent.example.com"}
 	if !reflect.DeepEqual(svc.unit.Program, want) {
 		t.Fatalf("program %q", svc.unit.Program)
 	}
 }
 
 func TestSetupServeRefusesAnEmptyUrl(t *testing.T) {
-	if _, _, err := setupServeService([]string{"--url", " "}, envOf(nil), "/bin/agentws", "/h", 1, "linux"); err == nil {
+	if _, _, err := setupServeService([]string{"--url", " "}, envOf(nil), "/bin/crew", "/h", 1, "linux"); err == nil {
 		t.Fatal("an empty --url was accepted")
 	}
 }
 
 func TestSetupServeRefusesAUrlThatRemotePairWouldRefuse(t *testing.T) {
 	for _, url := range []string{"http://agent.example.com", "https://agent.example.com/#pair", "ftp://agent.example.com"} {
-		if _, _, err := setupServeService([]string{"--url", url}, envOf(nil), "/bin/agentws", "/h", 1, "linux"); err == nil {
+		if _, _, err := setupServeService([]string{"--url", url}, envOf(nil), "/bin/crew", "/h", 1, "linux"); err == nil {
 			t.Errorf("%q was accepted", url)
 		}
 	}
 	for _, url := range []string{"agent.example.com", "https://agent.example.com/"} {
-		if _, _, err := setupServeService([]string{"--url", url}, envOf(nil), "/bin/agentws", "/h", 1, "linux"); err != nil {
+		if _, _, err := setupServeService([]string{"--url", url}, envOf(nil), "/bin/crew", "/h", 1, "linux"); err != nil {
 			t.Errorf("%q: %v", url, err)
 		}
 	}

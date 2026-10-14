@@ -7,7 +7,7 @@ import (
 )
 
 func TestReleaseFreesTheLockEvenWhileAForkedChildStillHoldsItsFile(t *testing.T) {
-	home, err := os.MkdirTemp("/tmp", "agentws-l")
+	home, err := os.MkdirTemp("/tmp", "crew-l")
 	if err != nil {
 		t.Fatal(err)
 	}
