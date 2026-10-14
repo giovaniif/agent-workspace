@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <mask id="ring">
+    <g fill="#fff" stroke="#fff" stroke-width="72">
+      <circle cx="168.96" cy="194.56" r="107.52"/>
+      <circle cx="343.04" cy="194.56" r="107.52"/>
+      <circle cx="256" cy="363.52" r="51.2"/>
+    </g>
+    <g fill="#000">
+      <circle cx="168.96" cy="194.56" r="107.52"/>
+      <circle cx="343.04" cy="194.56" r="107.52"/>
+      <circle cx="256" cy="363.52" r="51.2"/>
+    </g>
+  </mask>
+  <rect width="512" height="512" fill="#000" mask="url(#ring)"/>
+</svg>
