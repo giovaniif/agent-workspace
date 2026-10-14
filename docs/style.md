@@ -25,19 +25,19 @@ Use these terms with these meanings only.
 | **harness** | The kind of agent program: `claude`, `codex` or `omp`. Each harness has an adapter in `internal/adapters`. |
 | **session** | One agent that runs in one pane, with its state, model, effort and worktrees. |
 | **task** | A work item: a PR or free text. Sessions are grouped under it. |
-| **workspace** | A folder that `agentws` manages: a single repo, or an orchestration root. |
+| **workspace** | A folder that `crew` manages: a single repo, or an orchestration root. |
 | **orchestration root** | A workspace folder that holds several repos. |
 | **project** | A registered workspace root with an optional machine-local setup script (`domain.Project`). |
 | **repo** | A git repository: a folder with its own `.git` directory. |
 | **worktree** | One repo at one branch, made with `git worktree add`. It has its own PR, checks, ports and cleanup. |
 | **subtask** | One part of a task that has its own worktree in a repo. |
-| **daemon** | The long-lived `agentws daemon` process. It owns all state for one `AGENTWS_HOME`. |
-| **TUI** | The terminal interface (`agentws tui`): the sidebar and its views. |
+| **daemon** | The long-lived `crew daemon` process. It owns all state for one `CREW_HOME`. |
+| **TUI** | The terminal interface (`crew tui`): the sidebar and its views. |
 | **sidebar** | The left part of the TUI. It lists projects, sessions and worktrees. |
-| **pane** | A tmux pane on the `agentws` tmux server. An agent, a shell or nvim runs in it. |
+| **pane** | A tmux pane on the `crew` tmux server. An agent, a shell or nvim runs in it. |
 | **slot** | The main area of the client layout. The pane in view is swapped into it. |
 | **tab** | One terminal or agent in a project worktree. The tab strip on the pane's top border shows them. |
-| **hook** | A command that a harness runs on an event. In `agentws`, it is `agentws hook`. |
+| **hook** | A command that a harness runs on an event. In `crew`, it is `crew hook`. |
 | **event** | A harness-neutral message that the daemon applies to a session. |
 | **review** | The local, PR-style view of a diff, with its scope and draft comments. |
 | **scope** | The part of the changes that a review shows: `last_turn`, `uncommitted` or `branch`. |
@@ -47,4 +47,4 @@ Use these terms with these meanings only.
 | **cleanup** | The removal of a worktree after its PR merges, with a backup of any uncommitted changes. |
 | **port** | In `internal/app` and the layer rules: an interface that an adapter implements. In the ports view and `ports.*` methods: a TCP port that a dev server listens on. Use "port interface" or "TCP port" when the context does not make the meaning clear. |
 | **adapter** | Code in `internal/adapters` that implements a port with a real tool or library. |
-| **device** | A phone or other client that is paired with `agentws serve`. |
+| **device** | A phone or other client that is paired with `crew serve`. |

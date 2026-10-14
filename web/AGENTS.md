@@ -68,7 +68,7 @@ The phone app: a PWA that `crew serve` embeds and serves at `/` (ADR [0046](../d
 - `src/push.ts` and `src/sw-push.ts`: Web Push. `AppEnv.push` (`browserPush(window)` in `main.tsx`, `FakePush` in tests) wraps `Notification` and `pushManager`.
   - When Settings opens, it reads the real state. If permission is granted, it calls `PushEnv.subscribed()`: the `pushManager` of the worker registration holds a subscription. Then it shows "Notifications are on for this device" with Turn off (`disablePush`), not Enable. It does not ask the server, because the server has no endpoint that reports the subscription of a device.
   - `enablePush` runs only from the Settings button. It asks for permission first, because iOS needs a tap from the user for this. Then it calls `GET /api/v1/push/key`, subscribes with that key, and posts the subscription to `/api/v1/push/subscribe`.
-  - The `push` handler of the worker shows `{"title","body"}`, tagged by session. It never pushes silently: if a field is missing, it uses `agentws` / `needs you`.
+  - The `push` handler of the worker shows `{"title","body"}`, tagged by session. It never pushes silently: if a field is missing, it uses `crew` / `needs you`.
   - `notificationclick` focuses an open window of the app and navigates it to the `url` of the push (`/#/sessions/<id>`, same-origin paths only). If no window is open, it opens one.
   - Settings also shows static text: pushes are held while the owner types at the terminal, and are not sent while the app is on screen.
   - Sign out first calls `POST /api/v1/push/unsubscribe` and unsubscribes the browser (best effort). Then it forgets the token.
@@ -90,5 +90,5 @@ The phone app: a PWA that `crew serve` embeds and serves at `/` (ADR [0046](../d
 - `Brand` shows the crew wordmark (`public/crew-wordmark.svg`, Mocha variant for dark) and the host. Session cards show the state glyphs of the Mac app (`stateStyle`).
 - New session: Add workspace… (`POST /api/v1/workspaces`, `~` expands with `home` from `session-options`) and Remove workspace (with a confirmation, `POST /api/v1/workspaces/remove`).
 - Automations: the last run outcome, History (`GET /api/v1/automations/runs`) and Run with context.
-- A session whose tool rows run `crew browser` (or `agentws browser`) shows a note that only the Mac app shows that browser.
+- A session whose tool rows run `crew browser` (or `crew browser`) shows a note that only the Mac app shows that browser.
 - `scripts/web-screenshot` has a `scheme light|dark` step.

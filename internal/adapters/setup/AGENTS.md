@@ -1,6 +1,6 @@
 # internal/adapters/setup
 
-`agentws setup-worktree <path>` applies the recipe of a repo to a linked worktree, in the CLI process (no daemon). It reports the duration and the change in free bytes on the volume. See [ADR 0013](../../../docs/adr/0013-setup-recipes.md).
+`crew setup-worktree <path>` applies the recipe of a repo to a linked worktree, in the CLI process (no daemon). It reports the duration and the change in free bytes on the volume. See [ADR 0013](../../../docs/adr/0013-setup-recipes.md).
 
 - **Recipe.** The `[setup]` table of `<main checkout>/.agentws.toml` (read with `BurntSushi/toml`): `copy`, `link`, `run` and `deps` (`clone`, `link` or `install`). The order is copy, link, deps, run. The first failure stops the recipe. The recipe never overwrites paths that are already in the worktree.
 - **Deps.** `clone` is `cp -c -R` (APFS clonefile). In these conditions, the adapter uses a frozen install (`bun`, `pnpm`, `yarn` or `npm ci`, from the lockfile) and logs the reason:

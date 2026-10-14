@@ -7,13 +7,13 @@ Bubble Tea v2, Lip Gloss and Bubbles. The TUI talks only to `rpc.Client`, and it
 - Goldens are in `testdata/*.golden`. To make them again, run `go test ./internal/tui/ -run Golden -update` and review the diff. The goldens of the setup walkthrough are `testdata/TestGoldenSetup/*.golden`.
 - `BenchmarkReviewScroll` fails if a review frame takes more than 16 ms p95 (about 2 ms).
 - Worktrees and disk view: `go test ./internal/tui/... -run Worktrees` (the daemon side is in [internal/daemon/](../daemon/AGENTS.md)).
-- For runs by hand, use a temp `AGENTWS_HOME` and `AGENTWS_TMUX_SOCKET`, seeded with `agentws debug seed N`.
+- For runs by hand, use a temp `CREW_HOME` and `CREW_TMUX_SOCKET`, seeded with `crew debug seed N`.
 
 ## Sidebar
 
-The left pane of the client layout runs `agentws tui`, 48 columns wide. When the terminal resizes, a `window-resized` hook on the window sets it back to 48.
+The left pane of the client layout runs `crew tui`, 48 columns wide. When the terminal resizes, a `window-resized` hook on the window sets it back to 48.
 
-`agentws tui` opens two connections. One subscribes and sends diffs to the Bubble Tea program. The other makes calls, for example `client.focus_main`. Thus a burst of diffs never delays a keypress.
+`crew tui` opens two connections. One subscribes and sends diffs to the Bubble Tea program. The other makes calls, for example `client.focus_main`. Thus a burst of diffs never delays a keypress.
 
 - The model keeps the snapshot in maps. It builds the sidebar rows again only when a diff arrives.
 - Grouping and order come from `domain.Sidebar`: in each task group, sessions that need you come first.
@@ -35,7 +35,7 @@ The left pane of the client layout runs `agentws tui`, 48 columns wide. When the
 - **Projects.** With registered projects, a `PROJECTS` section is above `SESSIONS`. It has one row for each project (`domain.ProjectRows`, by name) with the count of its worktrees. Thus worktrees from ended sessions stay visible. A click on a row opens the project.
   - `P` opens the projects panel: `j`/`k` move, `enter` opens, `d` then `y` removes (`project.remove`).
   - `a` adds a project: the path, then `tab` to the optional setup script. If `project.add` refuses it, the refusal shows under the form.
-  - To open a project opens the new-session dialog in its root. The popup gets `AGENTWS_PROJECT=<root>` in its env. `agentws tui --new-session` passes it as `Options.Project`, which has priority over the last-created and launch-dir defaults.
+  - To open a project opens the new-session dialog in its root. The popup gets `CREW_PROJECT=<root>` in its env. `crew tui --new-session` passes it as `Options.Project`, which has priority over the last-created and launch-dir defaults.
   - Tests: `go test ./internal/tui/ -run Project`.
 - **Tabs.** A selected session can have its strip in a project worktree (`domain.TabHome`: a worktree that it holds, or the worktree that it is a tab of). Such a session adds a tab line under its facts line: `[1 ○ claude]  2 shell  3 ✳ codex`. The line comes from `domain.WorktreeTabs`, and the bracketed tab comes from `State.active_tabs`.
   - A click on a tab calls `tab.show`. `[`/`]` call `tab.step`.
@@ -53,13 +53,13 @@ The left pane of the client layout runs `agentws tui`, 48 columns wide. When the
   - After `domain.ReconnectDelay` (500 ms, doubled each time to 5 s), it dials again in a command (`Options.Redial`, `tui.Redialer`). This is two `rpc.Dial`s and a `subscribe`, never a daemon start. The `tui` package cannot exec.
   - The second line shows the try number and the seconds until the next try.
   - A daemon of the same build replaces the state. The TUI follows its diffs (`listen`, one command for each diff), and all ports in `Options` move to the new connection.
-  - A `version_mismatch` stops the retries and shows `agentws was upgraded`. With `Options.CanRestart` (only the main sidebar), `r` quits with `tui.ErrRestart`. `agentws tui` then re-execs itself and gets the installed binary.
+  - A `version_mismatch` stops the retries and shows `crew was upgraded`. With `Options.CanRestart` (only the main sidebar), `r` quits with `tui.ErrRestart`. `crew tui` then re-execs itself and gets the installed binary.
   - Popups (`--new-session`, `--setup`) do not dial again. Tests: `go test ./internal/tui/ -run 'Reconnect|Disconnected|AnotherBuild'` and `test/e2e/testdata/script/tui_reconnect.txtar`.
 - Other keys: `n` new session (popup through `client.popup`, ADR 0037), `enter` focus, `x` then `y` end, `u` resume an ended session (a picker, most recently active first), `m` mute, `R` rename and pin, `A` unpin, `a` run an automation (pick it with `j`/`k`, `enter`, then type the context and `enter`), `P` projects, `r` review, `w` worktrees and disk, `t` shell, `T` shell popup, `s` focus the shell, `e` nvim, `S` setup walkthrough. `ctrl+\` (`tmux.FocusSidebarKey`) returns to the sidebar from an agent pane ([ADR 0025](../../docs/adr/0025-focus-return-key.md)).
 
 ## Config
 
-Colors are Catppuccin Latte. You can override each key in the `[theme]` table of `$AGENTWS_HOME/config.toml` (`text`, `subtext`, `overlay`, `surface`, `mantle`, `base`, `blue`, `peach`, `green`, `red`, `teal`, `mauve`, `selected`, `added_bg`, `deleted_bg`). The TUI reads it one time at startup. Review syntax colors come from the same keys. The same file holds `[defaults.claude]`, `[defaults.codex]` and `[defaults.omp]` tables with `model` and `effort`. These are the start values for the new-session dialog (`tui.LoadDefaults`).
+Colors are Catppuccin Latte. You can override each key in the `[theme]` table of `$CREW_HOME/config.toml` (`text`, `subtext`, `overlay`, `surface`, `mantle`, `base`, `blue`, `peach`, `green`, `red`, `teal`, `mauve`, `selected`, `added_bg`, `deleted_bg`). The TUI reads it one time at startup. Review syntax colors come from the same keys. The same file holds `[defaults.claude]`, `[defaults.codex]` and `[defaults.omp]` tables with `model` and `effort`. These are the start values for the new-session dialog (`tui.LoadDefaults`).
 
 ## Mouse
 
@@ -74,7 +74,7 @@ Colors are Catppuccin Latte. You can override each key in the `[theme]` table of
   - Task headers own `h:` rows, so a right-click on them does nothing.
   - Tests: `go test ./internal/tui/ -run ContextMenu`.
 - Tests: `go test ./internal/tui/ -run Mouse -bench Mouse`. For a test by hand:
-  1. Run `agentws tui` in a pane of a throwaway `tmux -L x` server, with a temp `AGENTWS_HOME` and `AGENTWS_TMUX_SOCKET`.
+  1. Run `crew tui` in a pane of a throwaway `tmux -L x` server, with a temp `CREW_HOME` and `CREW_TMUX_SOCKET`.
   2. Send SGR mouse sequences with `send-keys -l` (`\e[<0;COL;ROWM`, then the same sequence that ends in `m`).
 
 ## Review viewer

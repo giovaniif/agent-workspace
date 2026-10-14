@@ -2,7 +2,7 @@
 
 ## Hooks
 
-`agentws setup codex` merges one group for each event into `$CODEX_HOME/hooks.json` (default `~/.codex`). Each group runs `agentws hook --harness codex --event <Name>`.
+`crew setup codex` merges one group for each event into `$CODEX_HOME/hooks.json` (default `~/.codex`). Each group runs `crew hook --harness codex --event <Name>`.
 
 | Codex hook | Event | State |
 |---|---|---|

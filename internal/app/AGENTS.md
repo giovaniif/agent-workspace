@@ -11,9 +11,9 @@ Use cases and the ports they need. This package depends only on `domain`. Tests 
 `app.Cleanup` does these steps:
 
 1. It makes the plan.
-2. It backs up `backup_then_ask` worktrees under `$AGENTWS_HOME/backups/<ts>/<name>/`.
+2. It backs up `backup_then_ask` worktrees under `$CREW_HOME/backups/<ts>/<name>/`.
 3. It checks lsof and the git facts again.
-4. It renames `remove` worktrees into `$AGENTWS_HOME/trash/`.
+4. It renames `remove` worktrees into `$CREW_HOME/trash/`.
 5. It runs `git worktree prune` for each repo.
 
 A background job empties the trash, 4 at a time. Cleanup never deletes branches. A detached HEAD with commits that are not in the default branch first gets `backup/wt-<name>`. `RemoveWorktree` does the `d`/`b` of the disk view. Each change here needs tests for the never-destroy cases in the root rules. See [ADR 0021](../../docs/adr/0021-worktree-cleanup.md).

@@ -4,7 +4,7 @@ This package holds the protocol types (`protocol.go`) and the client. The TUI, t
 
 ## Protocol
 
-The transport is a Unix socket at `$AGENTWS_HOME/agentws.sock`. It carries one JSON object per line, at most 16 MiB. Each message has `"v":1`.
+The transport is a Unix socket at `$CREW_HOME/agentws.sock`. It carries one JSON object per line, at most 16 MiB. Each message has `"v":1`.
 
 ```
 → {"v":1,"id":1,"method":"status"}
@@ -30,7 +30,7 @@ The transport is a Unix socket at `$AGENTWS_HOME/agentws.sock`. It carries one J
 
 ## Build handshake
 
-Each RPC request and response contains the build (`version.String()`). The daemon refuses a request from a different build. A client refuses a daemon that gives no build. Both use `version_mismatch`, which tells which side to restart (the older one). `status`, `hook` and `statusline` answer all builds. Thus `agentws daemon stop` always gets to a stale daemon. See [ADR 0039](../../docs/adr/0039-dev-loop-and-build-handshake.md).
+Each RPC request and response contains the build (`version.String()`). The daemon refuses a request from a different build. A client refuses a daemon that gives no build. Both use `version_mismatch`, which tells which side to restart (the older one). `status`, `hook` and `statusline` answer all builds. Thus `crew daemon stop` always gets to a stale daemon. See [ADR 0039](../../docs/adr/0039-dev-loop-and-build-handshake.md).
 
 ## Methods
 
@@ -68,9 +68,9 @@ Each RPC request and response contains the build (`version.String()`). The daemo
 - `session.options` (`{}` → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort","default_model","default_effort"}],"home"}`) tells what a new-session form offers. `home` is the home folder of the server, so a client can read a typed `~/` or relative path.
   - `default_model` and `default_effort` tell what "default" means for the harness: the value in the config of the harness (`~/.claude/settings.json` `model`/`effortLevel`, `~/.codex/config.toml` `model`/`model_reasoning_effort`), else the built-in default of `domain.HarnessSpec` (`domain.ResolveDefault`). They are absent when neither is known (omp). Clients show `default (<value>)` (`domain.DefaultLabel`).
   - There is one entry for each registered harness, in `domain.Harnesses()` order. Each entry has its `domain.Spec` models and efforts.
-  - `model` and `effort` come from `[defaults.<harness>]` in `$AGENTWS_HOME/config.toml` (`daemon.LoadStartDefaults`). The daemon reads them at start and again after each `config.set`. They are empty when unset.
+  - `model` and `effort` come from `[defaults.<harness>]` in `$CREW_HOME/config.toml` (`daemon.LoadStartDefaults`). The daemon reads them at start and again after each `config.set`. They are empty when unset.
   - The new-session sheet of the Mac app uses it, because the app cannot read the config of a remote server.
-- `config.get` (`{}` → `{"path","values":{"<table>.<key>":"<value>"}}`) and `config.set` (`{"key","value"}` → the same) work on the settings in `$AGENTWS_HOME/config.toml` that clients can change.
+- `config.get` (`{}` → `{"path","values":{"<table>.<key>":"<value>"}}`) and `config.set` (`{"key","value"}` → the same) work on the settings in `$CREW_HOME/config.toml` that clients can change.
   - `domain.ConfigKeys` lists them: `fallback.threshold`, `push.away_after`, `defaults.<harness>.model`/`effort`, `theme.<colour>`.
   - Values are strings. Unset keys are absent.
   - `config.set` validates with `domain.ConfigLiteral` (else `bad_request`). An empty value removes the key. See [internal/daemon/](../daemon/AGENTS.md#config).
@@ -114,7 +114,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
 - `client.native` `{"cols","rows"}` returns `{"argv","session","panes"}` for the Mac app (ADR 0049).
   - `argv` attaches a tmux control-mode client (`tmux -L <socket> -f <conf> -C attach-session -t =<session>`) to its own session.
   - `panes` lists each parked agent or shell pane as `{"pane","window","session_id","cols","rows"}`. It also gives the mode flags that a new client does not see in the stream (`mouse_any`, `mouse_button`, `mouse_standard`, `mouse_sgr`, `alternate`, `cursor_visible`, `cursor_keys`).
-  - `session_id` is the agentws session that owns the pane. It is empty for a shell.
+  - `session_id` is the crew session that owns the pane. It is empty for a shell.
   - A size less than 1 is `bad_request`. No terminal host is `unavailable`.
   - Tests: `go test -tags integration ./internal/adapters/tmux/ ./internal/daemon/ -run Native`.
 - Pairing (ADR 0046):
@@ -156,7 +156,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - Paging pairs a call with a result on a newer page (up to 1 MiB ahead), so pages never repeat an `id`. A result whose call is on an older page is not a separate message.
   - `turn` can be empty for messages before the user message of their turn, when the page starts in the middle of a turn.
 - Tabs of a project worktree: `tab.new`, `tab.show`, `tab.step` and `tab.close` (`rpc.TabParams` → `domain.Tab`). See [internal/daemon/](../daemon/AGENTS.md#tabs). `State.shell_tabs` and `State.active_tabs` (worktree → tab ID) carry them to late subscribers. A diff sets `shell_tab`, `removed_shell_tab` (an ID) or `active_tab` (`{"worktree","tab"}`).
-- `debug.seed` `{"count":N}` adds N fake sessions for manual tests. `agentws debug seed N` calls it.
+- `debug.seed` `{"count":N}` adds N fake sessions for manual tests. `crew debug seed N` calls it.
 - Error codes:
   - `unsupported_version`: a missing or different `v`.
   - `unknown_method`.
@@ -173,4 +173,4 @@ Each RPC request and response contains the build (`version.String()`). The daemo
 - `TranscriptPage(ctx, session, before, limit)` returns a `TranscriptPage`.
 - `WatchTranscript(ctx, session, after)` returns a `TranscriptWatch` with the initial `Messages` and an `Events` channel of `TranscriptEvent`. The channel closes after a `Closed` event, when the connection ends, or when `ctx` is cancelled. A cancel also sends `transcript.unwatch`.
 - `Subscribe` returns the `State` and a `Diffs` channel that closes when the connection ends. Its diffs share the reader of the connection. Thus a slow consumer must use its own `Client`.
-- `rpc` cannot exec, so the caller supplies `start` (`cmd/crew` starts `agentws daemon`).
+- `rpc` cannot exec, so the caller supplies `start` (`cmd/crew` starts `crew daemon`).

@@ -1,4 +1,4 @@
-# agentws for macOS: UX design
+# crew for macOS: UX design
 
 Status: draft, 2026-10-06. Mockups: the "agentws for macOS" design canvas. Architecture: [ADR 0049](adr/0049-macos-app.md).
 
@@ -102,7 +102,7 @@ A separate window (⇧⌘W) with three tabs: Worktrees, Ports, Recently cleaned.
 
 Settings tabs (screens 7a–7f):
 
-- **General:** open at login, server to connect at launch, menu bar and Dock (what the icon and badge count), ended sessions shown, confirm on end, show worktrees and subagents, the `agentws` CLI on PATH, updates.
+- **General:** open at login, server to connect at launch, menu bar and Dock (what the icon and badge count), ended sessions shown, confirm on end, show worktrees and subagents, the `crew` CLI on PATH, updates.
 - **Servers:** below.
 - **Workspaces** (per server): repos discovered, worktree location, auto-cleanup and its interval, setup recipes per repo (`.agentws.toml`).
 - **Agents** (per server): Claude Code and Codex install, hooks (with backup, removable), status line, Codex trust, default model and effort; quota warning threshold, Codex fallback offer, stale-limit age; nvim and its plugin.
@@ -118,16 +118,16 @@ A six-step window on first launch. The same steps run again from Settings › Se
 
 1. **Welcome.**
 2. **Where agents run:** This Mac, or a server over SSH.
-3. **Server:** the hosts from `~/.ssh/config`, or a `user@host` that you type. The app tests with `ssh -o BatchMode=yes`, so it needs key or agent login (Tailscale SSH also works). It never asks for a password or stores one. It reports the OS, the architecture, and if `agentws` is installed, at which build.
+3. **Server:** the hosts from `~/.ssh/config`, or a `user@host` that you type. The app tests with `ssh -o BatchMode=yes`, so it needs key or agent login (Tailscale SSH also works). It never asks for a password or stores one. It reports the OS, the architecture, and if `crew` is installed, at which build.
 4. **Set up the server,** all in the user's account with no sudo:
-   - install the `agentws` build matching the app into `~/.local/bin`;
+   - install the `crew` build matching the app into `~/.local/bin`;
    - run the daemon as a `systemd --user` service (a launchd agent on a Mac server) with the PATH of the login shell, so that it continues after the SSH connection ends. A daemon that starts through a bare `ssh -T` gives each agent pane a PATH without login settings;
    - check `git`, `tmux` and `gh` (and that `gh` is signed in);
    - install the Claude Code and Codex hooks through the existing walkthrough methods (`onboarding.status` and `onboarding.install`), with a backup. Codex is optional.
 5. **Workspace:** a path on the server. Type it, or browse for it through SSH. The app shows if it is a single repo or an orchestration root, and how many existing worktrees it will adopt (`workspace.add`).
-6. **Done:** a summary, the notification permission prompt, and a reminder that `ssh -t host agentws` opens the TUI on the same sessions.
+6. **Done:** a summary, the notification permission prompt, and a reminder that `ssh -t host crew` opens the TUI on the same sessions.
 
-For "This Mac", steps 3–4 become: link the bundled `agentws` into `/usr/local/bin`, start the daemon as a launchd agent, check the tools, install the hooks.
+For "This Mac", steps 3–4 become: link the bundled `crew` into `/usr/local/bin`, start the daemon as a launchd agent, check the tools, install the hooks.
 
 ## Keyboard map
 
@@ -157,12 +157,12 @@ In a focused terminal, all keys except ⌘ shortcuts go to the pane. Thus agents
 
 [ADR 0049](adr/0049-macos-app.md) gives these decisions:
 
-- one stdio transport (`agentws rpc`, locally or through `ssh -T`)
+- one stdio transport (`crew rpc`, locally or through `ssh -T`)
 - derived values from Go through `view.subscribe`
 - terminals through tmux control mode (after a spike)
 - highlighting tokens from the Go side
 - `client.viewing` for presence
-- a server setup that installs the `agentws` build of the app.
+- a server setup that installs the `crew` build of the app.
 
 ## Delivery order
 

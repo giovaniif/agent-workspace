@@ -17,7 +17,7 @@ The native Mac app ([ADR 0049](../docs/adr/0049-macos-app.md), UX in [docs/macos
   - `CREW_APP_BINARIES` points to a directory with `<os>_<arch>/crew` for `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`. `build-app` copies them into `Contents/Resources/bin/<os>_<arch>/crew`. Without it, the app has no bundled `crew`. This is correct for local UI work.
 - App icon: `AppIcon.png` (1024 px) comes from `web/public/icon.svg`. `npm run icons` in `web/` makes it again. `build-app` makes `Contents/Resources/AppIcon.icns` from it with `sips` and `iconutil` (16 px to 1024 px, with `@2x`). `CFBundleIconFile` in `Info.plist` points to it.
 - Menu bar icon: `build-app` copies `docs/images/brand/crewTemplate.png` and `crewTemplate@2x.png` into `Contents/Resources`. `MenuLabel` shows them as a template image, so macOS tints them for the menu bar. Without them, it shows an SF Symbol.
-- First launch after the rename: `DefaultsMigration.run` copies the `UserDefaults` of the old domain `dev.agentws.app` (servers, settings, shortcuts, browser profiles) one time. A key that the new domain has already stays. `CLILink.adoptLegacy` points an `/usr/local/bin/agentws` link that an old app made (into an `.app` bundle) at the bundled `crew`. It never changes a different link or file.
+- First launch after the rename: `DefaultsMigration.run` copies the `UserDefaults` of the old domain `dev.crew.app` (servers, settings, shortcuts, browser profiles) one time. A key that the new domain has already stays. `CLILink.adoptLegacy` points an `/usr/local/bin/agentws` link that an old app made (into an `.app` bundle) at the bundled `crew`. It never changes a different link or file.
 - `build-dmg [out]`: wraps `build/crew.app` and an `/Applications` link into an unsigned DMG (default `build/crew.dmg`, volume name crew). The DMG uses the same icon as its volume icon (`.VolumeIcon.icns`).
 
 ## Release
@@ -85,8 +85,8 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - ↑/↓ move the highlight. ⇥ or → opens the highlighted folder (it appends `name/`). ↩ adds the workspace. When the last segment is not empty and a suggestion is highlighted, ↩ first completes the path to that suggestion (`submit`). When the path does not exist, ↩ does nothing and the `no such folder` line stays.
   - `status` is the line under the box: the resolved path and `single repo`, `orchestration root · N repos`, `worktree`, `folder` or `no such folder`.
   - Test: `swift test --filter WorkspacePath`.
-- Build (`Build.swift`): `Build.read(binary:)` runs `<binary> version --build`. The result is the exact string that the daemon compares in the handshake. The app reads it from the `agentws` that it talks to, in this order:
-  1. `$CREW_BINARY`, else `$AGENTWS_BINARY`
+- Build (`Build.swift`): `Build.read(binary:)` runs `<binary> version --build`. The result is the exact string that the daemon compares in the handshake. The app reads it from the `crew` that it talks to, in this order:
+  1. `$CREW_BINARY`, else `$CREW_BINARY`
   2. the bundled `Contents/Resources/bin/darwin_<arch>/crew` (`Build.binary`)
   3. `crew` on `PATH`.
 
@@ -172,7 +172,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - While `agentControl` is on, the tab shows "An agent controls this tab" and a Take over button.
   - Test: `swift test --filter Browser`. `SnapshotTests` draws `browser-latte`, `browser-mocha` and `browser-iphone`.
 - Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/crew/](../cmd/crew/AGENTS.md)):
-  - `BrowserLink` keeps its own `agentws rpc` process. It sends `browser.attach`, then runs each `browser` call that the daemon pushes and answers with `browser.reply`. After a drop, it connects again by `Backoff`. A `version_mismatch` stops it.
+  - `BrowserLink` keeps its own `crew rpc` process. It sends `browser.attach`, then runs each `browser` call that the daemon pushes and answers with `browser.reply`. After a drop, it connects again by `Backoff`. A `version_mismatch` stops it.
   - `BrowserStep.of` changes a call into one step: a load, a page script, a poll, a sleep, a screenshot, the tabs, the cookies or a device. A bad call is a `BrowserRefusal`.
   - The page scripts (`BrowserScript`) get their values as arguments of `callAsyncJavaScript`, never in the source. `snapshot` marks each element that it lists with `data-agentws-ref`. `click`, `fill` and `wait @eN` find the element by this mark.
   - `BrowserPolicy` is the navigation policy of ADR 0051. `AgentGuard` applies it to each navigation, redirect and frame while an agent controls the tab. Before `snapshot`, `screenshot` and the other scripts, the driver checks the current address and the frames of the tab again.
@@ -199,7 +199,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - A `stale` or `not_found` answer clears the card and the banner, and shows "That prompt is gone; nothing was sent."
     - Allow is the first choice. Always is the next choice that starts with "Yes".
   - `AttentionMenu` supplies the menu bar extra (Needs you, Done · unread, Working, quota meters) and the Dock badge (sessions that need you).
-  - `BridgeAgents` finds `~/Library/LaunchAgents/dev.crew.bridge.*.plist` (and `dev.agentws.bridge.*.plist` that `crew setup` did not move yet) and builds `agentws setup bridge --remove <host>`. The menu offers it only for a bridge to the server that the app talks to.
+  - `BridgeAgents` finds `~/Library/LaunchAgents/dev.crew.bridge.*.plist` (and `dev.crew.bridge.*.plist` that `crew setup` did not move yet) and builds `crew setup bridge --remove <host>`. The menu offers it only for a bridge to the server that the app talks to.
   - The app starts the store, notifier and stream from the menu bar label. Thus all of it works when all windows are closed.
   - Without permission, `UserNotifier` works with less function (ad-hoc signed, not notarized, or run outside the bundle). `problem` tells why, and the menu and badge still work.
   - `swift test --filter Attention` runs the suite.
@@ -218,14 +218,14 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - The probe prints `uname -s`/`-m`, user, home, the installed build (`~/.local/bin/crew version --build`, else the old `~/.local/bin/agentws` on a server that runs an alpha) and `setup daemon --check`. It also prints which of git, tmux and gh exist, and if gh is signed in.
   - `setUp` does these steps:
     1. It copies the bundled `Contents/Resources/bin/<os>_<arch>/crew` through the stdin of the same ssh to a temp file in `~/.local/bin`.
-    2. It `mv`s the file into place as `crew` (atomic), and makes `~/.local/bin/agentws` a symlink to it. An old `agentws` binary there goes away. If the build already matches, it skips this, so a second run changes nothing.
-    3. It runs `crew setup daemon`. This also runs the migration from agentws (see [cmd/crew/](../cmd/crew/AGENTS.md)).
+    2. It `mv`s the file into place as `crew` (atomic), and makes `~/.local/bin/agentws` a symlink to it. An old `crew` binary there goes away. If the build already matches, it skips this, so a second run changes nothing.
+    3. It runs `crew setup daemon`. This also runs the migration from crew (see [cmd/crew/](../cmd/crew/AGENTS.md)).
     4. If it replaced the binary of a running daemon, it restarts the service (`systemctl --user restart crew-daemon.service`, or `launchctl kickstart -k` of `dev.crew.daemon` on a Mac). It never stops the service, so tmux sessions continue.
   - `Checklist.items` changes the probe into the rows of the Servers tab, with fix-its: Set up, Update server, the linger command `sudo loginctl enable-linger <user>`, `ssh -t <host> gh auth login`.
   - Each row of the workspace step has Remove (also in its context menu). `WorkspaceRemoval` gives the confirmation: it says that no files, worktrees or branches are deleted, and it names the live sessions whose `Dir` is in the workspace. The new-session sheet has "Manage workspaces…", which opens Settings › Workspaces (the Settings tab is stored in `settings.tab`). Test: `swift test --filter WorkspaceRemoval`.
   - Hooks and the workspace step use `ServerSettings` over the `ViewStore` of the new server. The workspace step uses the workspace path field (`ServerSettings.path`).
   - `swift test --filter Servers` runs the suite. Its fake `ssh`, `uname` and `systemctl` scripts run the remote side locally against a temp home.
-- Tests decode `internal/view/testdata/view-subscribe-*.json` (the Go goldens) and check that each non-null field round-trips. Transport tests put fake `agentws` and `ssh` scripts on `PATH`. The fake `ssh` blocks on `/dev/tty` if it does not get `BatchMode=yes`.
+- Tests decode `internal/view/testdata/view-subscribe-*.json` (the Go goldens) and check that each non-null field round-trips. Transport tests put fake `crew` and `ssh` scripts on `PATH`. The fake `ssh` blocks on `/dev/tty` if it does not get `BatchMode=yes`.
 
 ## Why no Xcode project
 

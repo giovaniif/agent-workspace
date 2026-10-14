@@ -1,6 +1,6 @@
 # Agent workspace: feature definition (v1)
 
-Status: approved 2026-09-30. `agentws` is a placeholder name.
+Status: approved 2026-09-30. `crew` is a placeholder name.
 
 One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in parallel. Each session works in its own worktree and has a PR-style review pane. The tool replaces the current tmux setup.
 
@@ -37,7 +37,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 
 - **Daemon:** owns sessions, worktrees, harness adapters, PR polling, usage data and notifications. It keeps state on disk.
 - **Harness adapters:** Claude Code, Codex and omp. Their hook events map to one state model: `running`, `waiting`, `permission`, `done`, `idle`. Claude and Codex also report the context that is left and usage limits. omp reports model and effort from its hook.
-- **Terminal host:** a separate tmux server (`tmux -L agentws`) with one pane for each agent and one for each shell. Only the adapter talks to tmux, so it is possible to replace tmux later.
+- **Terminal host:** a separate tmux server (`tmux -L crew`) with one pane for each agent and one for each shell. Only the adapter talks to tmux, so it is possible to replace tmux later.
 - **TUI:** connects to the daemon through a local socket. When you close it, the sessions continue to run. `q` and ctrl+c always close it, also when the daemon is stopped. When the daemon restarts, the sidebar connects again automatically. It never starts a daemon. After an upgrade, it tells you, and `r` restarts the daemon on the new binary.
 
 ## P0 (v1)
@@ -59,7 +59,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
   - There is no banner for the session that you view while the terminal is in front. There is a maximum of one banner for each session every 10 s.
   - The title gives the session and where it runs (`fix login · api@42-retry`).
   - The body tells what the session needs (`needs permission: Bash: npm test`, `asks: Should I keep the alias?`). Or it tells what the session did: the first line of its last message and the duration of the turn. It also tells you when the session got a usage limit or an API error.
-  - With `terminal-notifier` installed, a session keeps one banner, and a newer banner replaces it. A click on the banner focuses the terminal on that session (`agentws focus <id>`). The banner disappears when the session resumes or gets focus.
+  - With `terminal-notifier` installed, a session keeps one banner, and a newer banner replaces it. A click on the banner focuses the terminal on that session (`crew focus <id>`). The banner disappears when the session resumes or gets focus.
 - An unread marker stays until you view the session. Waiting sessions move to the top.
 - Claude and Codex notify on the same events.
 
@@ -69,7 +69,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 - Change the model or effort of a session with one key. Each harness has its own defaults.
 
 **Worktrees**
-- Each workspace has its own worktree location. For an orchestration root, the default is `<root>/.worktrees/<repo>-<task>[-<subtask>]`. Existing skills and memory already use this convention. For a single repo, the default is `~/.agentws/worktrees/<repo>/<task>[-<subtask>]`.
+- Each workspace has its own worktree location. For an orchestration root, the default is `<root>/.worktrees/<repo>-<task>[-<subtask>]`. Existing skills and memory already use this convention. For a single repo, the default is `~/.crew/worktrees/<repo>/<task>[-<subtask>]`.
 - The tool attaches each worktree that an agent creates to that session. To find them, it uses a hook that runs after `git worktree add`, and it polls `git worktree list`. Subagent worktrees (`.claude/worktrees/agent-*`) attach to the parent session.
 - Each repo has a setup recipe, for example: copy an env template and run `bun install`. Worktrees share dependencies through APFS clones or hardlinks. A worktree never gets a fresh install.
 - The tool decides cleanup for each worktree, not for each task or session. In a session with 4 PRs, each worktree is removed when its own PR merges.
@@ -99,7 +99,7 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
   - review-bot comments since the last push
   - unresolved threads and merge readiness.
 
-  `agentws pr <session> [--json]` shows it. babysit-pr reads it, and does not poll `gh` (see ADR 0024).
+  `crew pr <session> [--json]` shows it. babysit-pr reads it, and does not poll `gh` (see ADR 0024).
 - A subagent tree for each session under its sidebar row, from the subagent hooks of the harness. Only Claude has it today. There are no stop and steer controls, because no harness gives them for each subagent (see ADR 0019).
 - When the Claude quota is low, offer to start the new session in Codex.
 - Mouse:
@@ -107,13 +107,13 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
   - Click key hints and buttons, select from lists, open review files, put the review cursor or drag a range, and scroll with the wheel.
   - In tmux, a click focuses a pane, a drag on a border resizes, and the wheel scrolls the agent history.
   - Shift-drag (Option in some macOS terminals) keeps the selection of the terminal. `[ui] mouse = false` disables all mouse support (see ADR 0042).
-- A first-run walkthrough: select Claude, Codex or both. See the hook state of each, and install it with a backup. Do the trust step of Codex, and get the nvim snippet for the installed plugin. `S` or `agentws setup` opens it again (see ADR 0040).
+- A first-run walkthrough: select Claude, Codex or both. See the hook state of each, and install it with a backup. Do the trust step of Codex, and get the nvim snippet for the installed plugin. `S` or `crew setup` opens it again (see ADR 0040).
 
 ## P2
 
 - Native macOS client.
-- A phone app: a PWA that `agentws serve` serves (see ADR 0046). It lists sessions, chats with them, starts new ones and gets push notifications. It uses the network path that the user selects.
-  - While you type in an attached `agentws` tmux client, the tool holds pushes (`[push] away_after`, default 2 minutes, `"0"` disables it).
+- A phone app: a PWA that `crew serve` serves (see ADR 0046). It lists sessions, chats with them, starts new ones and gets push notifications. It uses the network path that the user selects.
+  - While you type in an attached `crew` tmux client, the tool holds pushes (`[push] away_after`, default 2 minutes, `"0"` disables it).
   - If you leave and a session still needs you, the tool sends the push one time.
   - A device with the app open on screen gets no push.
 - Compare the attempts of two agents at the same task, side by side.
@@ -128,5 +128,5 @@ One terminal tool that runs Claude Code, Codex and Oh My Pi (`omp`) sessions in 
 Stack and architecture are decided in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 
-- Product name (`agentws` is a placeholder).
+- Product name (`crew` is a placeholder).
 - Do we port the existing `~/.tmux/agent-hooks` scripts, or do the adapters replace them?
