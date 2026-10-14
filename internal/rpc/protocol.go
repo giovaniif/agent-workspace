@@ -560,4 +560,4 @@ func DefaultHome(user string) string {
 	return domain.ResolveHome(domain.HomeFacts{User: user, NewExists: err == nil, OldDir: oldErr == nil && old.IsDir()})
 }
 
-func SocketPath(home string) string { return filepath.Join(home, "agentws.sock") }
+func ListenPath(home string) string { return filepath.Join(home, "crew.sock") }

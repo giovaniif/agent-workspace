@@ -12,8 +12,8 @@ import (
 
 var ErrAlreadyRunning = errors.New("already running")
 
-func LockPath(home string) string { return filepath.Join(home, "agentws.lock") }
-func PIDPath(home string) string  { return filepath.Join(home, "agentws.pid") }
+func LockPath(home string) string { return filepath.Join(home, "crew.lock") }
+func PIDPath(home string) string  { return filepath.Join(home, "crew.pid") }
 
 type Lock struct {
 	file *os.File
@@ -38,6 +38,9 @@ func Acquire(home string) (*Lock, error) {
 		}
 		return nil, err
 	}
+	if err := holdLegacyLock(home, f); err != nil {
+		return nil, err
+	}
 	if err := os.WriteFile(PIDPath(home), []byte(strconv.Itoa(os.Getpid())+"\n"), 0o600); err != nil {
 		_ = f.Close()
 		return nil, err
@@ -55,7 +58,7 @@ func (l *Lock) Release() error {
 }
 
 func ReadPID(home string) (int, bool) {
-	b, err := os.ReadFile(PIDPath(home))
+	b, err := readPIDFile(home)
 	if err != nil {
 		return 0, false
 	}

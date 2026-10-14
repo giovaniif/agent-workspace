@@ -17,6 +17,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
 	"github.com/giovaniif/crew/internal/app"
 	"github.com/giovaniif/crew/internal/domain"
 )
@@ -27,7 +28,7 @@ var (
 	_ app.CommandRunner = Shell{}
 )
 
-const recipeFile = ".agentws.toml"
+const recipeFile = domain.RepoConfigFile
 
 type Recipes struct{}
 
@@ -41,6 +42,7 @@ type recipeDoc struct {
 }
 
 func (Recipes) Load(repoDir string) (domain.Recipe, bool, error) {
+	wsfs.AdoptRepoConfig(repoDir)
 	file := filepath.Join(repoDir, recipeFile)
 	data, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {

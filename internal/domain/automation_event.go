@@ -95,7 +95,7 @@ func MatchAutomationEvent(a Automation, ev AutomationEvent) bool {
 	if !a.Enabled || !slices.Contains(a.On, ev.Name) {
 		return false
 	}
-	if filepath.Base(a.Source) == ".agentws.toml" && filepath.Dir(a.Source) != ev.Repo {
+	if filepath.Base(a.Source) == RepoConfigFile && filepath.Dir(a.Source) != ev.Repo {
 		return false
 	}
 	f := a.Filter

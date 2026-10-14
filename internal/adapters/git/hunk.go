@@ -24,7 +24,7 @@ func (Review) Revert(ctx context.Context, dir, patch string) error {
 	if err := apply(ctx, dir, patch, "-R", "--check"); err != nil {
 		return err
 	}
-	out, err := output(ctx, dir, "rev-parse", "--path-format=absolute", "--git-path", "agentws/reverted")
+	out, err := output(ctx, dir, "rev-parse", "--path-format=absolute", "--git-path", "crew/reverted")
 	if err != nil {
 		return err
 	}
