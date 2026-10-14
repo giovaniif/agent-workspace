@@ -12,7 +12,7 @@ public struct LiveSettings: View {
     private let servers: ServerList?
     private let setup: ServerSetup?
     @Environment(\.openWindow) private var openWindow
-    @State private var tab = SettingsTab.general
+    @AppStorage("settings.tab") private var tab = SettingsTab.general
     @State private var refusal: String?
     @State private var localNotice: String?
     @State private var localError: String?
