@@ -307,6 +307,16 @@ struct AttentionTests {
         #expect(BridgeAgent(label: "l", host: "h", remoteBinary: nil).removeArgv(binary: "agentws") == ["agentws", "setup", "bridge", "--remove", "h"])
     }
 
+    @Test func crewAndNotYetMovedAgentwsBridgesAreBothFound() throws {
+        let bin = try FakeBin()
+        for label in ["dev.crew.bridge.new", "dev.agentws.bridge.old"] {
+            let plist: [String: Any] = ["Label": label, "ProgramArguments": ["/usr/local/bin/crew", "notify", "bridge", String(label.split(separator: ".").last!)]]
+            let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+            try data.write(to: bin.dir.appendingPathComponent(label + ".plist"))
+        }
+        #expect(BridgeAgents.find(in: bin.dir).map(\.host).sorted() == ["new", "old"])
+    }
+
     @Test func noLaunchAgentsFolderMeansNoBridge() {
         #expect(BridgeAgents.find(in: URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")).isEmpty)
     }

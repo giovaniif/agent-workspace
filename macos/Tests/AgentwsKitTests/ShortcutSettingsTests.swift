@@ -88,7 +88,7 @@ struct ShortcutSettingsTests {
         }
         try shortcuts.assign(KeyCombo("space", [.command, .shift]), to: .review)
         try shortcuts.assign(KeyCombo("é", [.command]), to: .inspector)
-        #expect(ShortcutRefusal.unsupportedKey.message(for: KeyCombo("ab", [.command])) == "⌘AB is not a key agentws can bind")
+        #expect(ShortcutRefusal.unsupportedKey.message(for: KeyCombo("ab", [.command])) == "⌘AB is not a key crew can bind")
     }
 
     @Test func reassigningAnActionToItsOwnKeyOrClearingItIsAllowed() throws {

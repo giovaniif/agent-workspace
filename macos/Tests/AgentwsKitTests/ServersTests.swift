@@ -70,7 +70,7 @@ struct FakeServer {
         try bin.write("unit", "")
     }
 
-    var remoteBinary: String { home + "/.local/bin/agentws" }
+    var remoteBinary: String { home + "/.local/bin/crew" }
 
     var remoteBuild: String? {
         guard let text = try? String(contentsOfFile: remoteBinary, encoding: .utf8) else { return nil }
@@ -138,13 +138,13 @@ struct ServersTests {
         #expect(items["tmux"]?.state == .failed)
         #expect(items["gh"]?.state == .warning)
         #expect(items["gh"]?.command == "ssh -t 'box' gh auth login")
-        #expect(items["agentws"]?.state == .failed)
-        #expect(items["agentws"]?.fix == "Set up")
+        #expect(items["crew"]?.state == .failed)
+        #expect(items["crew"]?.fix == "Set up")
     }
 
     @Test func aServerOnAnotherBuildOffersTheUpdate() {
         let probe = Probe.parse("kernel=Linux\nmachine=x86_64\nuser=me\nbuild=v1.1.0 old\ndaemon={\"installed\":true,\"running\":true,\"linger\":true}\n")
-        let item = Checklist.items(server: .ssh(host: "box"), probe: probe, appBuild: "v1.2.0 abc").first { $0.id == "agentws" }
+        let item = Checklist.items(server: .ssh(host: "box"), probe: probe, appBuild: "v1.2.0 abc").first { $0.id == "crew" }
         #expect(item?.state == .warning)
         #expect(item?.fix == "Update server")
     }
@@ -162,6 +162,7 @@ struct ServersTests {
         #expect(setup.lingerCommand == "sudo loginctl enable-linger \(NSUserName())")
         #expect(server.bin.read("ssh.log").split(separator: "\n").allSatisfy { $0 == "-T -o BatchMode=yes -o RemoteCommand=none -o RequestTTY=no -o ConnectTimeout=10 box" })
         #expect(server.bin.read("systemctl.log") == "")
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: server.home + "/.local/bin/agentws") == "crew")
     }
 
     @Test(.timeLimit(.minutes(1))) func reRunningSetupOnAConfiguredServerChangesNothing() async throws {
@@ -183,7 +184,8 @@ struct ServersTests {
         await setup.setUp()
         #expect(setup.error == nil)
         #expect(server.remoteBuild == "v1.2.0 abc")
-        #expect(server.bin.read("systemctl.log") == "--user restart agentws-daemon.service\n")
+        #expect(server.bin.read("systemctl.log") == "--user restart crew-daemon.service\n")
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: server.home + "/.local/bin/agentws") == "crew")
         #expect(!server.bin.read("daemon.log").contains("--remove"))
     }
 
@@ -255,7 +257,7 @@ struct ServersTests {
         #expect(flow.canGoBack)
         #expect(flow.primaryTitle == "Continue")
         flow.step = .done
-        #expect(flow.primaryTitle == "Open agentws")
+        #expect(flow.primaryTitle == "Open crew")
     }
 
     @Test func aStepIsCompleteOnceTheFlowHasPassedIt() {
