@@ -20,7 +20,7 @@ func TestNotifyTerminalNotifierGroupsAndFocusesOnClick(t *testing.T) {
 	want := []string{"/opt/bin/terminal-notifier",
 		"-title", "fix login", "-message", "needs permission: Bash", "-group", "s1",
 		"-sound", "Glass", "-activate", "com.mitchellh.ghostty",
-		"-execute", `AGENTWS_HOME='/tmp/it'\''s home' '/usr/local/bin/agentws' focus 's1'`,
+		"-execute", `CREW_HOME='/tmp/it'\''s home' '/usr/local/bin/agentws' focus 's1'`,
 	}
 	if len(r.calls) != 1 || !reflect.DeepEqual(r.calls[0], want) {
 		t.Fatalf("argv\n got %q\nwant %q", r.calls, want)

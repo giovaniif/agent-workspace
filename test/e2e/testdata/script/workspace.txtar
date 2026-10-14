@@ -26,13 +26,13 @@ exec agentws workspace list
 ! stdout 'shop'
 
 ! exec agentws workspace remove shop
-stderr 'agentws workspace: not_found: no workspace '
+stderr 'crew workspace: not_found: no workspace '
 
 ! exec agentws workspace add missing
-stderr '^agentws workspace: bad_request: .*missing'
+stderr '^crew workspace: bad_request: .*missing'
 
 ! exec agentws workspace
-stderr '^usage: agentws workspace <add\|list\|remove>'
+stderr '^usage: crew workspace <add\|list\|remove>'
 
 -- shop/api/.git/HEAD --
 ref: refs/heads/main

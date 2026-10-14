@@ -52,7 +52,7 @@ linters:
             - pkg: github.com/giovaniif/agent-workspace/internal
               desc: serve talks to the daemon only through rpc and may import domain types
             - pkg: os/exec
-              desc: serve runs nothing; cmd/agentws starts the daemon
+              desc: serve runs nothing; cmd/crew starts the daemon
         view:
           files:
             - "**/internal/view/**"

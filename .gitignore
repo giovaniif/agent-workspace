@@ -5,3 +5,4 @@
 /internal/serve/dist/*
 !/internal/serve/dist/index.html
 node_modules/
+/build/

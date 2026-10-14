@@ -125,7 +125,7 @@ func (d *Daemon) afterRemoval(w domain.Worktree) {
 }
 
 func DepsStorePath() string {
-	if p := os.Getenv("AGENTWS_DEPS_STORE"); p != "" {
+	if p := domain.Env(os.Getenv, "DEPS_STORE"); p != "" {
 		return p
 	}
 	home, err := os.UserHomeDir()

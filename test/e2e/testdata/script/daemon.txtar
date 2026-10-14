@@ -1,5 +1,5 @@
 exec agentws daemon start
-stdout '^agentws daemon started \(pid [0-9]+\)$'
+stdout '^crew daemon started \(pid [0-9]+\)$'
 exists $AGENTWS_HOME/agentws.pid
 
 exec agentws daemon status
@@ -9,15 +9,15 @@ stdout '^sessions 0$'
 stdout '^worktrees 0$'
 
 ! exec agentws daemon
-stderr '^agentws daemon: already running \(pid [0-9]+\)$'
+stderr '^crew daemon: already running \(pid [0-9]+\)$'
 
 exec agentws daemon start
-stdout '^agentws daemon already running \(pid [0-9]+\)$'
+stdout '^crew daemon already running \(pid [0-9]+\)$'
 
 exec agentws daemon stop
-stdout '^agentws daemon stopped \(pid [0-9]+\)$'
+stdout '^crew daemon stopped \(pid [0-9]+\)$'
 ! exec agentws daemon status
-stderr '^agentws daemon: not running$'
+stderr '^crew daemon: not running$'
 ! exists $AGENTWS_HOME/agentws.pid
 
 ! exec agentws daemon stop

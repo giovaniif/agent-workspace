@@ -4,14 +4,14 @@
 
 Tests:
 
-- `go test ./internal/serve/ ./cmd/agentws/ -run Serve`: an in-memory daemon fake in `fakes_test.go`, `httptest` and a real WebSocket client.
+- `go test ./internal/serve/ ./cmd/crew/ -run Serve`: an in-memory daemon fake in `fakes_test.go`, `httptest` and a real WebSocket client.
 - `go test -tags integration ./test/integration/ -run ServeAgainst`: a real daemon with SQLite.
 
 Golden responses are in `testdata/`. To make them again, run `go test ./internal/serve -update`, then review the diff. A changed golden is a changed API.
 
 ## Layers
 
-- depguard: from `internal/`, `internal/serve` imports only `rpc` and `domain`. It also imports the standard library and `github.com/coder/websocket`. It does not import `os/exec`. `cmd/agentws/serve.go` parses the flags and reads `[serve] url`. It passes a `Dial` that starts the daemon as the TUI does (`rpc.Connect` with `spawn`).
+- depguard: from `internal/`, `internal/serve` imports only `rpc` and `domain`. It also imports the standard library and `github.com/coder/websocket`. It does not import `os/exec`. `cmd/crew/serve.go` parses the flags and reads `[serve] url`. It passes a `Dial` that starts the daemon as the TUI does (`rpc.Connect` with `spawn`).
 - `serve.Daemon` is the part of `*rpc.Client` that serve uses (`Call`, `Subscribe`, `WatchTranscript`, `Close`). Each HTTP request dials its own connection and closes it. Each stream has its own connection. Thus a slow phone never stops the reader of a different client.
 
 ## Listening
@@ -82,7 +82,7 @@ Unknown paths under `/api/` answer `not_found`.
 2. Add one line to `Server.routes()`: a Go 1.22 pattern (`"POST /api/v1/sessions/{id}/send"`) and a `func(r *http.Request, d Daemon) (any, error)`. The routes there are authenticated. Return a value to encode, or an error (an `*rpc.Error` keeps its code). `sessionAction(method, params)` covers this case: "decode a body, add the session id, call one method, pass the result through".
 3. Add the method to `allowed` in `server_test.go`, and the endpoint to `authedEndpoints`. Then the token and allowlist tests cover it. Add a row to the table above.
 
-The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`. `Handler(nil)` serves only the API. `cmd/agentws/serve.go` passes `Static(Dist())`, the embedded PWA.
+The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`. `Handler(nil)` serves only the API. `cmd/crew/serve.go` passes `Static(Dist())`, the embedded PWA.
 
 ## The embedded web app (`static.go`)
 

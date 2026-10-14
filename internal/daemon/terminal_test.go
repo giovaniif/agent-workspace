@@ -78,7 +78,7 @@ func TestShellToggleKeepsOneShellPerSessionAndWorktree(t *testing.T) {
 	if len(specs) != 1 || specs[0].Dir != "/wt/web" || len(specs[0].Command) != 0 || !strings.HasPrefix(specs[0].Name, "shell-") {
 		t.Fatalf("shell spec = %+v; want a default shell in /wt/web", specs)
 	}
-	if specs[0].Env["AGENTWS_SESSION"] != "s1" || specs[0].Env["AGENTWS_HOME"] != r.home {
+	if specs[0].Env["CREW_SESSION"] != "s1" || specs[0].Env["CREW_HOME"] != r.home {
 		t.Fatalf("shell env = %v; want the session and home", specs[0].Env)
 	}
 	if !first.Shown || first.Pane != "%t1" || first.Dir != "/wt/web" {
@@ -224,7 +224,7 @@ func TestNvimToggleStartsAListeningNvimAndSwapsItWithTheAgent(t *testing.T) {
 	}
 	specs := r.term.createdSpecs()
 	want := app.PaneSpec{Name: "nvim-s1", Dir: "/wt/api", Command: []string{"nvim", "--listen", sock},
-		Env: map[string]string{"AGENTWS_SESSION": "s1", "AGENTWS_HOME": r.home}}
+		Env: map[string]string{"CREW_SESSION": "s1", "CREW_HOME": r.home}}
 	if len(specs) != 1 || !reflect.DeepEqual(specs[0], want) {
 		t.Fatalf("nvim spec = %+v; want %+v", specs, want)
 	}

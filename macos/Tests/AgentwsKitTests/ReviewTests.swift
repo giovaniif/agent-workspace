@@ -10,7 +10,7 @@ enum ReviewGoldens {
         .deletingLastPathComponent()
 
     static func tokens() throws -> ReviewResult {
-        let data = try Data(contentsOf: root.appendingPathComponent("cmd/agentws/testdata/review_tokens.json.golden"))
+        let data = try Data(contentsOf: root.appendingPathComponent("cmd/crew/testdata/review_tokens.json.golden"))
         return try JSONDecoder().decode(ReviewReply.self, from: data).result
     }
 

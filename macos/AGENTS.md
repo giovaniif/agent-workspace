@@ -169,7 +169,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - Fixtures are in `Tests/testdata/cookies`. `swift test --filter CookieImport` runs the suite. The Chrome tests run only on macOS.
   - While `agentControl` is on, the tab shows "An agent controls this tab" and a Take over button.
   - Test: `swift test --filter Browser`. `SnapshotTests` draws `browser-latte`, `browser-mocha` and `browser-iphone`.
-- Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/agentws/](../cmd/agentws/AGENTS.md)):
+- Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/crew/](../cmd/crew/AGENTS.md)):
   - `BrowserLink` keeps its own `agentws rpc` process. It sends `browser.attach`, then runs each `browser` call that the daemon pushes and answers with `browser.reply`. After a drop, it connects again by `Backoff`. A `version_mismatch` stops it.
   - `BrowserStep.of` changes a call into one step: a load, a page script, a poll, a sleep, a screenshot, the tabs, the cookies or a device. A bad call is a `BrowserRefusal`.
   - The page scripts (`BrowserScript`) get their values as arguments of `callAsyncJavaScript`, never in the source. `snapshot` marks each element that it lists with `data-agentws-ref`. `click`, `fill` and `wait @eN` find the element by this mark.

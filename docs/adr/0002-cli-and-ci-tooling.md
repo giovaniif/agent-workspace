@@ -4,7 +4,7 @@ Status: accepted, 2026-09-29.
 
 ## Decision
 
-- `cmd/agentws` dispatches subcommands with a plain `switch` on `os.Args`, no CLI framework, until flags get complex enough to need one.
+- `cmd/crew` dispatches subcommands with a plain `switch` on `os.Args`, no CLI framework, until flags get complex enough to need one.
 - Version and commit are injected with `-ldflags -X`. Without them, the commit falls back to the build info's `vcs.revision`.
 - Layer rules are `depguard` deny lists in `.golangci.yml`. `app` and `tui` deny the specific internal packages they must not use, rather than allow-listing, so the standard library and third-party packages stay usable.
 - The `tdd` CI job is `scripts/tdd-check`. It checks out the base branch, overlays the PR's added and modified `*_test.go` files, and runs `go test` per affected package. Any package that passes fails the job. Deleted test files are ignored.

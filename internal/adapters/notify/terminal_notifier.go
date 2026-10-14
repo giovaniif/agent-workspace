@@ -35,7 +35,7 @@ func (n TerminalNotifier) Notify(ctx context.Context, b domain.Banner) error {
 	if b.Group != "" && n.FocusCmd != "" {
 		args = append(args, "-execute", n.FocusCmd+" "+shellQuote(b.Group))
 	} else if b.Group != "" && n.Self != "" {
-		args = append(args, "-execute", "AGENTWS_HOME="+shellQuote(n.Home)+" "+shellQuote(n.Self)+" focus "+shellQuote(b.Group))
+		args = append(args, "-execute", domain.EnvName("HOME")+"="+shellQuote(n.Home)+" "+shellQuote(n.Self)+" focus "+shellQuote(b.Group))
 	}
 	_, err := n.Run(ctx, n.Bin, args...)
 	return err

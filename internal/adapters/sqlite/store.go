@@ -70,7 +70,7 @@ type Store struct {
 }
 
 func DefaultPath() (string, error) {
-	if home := os.Getenv("AGENTWS_HOME"); home != "" {
+	if home := domain.Env(os.Getenv, "HOME"); home != "" {
 		return filepath.Join(home, "state.db"), nil
 	}
 	home, err := os.UserHomeDir()

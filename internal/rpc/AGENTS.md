@@ -173,4 +173,4 @@ Each RPC request and response contains the build (`version.String()`). The daemo
 - `TranscriptPage(ctx, session, before, limit)` returns a `TranscriptPage`.
 - `WatchTranscript(ctx, session, after)` returns a `TranscriptWatch` with the initial `Messages` and an `Events` channel of `TranscriptEvent`. The channel closes after a `Closed` event, when the connection ends, or when `ctx` is cancelled. A cancel also sends `transcript.unwatch`.
 - `Subscribe` returns the `State` and a `Diffs` channel that closes when the connection ends. Its diffs share the reader of the connection. Thus a slow consumer must use its own `Client`.
-- `rpc` cannot exec, so the caller supplies `start` (`cmd/agentws` starts `agentws daemon`).
+- `rpc` cannot exec, so the caller supplies `start` (`cmd/crew` starts `agentws daemon`).

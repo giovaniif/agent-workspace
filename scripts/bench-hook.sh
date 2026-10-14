@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-bin="${1:-./bin/agentws}"
+bin="${1:-./bin/crew}"
 [ -x "$bin" ] || make build >/dev/null
 bin="$(cd "$(dirname "$bin")" && pwd)/$(basename "$bin")"
 home="$(mktemp -d /tmp/aws-bench.XXXXXX)"
-export AGENTWS_HOME="$home" TMUX_PANE="%0"
+export CREW_HOME="$home" TMUX_PANE="%0"
 trap '"$bin" daemon stop >/dev/null 2>&1 || true; rm -rf "$home"' EXIT
 
 measure() {

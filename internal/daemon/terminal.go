@@ -145,7 +145,7 @@ func (d *Daemon) livePane(ctx context.Context, panes map[string]app.PaneID, key 
 }
 
 func (d *Daemon) paneEnv(session string) map[string]string {
-	return map[string]string{"AGENTWS_SESSION": session, "AGENTWS_HOME": d.term.home}
+	return map[string]string{domain.EnvName("SESSION"): session, domain.EnvName("HOME"): d.term.home}
 }
 
 func (d *Daemon) withClient(f func(ctx context.Context, h ClientHost, slot app.Slot) error) error {

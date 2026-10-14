@@ -24,9 +24,12 @@ func TestMain(m *testing.M) {
 	}
 	build := exec.Command("go", "build",
 		"-ldflags", "-X github.com/giovaniif/agent-workspace/internal/version.Version=v0.0.0-e2e -X github.com/giovaniif/agent-workspace/internal/version.Commit=e2ecommit",
-		"-o", filepath.Join(dir, "agentws"), "../../cmd/agentws")
+		"-o", filepath.Join(dir, "crew"), "../../cmd/crew")
 	build.Stdout, build.Stderr = os.Stdout, os.Stderr
 	if err := build.Run(); err != nil {
+		os.Exit(1)
+	}
+	if err := os.Symlink("crew", filepath.Join(dir, "agentws")); err != nil {
 		os.Exit(1)
 	}
 	binDir = dir
