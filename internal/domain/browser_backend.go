@@ -186,7 +186,6 @@ func sameSite(s string) string {
 func netscapeCookies(data []byte) []BrowserCookie {
 	var out []BrowserCookie
 	sc := bufio.NewScanner(bytes.NewReader(data))
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := strings.TrimRight(sc.Text(), "\r")
 		httpOnly := false
