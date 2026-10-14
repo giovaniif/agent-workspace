@@ -10,7 +10,7 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 )
 
-func (p Probe) nvimSetupFile() string { return filepath.Join(p.NvimConfigDir, "plugin", "agentws.lua") }
+func (p Probe) nvimSetupFile() string { return filepath.Join(p.NvimConfigDir, "plugin", "crew.lua") }
 
 func (p Probe) InstallNvim(context.Context) (domain.NvimSetup, error) {
 	n := p.nvimSetup()

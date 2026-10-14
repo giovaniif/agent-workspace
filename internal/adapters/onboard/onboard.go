@@ -21,7 +21,7 @@ const doneFile = "onboarded"
 
 const maxConfigFiles = 400
 
-var mentionsPlugin = regexp.MustCompile(`require\s*\(?\s*['"]agentws['"]|agentws/nvim`)
+var mentionsPlugin = regexp.MustCompile(`require\s*\(?\s*['"]crew['"]|crew/nvim|` + legacyMention)
 
 type Probe struct {
 	Home           string
@@ -56,7 +56,6 @@ func FromEnv(home, bin string, env func(string) string) Probe {
 		NvimConfigDir:  filepath.Join(or(env("XDG_CONFIG_HOME"), filepath.Join(user, ".config")), "nvim"),
 		PluginDirs: []string{
 			filepath.Join(data, "crew", "nvim"),
-			filepath.Join(data, "agentws", "nvim"),
 			filepath.Join(filepath.Dir(filepath.Dir(bin)), "nvim"),
 		},
 		LookPath: exec.LookPath,

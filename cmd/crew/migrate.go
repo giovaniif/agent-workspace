@@ -15,6 +15,7 @@ import (
 	"github.com/giovaniif/crew/internal/adapters/claude"
 	"github.com/giovaniif/crew/internal/adapters/codex"
 	"github.com/giovaniif/crew/internal/adapters/launchd"
+	"github.com/giovaniif/crew/internal/adapters/omp"
 	"github.com/giovaniif/crew/internal/adapters/onboard"
 	"github.com/giovaniif/crew/internal/adapters/systemd"
 	"github.com/giovaniif/crew/internal/domain"
@@ -106,7 +107,10 @@ func (m migration) run(ctx context.Context) {
 	}
 	m.moveClaudeBackup()
 	m.rewriteHooks()
+	m.rewriteOmpHook()
 	m.moveNvim()
+	m.retireNvimSetupFile()
+	m.dropAliasLink()
 	for _, s := range started {
 		if ready {
 			_ = m.startService(ctx, s)
@@ -211,22 +215,63 @@ func (m migration) moveNvim() {
 		return
 	}
 	m.logf("moved %s to %s; %s links to it for one release", old, dir, old)
-	probe := onboard.FromEnv(m.newHome(), m.Self, func(k string) string {
-		if k == "HOME" {
-			return m.UserHome
-		}
-		return m.Env(k)
-	})
-	file := filepath.Join(probe.NvimConfigDir, "plugin", "agentws.lua")
-	current, err := os.ReadFile(file)
-	if err != nil || !domain.IsNvimSetupFile(string(current)) {
+}
+
+func (m migration) envWithHome(k string) string {
+	if k == "HOME" {
+		return m.UserHome
+	}
+	return m.Env(k)
+}
+
+func (m migration) retireNvimSetupFile() {
+	probe := onboard.FromEnv(m.newHome(), m.Self, m.envWithHome)
+	old := filepath.Join(probe.NvimConfigDir, "plugin", "agentws.lua")
+	current, err := os.ReadFile(old)
+	if err != nil || !domain.IsLegacyNvimSetupFile(string(current)) {
 		return
 	}
 	if _, err := probe.InstallNvim(context.Background()); err != nil {
-		m.logf("could not update %s: %v", file, err)
+		m.logf("could not replace %s: %v", old, err)
 		return
 	}
-	m.logf("pointed %s at %s", file, filepath.Join(dir, "nvim"))
+	if err := os.Rename(old, old+".bak"); err != nil {
+		m.logf("could not move %s aside: %v", old, err)
+		return
+	}
+	m.logf("replaced %s with %s (backup: %s.bak)", old, filepath.Join(probe.NvimConfigDir, "plugin", "crew.lua"), old)
+}
+
+func (m migration) rewriteOmpHook() {
+	dir, err := omp.AgentDir(m.envWithHome)
+	if err != nil || !omp.HasLegacyHook(dir) {
+		return
+	}
+	res, err := omp.Setup(omp.SetupConfig{Dir: dir, Command: m.Self})
+	if err != nil {
+		m.logf("could not replace the hook in %s: %v", omp.LegacyHookFile(dir), err)
+		return
+	}
+	m.logf("replaced the agentws hook %s with %s (backup: %s.bak)", omp.LegacyHookFile(dir), res.File, omp.LegacyHookFile(dir))
+}
+
+func (m migration) dropAliasLink() {
+	link := filepath.Join(filepath.Dir(m.Self), "agentws")
+	target, err := os.Readlink(link)
+	if err != nil {
+		return
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(link), target)
+	}
+	if filepath.Clean(target) != filepath.Clean(m.Self) {
+		return
+	}
+	if err := os.Remove(link); err != nil {
+		m.logf("could not remove the agentws link %s: %v", link, err)
+		return
+	}
+	m.logf("removed the agentws link %s", link)
 }
 
 func (m migration) serviceDir() string {

@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 )
 
-const marker = "// agentws: written by agentws setup omp; agentws setup omp --remove deletes this file."
+const marker = "// crew: written by crew setup omp; crew setup omp --remove deletes this file."
 
 var ErrNotOurs = errors.New("a file crew did not write is in the way")
 
@@ -38,7 +38,7 @@ func AgentDir(env func(string) string) (string, error) {
 	return filepath.Join(home, ".omp", "agent"), nil
 }
 
-func HookFile(dir string) string { return filepath.Join(dir, "hooks", "post", "agentws.ts") }
+func HookFile(dir string) string { return filepath.Join(dir, "hooks", "post", "crew.ts") }
 
 func Setup(cfg SetupConfig) (SetupResult, error) {
 	file := HookFile(cfg.Dir)
@@ -56,6 +56,7 @@ func Setup(cfg SetupConfig) (SetupResult, error) {
 	if err := writeAtomic(file, want); err != nil {
 		return SetupResult{File: file}, err
 	}
+	retireLegacyHook(cfg.Dir)
 	return SetupResult{Changed: true, File: file}, nil
 }
 
@@ -76,6 +77,7 @@ func Installed(cfg SetupConfig) (bool, error) {
 
 func Remove(cfg SetupConfig) (SetupResult, error) {
 	file := HookFile(cfg.Dir)
+	retired := retireLegacyHook(cfg.Dir)
 	current, exists, err := readOwned(file)
 	if err != nil {
 		return SetupResult{File: file}, err
@@ -89,7 +91,7 @@ func Remove(cfg SetupConfig) (SetupResult, error) {
 		}
 		return SetupResult{Changed: true, File: file}, nil
 	}
-	return SetupResult{File: file}, nil
+	return SetupResult{Changed: retired, File: file}, nil
 }
 
 func readOwned(file string) ([]byte, bool, error) {
@@ -132,7 +134,7 @@ func hookSource(command string) []byte {
 	slices.Sort(names)
 	return []byte(strings.NewReplacer(
 		"{{marker}}", marker,
-		"{{agentws}}", jsString(command),
+		"{{crew}}", jsString(command),
 		"{{events}}", jsList(names),
 	).Replace(hookTemplate))
 }
@@ -153,7 +155,7 @@ func jsList(items []string) string {
 const hookTemplate = `{{marker}}
 import { spawn } from "node:child_process";
 
-const agentws = {{agentws}};
+const crew = {{crew}};
 const events = {{events}};
 
 function text(message: any): string | undefined {
@@ -166,7 +168,7 @@ function text(message: any): string | undefined {
 function send(event: string, fields: Record<string, unknown>): Promise<void> {
 	return new Promise(resolve => {
 		try {
-			const child = spawn(agentws, ["hook", "--harness", "omp", "--event", event], { stdio: ["pipe", "ignore", "ignore"] });
+			const child = spawn(crew, ["hook", "--harness", "omp", "--event", event], { stdio: ["pipe", "ignore", "ignore"] });
 			child.on("error", () => resolve());
 			child.on("close", () => resolve());
 			child.stdin.on("error", () => {});

@@ -2,7 +2,7 @@
 set -eu
 
 repo=giovaniif/crew
-dir=${CREW_INSTALL_DIR:-${AGENTWS_INSTALL_DIR:-$HOME/.local/bin}}
+dir=${CREW_INSTALL_DIR:-$HOME/.local/bin}
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 case $(uname -m) in
@@ -15,8 +15,8 @@ case "$os/$arch" in
   *) echo "crew: no build for $os/$arch" >&2; exit 1 ;;
 esac
 
-tag=${CREW_VERSION:-${AGENTWS_VERSION:-}}
-if [ -z "$tag" ] && [ -n "${CREW_DOWNLOAD_BASE:-${AGENTWS_DOWNLOAD_BASE:-}}" ]; then
+tag=${CREW_VERSION:-}
+if [ -z "$tag" ] && [ -n "${CREW_DOWNLOAD_BASE:-}" ]; then
   tag=snapshot
 fi
 if [ -z "$tag" ]; then
@@ -28,7 +28,7 @@ fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 archive=crew_${os}_${arch}.tar.gz
-base=${CREW_DOWNLOAD_BASE:-${AGENTWS_DOWNLOAD_BASE:-https://github.com/$repo/releases/download/$tag}}
+base=${CREW_DOWNLOAD_BASE:-https://github.com/$repo/releases/download/$tag}
 curl -fsSL -o "$tmp/$archive" "$base/$archive"
 curl -fsSL -o "$tmp/checksums.txt" "$base/checksums.txt"
 
@@ -45,18 +45,9 @@ mkdir -p "$dir"
 chmod 755 "$tmp/crew"
 "$tmp/crew" version >/dev/null || { echo "crew: the new binary does not run" >&2; exit 1; }
 mv "$tmp/crew" "$dir/crew"
-if [ -e "$dir/agentws" ] && [ ! -L "$dir/agentws" ]; then
-  "$dir/crew" version >/dev/null && rm -f "$dir/agentws"
-fi
-ln -sfn crew "$dir/agentws"
-echo "installed crew $tag to $dir/crew ($dir/agentws links to it)"
+echo "installed crew $tag to $dir/crew"
 data=${XDG_DATA_HOME:-$HOME/.local/share}
 share=$data/crew
-if [ -d "$data/agentws" ] && [ ! -L "$data/agentws" ] && [ ! -e "$share" ]; then
-  mv "$data/agentws" "$share"
-  ln -s "$share" "$data/agentws"
-  echo "moved $data/agentws to $share; $data/agentws links to it for one release"
-fi
 mkdir -p "$share"
 rm -rf "$share/nvim"
 mv "$tmp/nvim" "$share/nvim"

@@ -15,9 +15,9 @@ mkdir -p "$home/bin"
 
 if [ "${FAKES:-}" = 1 ]; then
 	export PATH="$repo/test/e2e/testdata/bin:$PATH"
-	export AGENTWS_E2E=$home/e2e
-	mkdir -p "$AGENTWS_E2E"
-	touch "$AGENTWS_E2E/claude.steps" "$AGENTWS_E2E/codex.steps"
+	export CREW_E2E=$home/e2e
+	mkdir -p "$CREW_E2E"
+	touch "$CREW_E2E/claude.steps" "$CREW_E2E/codex.steps"
 fi
 
 note() {
