@@ -50,7 +50,7 @@ func newDaemonSetupFixture(t *testing.T, goos, linger string) *daemonSetupFixtur
 
 func (f *daemonSetupFixture) run(t *testing.T, goos string, agentwsHome string, args ...string) (int, string, string) {
 	t.Helper()
-	env := envOf(map[string]string{"AGENTWS_HOME": agentwsHome, "PATH": "/caller/bin:" + f.bin, "SHELL": f.shell, "USER": "me"})
+	env := envOf(map[string]string{"CREW_HOME": agentwsHome, "PATH": "/caller/bin:" + f.bin, "SHELL": f.shell, "USER": "me"})
 	var stdout, stderr bytes.Buffer
 	code := runSetupDaemon(args, &stdout, &stderr, env, "/bin/agentws", goos)
 	return code, stdout.String(), stderr.String()
@@ -209,7 +209,7 @@ func TestSetupDaemonMakesARelativeAgentwsHomeAbsolute(t *testing.T) {
 		t.Fatalf("code %d err %q", code, errOut)
 	}
 	unit, _ := os.ReadFile(f.path)
-	if !strings.Contains(string(unit), "append:"+filepath.Join(wd, "rel-home", "daemon-service.log")) || !strings.Contains(string(unit), "AGENTWS_HOME="+filepath.Join(wd, "rel-home")) {
+	if !strings.Contains(string(unit), "append:"+filepath.Join(wd, "rel-home", "daemon-service.log")) || !strings.Contains(string(unit), "CREW_HOME="+filepath.Join(wd, "rel-home")) {
 		t.Fatalf("unit\n%s", unit)
 	}
 }

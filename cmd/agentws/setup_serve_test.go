@@ -12,7 +12,7 @@ import (
 func envOf(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
 
 func TestSetupServeUnitRunsServeWithThisShellsEnvironment(t *testing.T) {
-	env := envOf(map[string]string{"PATH": "/usr/local/bin:/usr/bin", "AGENTWS_HOME": "/home/me/.agentws"})
+	env := envOf(map[string]string{"PATH": "/usr/local/bin:/usr/bin", "CREW_HOME": "/home/me/.agentws"})
 	svc, remove, err := setupServeService([]string{"--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}, env, "/usr/local/bin/agentws", "/home/me", 1000, "linux")
 	if err != nil || remove {
 		t.Fatalf("remove %v err %v", remove, err)
@@ -24,7 +24,7 @@ func TestSetupServeUnitRunsServeWithThisShellsEnvironment(t *testing.T) {
 	if want := []string{"/usr/local/bin/agentws", "serve", "--addr", "0.0.0.0:7420", "--cert", "/c/m.crt", "--key", "/c/m.key"}; !reflect.DeepEqual(u.Program, want) {
 		t.Fatalf("program %q", u.Program)
 	}
-	if want := map[string]string{"PATH": "/usr/local/bin:/usr/bin", "AGENTWS_HOME": "/home/me/.agentws"}; !reflect.DeepEqual(u.Env, want) {
+	if want := map[string]string{"PATH": "/usr/local/bin:/usr/bin", "CREW_HOME": "/home/me/.agentws"}; !reflect.DeepEqual(u.Env, want) {
 		t.Fatalf("env %v", u.Env)
 	}
 }
@@ -40,7 +40,7 @@ func TestSetupServeUnitHonoursXDGConfigHome(t *testing.T) {
 	if want := []string{"/bin/agentws", "serve"}; !reflect.DeepEqual(svc.unit.Program, want) {
 		t.Fatalf("program %q", svc.unit.Program)
 	}
-	if svc.unit.Env["AGENTWS_HOME"] != "/home/me/.agentws" {
+	if svc.unit.Env["CREW_HOME"] != "/home/me/.agentws" {
 		t.Fatalf("env %v", svc.unit.Env)
 	}
 }
@@ -174,7 +174,7 @@ func (f *fakeServiceManager) reset() { _ = os.Remove(f.log) }
 
 func serveLifecycle(t *testing.T, goos, servicePath string, manager *fakeServiceManager) {
 	t.Helper()
-	env := envOf(map[string]string{"AGENTWS_HOME": filepath.Join(t.TempDir(), "home"), "PATH": os.Getenv("PATH")})
+	env := envOf(map[string]string{"CREW_HOME": filepath.Join(t.TempDir(), "home"), "PATH": os.Getenv("PATH")})
 	run := func(args ...string) (int, string, string) {
 		var stdout, stderr bytes.Buffer
 		code := runSetupServe(args, &stdout, &stderr, env, "/bin/agentws", goos)

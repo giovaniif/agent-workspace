@@ -8,7 +8,7 @@ import (
 )
 
 func TestSetupBridgeAgentRunsTheBridgeWithThisShellsEnvironment(t *testing.T) {
-	env := map[string]string{"PATH": "/opt/homebrew/bin:/usr/bin", "AGENTWS_HOME": "/Users/me/.agentws"}
+	env := map[string]string{"PATH": "/opt/homebrew/bin:/usr/bin", "CREW_HOME": "/Users/me/.agentws"}
 	a, remove, err := setupBridgeAgent([]string{"--remote-bin", "~/.local/bin/agentws", "me@my.vps"}, func(k string) string { return env[k] }, "/usr/local/bin/agentws", "/Users/me", 501)
 	if err != nil || remove {
 		t.Fatalf("remove %v err %v", remove, err)
@@ -32,7 +32,7 @@ func TestSetupBridgeDefaultsHomeAndOmitsTheDefaultRemoteBin(t *testing.T) {
 	if want := []string{"/bin/agentws", "notify", "bridge", "vps"}; !reflect.DeepEqual(a.Program, want) {
 		t.Fatalf("program %q", a.Program)
 	}
-	if a.Env["AGENTWS_HOME"] != "/Users/me/.agentws" || a.Log != "/Users/me/.agentws/bridge-vps.log" {
+	if a.Env["CREW_HOME"] != "/Users/me/.agentws" || a.Log != "/Users/me/.agentws/bridge-vps.log" {
 		t.Fatalf("env %v log %q", a.Env, a.Log)
 	}
 }

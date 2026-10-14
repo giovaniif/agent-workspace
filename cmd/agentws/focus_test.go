@@ -15,7 +15,7 @@ import (
 
 func TestNotifyFocusCommandFocusesTheSession(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	d, err := daemon.New(nopStore{}, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestNotifyAttachNamesTheTerminalApp(t *testing.T) {
 	if p.Terminal != "com.googlecode.iterm2" {
 		t.Fatalf("terminal %q", p.Terminal)
 	}
-	if p.Command[0] != "/bin/agentws" || p.Env["AGENTWS_HOME"] != "/h" || p.Dir != "/w" {
+	if p.Command[0] != "/bin/agentws" || p.Env["CREW_HOME"] != "/h" || p.Dir != "/w" {
 		t.Fatalf("params %+v", p)
 	}
 }
