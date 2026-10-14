@@ -154,9 +154,9 @@ func (m Model) banner() []string {
 	title, hint := "daemon disconnected", "q quit"
 	switch {
 	case m.rc.upgraded && m.opts.CanRestart:
-		title, hint = "agentws was upgraded", "r restart · q quit"
+		title, hint = "crew was upgraded", "r restart · q quit"
 	case m.rc.upgraded:
-		title, hint = "agentws was upgraded", "q quit, then run agentws again"
+		title, hint = "crew was upgraded", "q quit, then run crew again"
 	case m.opts.Redial == nil:
 	case m.rc.dialing || !m.opts.Now().Before(m.rc.at):
 		hint = fmt.Sprintf("reconnecting · try %d… · q quit", m.rc.attempt)

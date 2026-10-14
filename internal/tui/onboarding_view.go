@@ -28,9 +28,9 @@ func stepName(step domain.OnboardStep) string {
 type harnessCopy struct{ change, undo string }
 
 var harnessCopies = map[domain.Harness]harnessCopy{
-	domain.HarnessClaude: {"Adds the agentws hooks and wraps your status line. Your own hooks and status line keep running.", "agentws setup claude --remove"},
-	domain.HarnessCodex:  {"Adds the agentws hooks. Your other hooks stay as they are.", "agentws setup codex --remove"},
-	domain.HarnessOmp:    {"Writes an agentws hook file of its own. A file at that path that agentws did not write is left alone.", "agentws setup omp --remove"},
+	domain.HarnessClaude: {"Adds the crew hooks and wraps your status line. Your own hooks and status line keep running.", "crew setup claude --remove"},
+	domain.HarnessCodex:  {"Adds the crew hooks. Your other hooks stay as they are.", "crew setup codex --remove"},
+	domain.HarnessOmp:    {"Writes an crew hook file of its own. A file at that path that crew did not write is left alone.", "crew setup omp --remove"},
 }
 
 func (m Model) setupScreen() string {
@@ -50,7 +50,7 @@ func (m Model) setupScreen() string {
 func (m Model) setupLines() []string {
 	s := m.styles
 	ob := m.ob
-	out := []string{m.titleBar(" Set up agentws", "esc skip "), "", m.stepTrail(), ""}
+	out := []string{m.titleBar(" Set up crew", "esc skip "), "", m.stepTrail(), ""}
 	_, harnessStep := ob.step.Harness()
 	switch {
 	case ob.step == domain.OnboardPick:
@@ -132,7 +132,7 @@ func (m Model) pickLines() []string {
 	}
 	out := []string{m.line(false, []piece{{s.bold, " Which agents do you use?"}}, nil)}
 	out = append(out, m.framed(rows, true)...)
-	return append(out, m.para(piece{s.text, " "}, s.sub, "agentws reads their hooks to show what each session is doing. Pick any of them; you set up each one next.")...)
+	return append(out, m.para(piece{s.text, " "}, s.sub, "crew reads their hooks to show what each session is doing. Pick any of them; you set up each one next.")...)
 }
 
 func setupState(s styles, h domain.HarnessSetup) piece {
@@ -180,16 +180,16 @@ func (m Model) nvimLines() []string {
 	out := []string{m.line(false, []piece{{s.bold, " Neovim"}, {s.sub, "  optional"}}, nil), ""}
 	if ob.results[domain.OnboardNvim] == resultInstalled {
 		out = append(out, m.line(false, []piece{bar, {s.green, "✓ wrote " + n.ConfigFile}}, nil))
-		return append(out, m.line(false, []piece{bar, {s.sub, "Undo    "}, {s.text, "agentws setup nvim --remove"}}, nil))
+		return append(out, m.line(false, []piece{bar, {s.sub, "Undo    "}, {s.text, "crew setup nvim --remove"}}, nil))
 	}
 	switch domain.NvimOfferFor(n) {
 	case domain.NvimMissing:
-		out = append(out, m.para(bar, s.text, "nvim is not on PATH, and that's fine: everything else in agentws works without it. With Neovim 0.10+, e opens a session's files in nvim, diffs open in diffview, and you can write review comments from nvim.")...)
+		out = append(out, m.para(bar, s.text, "nvim is not on PATH, and that's fine: everything else in crew works without it. With Neovim 0.10+, e opens a session's files in nvim, diffs open in diffview, and you can write review comments from nvim.")...)
 		out = append(out, "", m.line(false, []piece{bar, {s.sub, "macOS   "}, {s.text, "brew install neovim"}}, nil))
 		out = append(out, m.line(false, []piece{bar, {s.sub, "Linux   "}, {s.text, "your package manager, e.g. apt install neovim"}}, nil))
 		return append(append(out, ""), m.para(bar, s.sub, "Then press S in the sidebar to add the plugin.")...)
 	case domain.NvimReady:
-		out = append(out, m.line(false, []piece{bar, {s.green, "✓ the agentws plugin is configured"}}, nil))
+		out = append(out, m.line(false, []piece{bar, {s.green, "✓ the crew plugin is configured"}}, nil))
 		return append(out, m.para(bar, s.sub, "found in "+n.ConfigFile)...)
 	case domain.NvimNoPlugin:
 		out = append(out, m.line(false, []piece{{s.peach, " ▌ "}, {s.text, "The plugin files are not at " + n.PluginDir + "."}}, nil))
@@ -207,7 +207,7 @@ func (m Model) nvimLines() []string {
 		out = append(out, "   "+s.teal.Render(l))
 	}
 	out = append(out, "")
-	return append(out, m.line(false, []piece{bar, {s.sub, "Undo    "}, {s.text, "agentws setup nvim --remove"}}, nil))
+	return append(out, m.line(false, []piece{bar, {s.sub, "Undo    "}, {s.text, "crew setup nvim --remove"}}, nil))
 }
 
 func (m Model) finishLines() []string {
@@ -243,7 +243,7 @@ func (m Model) finishLines() []string {
 		detail = "not set up"
 	}
 	out = append(out, m.line(false, []piece{mark, {s.text, padRight("Neovim", 14)}, {s.sub, detail}}, nil), "")
-	return append(out, m.para(piece{s.text, " "}, s.sub, "Open this again with S in the sidebar or agentws setup. n starts your first session.")...)
+	return append(out, m.para(piece{s.text, " "}, s.sub, "Open this again with S in the sidebar or crew setup. n starts your first session.")...)
 }
 
 func (m Model) para(bar piece, st lipgloss.Style, text string) []string {
