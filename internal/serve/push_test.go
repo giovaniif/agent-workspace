@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/serve"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/serve"
 )
 
 const browserSubscription = `{"endpoint":"https://web.push.apple.com/QGx3","expirationTime":null,"keys":{"p256dh":"BNcRdreALRFX","auth":"tBHItJI5svbpez7KI4CCXg"}}`

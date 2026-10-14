@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const worktreeUsage = "usage: crew worktree <list|assign <path> <session>>"

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/giovaniif/agent-workspace/internal/serve"
+	"github.com/giovaniif/crew/internal/serve"
 )
 
 const (

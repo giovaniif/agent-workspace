@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/version"
+	"github.com/giovaniif/crew/internal/version"
 )
 
 func TestVersionTellsAboutNewerRelease(t *testing.T) {

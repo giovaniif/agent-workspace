@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const PasteSettle = 150 * time.Millisecond

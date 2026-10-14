@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/notify"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/notify"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 type recorder struct {

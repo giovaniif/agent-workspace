@@ -9,7 +9,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/giovaniif/agent-workspace/internal/serve"
+	"github.com/giovaniif/crew/internal/serve"
 )
 
 const secretToken = "s3cret-device-token"

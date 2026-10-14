@@ -5,7 +5,7 @@ import (
 	"log"
 	"maps"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const automationEventBuffer = 256

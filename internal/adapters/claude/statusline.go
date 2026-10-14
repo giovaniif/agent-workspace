@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 type statusInput struct {

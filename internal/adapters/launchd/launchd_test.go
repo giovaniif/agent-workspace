@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
+	"github.com/giovaniif/crew/internal/adapters/launchd"
 )
 
 type launchctl struct {

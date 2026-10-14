@@ -6,8 +6,8 @@ import (
 
 	"github.com/alecthomas/chroma/v2"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/syntax"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/syntax"
 )
 
 type tok struct {

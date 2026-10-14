@@ -13,8 +13,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const repoConfigFile = ".agentws.toml"

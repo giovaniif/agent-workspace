@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
-	"github.com/giovaniif/agent-workspace/internal/adapters/nvim"
-	"github.com/giovaniif/agent-workspace/internal/adapters/tmux"
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/daemon"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/nvim"
+	"github.com/giovaniif/crew/internal/adapters/tmux"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/daemon"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 type liveTerm struct {

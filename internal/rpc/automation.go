@@ -1,6 +1,6 @@
 package rpc
 
-import "github.com/giovaniif/agent-workspace/internal/domain"
+import "github.com/giovaniif/crew/internal/domain"
 
 const (
 	MethodAutomationList  = "automation.list"

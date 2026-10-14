@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 func (d *Daemon) nativeClient(req rpc.Request) (*rpc.Response, bool) {

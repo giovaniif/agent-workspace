@@ -13,9 +13,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/serve"
-	"github.com/giovaniif/agent-workspace/internal/version"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/serve"
+	"github.com/giovaniif/crew/internal/version"
 )
 
 const serveUsage = "usage: crew serve [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"

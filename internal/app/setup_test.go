@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func TestRecipeSetupWithoutRecipeDoesNothing(t *testing.T) {

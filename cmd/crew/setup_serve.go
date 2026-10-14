@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
-	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/launchd"
+	"github.com/giovaniif/crew/internal/adapters/systemd"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const setupServeUsage = "usage: crew setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]"

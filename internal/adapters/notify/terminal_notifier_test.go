@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/notify"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/adapters/notify"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 func TestNotifyTerminalNotifierGroupsAndFocusesOnClick(t *testing.T) {

@@ -7,7 +7,7 @@ socket=${CREW_DEV_SOCKET:-crew-dev}
 bin=$home/bin/crew
 log=$home/dev.log
 pidfile=$home/dev-watch.pid
-version_pkg=github.com/giovaniif/agent-workspace/internal/version
+version_pkg=github.com/giovaniif/crew/internal/version
 
 export CREW_HOME=$home
 export CREW_TMUX_SOCKET=$socket

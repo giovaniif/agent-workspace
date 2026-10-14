@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const slotWatchEvery = 2 * time.Second

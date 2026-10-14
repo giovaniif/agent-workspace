@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 var _ app.PRFinder = (*Finder)(nil)

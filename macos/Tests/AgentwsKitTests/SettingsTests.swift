@@ -127,5 +127,9 @@ struct SettingsTests {
         #expect(!CLILink.adoptLegacy(path: mine, target: target))
         #expect(try FileManager.default.destinationOfSymbolicLink(atPath: mine) == "/opt/bin/agentws")
         #expect(!CLILink.adoptLegacy(path: dir.appendingPathComponent("none").path, target: target))
+
+        let other = dir.appendingPathComponent("other").path
+        try FileManager.default.createSymbolicLink(atPath: other, withDestinationPath: "/Applications/Other.app/Contents/Resources/bin/darwin_arm64/agentws")
+        #expect(!CLILink.adoptLegacy(path: other, target: target))
     }
 }

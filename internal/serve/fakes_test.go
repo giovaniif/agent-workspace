@@ -6,8 +6,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/giovaniif/agent-workspace/internal/rpc"
-	"github.com/giovaniif/agent-workspace/internal/serve"
+	"github.com/giovaniif/crew/internal/rpc"
+	"github.com/giovaniif/crew/internal/serve"
 )
 
 type call struct {

@@ -29,7 +29,7 @@ enum Launch {
         let resources = Bundle.main.resourcePath
         let environment = ProcessInfo.processInfo.environment
         return { platform in
-            if platform.os == "darwin", let path = environment["CREW_BINARY"] ?? environment["AGENTWS_BINARY"], !path.isEmpty { return path }
+            if platform.os == "darwin", let path = [environment["CREW_BINARY"], environment["AGENTWS_BINARY"]].compactMap({ $0 }).first(where: { !$0.isEmpty }) { return path }
             guard let resources else { return nil }
             let path = "\(resources)/bin/\(platform.directory)/crew"
             return FileManager.default.isExecutableFile(atPath: path) ? path : nil

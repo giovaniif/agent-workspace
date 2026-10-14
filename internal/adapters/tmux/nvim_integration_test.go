@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 func TestNavigationKeysPassThroughNvimAndLeaveItAtTheEdge(t *testing.T) {

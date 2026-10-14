@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giovaniif/agent-workspace/internal/domain"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 const killTimeout = 10 * time.Second

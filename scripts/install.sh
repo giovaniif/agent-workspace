@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-repo=giovaniif/agent-workspace
+repo=giovaniif/crew
 dir=${CREW_INSTALL_DIR:-${AGENTWS_INSTALL_DIR:-$HOME/.local/bin}}
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')

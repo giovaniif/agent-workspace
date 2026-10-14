@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/app"
+	"github.com/giovaniif/crew/internal/app"
 )
 
 func promptScreen(t *testing.T, name string) string {

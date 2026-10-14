@@ -12,11 +12,11 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
-	"github.com/giovaniif/agent-workspace/internal/adapters/loginshell"
-	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	"github.com/giovaniif/crew/internal/adapters/launchd"
+	"github.com/giovaniif/crew/internal/adapters/loginshell"
+	"github.com/giovaniif/crew/internal/adapters/systemd"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 const setupDaemonUsage = "usage: crew setup daemon [--remove | --check]"

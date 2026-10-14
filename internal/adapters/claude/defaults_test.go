@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/giovaniif/agent-workspace/internal/adapters/claude"
+	"github.com/giovaniif/crew/internal/adapters/claude"
 )
 
 func TestReadDefaultsTakesModelAndEffortFromSettings(t *testing.T) {

@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	wsfs "github.com/giovaniif/agent-workspace/internal/adapters/fs"
-	gitadapter "github.com/giovaniif/agent-workspace/internal/adapters/git"
-	"github.com/giovaniif/agent-workspace/internal/adapters/github"
-	"github.com/giovaniif/agent-workspace/internal/adapters/procs"
-	"github.com/giovaniif/agent-workspace/internal/adapters/sqlite"
-	"github.com/giovaniif/agent-workspace/internal/daemon"
-	"github.com/giovaniif/agent-workspace/internal/domain"
-	"github.com/giovaniif/agent-workspace/internal/rpc"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
+	gitadapter "github.com/giovaniif/crew/internal/adapters/git"
+	"github.com/giovaniif/crew/internal/adapters/github"
+	"github.com/giovaniif/crew/internal/adapters/procs"
+	"github.com/giovaniif/crew/internal/adapters/sqlite"
+	"github.com/giovaniif/crew/internal/daemon"
+	"github.com/giovaniif/crew/internal/domain"
+	"github.com/giovaniif/crew/internal/rpc"
 )
 
 type env struct {
