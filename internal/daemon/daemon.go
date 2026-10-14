@@ -542,6 +542,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
+	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
+		return d.automationMethod(req), true
 	case rpc.MethodEndSession:
 		return d.endSession(req)
 	case rpc.MethodResumeSession:
