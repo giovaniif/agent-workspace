@@ -223,3 +223,44 @@ describe("starting a session from the phone", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
+
+describe("managing workspaces from the phone", () => {
+  it("adds a workspace from a path with ~ and selects it", async () => {
+    const { server } = setup();
+    server.on("POST", "/api/v1/workspaces", { status: 200, body: { Root: "/home/me/docs", Kind: "single", Repos: [] } });
+    await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/api"));
+    server.on("GET", "/api/v1/workspaces", {
+      status: 200,
+      body: { workspaces: [...workspaces.workspaces, { Root: "/home/me/docs", Kind: "single", Repos: [], LastUsed: "0001-01-01T00:00:00Z" }], last_used: "/home/me/api" },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Add workspace…" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Folder on the server" }), "~/docs");
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(server.calls.find((c) => c.method === "POST" && c.path === "/api/v1/workspaces")?.body).toEqual({ path: "/home/me/docs" });
+    await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/docs"));
+  });
+
+  it("shows why the server refused a folder", async () => {
+    const { server } = setup();
+    server.on("POST", "/api/v1/workspaces", { status: 400, body: { error: { code: "bad_request", message: "/home/me/nope is not a directory" } } });
+    await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/api"));
+    await userEvent.click(screen.getByRole("button", { name: "Add workspace…" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Folder on the server" }), "/home/me/nope");
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(await screen.findByText("/home/me/nope is not a directory")).toBeInTheDocument();
+  });
+
+  it("removes the selected workspace only after a confirmation that no files change", async () => {
+    const { server } = setup();
+    server.on("POST", "/api/v1/workspaces/remove", { status: 200, body: {} });
+    await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/api"));
+    await userEvent.click(screen.getByRole("button", { name: "Remove workspace" }));
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toHaveTextContent("No files, worktrees or branches on the server change.");
+    expect(server.calls.some((c) => c.path === "/api/v1/workspaces/remove")).toBe(false);
+    server.on("GET", "/api/v1/workspaces", { status: 200, body: { workspaces: [workspaces.workspaces[1]], last_used: "" } });
+    await userEvent.click(screen.getByRole("button", { name: "Remove /home/me/api" }));
+    expect(server.calls.find((c) => c.path === "/api/v1/workspaces/remove")?.body).toEqual({ root: "/home/me/api" });
+    await waitFor(() => expect(screen.getByLabelText("Workspace")).toHaveValue("/home/me/web"));
+  });
+});
