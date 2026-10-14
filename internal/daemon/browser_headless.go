@@ -207,8 +207,39 @@ func (p *headlessPool) loadCookies() ([]domain.BrowserCookie, error) {
 }
 
 func (p *headlessPool) importCookies(ctx context.Context, add []domain.BrowserCookie) (int, error) {
+	total, tabs, err := p.keepCookies(add)
+	if err != nil {
+		return 0, err
+	}
+	for id, tab := range tabs {
+		if err := tab.SetCookies(ctx, add); err != nil {
+			log.Printf("[browser] the headless browser of %s refused the cookies, so it stops: %v", id, err)
+			p.mu.Lock()
+			if e, ok := p.tabs[id]; ok && e.tab == tab {
+				delete(p.tabs, id)
+			}
+			p.mu.Unlock()
+			_ = tab.Close()
+		}
+	}
+	return total, nil
+}
+
+func (p *headlessPool) keepCookies(add []domain.BrowserCookie) (int, map[string]app.HeadlessTab, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	total, err := p.writeCookies(add)
+	if err != nil {
+		return 0, nil, err
+	}
+	tabs := map[string]app.HeadlessTab{}
+	for id, e := range p.tabs {
+		tabs[id] = e.tab
+	}
+	return total, tabs, nil
+}
+
+func (p *headlessPool) writeCookies(add []domain.BrowserCookie) (int, error) {
 	if p.cookies == "" {
 		return 0, errors.New("this daemon has no headless browser")
 	}
@@ -238,11 +269,6 @@ func (p *headlessPool) importCookies(ctx context.Context, add []domain.BrowserCo
 	}
 	if err := os.Rename(tmp.Name(), p.cookies); err != nil {
 		return 0, err
-	}
-	for id, e := range p.tabs {
-		if err := e.tab.SetCookies(ctx, add); err != nil {
-			log.Printf("[browser] cookies for the headless browser of %s: %v", id, err)
-		}
 	}
 	return len(all), nil
 }
