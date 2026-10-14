@@ -160,7 +160,7 @@ public enum Seed {
             SeedSession(id: "s7", name: "search index", state: "done", harness: "codex", where: "api@search-index",
                         model: "gpt-5", effort: "low", contextLeft: 47, muted: true, since: ago(5_400),
                         worktrees: [SeedWorktree(id: "w8", repo: "api", branch: "search-index")]),
-            SeedSession(id: "s8", name: "spike: tmux control mode", state: "idle", where: "agentws@spike",
+            SeedSession(id: "s8", name: "spike: tmux control mode", state: "idle", where: "crew@spike",
                         model: "opus", effort: "medium", contextLeft: 81, since: ago(9_000)),
             SeedSession(id: "s9", name: "release notes", state: "idle", where: "docs@release-notes",
                         model: "haiku", muted: true),

@@ -29,7 +29,7 @@ enum CookieReader {
             } catch let error as CookieImportError {
                 throw error
             } catch {
-                throw CookieImportError("Safari cookies need Full Disk Access for agentws (System Settings › Privacy & Security)")
+                throw CookieImportError("Safari cookies need Full Disk Access for crew (System Settings › Privacy & Security)")
             }
         }
         return try ChromeCookies.read(file: profile.file, password: password(service: service))

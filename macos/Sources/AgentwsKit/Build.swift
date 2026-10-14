@@ -7,13 +7,14 @@ public enum Build {
         arch: String,
         isExecutable: (String) -> Bool
     ) -> String {
+        if let path = environment["CREW_BINARY"], !path.isEmpty { return path }
         if let path = environment["AGENTWS_BINARY"], !path.isEmpty { return path }
         if let resources {
             let goArch = arch == "x86_64" ? "amd64" : arch
-            let bundled = "\(resources)/bin/darwin_\(goArch)/agentws"
+            let bundled = "\(resources)/bin/darwin_\(goArch)/crew"
             if isExecutable(bundled) { return bundled }
         }
-        return "agentws"
+        return "crew"
     }
 
     public static func read(binary: String, environment: [String: String]? = nil) throws -> String {

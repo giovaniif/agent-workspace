@@ -166,11 +166,11 @@ public struct ConnectionBanner: Sendable, Equatable {
         case .idle, .live:
             return nil
         case .connecting:
-            self.init("Connecting to agentws", "", true, nil, .blue)
+            self.init("Connecting to crew", "", true, nil, .blue)
         case let .reconnecting(delay):
             self.init("Reconnecting in \(delay.components.seconds) s", "The connection to the daemon dropped.", true, nil, .peach)
         case let .unavailable(message):
-            self.init("No agentws daemon · retrying", message, true, nil, .peach)
+            self.init("No crew daemon · retrying", message, true, nil, .peach)
         case let .versionMismatch(message):
             self.init("Build mismatch · stopped", message, false, "Reconnect", .red)
         }

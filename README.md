@@ -52,10 +52,10 @@ agentws version   # agentws v0.1.0-alpha.1 (commit abc1234)
 
 ### Mac app
 
-Each release also has `agentws_<version>.dmg`. It is the native Mac app, with the matching `agentws` builds in it. Open it and drag `agentws.app` to Applications. The app is ad-hoc signed and not notarized, so macOS blocks its first launch. Remove the block one time with this command:
+Each release also has `crew_<version>.dmg`. It is the native Mac app, with the matching `crew` builds in it. Open it and drag `crew.app` to Applications. The app is ad-hoc signed and not notarized, so macOS blocks its first launch. Remove the block one time with this command:
 
 ```sh
-xattr -dr com.apple.quarantine /Applications/agentws.app
+xattr -dr com.apple.quarantine /Applications/crew.app
 ```
 
 Or open the app, then go to System Settings › Privacy & Security › Open Anyway.

@@ -114,7 +114,7 @@ public struct FirstRunView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Welcome to agentws").font(.largeTitle.weight(.semibold))
+            Text("Welcome to crew").font(.largeTitle.weight(.semibold))
             Text("Run Claude Code and Codex sessions in parallel, each in its own git worktrees, and review what they change.")
             Text("The next steps pick where agents run, set that machine up and add a workspace. Nothing needs sudo.")
                 .foregroundStyle(.secondary)
@@ -199,8 +199,8 @@ public struct FirstRunView: View {
     }
 
     private func summary(_ probe: Probe) -> String {
-        let installed = probe.build.map { $0 == appBuild ? "agentws \($0) is installed" : "agentws \($0) is installed; this app installs \(appBuild)" }
-            ?? "agentws is not installed yet"
+        let installed = probe.build.map { $0 == appBuild ? "crew \($0) is installed" : "crew \($0) is installed; this app installs \(appBuild)" }
+            ?? "crew is not installed yet"
         return "\(probe.kernel) \(probe.machine), user \(probe.user). \(installed)."
     }
 
@@ -229,8 +229,8 @@ public struct FirstRunView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Set up \(flow.kind.name)").font(.title2.weight(.semibold))
             Text(flow.kind.isRemote
-                 ? "Installs this app's agentws build into ~/.local/bin, runs the daemon as a systemd --user service (a launchd agent on a Mac) with your login shell's PATH, and checks git, tmux and gh. All in your account, no sudo."
-                 : "Links the bundled agentws into /usr/local/bin, starts the daemon as a launchd agent and checks git, tmux and gh.")
+                 ? "Installs this app's crew build into ~/.local/bin, runs the daemon as a systemd --user service (a launchd agent on a Mac) with your login shell's PATH, and checks git, tmux and gh. All in your account, no sudo."
+                 : "Links the bundled crew into /usr/local/bin, starts the daemon as a launchd agent and checks git, tmux and gh.")
                 .font(.callout).foregroundStyle(.secondary)
             if let setup, setup.server == flow.kind {
                 ForEach(setup.checklist) { item in
@@ -339,7 +339,7 @@ public struct FirstRunView: View {
                             .disabled(settings.busy)
                     }
                     .contextMenu {
-                        Button("Remove from agentws…") { askRemove(workspace.root) }
+                        Button("Remove from crew…") { askRemove(workspace.root) }
                     }
                 }
             }
@@ -363,7 +363,7 @@ public struct FirstRunView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("All set").font(.largeTitle.weight(.semibold))
             if let setup, let probe = setup.probe {
-                Text("\(flow.kind.name): \(probe.kernel) \(probe.machine), agentws \(probe.build ?? appBuild), daemon \(probe.daemon?.running == true ? "running" : "not running").")
+                Text("\(flow.kind.name): \(probe.kernel) \(probe.machine), crew \(probe.build ?? appBuild), daemon \(probe.daemon?.running == true ? "running" : "not running").")
             }
             if let settings {
                 Text("\(settings.workspaces.count) workspace\(settings.workspaces.count == 1 ? "" : "s") added.")
@@ -373,8 +373,8 @@ public struct FirstRunView: View {
                 if let notifications { Text(notifications).font(.callout).foregroundStyle(.secondary) }
             }
             Text(flow.kind.isRemote
-                 ? "The TUI shows the same sessions: ssh -t \(flow.kind.name) agentws"
-                 : "The TUI shows the same sessions: run agentws in a terminal.")
+                 ? "The TUI shows the same sessions: ssh -t \(flow.kind.name) crew"
+                 : "The TUI shows the same sessions: run crew in a terminal.")
                 .font(Metrics.code).textSelection(.enabled)
         }
     }

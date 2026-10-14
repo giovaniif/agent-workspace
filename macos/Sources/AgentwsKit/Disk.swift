@@ -255,14 +255,14 @@ public enum DiskActions {
         case .remove:
             out.append(DiskAction(
                 kind: .remove, title: "Remove…", outcome: "Moves \(row.worktree) to the trash and keeps its branch.",
-                confirm: "Remove \(row.worktree)? It goes to the agentws trash; the branch stays.",
+                confirm: "Remove \(row.worktree)? It goes to the crew trash; the branch stays.",
                 params: CleanupWorktreeParams(path: row.path, backup: false), pgids: []
             ))
         case .backupThenAsk:
             out.append(DiskAction(
                 kind: .backUpAndRemove, title: "Back up and remove…",
                 outcome: "Backs up the uncommitted changes in \(row.worktree), then moves it to the trash.",
-                confirm: "Back up \(row.worktree) and remove it? The backup goes to the agentws backups folder.",
+                confirm: "Back up \(row.worktree) and remove it? The backup goes to the crew backups folder.",
                 params: CleanupWorktreeParams(path: row.path, backup: true), pgids: []
             ))
         case .keep:

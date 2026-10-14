@@ -160,7 +160,7 @@ struct GeneralPane: View {
             SettingsGroup(title: "Command line") {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("agentws on PATH")
+                        Text("crew on PATH")
                         Text(cliText).font(Metrics.mono).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -176,7 +176,7 @@ struct GeneralPane: View {
 
     private var cliText: String {
         switch scene.cliLink {
-        case .linked: "\(CLILink.standardPath) → this app's agentws"
+        case .linked: "\(CLILink.standardPath) → this app's crew"
         case .missing: "\(CLILink.standardPath) is not set up"
         case .elsewhere(let other): "\(CLILink.standardPath) points at \(other)"
         }
@@ -238,7 +238,7 @@ struct ServersPane: View {
         ) { server in
             Button("Remove \(server.name)", role: .destructive) { actions.removeServer(server) }
         } message: { _ in
-            Text("Only the app forgets it. agentws and its sessions keep running on the server.")
+            Text("Only the app forgets it. crew and its sessions keep running on the server.")
         }
     }
 }
@@ -347,7 +347,7 @@ struct ServerConfigGroup<Extra: View>: View {
                 }
                 Text("Saved to \(config.path); the old file is backed up first.").font(.system(size: 11)).foregroundStyle(.secondary)
             } else {
-                Text("This server's agentws cannot change config.toml yet. Update it to edit these here.").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("This server's crew cannot change config.toml yet. Update it to edit these here.").font(.system(size: 11)).foregroundStyle(.secondary)
             }
         }
     }
@@ -394,7 +394,7 @@ struct AgentsPane: View {
             panes
         }
         .confirmationDialog(
-            "Remove the agentws hooks?",
+            "Remove the crew hooks?",
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
             presenting: removing
         ) { key in
@@ -502,7 +502,7 @@ struct NotificationsPane: View {
                 HStack {
                     if let pairing = scene.pairing {
                         Text("Code \(pairing.code)").font(Metrics.mono)
-                        Text("Type it on the agentws page on your phone before \(pairing.expiresAt.dropFirst(11).prefix(5)) UTC").font(.system(size: 11)).foregroundStyle(.secondary)
+                        Text("Type it on the crew page on your phone before \(pairing.expiresAt.dropFirst(11).prefix(5)) UTC").font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button("Pair a phone", action: actions.pairPhone)

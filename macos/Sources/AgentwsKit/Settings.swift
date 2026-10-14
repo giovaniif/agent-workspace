@@ -275,7 +275,24 @@ public struct CLILinkError: Error, Equatable, Sendable {
 }
 
 public struct CLILink: Sendable {
-    public static let standardPath = "/usr/local/bin/agentws"
+    public static let standardPath = "/usr/local/bin/crew"
+    public static let legacyPath = "/usr/local/bin/agentws"
+
+    @discardableResult
+    public static func adoptLegacy(path: String = CLILink.legacyPath, target: String) -> Bool {
+        let files = FileManager.default
+        guard let destination = try? files.destinationOfSymbolicLink(atPath: path),
+              destination != target,
+              destination.contains(".app/Contents/Resources/bin/"),
+              destination.hasSuffix("/agentws") else { return false }
+        do {
+            try files.removeItem(atPath: path)
+            try files.createSymbolicLink(atPath: path, withDestinationPath: target)
+            return true
+        } catch {
+            return false
+        }
+    }
 
     public var path: String
     public var target: String
@@ -300,7 +317,7 @@ public struct CLILink: Sendable {
         case .elsewhere(let other):
             throw CLILinkError(message: "\(path) already points at \(other); remove it first")
         case .missing:
-            guard target.hasPrefix("/") else { throw CLILinkError(message: "this app has no bundled agentws to link") }
+            guard target.hasPrefix("/") else { throw CLILinkError(message: "this app has no bundled crew to link") }
             let files = FileManager.default
             try files.createDirectory(atPath: (path as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
             try files.createSymbolicLink(atPath: path, withDestinationPath: target)
@@ -312,7 +329,7 @@ public struct CLILink: Sendable {
         case .missing:
             return
         case .elsewhere(let other):
-            throw CLILinkError(message: "\(path) points at \(other), not this app's agentws; left alone")
+            throw CLILinkError(message: "\(path) points at \(other), not this app's crew; left alone")
         case .linked:
             try FileManager.default.removeItem(atPath: path)
         }

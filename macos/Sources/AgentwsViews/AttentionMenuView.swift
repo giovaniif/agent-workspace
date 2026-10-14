@@ -94,8 +94,8 @@ public struct AttentionMenuView: View {
             }
             Divider()
             menuButton("New session…", action: actions.newSession)
-            menuButton("Open agentws", action: actions.openApp)
-            menuButton("Quit agentws", action: actions.quit)
+            menuButton("Open crew", action: actions.openApp)
+            menuButton("Quit crew", action: actions.quit)
         }
         .padding(12)
         .frame(width: 340, alignment: .leading)

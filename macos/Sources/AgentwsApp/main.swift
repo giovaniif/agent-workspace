@@ -29,9 +29,9 @@ enum Launch {
         let resources = Bundle.main.resourcePath
         let environment = ProcessInfo.processInfo.environment
         return { platform in
-            if platform.os == "darwin", let path = environment["AGENTWS_BINARY"], !path.isEmpty { return path }
+            if platform.os == "darwin", let path = environment["CREW_BINARY"] ?? environment["AGENTWS_BINARY"], !path.isEmpty { return path }
             guard let resources else { return nil }
-            let path = "\(resources)/bin/\(platform.directory)/agentws"
+            let path = "\(resources)/bin/\(platform.directory)/crew"
             return FileManager.default.isExecutableFile(atPath: path) ? path : nil
         }
     }
@@ -213,12 +213,22 @@ struct MenuContent: View {
 
 struct MenuLabel: View {
     let launcher: Launcher
+
+    @MainActor static let icon: NSImage? = {
+        guard let image = Bundle.main.image(forResource: "crewTemplate") else { return nil }
+        image.isTemplate = true
+        return image
+    }()
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let menu = AttentionMenu(state: launcher.store?.state, now: .now)
         HStack(spacing: 3) {
-            Image(systemName: menu.needsYou.isEmpty ? "square.stack.3d.up" : "square.stack.3d.up.badge.automatic")
+            if let icon = Self.icon {
+                Image(nsImage: icon)
+            } else {
+                Image(systemName: menu.needsYou.isEmpty ? "square.stack.3d.up" : "square.stack.3d.up.badge.automatic")
+            }
             if !menu.title.isEmpty { Text(menu.title) }
         }
         .task {
@@ -276,11 +286,18 @@ struct MainWindowFrame: NSViewRepresentable {
 }
 
 struct AgentwsApp: App {
-    @State private var launcher = Launcher()
+    @State private var launcher: Launcher
+
+    init() {
+        DefaultsMigration.run(old: UserDefaults.standard.persistentDomain(forName: DefaultsMigration.legacyDomain) ?? [:], into: .standard)
+        let binary = Launch.binary
+        if binary.hasPrefix("/") { CLILink.adoptLegacy(target: binary) }
+        _launcher = State(initialValue: Launcher())
+    }
     private var router: WindowRouter { launcher.router }
 
     var body: some Scene {
-        WindowGroup("agentws", id: "main") {
+        WindowGroup("crew", id: "main") {
             if Launch.demo {
                 MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560).background(MainWindowFrame())
             } else if let build = launcher.build, launcher.needsFirstRun {
@@ -359,5 +376,5 @@ AgentwsApp.main()
 #else
 import AgentwsKit
 
-print("agentws.app runs on macOS only (protocol v\(AgentwsProtocol.version))")
+print("crew.app runs on macOS only (protocol v\(AgentwsProtocol.version))")
 #endif

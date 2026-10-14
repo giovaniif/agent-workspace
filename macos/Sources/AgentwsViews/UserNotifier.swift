@@ -32,7 +32,7 @@ public final class UserNotifier: NSObject, Notifier, UNUserNotificationCenterDel
         guard !started else { return }
         started = true
         guard let center else {
-            problem = "Banners are off: run agentws from its app bundle to get them."
+            problem = "Banners are off: run crew from its app bundle to get them."
             return
         }
         center.delegate = self
@@ -62,7 +62,7 @@ public final class UserNotifier: NSObject, Notifier, UNUserNotificationCenterDel
         } else if let reason {
             problem = "Banners are off (" + reason + "). The menu bar and Dock badge still show who needs you."
         } else {
-            problem = "Banners are off: allow agentws in System Settings › Notifications."
+            problem = "Banners are off: allow crew in System Settings › Notifications."
         }
     }
 

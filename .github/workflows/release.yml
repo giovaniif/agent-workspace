@@ -62,33 +62,35 @@ jobs:
           for target in darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
             mkdir -p "binaries/$target"
             tar -xzf "archives/crew_$target.tar.gz" -C "binaries/$target" crew
-            mv "binaries/$target/crew" "binaries/$target/agentws"
           done
-      - name: Build agentws.app
+      - name: Build crew.app
         run: macos/build-app release
         env:
-          AGENTWS_APP_VERSION: ${{ needs.goreleaser.outputs.version }}
-          AGENTWS_APP_BINARIES: ${{ github.workspace }}/binaries
-          AGENTWS_APP_BUILD: ${{ github.run_number }}
+          CREW_APP_VERSION: ${{ needs.goreleaser.outputs.version }}
+          CREW_APP_BINARIES: ${{ github.workspace }}/binaries
+          CREW_APP_BUILD: ${{ github.run_number }}
       - name: Check the bundle
         run: |
-          app=macos/build/agentws.app
+          app=macos/build/crew.app
           codesign --verify --deep --strict --verbose "$app"
           [ "$(plutil -extract AgentwsVersion raw "$app/Contents/Info.plist")" = "$VERSION" ]
           [ "$(plutil -extract CFBundleIconFile raw "$app/Contents/Info.plist")" = "AppIcon" ]
+          [ "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = "dev.crew.app" ]
+          test -f "$app/Contents/Resources/crewTemplate.png"
+          test -f "$app/Contents/Resources/crewTemplate@2x.png"
           iconutil -c iconset "$app/Contents/Resources/AppIcon.icns" -o "$RUNNER_TEMP/check.iconset"
           [ "$(sips -g pixelWidth "$RUNNER_TEMP/check.iconset/icon_512x512@2x.png" | awk '/pixelWidth/{print $2}')" = 1024 ]
-          [ "$("$app/Contents/Resources/bin/darwin_$(uname -m | sed 's/x86_64/amd64/')/agentws" version | awk '{print $2}')" = "$VERSION" ]
+          [ "$("$app/Contents/Resources/bin/darwin_$(uname -m | sed 's/x86_64/amd64/')/crew" version | awk '{print $2}')" = "$VERSION" ]
         env:
-          AGENTWS_NO_UPDATE_CHECK: "1"
+          CREW_NO_UPDATE_CHECK: "1"
           VERSION: ${{ needs.goreleaser.outputs.version }}
-      - run: macos/build-dmg "build/agentws_${VERSION}.dmg"
+      - run: macos/build-dmg "build/crew_${VERSION}.dmg"
         env:
           VERSION: ${{ needs.goreleaser.outputs.version }}
       - name: Check the DMG volume icon
         run: |
           mount="$(mktemp -d)"
-          hdiutil attach "macos/build/agentws_${VERSION}.dmg" -mountpoint "$mount" -nobrowse -readonly
+          hdiutil attach "macos/build/crew_${VERSION}.dmg" -mountpoint "$mount" -nobrowse -readonly
           test -f "$mount/.VolumeIcon.icns"
           GetFileInfo -a "$mount" | grep -q C
           hdiutil detach "$mount"
@@ -99,7 +101,7 @@ jobs:
           name: dmg
           path: macos/build/*.dmg
       - if: startsWith(github.ref, 'refs/tags/v')
-        run: gh release upload "$VERSION" "macos/build/agentws_${VERSION}.dmg" --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$VERSION" "macos/build/crew_${VERSION}.dmg" --repo "$GITHUB_REPOSITORY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.goreleaser.outputs.version }}
