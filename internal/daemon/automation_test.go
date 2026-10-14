@@ -112,3 +112,41 @@ func TestAutomationListReportsAnUnknownKey(t *testing.T) {
 		t.Errorf("problems = %v, want one about shedule", got.Problems)
 	}
 }
+
+func TestAutomationSaveWritesTheGlobalConfigWithABackup(t *testing.T) {
+	c, path := configDaemon(t, globalAutomations)
+	saved := rpc.Automation{Name: "triage", Agent: "claude", Target: "workspace", Prompt: "Triage again.", Enabled: true}
+	var got rpc.Automation
+	if err := c.Call(context.Background(), rpc.MethodAutomationSave, rpc.AutomationSaveParams{Automation: saved}, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "triage" || got.Agent != "claude" || got.Source != path {
+		t.Errorf("got %+v", got)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "max_parallel = 2") || !strings.Contains(string(data), `prompt = "Triage again."`) || strings.Contains(string(data), "Triage {{work_item}}") {
+		t.Errorf("config:\n%s", data)
+	}
+	if len(backups(t, path)) != 1 {
+		t.Errorf("backups %v", backups(t, path))
+	}
+	list := listAutomations(t, c, "")
+	if len(list.Automations) != 2 || list.Automations[1].Prompt != "Triage again." {
+		t.Errorf("list %+v", list.Automations)
+	}
+}
+
+func TestAutomationSaveRefusesAnInvalidAutomation(t *testing.T) {
+	c, path := configDaemon(t, globalAutomations)
+	err := c.Call(context.Background(), rpc.MethodAutomationSave, rpc.AutomationSaveParams{Automation: rpc.Automation{Name: "x", Agent: "gemini", Prompt: "y"}}, nil)
+	var rerr *rpc.Error
+	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeBadRequest {
+		t.Errorf("got %v, want bad_request", err)
+	}
+	if len(backups(t, path)) != 0 {
+		t.Error("an invalid save wrote the file")
+	}
+}

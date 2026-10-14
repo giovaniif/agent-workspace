@@ -126,6 +126,7 @@ type Model struct {
 	dk       diskState
 	paint    *painter
 	renaming *renamePrompt
+	auto     *automationPrompt
 	drafts   map[string]domain.ReviewDraft
 
 	launches int
@@ -280,6 +281,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.renaming != nil {
 			return m.renameKey(msg)
 		}
+		if m.auto != nil {
+			return m.automationKey(msg)
+		}
 		if m.dk.open {
 			return m.diskKey(msg.String())
 		}
@@ -302,6 +306,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.renaming != nil {
 			return m.renamePaste(msg.Content), nil
 		}
+		if m.auto != nil {
+			return m.automationPaste(msg.Content), nil
+		}
+	case automationsMsg:
+		return m.automationsLoaded(msg), nil
 	case sessionStartedMsg:
 		if m.opts.NewSessionOnly {
 			return m, m.showNewAndQuit(msg.session.ID)
@@ -594,6 +603,8 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case "R":
 		return m.askRename(), nil
+	case "a":
+		return m.openAutomations()
 	case "A":
 		return m, m.unpin()
 	case "m":

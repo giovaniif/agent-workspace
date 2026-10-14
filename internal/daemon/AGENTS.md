@@ -136,6 +136,22 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - **Backup.** A changed file is first copied to `config.toml.agentws-<UTC time>.bak` (mode 600). Then it is replaced atomically with its old mode. If you set the value that it already has, nothing is written and there is no backup. A missing file is created without a backup.
 - **Live.** After a write, the daemon reloads `[defaults.<harness>]` and `[push] away_after`. `[push] away_after` reloads only when presence runs. To turn it on from `"0"`, restart. The TUI reads `[fallback]` and `[theme]` when it starts.
 
+## Automations
+
+`go test ./internal/domain/ ./internal/daemon/ -run 'Automation|Schedule|NextRun'`. See [ADR 0050](../../docs/adr/0050-automations.md) and the methods in [internal/rpc/](../rpc/AGENTS.md).
+
+- **Schedule.** `WithAutomationSchedule(max)` starts one timer goroutine. It never polls on the loop. Each wake reads the definitions off the loop, then sleeps until the next due run, a maximum of `max` (`Run` passes 1 min, so config changes apply in a minute).
+  - `schedule` is `hourly`, `daily HH:MM`, `weekdays HH:MM`, `weekly <day> HH:MM` or a 5-field cron expression (`domain.ParseSchedule`). `timezone` is an IANA name. The default is the local time of the daemon.
+  - The next run comes after the newest scheduled run of the automation. If there is none, it comes after the time that the daemon first saw the automation.
+  - `domain.ScheduleDecision`: a due run that is late by 15 min or less runs once. An older one is recorded as `missed`, once, for the newest missed time.
+  - If the session of the last run is still live, the run is recorded as `skipped` (except with `session = "reuse"`).
+  - In a DST gap, a run starts at the first time after the gap. In a repeated hour, it starts once.
+- **Events.** `on = [...]` starts a run when the loop sees a change (`domain.WorktreeAutomationEvents`, `domain.SessionAutomationEvents`): `pr.opened`, `pr.ci_failed`, `pr.review_requested`, `pr.merged`, `worktree.created`, `session.finished` and `session.needs_attention`.
+  - The loop only puts the event in a bounded queue. A worker matches it (`domain.MatchAutomationEvent`) and starts the run off the loop. A full queue drops the event and logs it.
+  - `[automation.filter]` takes `repo` (a name or a path), `branch` (a glob) and `author` (the GitHub login of the PR). A repo automation sees only the events of its repo.
+  - The PR link (or the session task) is `{{work_item}}`. A text that describes the event is `{{event}}`.
+  - There is one run for each automation and subject (the PR link, the session or the worktree) at a time. While that run is live, a new event records a `skipped` run.
+
 ## Codex fallback
 
 `go test ./... -run Fallback`. `[fallback]` in `$AGENTWS_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row, the new-session dialog shows the low-quota warning of `domain.Advise`. `ctrl+s` takes the offer: it switches to the other harness when that harness has reported limits. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).

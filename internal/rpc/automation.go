@@ -3,10 +3,12 @@ package rpc
 import "github.com/giovaniif/agent-workspace/internal/domain"
 
 const (
-	MethodAutomationList = "automation.list"
-	MethodAutomationShow = "automation.show"
-	MethodAutomationRun  = "automation.run"
-	MethodAutomationRuns = "automation.runs"
+	MethodAutomationList  = "automation.list"
+	MethodAutomationShow  = "automation.show"
+	MethodAutomationRun   = "automation.run"
+	MethodAutomationRuns  = "automation.runs"
+	MethodAutomationTrust = "automation.trust"
+	MethodAutomationSave  = "automation.save"
 )
 
 type Automation = domain.Automation
@@ -45,4 +47,8 @@ type AutomationRunsParams struct {
 
 type AutomationRuns struct {
 	Runs []domain.AutomationRun `json:"runs"`
+}
+
+type AutomationSaveParams struct {
+	Automation Automation `json:"automation"`
 }

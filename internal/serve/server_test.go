@@ -35,6 +35,7 @@ var (
 		rpc.MethodDeviceCheck, rpc.MethodPairRedeem, rpc.MethodSubscribe, rpc.MethodWorkspaceList,
 		rpc.MethodEndSession, rpc.MethodResumeSession, rpc.MethodSessionMute, rpc.MethodSessionRename,
 		rpc.MethodTranscriptPage, rpc.MethodTranscriptWatch, rpc.MethodNewSession, rpc.MethodSessionResolve,
+		rpc.MethodAutomationList, rpc.MethodAutomationRun,
 		rpc.MethodPushKey, rpc.MethodPushSubscribe, rpc.MethodPushUnsubscribe,
 		rpc.MethodSessionSend, rpc.MethodSessionUnsend, rpc.MethodSessionInterrupt,
 		rpc.MethodSessionPrompt, rpc.MethodSessionAnswer, rpc.MethodDeviceViewing,
@@ -49,6 +50,8 @@ type authedEndpoint struct {
 var authedEndpoints = []authedEndpoint{
 	{"GET", "/api/v1/workspaces", ""},
 	{"GET", "/api/v1/session-options", ""},
+	{"GET", "/api/v1/automations", ""},
+	{"POST", "/api/v1/automations/fix-ci/run", `{"context":"x"}`},
 	{"GET", "/api/v1/sessions/s1/messages", ""},
 	{"POST", "/api/v1/sessions/s1/end", ""},
 	{"POST", "/api/v1/sessions/s1/resume", ""},

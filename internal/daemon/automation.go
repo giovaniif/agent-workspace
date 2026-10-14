@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -30,16 +32,29 @@ type automationDoc struct {
 	Precheck string   `toml:"precheck"`
 	Session  string   `toml:"session"`
 	Enabled  *bool    `toml:"enabled"`
+	Filter   struct {
+		Repo   string `toml:"repo"`
+		Branch string `toml:"branch"`
+		Author string `toml:"author"`
+	} `toml:"filter"`
 }
 
 func LoadAutomations(path string) ([]domain.Automation, []string) {
-	var doc struct {
-		Automation []automationDoc `toml:"automation"`
-	}
-	meta, err := toml.DecodeFile(path, &doc)
+	data, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
+	if err != nil {
+		return nil, []string{fmt.Sprintf("%s: %v", path, err)}
+	}
+	return loadAutomationsText(string(data), path)
+}
+
+func loadAutomationsText(text, path string) ([]domain.Automation, []string) {
+	var doc struct {
+		Automation []automationDoc `toml:"automation"`
+	}
+	meta, err := toml.Decode(text, &doc)
 	if err != nil {
 		return nil, []string{fmt.Sprintf("%s: %v", path, err)}
 	}
@@ -55,7 +70,7 @@ func LoadAutomations(path string) ([]domain.Automation, []string) {
 		a := domain.Automation{
 			Name: d.Name, Agent: d.Agent, Model: d.Model, Effort: d.Effort, Target: d.Target,
 			Prompt: d.Prompt, Schedule: d.Schedule, Timezone: d.Timezone, On: d.On,
-			Precheck: d.Precheck, Session: d.Session, Enabled: d.Enabled == nil || *d.Enabled, Source: path,
+			Precheck: d.Precheck, Session: d.Session, Filter: domain.AutomationFilter(d.Filter), Enabled: d.Enabled == nil || *d.Enabled, Source: path,
 		}
 		if err := domain.ValidateAutomation(a); err != nil {
 			problems = append(problems, fmt.Sprintf("%s: %v", path, err))
@@ -72,6 +87,16 @@ func LoadAutomations(path string) ([]domain.Automation, []string) {
 }
 
 func (d *Daemon) automations(repo string) rpc.AutomationList {
+	list := d.loadAutomationList(repo)
+	var trust map[string]string
+	d.query(func(s *state) { trust = maps.Clone(s.automationTrust) })
+	for i, a := range list.Automations {
+		list.Automations[i].Trusted = !domain.AutomationNeedsTrust(a) || trust[domain.AutomationTrustKey(a)] == domain.AutomationHash(a)
+	}
+	return list
+}
+
+func (d *Daemon) loadAutomationList(repo string) rpc.AutomationList {
 	var global []domain.Automation
 	var problems []string
 	if d.cfg.path != "" {
@@ -125,4 +150,57 @@ func (d *Daemon) automationMethod(req rpc.Request) *rpc.Response {
 		}
 		return errorResponse(req.ID, rpc.CodeNotFound, fmt.Sprintf("no automation %q", p.Name))
 	}
+}
+
+func (d *Daemon) automationTrustMethod(req rpc.Request) (*rpc.Response, bool) {
+	var p rpc.AutomationShowParams
+	if err := json.Unmarshal(req.Params, &p); err != nil || strings.TrimSpace(p.Name) == "" || p.Repo == "" {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "automation.trust needs a name and a repo"), true
+	}
+	a, found := d.findAutomation(p.Name, p.Repo)
+	if !found {
+		return errorResponse(req.ID, rpc.CodeNotFound, fmt.Sprintf("no automation %q", p.Name)), true
+	}
+	trust := domain.AutomationTrust{Key: domain.AutomationTrustKey(a), Hash: domain.AutomationHash(a)}
+	a.Trusted = true
+	ok := d.query(func(s *state) {
+		s.automationTrust[trust.Key] = trust.Hash
+		s.store.PutAutomationTrust(trust)
+	})
+	return result(req.ID, a), ok
+}
+
+func (d *Daemon) automationSave(req rpc.Request) *rpc.Response {
+	if d.cfg.path == "" {
+		return errorResponse(req.ID, rpc.CodeUnavailable, "this daemon has no config.toml")
+	}
+	var p rpc.AutomationSaveParams
+	if err := json.Unmarshal(req.Params, &p); err != nil {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "automation.save params: "+err.Error())
+	}
+	a := p.Automation
+	a.Source, a.Trusted = d.cfg.path, false
+	if err := domain.ValidateAutomation(a); err != nil {
+		return errorResponse(req.ID, rpc.CodeBadRequest, err.Error())
+	}
+	d.cfg.mu.Lock()
+	defer d.cfg.mu.Unlock()
+	src, err := readConfig(d.cfg.path)
+	if err != nil {
+		return errorResponse(req.ID, rpc.CodeFailed, err.Error())
+	}
+	if _, err := configValues(src); err != nil {
+		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s does not parse, so agentws leaves it alone: %v", d.cfg.path, err))
+	}
+	next := domain.SetAutomationBlock(src, a)
+	loaded, problems := loadAutomationsText(next, d.cfg.path)
+	if !slices.ContainsFunc(loaded, func(x domain.Automation) bool { return domain.AutomationHash(x) == domain.AutomationHash(a) }) {
+		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s has a form of %q that agentws cannot edit; change it there by hand %v", d.cfg.path, a.Name, problems))
+	}
+	if next != src {
+		if err := d.replaceConfig(src, next); err != nil {
+			return errorResponse(req.ID, rpc.CodeFailed, err.Error())
+		}
+	}
+	return result(req.ID, a)
 }

@@ -5,16 +5,17 @@ import "github.com/giovaniif/agent-workspace/internal/domain"
 const EventsPerSession = domain.SessionEventsKept
 
 type Snapshot struct {
-	Workspaces     []domain.Workspace
-	Tasks          []domain.Task
-	Worktrees      []domain.Worktree
-	Sessions       []domain.Session
-	Events         []domain.SessionEvent
-	Viewed         []domain.ViewedMark
-	Drafts         []domain.ReviewDraft
-	Devices        []domain.Device
-	Projects       []domain.Project
-	AutomationRuns []domain.AutomationRun
+	Workspaces      []domain.Workspace
+	Tasks           []domain.Task
+	Worktrees       []domain.Worktree
+	Sessions        []domain.Session
+	Events          []domain.SessionEvent
+	Viewed          []domain.ViewedMark
+	Drafts          []domain.ReviewDraft
+	Devices         []domain.Device
+	Projects        []domain.Project
+	AutomationRuns  []domain.AutomationRun
+	AutomationTrust []domain.AutomationTrust
 }
 
 type Store interface {
@@ -34,6 +35,7 @@ type Store interface {
 	PutProject(domain.Project)
 	DeleteProject(root string)
 	PutAutomationRun(domain.AutomationRun)
+	PutAutomationTrust(domain.AutomationTrust)
 	Load() (Snapshot, error)
 	Flush() error
 	Close() error

@@ -66,6 +66,14 @@ struct SnapshotTests {
         return rep
     }
 
+    @Test func theAutomationsWindowListsAutomationsAndTheRunSheet() throws {
+        _ = try save("automations", Snapshot.render(automations: .seeded(), size: Self.size, dark: false), size: Self.size)
+        _ = try save("automations-runs-mocha", Snapshot.render(automations: .seeded(tab: .runs), size: Self.size, dark: true), size: Self.size)
+        let sheet = CGSize(width: 560, height: 360)
+        let automation = try #require(AutomationsScene.seeded().automations.first)
+        _ = try save("automations-run-sheet", Snapshot.renderAutomationRun(automation, size: sheet, dark: false), size: sheet)
+    }
+
     @Test func theDiskWindowMarksDirtyAndMergedWorktrees() throws {
         let rep = try shootDisk("disk-worktrees", .seeded())
         #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
