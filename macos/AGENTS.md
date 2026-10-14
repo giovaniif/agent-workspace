@@ -204,6 +204,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - a sidebar list of `FirstRunFlow.steps` (ticked by `isComplete`)
     - the content of the step on the window background, with stock controls (radio-group pickers, `GroupBox`es through `SettingsGroup`, rounded text fields)
     - a bottom bar with Cancel (Esc, ⌘.), Back and the default button `primaryTitle`. On first launch, Cancel quits. Else it closes "Add a server".
+  - Main window frame (`WindowFrame.swift`, `MainWindowFrame` in the app): when the live main view shows for the first time, the window gets the autosave name `agentws.main`. If no frame is saved, the window gets 80% of the visible screen (minimum 1280×800, never larger than the screen), centered. After that, AppKit keeps the size and position that the user sets. The first-run view in the same window keeps its smaller size. Test: `swift test --filter WindowFrame`.
   - `Snapshot.renderFirstRun` draws each step (`first-run-<n>[-dark].png`).
   - Hosts come from `~/.ssh/config` (`SSHConfig.hosts`, without wildcards) or a typed `user@host`. `SSHConfig.target` refuses options and spaces.
   - `ServerSetup` runs each remote step through `ProcessShell`: `ssh -T -o BatchMode=yes -o ConnectTimeout=10 <host> sh -c '<script>'`. Thus a host that asks for a password fails immediately (exit 255), with a message about key, agent or Tailscale SSH login.
