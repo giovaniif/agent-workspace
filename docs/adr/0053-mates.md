@@ -31,6 +31,13 @@ Slack text comes from many people. Thus it is not trusted. A prompt cannot keep 
 - crew keeps the tokens as secrets in a file with mode 600 under `$CREW_HOME/secrets/`. They are never in `config.toml`, never in a log, never in an RPC result and never in a `serve` response. A client can only set or remove a token. It cannot read it.
 - The app is not in the Slack Marketplace. Thus no Slack review is necessary. A company workspace can require an admin to approve the install. The docs tell the user this.
 
+### The owner
+
+- The owner of a mate is the person who installed it: the person who ran `crew mate add` and installed the Slack app for that crew server. The owner is not a fixed user in crew.
+- Setup records the Slack user ID of the installer at install time. After the tokens are set, crew shows a one-time code. The installer sends the code to the mate in a direct message. The daemon takes the user ID from that Slack event and writes it to `owner`. The code expires after 10 minutes.
+- Thus the owner ID comes from a Slack fact, not from text that a user types.
+- Every owner check uses this ID. To change the owner, the user runs `crew mate claim <name>` again on the server.
+
 ### The mate definition
 
 A mate is a `[[mate]]` table in `config.toml`:
@@ -42,7 +49,7 @@ A mate is a `[[mate]]` table in `config.toml`:
 | `agent` | `claude` or `codex`. |
 | `model`, `effort` | Optional. Empty values use `[defaults.<harness>]`. |
 | `repos` | The repos that the mate can work in. |
-| `owner` | The Slack user ID of the owner, for example `U012ABCDEF`. |
+| `owner` | The Slack user ID of the owner, for example `U012ABCDEF`. Setup writes it (see "The owner"). |
 | `enabled` | The default is true. |
 
 The validation is a pure function in `domain` with table tests. The tokens are not in the definition.
