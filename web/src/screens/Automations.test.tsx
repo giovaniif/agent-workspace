@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { App, type AppEnv } from "../App";
@@ -14,10 +14,18 @@ const automations = {
   ],
 };
 
+const runs = {
+  runs: [
+    { id: "r2", automation: "fix-ci", trigger: "pr.ci_failed", outcome: "failed", reason: "agent exited", start: "2026-10-03T11:00:00Z", end: "2026-10-03T11:05:00Z" },
+    { id: "r1", automation: "fix-ci", trigger: "manual", outcome: "succeeded", session_id: "s1", start: "2026-10-02T09:00:00Z", end: "2026-10-02T09:30:00Z" },
+  ],
+};
+
 function setup(hash: string) {
   const server = new FakeServer()
     .on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } })
-    .on("GET", "/api/v1/automations", { status: 200, body: automations });
+    .on("GET", "/api/v1/automations", { status: 200, body: automations })
+    .on("GET", "/api/v1/automations/runs?limit=100", { status: 200, body: runs });
   const storage = new MemoryStorage();
   storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
   const env: AppEnv = {
@@ -50,6 +58,31 @@ describe("Automations", () => {
     const deps = screen.getByRole("listitem", { name: "deps" });
     expect(deps).toHaveTextContent("weekly mon 09:00");
     expect(deps).toHaveTextContent("paused");
+  });
+
+  it("shows the outcome of the last run of each automation", async () => {
+    const { env } = setup("#/automations");
+    render(<App env={env} />);
+    const fix = await screen.findByRole("listitem", { name: "fix-ci" });
+    expect(await within(fix).findByText("last run failed: agent exited")).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: "deps" })).getByText("never run")).toBeInTheDocument();
+  });
+
+  it("shows the run history with a link to the session of a run", async () => {
+    const { env } = setup("#/automations");
+    render(<App env={env} />);
+    await screen.findByText("last run failed: agent exited");
+    await userEvent.click(screen.getByRole("button", { name: "History of fix-ci" }));
+    const history = screen.getByRole("list", { name: "Runs of fix-ci" });
+    expect(within(history).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(history).getByRole("link", { name: "Open session" })).toHaveAttribute("href", "#/sessions/s1");
+  });
+
+  it("names the run button Run with context", async () => {
+    const { env } = setup("#/automations");
+    render(<App env={env} />);
+    await screen.findByRole("listitem", { name: "fix-ci" });
+    expect(screen.getByRole("button", { name: "Run fix-ci" })).toHaveTextContent("Run with context");
   });
 
   it("runs an automation with context and opens its session", async () => {

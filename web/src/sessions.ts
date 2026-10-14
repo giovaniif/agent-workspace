@@ -158,3 +158,15 @@ export function limitRows(limits: Quota[], now: number): LimitRow[] {
   }
   return rows;
 }
+
+const styles: Record<string, { glyph: string; label: string }> = {
+  permission: { glyph: "◆", label: "Permission" },
+  waiting: { glyph: "●", label: "Waiting" },
+  running: { glyph: "◌", label: "Running" },
+  done: { glyph: "✓", label: "Done" },
+  idle: { glyph: "○", label: "Idle" },
+};
+
+export function stateStyle(state: string): { glyph: string; label: string } {
+  return styles[state] ?? { glyph: "?", label: state };
+}

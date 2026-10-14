@@ -6,7 +6,7 @@ export function pairErrorMessage(err: unknown): string {
   }
   switch (err.code) {
     case "unauthorized":
-      return "That code is wrong or has expired. A code works once, for 5 minutes. Run agentws remote pair on the computer for a new one.";
+      return "That code is wrong or has expired. A code works once, for 5 minutes. Run crew remote pair on the computer for a new one.";
     case "rate_limited":
       return "Too many wrong codes. Wait a minute, then try again.";
     case "network":

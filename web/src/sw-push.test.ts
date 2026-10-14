@@ -26,7 +26,7 @@ describe("push", () => {
       expect(n.options.body).not.toBe("");
     }
     expect(notificationFor(payloadOf(pushData("not json"))).options.body).toBe("not json");
-    expect(notificationFor(payloadOf(null))).toMatchObject({ title: "agentws", options: { body: "needs you", data: { url: "/" } } });
+    expect(notificationFor(payloadOf(null))).toMatchObject({ title: "crew", options: { body: "needs you", data: { url: "/" } } });
   });
 
   it("opens only this app's own pages", () => {

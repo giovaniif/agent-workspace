@@ -5,12 +5,12 @@ const origin = "https://agentws.example";
 
 describe("the shell cache", () => {
   it("is keyed by the build the worker was registered for", () => {
-    expect(cacheName(buildFromWorkerLocation(origin + "/sw.js?build=v2%2Babc"))).toBe("agentws-shell-v2+abc");
-    expect(cacheName(buildFromWorkerLocation(origin + "/sw.js"))).toBe("agentws-shell-dev");
+    expect(cacheName(buildFromWorkerLocation(origin + "/sw.js?build=v2%2Babc"))).toBe("crew-shell-v2+abc");
+    expect(cacheName(buildFromWorkerLocation(origin + "/sw.js"))).toBe("crew-shell-dev");
   });
 
   it("drops the caches of other builds and nothing else", () => {
-    expect(staleCaches(["agentws-shell-v1", "agentws-shell-v2", "other-app"], "agentws-shell-v2")).toEqual(["agentws-shell-v1"]);
+    expect(staleCaches(["crew-shell-v1", "crew-shell-v2", "other-app"], "crew-shell-v2")).toEqual(["crew-shell-v1"]);
   });
 
   it("precaches the shell at / and every built file once", () => {

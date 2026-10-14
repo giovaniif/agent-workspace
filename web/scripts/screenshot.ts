@@ -5,7 +5,7 @@ import { chromium, devices, type Browser, type BrowserContext, type Page } from 
 const base = process.env.WEB_SHOT_BASE ?? "http://127.0.0.1:5199";
 const cwd = process.env.WEB_SHOT_CWD ?? process.cwd();
 
-type State = { browser: Browser; device: string; installed: boolean; context?: BrowserContext; page?: Page };
+type State = { browser: Browser; device: string; installed: boolean; scheme: "light" | "dark"; context?: BrowserContext; page?: Page };
 
 async function open(state: State): Promise<Page> {
   if (state.page) {
@@ -16,7 +16,7 @@ async function open(state: State): Promise<Page> {
     throw new Error("unknown device " + state.device);
   }
   const { defaultBrowserType: _browserType, ...options } = descriptor;
-  const context = await state.browser.newContext(options);
+  const context = await state.browser.newContext({ ...options, colorScheme: state.scheme });
   if (state.installed) {
     await context.addInitScript(() => {
       Object.defineProperty(window.navigator, "standalone", { value: true });
@@ -54,6 +54,10 @@ async function step(state: State, line: string) {
       await reset(state);
       state.installed = rest === "installed";
       return;
+    case "scheme":
+      await reset(state);
+      state.scheme = rest === "dark" ? "dark" : "light";
+      return;
     case "goto":
       await (await open(state)).goto(new URL(rest, base).href);
       return;
@@ -85,7 +89,7 @@ const lines = readFileSync(0, "utf8")
   .map((l) => l.trim())
   .filter((l) => l !== "");
 const browser = await chromium.launch();
-const state: State = { browser, device: "iPhone 15", installed: false };
+const state: State = { browser, device: "iPhone 15", installed: false, scheme: "light" };
 try {
   for (const line of lines) {
     await step(state, line);

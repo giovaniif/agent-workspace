@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "agentws",
-  "short_name": "agentws",
-  "description": "Your agentws sessions, away from the terminal.",
+  "name": "crew",
+  "short_name": "crew",
+  "description": "Your crew of agents, away from the terminal.",
   "display": "standalone",
   "scope": "/",
   "background_color": "#eff1f5",
