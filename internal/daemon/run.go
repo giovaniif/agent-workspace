@@ -90,6 +90,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithSessions(gitadapter.Adder{}, runRecipe, worktreeHome),
 		WithProjectSetup(setup.Shell{Out: os.Stderr}),
 		WithAutomationPrecheck(setup.Shell{Out: os.Stderr}),
+		WithAutomationSchedule(scheduleRecheck),
 		WithStartDefaults(startDefaults),
 		WithHarnessConfig(readHarnessConfig),
 		WithConfig(filepath.Join(home, "config.toml")),

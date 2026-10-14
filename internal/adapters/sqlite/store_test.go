@@ -537,3 +537,18 @@ func TestAutomationRunsPersistAndAnUpdateReplacesTheRun(t *testing.T) {
 		t.Fatalf("runs %+v", snap.AutomationRuns)
 	}
 }
+
+func TestAutomationTrustPersistsByKey(t *testing.T) {
+	s, path := openTemp(t)
+	s.PutAutomationTrust(domain.AutomationTrust{Key: "/w/api/.agentws.toml\x00deps", Hash: "one"})
+	s.PutAutomationTrust(domain.AutomationTrust{Key: "/w/api/.agentws.toml\x00deps", Hash: "two"})
+	s = reopen(t, s, path)
+	snap, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []domain.AutomationTrust{{Key: "/w/api/.agentws.toml\x00deps", Hash: "two"}}
+	if !reflect.DeepEqual(snap.AutomationTrust, want) {
+		t.Fatalf("trust %+v", snap.AutomationTrust)
+	}
+}

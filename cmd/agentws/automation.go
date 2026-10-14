@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/rpc"
 )
 
-const automationUsage = "usage: agentws automation list | show <name> | run [--work-item w] <name> [context...|-] | runs [name] | rerun <run id>"
+const automationUsage = "usage: agentws automation list | show <name> | run [--work-item w] <name> [context...|-] | runs [name] | rerun <run id> | trust <name>"
 
 func runAutomation(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 || !automationArgsOK(args) {
@@ -30,7 +30,7 @@ func automationArgsOK(args []string) bool {
 	switch args[0] {
 	case "list":
 		return len(args) == 1
-	case "show", "rerun":
+	case "show", "rerun", "trust":
 		return len(args) == 2
 	case "runs":
 		return len(args) <= 2
@@ -88,6 +88,13 @@ func automationCommand(args []string, stdin io.Reader, stdout io.Writer) error {
 			return err
 		}
 		printAutomationRuns(stdout, []domain.AutomationRun{got.Run})
+		return nil
+	case "trust":
+		var a rpc.Automation
+		if err := c.Call(ctx, rpc.MethodAutomationTrust, rpc.AutomationShowParams{Name: args[1], Repo: cwd()}, &a); err != nil {
+			return err
+		}
+		fmt.Fprintf(stdout, "trusted %s from %s\n", a.Name, a.Source)
 		return nil
 	case "runs":
 		p := rpc.AutomationRunsParams{Limit: 50}
@@ -205,4 +212,9 @@ func printAutomationRuns(w io.Writer, runs []domain.AutomationRun) {
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.ID, r.Automation, r.Trigger, r.Start.Local().Format("2006-01-02 15:04"), r.Outcome, dash(r.SessionID), dash(note))
 	}
 	_ = tw.Flush()
+}
+
+func cwd() string {
+	dir, _ := os.Getwd()
+	return dir
 }

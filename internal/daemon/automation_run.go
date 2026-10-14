@@ -18,7 +18,8 @@ import (
 const precheckTimeout = 2 * time.Minute
 
 type automationCfg struct {
-	precheck app.CommandRunner
+	precheck      app.CommandRunner
+	scheduleEvery time.Duration
 }
 
 func WithAutomationPrecheck(runner app.CommandRunner) Option {

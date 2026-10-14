@@ -169,6 +169,12 @@ func (s *memStore) PutAutomationRun(run domain.AutomationRun) {
 	s.snap.AutomationRuns = append(s.snap.AutomationRuns, run)
 }
 
+func (s *memStore) PutAutomationTrust(trust domain.AutomationTrust) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.snap.AutomationTrust = append(s.snap.AutomationTrust, trust)
+}
+
 func (s *memStore) automationRuns() []domain.AutomationRun {
 	s.mu.Lock()
 	defer s.mu.Unlock()

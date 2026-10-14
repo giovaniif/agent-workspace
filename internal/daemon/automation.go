@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -72,6 +73,16 @@ func LoadAutomations(path string) ([]domain.Automation, []string) {
 }
 
 func (d *Daemon) automations(repo string) rpc.AutomationList {
+	list := d.loadAutomationList(repo)
+	var trust map[string]string
+	d.query(func(s *state) { trust = maps.Clone(s.automationTrust) })
+	for i, a := range list.Automations {
+		list.Automations[i].Trusted = !domain.AutomationNeedsTrust(a) || trust[domain.AutomationTrustKey(a)] == domain.AutomationHash(a)
+	}
+	return list
+}
+
+func (d *Daemon) loadAutomationList(repo string) rpc.AutomationList {
 	var global []domain.Automation
 	var problems []string
 	if d.cfg.path != "" {
@@ -125,4 +136,22 @@ func (d *Daemon) automationMethod(req rpc.Request) *rpc.Response {
 		}
 		return errorResponse(req.ID, rpc.CodeNotFound, fmt.Sprintf("no automation %q", p.Name))
 	}
+}
+
+func (d *Daemon) automationTrustMethod(req rpc.Request) (*rpc.Response, bool) {
+	var p rpc.AutomationShowParams
+	if err := json.Unmarshal(req.Params, &p); err != nil || strings.TrimSpace(p.Name) == "" || p.Repo == "" {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "automation.trust needs a name and a repo"), true
+	}
+	a, found := d.findAutomation(p.Name, p.Repo)
+	if !found {
+		return errorResponse(req.ID, rpc.CodeNotFound, fmt.Sprintf("no automation %q", p.Name)), true
+	}
+	trust := domain.AutomationTrust{Key: domain.AutomationTrustKey(a), Hash: domain.AutomationHash(a)}
+	a.Trusted = true
+	ok := d.query(func(s *state) {
+		s.automationTrust[trust.Key] = trust.Hash
+		s.store.PutAutomationTrust(trust)
+	})
+	return result(req.ID, a), ok
 }

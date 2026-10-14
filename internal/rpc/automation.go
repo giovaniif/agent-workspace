@@ -3,10 +3,11 @@ package rpc
 import "github.com/giovaniif/agent-workspace/internal/domain"
 
 const (
-	MethodAutomationList = "automation.list"
-	MethodAutomationShow = "automation.show"
-	MethodAutomationRun  = "automation.run"
-	MethodAutomationRuns = "automation.runs"
+	MethodAutomationList  = "automation.list"
+	MethodAutomationShow  = "automation.show"
+	MethodAutomationRun   = "automation.run"
+	MethodAutomationRuns  = "automation.runs"
+	MethodAutomationTrust = "automation.trust"
 )
 
 type Automation = domain.Automation
