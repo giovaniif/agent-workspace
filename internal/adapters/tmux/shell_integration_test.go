@@ -159,7 +159,7 @@ func TestShellPopupAttachesAClientToTheKeptAliveShell(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitFor(t, "the popup client to attach", func() bool {
-		return strings.Contains(tmuxIn(t, h, slot, "list-clients", "-F", "#{session_name}"), "agentws-popup")
+		return strings.Contains(tmuxIn(t, h, slot, "list-clients", "-F", "#{session_name}"), "crew-popup")
 	})
 	outer("send-keys", "-t", "outer", "echo popup-$((6*7))", "Enter")
 	waitFor(t, "the shell to answer in the popup", func() bool {
@@ -168,13 +168,13 @@ func TestShellPopupAttachesAClientToTheKeptAliveShell(t *testing.T) {
 
 	outer("send-keys", "-t", "outer", "M-t")
 	waitFor(t, "the popup to close on M-t", func() bool {
-		return !strings.Contains(tmuxIn(t, h, slot, "list-clients", "-F", "#{session_name}"), "agentws-popup")
+		return !strings.Contains(tmuxIn(t, h, slot, "list-clients", "-F", "#{session_name}"), "crew-popup")
 	})
 	if alive, _ := h.Alive(ctx, shell); !alive {
 		t.Fatal("closing the popup killed the shell")
 	}
 	waitFor(t, "the popup session to go away", func() bool {
-		return !strings.Contains(tmuxIn(t, h, slot, "list-sessions", "-F", "#{session_name}"), "agentws-popup")
+		return !strings.Contains(tmuxIn(t, h, slot, "list-sessions", "-F", "#{session_name}"), "crew-popup")
 	})
 }
 
@@ -262,7 +262,7 @@ func TestSetTitleShowsOnThePanesTopBorder(t *testing.T) {
 	if err := h.SetTitle(ctx, agent, "◐ claude · opus-5.5 │ api:x #7 ✓"); err != nil {
 		t.Fatal(err)
 	}
-	if got := tmuxIn(t, h, slot, "display-message", "-p", "-t", string(agent), "#{@agentws_title}"); got != "◐ claude · opus-5.5 │ api:x #7 ✓" {
+	if got := tmuxIn(t, h, slot, "display-message", "-p", "-t", string(agent), "#{@crew_title}"); got != "◐ claude · opus-5.5 │ api:x #7 ✓" {
 		t.Fatalf("pane title = %q", got)
 	}
 	if got := tmuxIn(t, h, slot, "show-options", "-gv", "pane-border-status"); got != "top" {
@@ -283,7 +283,7 @@ func TestSetTitleTurnsTitlesOnInAServerStartedBeforeThem(t *testing.T) {
 	if got := tmuxIn(t, h, slot, "show-options", "-gv", "pane-border-status"); got != "top" {
 		t.Fatalf("pane-border-status = %q; want top on the running server", got)
 	}
-	if got := tmuxIn(t, h, slot, "show-options", "-gv", "pane-border-format"); !strings.Contains(got, "@agentws_title") {
+	if got := tmuxIn(t, h, slot, "show-options", "-gv", "pane-border-format"); !strings.Contains(got, "@crew_title") {
 		t.Fatalf("pane-border-format = %q", got)
 	}
 }

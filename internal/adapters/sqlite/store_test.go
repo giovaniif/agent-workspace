@@ -552,3 +552,39 @@ func TestAutomationTrustPersistsByKey(t *testing.T) {
 		t.Fatalf("trust %+v", snap.AutomationTrust)
 	}
 }
+
+func TestOpenRenamesAutomationTrustKeysOfTheOldRepoConfig(t *testing.T) {
+	s, path := openTemp(t)
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		`UPDATE schema_version SET version = 9`,
+		`INSERT INTO automation_trust(key, data) VALUES ('/w/api/.agentws.toml` + "\x00" + `deps', '{"Key":"/w/api/.agentws.toml` + "\x00" + `deps","Hash":"h1"}')`,
+		`INSERT INTO automation_trust(key, data) VALUES ('/w/web/.crew.toml` + "\x00" + `deps', '{"Key":"/w/web/.crew.toml` + "\x00" + `deps","Hash":"h2"}')`,
+	} {
+		if _, err := db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = r.Close() })
+	snap, err := r.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []domain.AutomationTrust{{Key: "/w/api/.crew.toml\x00deps", Hash: "h1"}, {Key: "/w/web/.crew.toml\x00deps", Hash: "h2"}}
+	if !reflect.DeepEqual(snap.AutomationTrust, want) {
+		t.Fatalf("trust %+v", snap.AutomationTrust)
+	}
+}

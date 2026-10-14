@@ -42,7 +42,7 @@ func serveReview(t *testing.T, home, socket, agent string) (*rpc.Client, func())
 		t.Fatal(err)
 	}
 	d.SetClientHost(host)
-	path := filepath.Join(home, "agentws.sock")
+	path := filepath.Join(home, "crew.sock")
 	_ = os.Remove(path)
 	ln, err := net.Listen("unix", path)
 	if err != nil {

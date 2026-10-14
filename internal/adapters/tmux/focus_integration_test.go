@@ -65,7 +65,7 @@ func TestFocusKeyReturnsFromTheAgentPaneToTheSidebar(t *testing.T) {
 	waitFor(t, "focus to return to the sidebar", func() bool { return activeIndex() == "0" })
 
 	if got := tmuxOn(t, attach, "list-keys", "-T", "root"); !strings.Contains(got, "select-pane -t :.0") {
-		t.Fatalf("the agentws server has no focus binding:\n%s", got)
+		t.Fatalf("the crew server has no focus binding:\n%s", got)
 	}
 	other := fmt.Sprintf("crew-other-%d", os.Getpid())
 	t.Cleanup(func() { _ = exec.Command("tmux", "-L", other, "kill-server").Run() })

@@ -1,6 +1,6 @@
 exec crew daemon start
 stdout '^crew daemon started \(pid [0-9]+\)$'
-exists $CREW_HOME/agentws.pid
+exists $CREW_HOME/crew.pid
 
 exec crew daemon status
 stdout '^pid [0-9]+$'
@@ -18,7 +18,7 @@ exec crew daemon stop
 stdout '^crew daemon stopped \(pid [0-9]+\)$'
 ! exec crew daemon status
 stderr '^crew daemon: not running$'
-! exists $CREW_HOME/agentws.pid
+! exists $CREW_HOME/crew.pid
 
 ! exec crew daemon stop
 stderr 'not running'

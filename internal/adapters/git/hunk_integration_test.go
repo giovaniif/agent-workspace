@@ -94,7 +94,7 @@ func TestReviewRevertHunkMatchesGitCheckoutPatchAndKeepsABackup(t *testing.T) {
 	if got, want := read(t, filepath.Join(b, "f.txt")), read(t, filepath.Join(a, "f.txt")); got != want {
 		t.Errorf("f.txt after revert:\n%s\nwant (git checkout -p)\n%s", got, want)
 	}
-	backups, _ := filepath.Glob(filepath.Join(b, ".git", "agentws", "reverted", "*.patch"))
+	backups, _ := filepath.Glob(filepath.Join(b, ".git", "crew", "reverted", "*.patch"))
 	if len(backups) != 1 || !strings.Contains(read(t, backups[0]), "+two") {
 		t.Errorf("backups %v: want one patch holding the reverted lines", backups)
 	}
@@ -112,7 +112,7 @@ func TestReviewRevertOfAStaleHunkChangesNothing(t *testing.T) {
 	if got := read(t, path); got != edited {
 		t.Errorf("f.txt changed:\n%s", got)
 	}
-	if backups, _ := filepath.Glob(filepath.Join(b, ".git", "agentws", "reverted", "*.patch")); len(backups) != 0 {
+	if backups, _ := filepath.Glob(filepath.Join(b, ".git", "crew", "reverted", "*.patch")); len(backups) != 0 {
 		t.Errorf("a refused revert left backups %v", backups)
 	}
 }

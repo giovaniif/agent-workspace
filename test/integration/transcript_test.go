@@ -51,7 +51,7 @@ func serveTranscripts(t *testing.T, home string) (*daemon.Daemon, *rpc.Client) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(home, "agentws.sock")
+	path := filepath.Join(home, "crew.sock")
 	ln, err := net.Listen("unix", path)
 	if err != nil {
 		t.Fatal(err)
