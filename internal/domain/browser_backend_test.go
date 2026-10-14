@@ -39,7 +39,7 @@ func TestChooseBrowserPicksTheMacAppThenTheHeadlessFallback(t *testing.T) {
 }
 
 func TestParseBrowserConfig(t *testing.T) {
-	two, zero, neg := 3, 0, -1
+	two, one, zero, neg := 3, 1, 0, -1
 	cases := []struct {
 		name     string
 		fallback string
@@ -50,6 +50,7 @@ func TestParseBrowserConfig(t *testing.T) {
 	}{
 		{"defaults", "", nil, "", BrowserConfig{Fallback: BrowserFallbackOff, MaxHeadless: 2, Idle: 10 * time.Minute}, ""},
 		{"all set", "headless", &two, "90s", BrowserConfig{Fallback: BrowserHeadless, MaxHeadless: 3, Idle: 90 * time.Second}, ""},
+		{"one", "", &one, "1ns", BrowserConfig{Fallback: BrowserFallbackOff, MaxHeadless: 1, Idle: time.Nanosecond}, ""},
 		{"off", "off", nil, "", BrowserConfig{Fallback: BrowserFallbackOff, MaxHeadless: 2, Idle: 10 * time.Minute}, ""},
 		{"unknown fallback", "chrome", nil, "", DefaultBrowserConfig(), "fallback"},
 		{"zero max", "", &zero, "", DefaultBrowserConfig(), "max_headless"},
