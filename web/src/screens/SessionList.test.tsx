@@ -120,7 +120,7 @@ describe("the session list", () => {
     sockets.last.open();
     sockets.last.drop(4401, "device revoked");
     expect(await screen.findByRole("heading", { name: "Pair this device" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(/removed from agentws, or the server rejected its login/);
+    expect(screen.getByRole("status")).toHaveTextContent(/removed from crew, or the server rejected its login/);
     expect(storage.getItem("agentws.auth")).toBeNull();
     const check = server.calls.findIndex((c) => c.path === "/api/v1/workspaces");
     expect(check).toBeGreaterThanOrEqual(0);

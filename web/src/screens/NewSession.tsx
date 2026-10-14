@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { listWorkspaces, resolveWorkItem, sessionOptions, startSession, type HarnessOptions, type WorkItemResolved, type WorkspaceList } from "../api";
+import { addWorkspace, expandPath, listWorkspaces, removeWorkspace, resolveWorkItem, sessionOptions, startSession, type HarnessOptions, type WorkItemResolved, type WorkspaceList } from "../api";
 import type { AppEnv } from "../App";
 import { defaultLabel, effortChoices, harnesses, loadChoices, modelChoices, saveChoices } from "../newsession";
 
@@ -32,17 +32,56 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
   const [failure, setFailure] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [defaults, setDefaults] = useState<HarnessOptions[]>([]);
+  const [home, setHome] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [newPath, setNewPath] = useState("");
+  const [addError, setAddError] = useState("");
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState("");
+  const [select, setSelect] = useState("");
 
   useEffect(() => {
     let live = true;
     sessionOptions(env.fetch, token).then(
-      (options) => live && setDefaults(options.harnesses ?? []),
+      (options) => {
+        if (live) {
+          setDefaults(options.harnesses ?? []);
+          setHome(options.home ?? "");
+        }
+      },
       () => undefined,
     );
     return () => {
       live = false;
     };
   }, [env.fetch, token]);
+
+  async function submitWorkspace(e: FormEvent) {
+    e.preventDefault();
+    setAddError("");
+    try {
+      const added = await addWorkspace(env.fetch, token, expandPath(newPath, home));
+      setSelect(added.Root);
+      setAdding(false);
+      setNewPath("");
+      setAttempt((n) => n + 1);
+    } catch (err) {
+      setAddError(message(err));
+    }
+  }
+
+  async function confirmRemove() {
+    setRemoveError("");
+    try {
+      await removeWorkspace(env.fetch, token, workspace);
+      setRemoving(false);
+      setSelect("");
+      setWorkspace("");
+      setAttempt((n) => n + 1);
+    } catch (err) {
+      setRemoveError(message(err));
+    }
+  }
 
   useEffect(() => {
     let live = true;
@@ -52,7 +91,13 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
           return;
         }
         setWorkspaces({ state: "ready", list });
-        setWorkspace((current) => (list.workspaces.some((w) => w.Root === current) ? current : list.last_used || list.workspaces[0]?.Root || ""));
+        setWorkspace((current) => {
+          const has = (root: string) => list.workspaces.some((w) => w.Root === root);
+          if (select && has(select)) {
+            return select;
+          }
+          return has(current) ? current : list.last_used || list.workspaces[0]?.Root || "";
+        });
       },
       (err) => live && setWorkspaces({ state: "failed", message: message(err) }),
     );
@@ -131,10 +176,55 @@ export function NewSession({ env, token }: { env: AppEnv; token: string }) {
           </button>
         </div>
       ) : null}
-      {workspaces.state === "ready" && roots.length === 0 ? (
-        <p className="muted">
-          No workspaces yet. Run <code>agentws workspace add</code> on your computer.
-        </p>
+      {workspaces.state === "ready" && roots.length === 0 ? <p className="muted">No workspaces on this server yet. Add a folder of the server.</p> : null}
+      <div className="workspace-tools">
+        <button type="button" onClick={() => setAdding((v) => !v)}>
+          Add workspace…
+        </button>
+        <button type="button" onClick={() => setRemoving(true)} disabled={!workspace}>
+          Remove workspace
+        </button>
+      </div>
+      {adding ? (
+        <form className="add-workspace" onSubmit={submitWorkspace}>
+          <label>
+            Folder on the server
+            <input
+              value={newPath}
+              onChange={(e) => setNewPath(e.target.value)}
+              placeholder={home ? home + "/project" : "/home/me/project"}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </label>
+          {newPath.trim() ? <p className="muted mono">{expandPath(newPath, home)}</p> : null}
+          {addError ? (
+            <div className="error" role="alert">
+              {addError}
+            </div>
+          ) : null}
+          <button type="submit" disabled={!newPath.trim()}>
+            Add
+          </button>
+        </form>
+      ) : null}
+      {removing && workspace ? (
+        <div className="confirm" role="alertdialog" aria-label={"Remove " + workspace + " from crew?"}>
+          <p>{"Remove " + workspace + " from crew?"}</p>
+          <p className="muted">crew stops using this workspace. No files, worktrees or branches on the server change.</p>
+          {removeError ? (
+            <div className="error" role="alert">
+              {removeError}
+            </div>
+          ) : null}
+          <button type="button" onClick={() => setRemoving(false)}>
+            Cancel
+          </button>
+          <button type="button" aria-label={"Remove " + workspace} onClick={confirmRemove}>
+            Remove
+          </button>
+        </div>
       ) : null}
       <form onSubmit={submit}>
         <label>

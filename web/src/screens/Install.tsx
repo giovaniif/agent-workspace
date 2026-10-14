@@ -5,7 +5,7 @@ export function Install({ code, host }: { code: string; host: string }) {
   return (
     <main className="screen">
       <Brand host={host} />
-      <h1>Add agentws to your Home Screen</h1>
+      <h1>Add crew to your Home Screen</h1>
       <p className="lead">
         Pairing happens in the installed app. A Home Screen app keeps its own storage, so a device paired in this
         browser tab would not stay paired there.
@@ -22,7 +22,7 @@ export function Install({ code, host }: { code: string; host: string }) {
         <ol className="steps">
           <li>In Safari, tap the Share button.</li>
           <li>Choose Add to Home Screen, then Add.</li>
-          <li>Open agentws from your Home Screen.</li>
+          <li>Open crew from your Home Screen.</li>
         </ol>
       </section>
       <section className="card">
@@ -30,7 +30,7 @@ export function Install({ code, host }: { code: string; host: string }) {
         <ol className="steps">
           <li>In Chrome, open the menu.</li>
           <li>Choose Install app or Add to Home screen.</li>
-          <li>Open agentws from your Home Screen.</li>
+          <li>Open crew from your Home Screen.</li>
         </ol>
       </section>
     </main>

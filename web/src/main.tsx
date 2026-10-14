@@ -14,7 +14,7 @@ import { browserPush } from "./push";
 
 const checkEvery = 5 * 60 * 1000;
 const installTimeout = 15 * 1000;
-const reloadedKey = "agentws.reloaded-for";
+const reloadedKey = "crew.reloaded-for";
 const apiFetch = (input: string, init?: RequestInit) => fetch(input, init);
 const streamURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/api/v1/stream";
 const openStream = () => new WebSocket(streamURL);

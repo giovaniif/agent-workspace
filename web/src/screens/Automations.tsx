@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { type Automation, type Authed, listAutomations, runAutomation } from "../api";
+import { type Automation, type AutomationRun, type Authed, automationRuns, listAutomations, runAutomation } from "../api";
 
 function trigger(a: Automation): string {
   const parts: string[] = [];
@@ -10,6 +10,40 @@ function trigger(a: Automation): string {
     parts.push("on " + a.on.join(", "));
   }
   return parts.length > 0 ? parts.join(" · ") : "manual";
+}
+
+function lastRun(run: AutomationRun | undefined): string {
+  if (!run) {
+    return "never run";
+  }
+  return "last run " + run.outcome + (run.reason ? ": " + run.reason : "");
+}
+
+function when(start: string | undefined): string {
+  if (!start) {
+    return "";
+  }
+  const at = new Date(start);
+  return Number.isNaN(at.getTime()) ? "" : at.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+}
+
+function History({ name, runs }: { name: string; runs: AutomationRun[] }) {
+  if (runs.length === 0) {
+    return <p className="muted">No runs yet.</p>;
+  }
+  return (
+    <ul className="runs" aria-label={"Runs of " + name}>
+      {runs.map((r) => (
+        <li key={r.id}>
+          <span className={"outcome-" + r.outcome}>{r.outcome}</span>
+          {r.trigger ? <span>{r.trigger}</span> : null}
+          {when(r.start) ? <span>{when(r.start)}</span> : null}
+          {r.reason ? <span>{r.reason}</span> : null}
+          {r.session_id ? <a href={"#/sessions/" + encodeURIComponent(r.session_id)}>Open session</a> : null}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function RunForm({ api, automation, onDone }: { api: Authed; automation: Automation; onDone: () => void }) {
@@ -63,19 +97,26 @@ export function Automations({ api }: { api: Authed }) {
   const [list, setList] = useState<Automation[] | null>(null);
   const [error, setError] = useState("");
   const [running, setRunning] = useState("");
+  const [runs, setRuns] = useState<AutomationRun[]>([]);
+  const [open, setOpen] = useState("");
 
   useEffect(() => {
     let live = true;
     listAutomations(api)
       .then((out) => live && setList(out.automations ?? []))
       .catch((err) => live && setError(err instanceof Error ? err.message : String(err)));
+    automationRuns(api)
+      .then((out) => live && setRuns(out.runs ?? []))
+      .catch(() => undefined);
     return () => {
       live = false;
     };
   }, [api]);
 
+  const runsOf = (name: string) => runs.filter((r) => r.automation === name);
+
   return (
-    <main className="automations">
+    <main className="screen automations">
       <h1>Automations</h1>
       {error && <p role="alert">{error}</p>}
       {list === null && !error && <p>Loading…</p>}
@@ -89,9 +130,16 @@ export function Automations({ api }: { api: Authed }) {
               <span>{trigger(a)}</span>
               <span>{a.enabled ? "enabled" : "paused"}</span>
               <button type="button" aria-label={"Run " + a.name} onClick={() => setRunning(a.name)}>
-                Run…
+                Run with context
               </button>
             </div>
+            <div className="automation-meta">
+              <span className={runsOf(a.name)[0]?.outcome === "failed" ? "outcome-failed" : undefined}>{lastRun(runsOf(a.name)[0])}</span>
+              <button type="button" className="history" aria-label={"History of " + a.name} aria-expanded={open === a.name} onClick={() => setOpen(open === a.name ? "" : a.name)}>
+                History
+              </button>
+            </div>
+            {open === a.name && <History name={a.name} runs={runsOf(a.name)} />}
             {running === a.name && <RunForm api={api} automation={a} onDone={() => setRunning("")} />}
           </li>
         ))}

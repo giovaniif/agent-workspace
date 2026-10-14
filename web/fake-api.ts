@@ -97,7 +97,7 @@ function fakeMessage(id: string, cursor: number, role: string, text: string, at:
   return { id, cursor, turn: "p1", role, text, ...(tool ? { tool } : {}), at };
 }
 
-export function fakeMessages(older: boolean, now = Date.now()) {
+export function fakeMessages(older: boolean, now = Date.now(), session = "") {
   const at = new Date(now - 5 * minute).toISOString();
   if (older) {
     return {
@@ -119,6 +119,7 @@ export function fakeMessages(older: boolean, now = Date.now()) {
       fakeMessage("n4", 6400, "assistant", "The tests pass. Lint flagged one unchecked `Close`; fixing it now.\n\n- retries **3 times** on 502, 503 and 504\n- backs off 200 ms, doubling\n- honours `Retry-After`", at),
       fakeMessage("n5", 7000, "tool", "", at, { name: "Edit", summary: "Edit internal/client/client.go", status: "done" }),
       fakeMessage("n6", 7600, "tool", "", at, { name: "Bash", summary: "Bash make lint && go test ./...", status: "running" }),
+      ...(session === "s4" ? [fakeMessage("n7", 8200, "tool", "", at, { name: "Bash", summary: "Bash crew browser screenshot", status: "done" })] : []),
     ],
     before: 4000,
   };
@@ -191,7 +192,7 @@ function fakeStream(req: IncomingMessage, socket: Duplex) {
 
 export function fakeApi(build = "v0.12.0+demo"): Plugin {
   return {
-    name: "agentws-fake-api",
+    name: "crew-fake-api",
     configureServer(server) {
       server.httpServer?.on("upgrade", (req: IncomingMessage, socket: Duplex) => {
         if ((req.url ?? "").split("?")[0] === "/api/v1/stream") {
@@ -225,7 +226,7 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
         const session = path.match(/^\/api\/v1\/sessions\/([^/]+)\/(messages|interrupt|prompt|answer|sends\/[^/]+)$/);
         if (session && req.method === "GET" && session[2] === "messages") {
           const older = new URL(req.url ?? "", "http://fake").searchParams.has("before");
-          setTimeout(() => send(res, 200, fakeMessages(older)), older ? 5000 : 0);
+          setTimeout(() => send(res, 200, fakeMessages(older, Date.now(), session[1])), older ? 5000 : 0);
           return;
         }
         if (session && req.method === "POST" && session[2] === "messages") {
@@ -283,11 +284,30 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
         if (req.method === "GET" && path === "/api/v1/automations") {
           send(res, 200, {
             automations: [
-              { name: "fix-ci", agent: "claude", prompt: "Fix the CI of {{work_item}}.", on: ["pr.ci_failed"], enabled: true, source: "/home/me/.agentws/config.toml" },
-              { name: "deps", agent: "codex", prompt: "Update the deps.", schedule: "weekly mon 09:00", enabled: false, source: "/home/me/.agentws/config.toml" },
+              { name: "fix-ci", agent: "claude", prompt: "Fix the CI of {{work_item}}.", on: ["pr.ci_failed"], enabled: true, source: "/home/me/.crew/config.toml" },
+              { name: "deps", agent: "codex", prompt: "Update the deps.", schedule: "weekly mon 09:00", enabled: false, source: "/home/me/.crew/config.toml" },
               { name: "audit", agent: "claude", prompt: "Audit the api.", enabled: true, source: "/home/me/api/.agentws.toml" },
             ],
           });
+          return;
+        }
+        if (req.method === "GET" && path === "/api/v1/automations/runs") {
+          send(res, 200, {
+            runs: [
+              { id: "r3", automation: "fix-ci", trigger: "pr.ci_failed", outcome: "succeeded", session_id: "s3", start: "2026-10-03T11:40:00Z" },
+              { id: "r2", automation: "audit", trigger: "manual", outcome: "failed", reason: "agent exited with status 1", start: "2026-10-03T09:10:00Z" },
+              { id: "r1", automation: "fix-ci", trigger: "pr.ci_failed", outcome: "skipped", reason: "precheck failed", start: "2026-10-02T16:00:00Z" },
+            ],
+          });
+          return;
+        }
+        if (req.method === "POST" && path === "/api/v1/workspaces") {
+          const body = await readJSON(req);
+          send(res, 200, { Root: String(body.path ?? ""), Kind: "single", Repos: [], LastUsed: "0001-01-01T00:00:00Z" });
+          return;
+        }
+        if (req.method === "POST" && path === "/api/v1/workspaces/remove") {
+          send(res, 200, {});
           return;
         }
         if (req.method === "POST" && path.startsWith("/api/v1/automations/")) {
@@ -310,6 +330,7 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
               { harness: "claude", default_model: "opus", default_effort: "high" },
               { harness: "codex", default_model: "gpt-6.1-sol", default_effort: "medium" },
             ],
+            home: "/home/me",
           });
           return;
         }
@@ -333,7 +354,7 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           const body = await readJSON(req);
           if (String(body.work_item ?? "").includes("broken")) {
             send(res, 500, {
-              error: { code: "failed", message: "setup /home/me/.agentws/worktrees/api/broken: npm ci: exit status 1\nnpm ERR! code EUSAGE\nnpm ERR! missing lockfile" },
+              error: { code: "failed", message: "setup /home/me/.crew/worktrees/api/broken: npm ci: exit status 1\nnpm ERR! code EUSAGE\nnpm ERR! missing lockfile" },
             });
             return;
           }
