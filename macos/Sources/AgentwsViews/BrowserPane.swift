@@ -311,10 +311,10 @@ struct WebTab: NSViewRepresentable {
             view.customUserAgent = device.userAgent
             if view.url != nil { view.reload() }
         }
+        defer { views.loading(tab.id) }
         guard !tab.url.isEmpty, views.requested[tab.id] != tab.url, view.url?.absoluteString != tab.url, let url = URL(string: tab.url) else { return }
         views.requested[tab.id] = tab.url
         view.load(URLRequest(url: url))
-        views.loading(tab.id)
     }
 }
 
