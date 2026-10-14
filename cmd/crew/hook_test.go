@@ -167,6 +167,69 @@ func TestUserPromptSubmitFallsBackToNoOutputAfter50ms(t *testing.T) {
 	}
 }
 
+func TestPreToolUseOfADangerousCallSendsTheActionAndPrintsTheGateReply(t *testing.T) {
+	home := shortHome(t)
+	got := make(chan rpc.Hook, 1)
+	fakeDaemon(t, home, func(req rpc.Request) *rpc.Response {
+		var h rpc.Hook
+		_ = json.Unmarshal(req.Params, &h)
+		got <- h
+		b, _ := json.Marshal(rpc.HookReply{Output: json.RawMessage(`{"deny":1}`)})
+		return &rpc.Response{V: rpc.Version, ID: req.ID, Result: b}
+	})
+	dir := t.TempDir()
+	payload := `{"tool_name":"Bash","tool_input":{"command":"ls && git push"},"cwd":"` + dir + `"}`
+	code, out := hook(home, "PreToolUse", payload)
+	if code != 0 || out != `{"deny":1}`+"\n" {
+		t.Fatalf("code %d, stdout %q", code, out)
+	}
+	if h := <-got; h.Action == nil || h.Action.Kind != domain.ActionPush || h.Action.Tool != "Bash" {
+		t.Fatalf("hook %+v", h)
+	}
+}
+
+func TestPreToolUseOfASafeCallSendsNoActionAndDoesNotWait(t *testing.T) {
+	home := shortHome(t)
+	got := make(chan rpc.Hook, 1)
+	fakeDaemon(t, home, func(req rpc.Request) *rpc.Response {
+		var h rpc.Hook
+		_ = json.Unmarshal(req.Params, &h)
+		got <- h
+		b, _ := json.Marshal(rpc.HookReply{Output: json.RawMessage(`{"deny":1}`)})
+		return &rpc.Response{V: rpc.Version, ID: req.ID, Result: b}
+	})
+	dir := t.TempDir()
+	code, out := hook(home, "PreToolUse", `{"tool_name":"Bash","tool_input":{"command":"go test ./..."},"cwd":"`+dir+`"}`)
+	if code != 0 || out != "" {
+		t.Fatalf("code %d, stdout %q", code, out)
+	}
+	if h := <-got; h.Action != nil {
+		t.Fatalf("hook %+v", h)
+	}
+}
+
+func TestPreToolUseSeesASymlinkOutOfTheWorktree(t *testing.T) {
+	home := shortHome(t)
+	got := make(chan rpc.Hook, 1)
+	fakeDaemon(t, home, func(req rpc.Request) *rpc.Response {
+		var h rpc.Hook
+		_ = json.Unmarshal(req.Params, &h)
+		got <- h
+		return &rpc.Response{V: rpc.Version, ID: req.ID, Result: json.RawMessage(`{}`)}
+	})
+	dir, outside := t.TempDir(), t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(dir, "out")); err != nil {
+		t.Fatal(err)
+	}
+	payload := `{"tool_name":"Write","tool_input":{"file_path":"` + filepath.Join(dir, "out", "new.txt") + `"},"cwd":"` + dir + `"}`
+	if code, _ := hook(home, "PreToolUse", payload); code != 0 {
+		t.Fatalf("code %d", code)
+	}
+	if h := <-got; h.Action == nil || h.Action.Kind != domain.ActionOutsideWorktree {
+		t.Fatalf("hook %+v", h)
+	}
+}
+
 func TestHookSendsPaneTimeAndPayload(t *testing.T) {
 	home := shortHome(t)
 	got := make(chan rpc.Request, 1)
