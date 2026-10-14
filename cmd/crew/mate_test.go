@@ -72,7 +72,7 @@ func TestMateFromFlags(t *testing.T) {
 		args []string
 		want domain.Mate
 	}{
-		{"new mate is enabled", domain.Mate{Name: "scout"}, []string{"--agent", "codex", "--prompt", "Look."},
+		{"a new mate starts enabled", domain.Mate{Name: "scout", Enabled: true}, []string{"--agent", "codex", "--prompt", "Look."},
 			domain.Mate{Name: "scout", Agent: "codex", Prompt: "Look.", Enabled: true}},
 		{"flags change only what they name", existing, []string{"--prompt", "new"},
 			domain.Mate{Name: "reviewer", Prompt: "new", Agent: "claude", Model: "opus", Repos: []string{"api"}, Owner: "U012ABCDEF", Enabled: true}},
@@ -85,7 +85,7 @@ func TestMateFromFlags(t *testing.T) {
 			domain.Mate{Name: "reviewer", Prompt: "old", Agent: "claude", Repos: []string{"api"}, Owner: "U012ABCDEF", Enabled: true}},
 		{"no repo clears the list", existing, []string{"--no-repos"},
 			domain.Mate{Name: "reviewer", Prompt: "old", Agent: "claude", Model: "opus", Owner: "U012ABCDEF", Enabled: true}},
-		{"model, effort and owner", domain.Mate{Name: "a"}, []string{"--model", "m", "--effort", "high", "--owner", "U012ABCDEF"},
+		{"model, effort and owner", domain.Mate{Name: "a", Enabled: true}, []string{"--model", "m", "--effort", "high", "--owner", "U012ABCDEF"},
 			domain.Mate{Name: "a", Model: "m", Effort: "high", Owner: "U012ABCDEF", Enabled: true}},
 	}
 	for _, tc := range cases {
