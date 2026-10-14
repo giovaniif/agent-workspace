@@ -65,7 +65,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
 - New session (`NewSession.swift`, view `NewSessionSheet`):
   - ⌘N opens the sheet. The New button of the toolbar also opens it.
   - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, and the `[defaults.<harness>]` model and effort. The app cannot read a remote `config.toml`.
-  - `NewSessionForm` preselects the workspace with the newest `LastUsed`. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
+  - `NewSessionForm` preselects the workspace with the newest `LastUsed`. `Timestamp.parse` reads the Go format (nanoseconds and an offset). While the sheet is open, `observe` syncs the list when the set of workspace roots in the view changes (for example, a workspace added in setup or removed in Settings). The selection stays, unless its workspace is gone. It labels each workspace `orchestration root · N repos` or `single repo`. When you select a harness, model and effort go back to its defaults.
   - 300 ms after the last edit, `session.resolve` resolves the work item into a `WorkItemCard`: source, title, branch, and the path of an existing worktree on that branch. The form ignores a reply for an older text.
   - `warning` reads the `limits` of the view: the lowest `low` quota of the selected harness. It shows a switch button only when a different harness has reported limits and none of them is low (the rule of `domain.OfferFallback`).
   - Start (⌘↩) calls `session.new`, then `session.focus`, and the window selects the new session. A failure, for example the output of a setup recipe, stays in the sheet.
