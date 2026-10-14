@@ -62,6 +62,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `LiveDiskWindow` polls `disk.view` (every 2 s while sizes are pending, else every 10 s). It calls `cleanup.worktree` and `ports.kill`.
   - Go to session and Open shell go through `WindowRouter` to the main window. The main window selects the session and shows the shell of the worktree. The shell of a worktree with no owner has no session to show under, so it still calls `shell.toggle` and reports it.
   - `Seed.disk` is the seeded view for snapshots and `--demo`.
+- Automations (`Automations.swift`, views `AutomationsWindow`, `LiveAutomationsWindow`; ⇧⌘A, ADR 0050):
+  - `AutomationsModel` (main actor, over `Caller`) calls `automation.list`, `automation.runs`, `automation.run` (with context and an optional work item, or `rerun`) and `automation.save`.
+  - `AutomationTable.rows` gives the list: search by name or prompt text, filters (enabled or paused, last outcome, agent), sort by name or last run. `AutomationTable.move` moves the selection with the arrows and stops at the ends.
+  - The detail has Overview (the definition) and Runs (history, Open session, Rerun). Run… (⌘R) opens `AutomationRunSheet` with a multi-line context field. A started run selects its session in the main window.
+  - New… and Edit… open `AutomationEditSheet`. Save writes the global `config.toml` through `automation.save`. A repo automation has no Edit…: the detail shows its `.agentws.toml`.
+  - Test: `swift test --filter Automations`. Snapshots: `automations*.png`.
 - New session (`NewSession.swift`, view `NewSessionSheet`):
   - ⌘N opens the sheet. The New button of the toolbar also opens it.
   - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, and the `[defaults.<harness>]` model and effort. The app cannot read a remote `config.toml`.

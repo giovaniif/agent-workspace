@@ -55,7 +55,7 @@ The left pane of the client layout runs `agentws tui`, 48 columns wide. When the
   - A daemon of the same build replaces the state. The TUI follows its diffs (`listen`, one command for each diff), and all ports in `Options` move to the new connection.
   - A `version_mismatch` stops the retries and shows `agentws was upgraded`. With `Options.CanRestart` (only the main sidebar), `r` quits with `tui.ErrRestart`. `agentws tui` then re-execs itself and gets the installed binary.
   - Popups (`--new-session`, `--setup`) do not dial again. Tests: `go test ./internal/tui/ -run 'Reconnect|Disconnected|AnotherBuild'` and `test/e2e/testdata/script/tui_reconnect.txtar`.
-- Other keys: `n` new session (popup through `client.popup`, ADR 0037), `enter` focus, `x` then `y` end, `u` resume an ended session (a picker, most recently active first), `m` mute, `R` rename and pin, `A` unpin, `P` projects, `r` review, `w` worktrees and disk, `t` shell, `T` shell popup, `s` focus the shell, `e` nvim, `S` setup walkthrough. `ctrl+\` (`tmux.FocusSidebarKey`) returns to the sidebar from an agent pane ([ADR 0025](../../docs/adr/0025-focus-return-key.md)).
+- Other keys: `n` new session (popup through `client.popup`, ADR 0037), `enter` focus, `x` then `y` end, `u` resume an ended session (a picker, most recently active first), `m` mute, `R` rename and pin, `A` unpin, `a` run an automation (pick it with `j`/`k`, `enter`, then type the context and `enter`), `P` projects, `r` review, `w` worktrees and disk, `t` shell, `T` shell popup, `s` focus the shell, `e` nvim, `S` setup walkthrough. `ctrl+\` (`tmux.FocusSidebarKey`) returns to the sidebar from an agent pane ([ADR 0025](../../docs/adr/0025-focus-return-key.md)).
 
 ## Config
 

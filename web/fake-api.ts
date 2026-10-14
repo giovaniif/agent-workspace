@@ -280,6 +280,20 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           send(res, 401, { error: { code: "unauthorized", message: "unknown or revoked device token" } });
           return;
         }
+        if (req.method === "GET" && path === "/api/v1/automations") {
+          send(res, 200, {
+            automations: [
+              { name: "fix-ci", agent: "claude", prompt: "Fix the CI of {{work_item}}.", on: ["pr.ci_failed"], enabled: true, source: "/home/me/.agentws/config.toml" },
+              { name: "deps", agent: "codex", prompt: "Update the deps.", schedule: "weekly mon 09:00", enabled: false, source: "/home/me/.agentws/config.toml" },
+              { name: "audit", agent: "claude", prompt: "Audit the api.", enabled: true, source: "/home/me/api/.agentws.toml" },
+            ],
+          });
+          return;
+        }
+        if (req.method === "POST" && path.startsWith("/api/v1/automations/")) {
+          send(res, 200, { run: { id: "r9", automation: "fix-ci", outcome: "skipped", reason: "precheck failed" }, session: {} });
+          return;
+        }
         if (req.method === "GET" && path === "/api/v1/workspaces") {
           send(res, 200, {
             workspaces: [

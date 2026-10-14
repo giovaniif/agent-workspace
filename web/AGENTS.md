@@ -74,6 +74,7 @@ The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](.
   - Sign out first calls `POST /api/v1/push/unsubscribe` and unsubscribes the browser (best effort). Then it forgets the token.
 
   Tests: `npm test -- Push` and `npm test -- Settings`.
+- `#/automations` (`screens/Automations.tsx`) lists the automations with agent, trigger and state. Run… opens a form with a multi-line context and an optional work item, then posts `/api/v1/automations/<name>/run`. A started run opens its session. A skipped or failed run shows its reason. Tests: `npm test -- Automations`.
 - `#/settings` shows Settings (server, this device, Enable notifications, sign out). A tab bar under the session list and Settings switches between them.
 - `src/screens/`: one component for each screen. `src/theme.css`: the Latte palette of the TUI as CSS variables, and IBM Plex Sans and JetBrains Mono from `@fontsource`.
 - `src/test/`: test helpers (`FakeServer`, `MemoryStorage`, the Vitest setup). tdd-check treats them as port fakes.

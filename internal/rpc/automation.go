@@ -8,6 +8,7 @@ const (
 	MethodAutomationRun   = "automation.run"
 	MethodAutomationRuns  = "automation.runs"
 	MethodAutomationTrust = "automation.trust"
+	MethodAutomationSave  = "automation.save"
 )
 
 type Automation = domain.Automation
@@ -46,4 +47,8 @@ type AutomationRunsParams struct {
 
 type AutomationRuns struct {
 	Runs []domain.AutomationRun `json:"runs"`
+}
+
+type AutomationSaveParams struct {
+	Automation Automation `json:"automation"`
 }

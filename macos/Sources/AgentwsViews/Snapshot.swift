@@ -13,6 +13,14 @@ public enum Snapshot {
         renderView(DiskWindow(scene: scene), size: size, dark: dark)
     }
 
+    public static func render(automations scene: AutomationsScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(AutomationsWindow(scene: scene), size: size, dark: dark)
+    }
+
+    public static func renderAutomationRun(_ automation: Automation, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(AutomationRunSheet(automation: automation, run: { _, _ in }, cancel: {}), size: size, dark: dark)
+    }
+
     public static func settings(_ scene: SettingsScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
         renderView(SettingsView(scene: scene), size: size, dark: dark)
     }

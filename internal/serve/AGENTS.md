@@ -48,6 +48,8 @@ Unknown paths under `/api/` answer `not_found`.
 | `POST /api/v1/pair` | no | `pair.redeem` | `{"code","name"}` → `{"device":{"id","name","created_at","last_seen"},"token"}` |
 | `GET /api/v1/workspaces` | yes | `workspace.list` | → `{"workspaces":[Workspace],"last_used"}` |
 | `GET /api/v1/session-options` | yes | `session.options` | → `{"harnesses":[{"harness","name","tag","models","efforts","model","effort","default_model","default_effort"}],"home"}`; the new-session form shows `default (<value>)` |
+| `GET /api/v1/automations` | yes | `automation.list` | → `{"automations":[Automation],"problems"}` |
+| `POST /api/v1/automations/{name}/run` | yes | `automation.run` | `{"context","work_item"}` (both optional, no other keys: a phone cannot rerun or pick a repo) → `{"run","session"}` |
 | `POST /api/v1/sessions` | yes | `session.new` | `{"workspace","work_item","harness","model","effort","prompt"}` (`harness` required; the rest optional. An empty `work_item` starts a session that is named from its first prompt) → the new `Session`; a setup recipe failure is `failed` with its output in `message` |
 | `GET /api/v1/work-items/resolve?workspace=&item=` | yes | `session.resolve` | → `{"source","ref","title","worktree","workspace"}`; `bad_request` for an empty item or an unsupported link, `not_found` for an unknown workspace or an item the tracker does not know |
 | `GET /api/v1/sessions/{id}/messages?before=&limit=` | yes | `transcript.page` | → `{"messages":[Message],"before"}`; both query values optional integers |
