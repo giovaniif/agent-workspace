@@ -228,6 +228,7 @@ public final class BrowserWebViews {
     private var observers: [String: [NSKeyValueObservation]] = [:]
     private var stores: [String: WKWebsiteDataStore] = [:]
     var requested: [String: String] = [:]
+    private var reported: [String: [String]] = [:]
     public var report: @MainActor (String, String, String) -> Void = { _, _, _ in }
     public var profile: @MainActor (String) -> String = { _ in BrowserProfile.standard.id }
 
@@ -259,8 +260,11 @@ public final class BrowserWebViews {
         view.allowsBackForwardNavigationGestures = true
         let publish: @MainActor (WKWebView) -> Void = { [weak self] web in
             let url = web.url?.absoluteString ?? ""
-            if !url.isEmpty { self?.requested[tab] = url }
-            self?.report(tab, url, web.title ?? "")
+            let title = web.title ?? ""
+            guard let self, self.reported[tab] != [url, title] else { return }
+            self.reported[tab] = [url, title]
+            if !url.isEmpty { self.requested[tab] = url }
+            self.report(tab, url, title)
         }
         observers[tab] = [
             view.observe(\.url, options: [.new]) { web, _ in MainActor.assumeIsolated { publish(web) } },
@@ -273,6 +277,7 @@ public final class BrowserWebViews {
     public func close(_ tab: String) {
         observers[tab] = nil
         requested[tab] = nil
+        reported[tab] = nil
         views.removeValue(forKey: tab)?.removeFromSuperview()
     }
 

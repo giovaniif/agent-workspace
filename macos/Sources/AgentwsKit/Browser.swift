@@ -44,7 +44,7 @@ public enum BrowserAddress {
         let name = authority.split(separator: ":", maxSplits: 1).first.map(String.init) ?? ""
         if loopback.contains(name.lowercased()) {
             let port = authority.dropFirst(name.count)
-            guard port.isEmpty || Int(port.dropFirst()) != nil else { return nil }
+            guard port.isEmpty || Int(port.dropFirst()).map({ (1...65535).contains($0) }) == true else { return nil }
             return "http://\(host)\(port)\(path)"
         }
         guard name.contains("."), !name.hasPrefix("."), !name.hasSuffix("."),

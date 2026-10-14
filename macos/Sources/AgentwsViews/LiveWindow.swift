@@ -455,18 +455,20 @@ public struct LiveWindow: View {
         let source = profiles.profile(for: id)
         do {
             let made = try (kind == .clone ? profiles.clone(source.id, name: profileName) : profiles.create(profileName))
-            profiles.assign(session: id, profile: made.id)
             let page = browser.page(session: id)
 #if canImport(WebKit)
             if kind == .clone {
                 let webViews = webViews
+                let profiles = profiles
                 Task {
                     await webViews.clone(from: source.id, to: made.id)
+                    profiles.assign(session: id, profile: made.id)
                     for tab in page.tabs { webViews.close(tab.id) }
                 }
                 return
             }
 #endif
+            profiles.assign(session: id, profile: made.id)
             reopenTabs(page)
         } catch ProfileRefusal.taken(let name) {
             explanation = "A profile named \(name) already exists"
