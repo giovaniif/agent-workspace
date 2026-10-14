@@ -199,7 +199,7 @@ func TestReviewLayoutWidensTheSidebarAndPutsItBack(t *testing.T) {
 	if err := c.ReviewLayout(ctx, true); !errors.As(err, &rerr) {
 		t.Fatalf("review layout before any client = %v; want an rpc error", err)
 	}
-	if _, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"agentws", "tui"}}); err != nil {
+	if _, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"crew", "tui"}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := c.ReviewLayout(ctx, true); err != nil {

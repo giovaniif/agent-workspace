@@ -1,12 +1,12 @@
 symlink shop/linked -> ../elsewhere/linked
 
-exec agentws workspace add shop
+exec crew workspace add shop
 stdout '^added .*/shop \(orchestration, 3 repos\)$'
 
-exec agentws workspace add solo
+exec crew workspace add solo
 stdout '^added .*/solo \(single, 1 repo\)$'
 
-exec agentws workspace list
+exec crew workspace list
 stdout '^\S*/shop \(orchestration\)$'
 stdout '^\S*/solo \(single, last used\)$'
 stdout '^  api\s'
@@ -16,22 +16,22 @@ stdout '^  solo\s'
 ! stdout 'api-feature'
 ! stdout 'docs'
 
-exec agentws daemon stop
-exec agentws workspace list
+exec crew daemon stop
+exec crew workspace list
 stdout '^\S*/solo \(single, last used\)$'
 
-exec agentws workspace remove shop
+exec crew workspace remove shop
 stdout '^removed .*/shop$'
-exec agentws workspace list
+exec crew workspace list
 ! stdout 'shop'
 
-! exec agentws workspace remove shop
+! exec crew workspace remove shop
 stderr 'crew workspace: not_found: no workspace '
 
-! exec agentws workspace add missing
+! exec crew workspace add missing
 stderr '^crew workspace: bad_request: .*missing'
 
-! exec agentws workspace
+! exec crew workspace
 stderr '^usage: crew workspace <add\|list\|remove>'
 
 -- shop/api/.git/HEAD --

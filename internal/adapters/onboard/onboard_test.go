@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 )
 
-const bin = "/opt/agentws/bin/agentws"
+const bin = "/opt/crew/bin/crew"
 
 type world struct {
 	probe onboard.Probe
@@ -257,7 +257,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 		"XDG_DATA_HOME":       "/data",
 		"HOME":                "/home/me",
 	}
-	p := onboard.FromEnv("/h", "/repo/bin/agentws", func(k string) string { return env[k] })
+	p := onboard.FromEnv("/h", "/repo/bin/crew", func(k string) string { return env[k] })
 	if p.ClaudeSettings != "/c/settings.json" || p.CodexHome != "/x" || p.OmpAgentDir != "/pi" || p.NvimConfigDir != "/cfg/nvim" || p.Home != "/h" {
 		t.Errorf("probe = %+v", p)
 	}
@@ -265,7 +265,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 		t.Errorf("plugin dirs = %q, want the data dir first and the checkout's nvim/ last", p.PluginDirs)
 	}
 
-	bare := onboard.FromEnv("/h", "/usr/local/bin/agentws", func(k string) string {
+	bare := onboard.FromEnv("/h", "/usr/local/bin/crew", func(k string) string {
 		if k == "HOME" {
 			return "/home/me"
 		}

@@ -82,7 +82,7 @@ func TestChainWithoutACommandPrintsNothing(t *testing.T) {
 
 func TestChainedStatusLineRoundTripsQuotes(t *testing.T) {
 	orig := `bash -c 'echo "it'\''s $HOME"'`
-	cmd := claude.StatusLineCommand("/a b/agentws", orig)
+	cmd := claude.StatusLineCommand("/a b/crew", orig)
 	got, ok := claude.ChainedStatusLine(cmd)
 	if !ok || got != orig {
 		t.Fatalf("ChainedStatusLine(%q) = %q, %v", cmd, got, ok)
@@ -93,7 +93,7 @@ func TestChainedStatusLineRoundTripsQuotes(t *testing.T) {
 	if _, ok := claude.ChainedStatusLine("~/bin/my statusline"); ok {
 		t.Fatal("user command named statusline taken as ours")
 	}
-	if got, ok := claude.ChainedStatusLine(claude.StatusLineCommand("/tmp/b001/agentws.test", "")); !ok || got != "" {
+	if got, ok := claude.ChainedStatusLine(claude.StatusLineCommand("/tmp/b001/crew.test", "")); !ok || got != "" {
 		t.Fatalf("no chain: %q, %v", got, ok)
 	}
 }

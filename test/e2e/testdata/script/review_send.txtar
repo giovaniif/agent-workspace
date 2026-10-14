@@ -1,19 +1,19 @@
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'write two files'
+exec crew workspace add api
+exec crew new --workspace api 'write two files'
 capture SID '^session (\S+) on pane'
-eventually ' state=done ' agentws debug session --once $SID
-exec agentws worktree list
+eventually ' state=done ' crew debug session --once $SID
+exec crew worktree list
 capture WT '^(\S+)\s+\S+\s+'$SID'\s'
 
-exec agentws review comment --session $SID --file $WT/notes.txt --start 2 --code two --body 'Say three.'
+exec crew review comment --session $SID --file $WT/notes.txt --start 2 --code two --body 'Say three.'
 stdout '^comment \S+ on notes.txt:2 \(1 in the draft\)$'
-exec agentws review comment --session $SID --file $WT/main.go --start 1 --code 'package main' --body 'Add a main func.'
+exec crew review comment --session $SID --file $WT/main.go --start 1 --code 'package main' --body 'Add a main func.'
 stdout '\(2 in the draft\)$'
-exec agentws review send --session $SID
+exec crew review send --session $SID
 stdout '^sent 2 comments to '$SID'$'
-eventually 'Add a main func\.\n\z' cat $AGENTWS_E2E/received
-cmpenv $AGENTWS_E2E/received want.txt
+eventually 'Add a main func\.\n\z' cat $CREW_E2E/received
+cmpenv $CREW_E2E/received want.txt
 
 -- claude.steps --
 hook UserPromptSubmit {"prompt":"write two files"}

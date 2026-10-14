@@ -19,7 +19,7 @@ import (
 
 func shortHome(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("/tmp", "agentws-h")
+	dir, err := os.MkdirTemp("/tmp", "crew-h")
 	if err != nil {
 		t.Fatal(err)
 	}

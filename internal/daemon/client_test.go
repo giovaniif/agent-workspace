@@ -16,7 +16,7 @@ func TestOpenClientCreatesTheLayoutOnceAndReattachesAfter(t *testing.T) {
 	d.SetClientHost(host)
 	c := dial(t, path)
 	ctx := context.Background()
-	tui := rpc.OpenClientParams{Command: []string{"agentws", "tui"}}
+	tui := rpc.OpenClientParams{Command: []string{"crew", "tui"}}
 
 	first, err := c.OpenClient(ctx, tui)
 	if err != nil {
@@ -56,7 +56,7 @@ func TestFocusMainMovesFocusToTheSlot(t *testing.T) {
 	if err := c.FocusMain(ctx); !errors.As(err, &rerr) {
 		t.Fatalf("focus before any layout = %v; want an rpc error", err)
 	}
-	opened, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestFocusMainMovesFocusToTheSlot(t *testing.T) {
 func TestClientMethodsWithoutATerminalHostFail(t *testing.T) {
 	_, path := start(t, &memStore{})
 	var rerr *rpc.Error
-	_, err := dial(t, path).OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	_, err := dial(t, path).OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeUnavailable {
 		t.Fatalf("err = %v; want %s", err, rpc.CodeUnavailable)
 	}
@@ -121,11 +121,11 @@ func TestClientPopupRunsTheCommandInAPopup(t *testing.T) {
 	d.SetClientHost(host)
 	c := dial(t, path)
 	ctx := context.Background()
-	p := rpc.ClientPopupParams{Command: []string{"agentws", "tui", "--new-session"}, Env: map[string]string{"AGENTWS_HOME": "/h"}}
+	p := rpc.ClientPopupParams{Command: []string{"crew", "tui", "--new-session"}, Env: map[string]string{"CREW_HOME": "/h"}}
 	if err := c.Call(ctx, rpc.MethodClientPopup, p, nil); err != nil {
 		t.Fatal(err)
 	}
-	if len(host.commandPopups) != 1 || !slices.Equal(host.commandPopups[0].Command, p.Command) || host.commandPopups[0].Env["AGENTWS_HOME"] != "/h" {
+	if len(host.commandPopups) != 1 || !slices.Equal(host.commandPopups[0].Command, p.Command) || host.commandPopups[0].Env["CREW_HOME"] != "/h" {
 		t.Fatalf("popups %+v", host.commandPopups)
 	}
 	var rerr *rpc.Error
@@ -144,7 +144,7 @@ func TestClientDetachLeavesTheLayout(t *testing.T) {
 	if err := c.Call(ctx, rpc.MethodClientDetach, struct{}{}, nil); !errors.As(err, &rerr) || rerr.Code != rpc.CodeNotFound {
 		t.Fatalf("detach before any layout = %v; want an rpc error", err)
 	}
-	opened, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,16 +156,16 @@ func TestClientDetachLeavesTheLayout(t *testing.T) {
 	}
 }
 
-func TestClientPopupOpensWhereAgentwsWasLaunched(t *testing.T) {
+func TestClientPopupOpensWhereCrewWasLaunched(t *testing.T) {
 	d, path := start(t, &memStore{})
 	host := &fakeClientHost{}
 	d.SetClientHost(host)
 	c := dial(t, path)
 	ctx := context.Background()
-	if _, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"agentws", "tui"}, Dir: "/work/api"}); err != nil {
+	if _, err := c.OpenClient(ctx, rpc.OpenClientParams{Command: []string{"crew", "tui"}, Dir: "/work/api"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.Call(ctx, rpc.MethodClientPopup, rpc.ClientPopupParams{Command: []string{"agentws", "tui", "--new-session"}}, nil); err != nil {
+	if err := c.Call(ctx, rpc.MethodClientPopup, rpc.ClientPopupParams{Command: []string{"crew", "tui", "--new-session"}}, nil); err != nil {
 		t.Fatal(err)
 	}
 	if len(host.commandPopups) != 1 || host.commandPopups[0].Dir != "/work/api" {

@@ -128,7 +128,7 @@ func TestSwitchingAgentsKeepsTheShellBelow(t *testing.T) {
 
 func outerTerminal(t *testing.T, h *tmux.Host, slot app.Slot) func(args ...string) string {
 	t.Helper()
-	socket := "agentws-outer-" + strings.ReplaceAll(t.Name(), "/", "-") + "-" + time.Now().Format("150405.000")
+	socket := "crew-outer-" + strings.ReplaceAll(t.Name(), "/", "-") + "-" + time.Now().Format("150405.000")
 	attach := strings.Join(append([]string{"env", "-u", "TMUX"}, h.AttachCommand(slot)...), " ")
 	run := func(args ...string) string {
 		out, err := exec.Command("tmux", append([]string{"-L", socket, "-f", "/dev/null"}, args...)...).CombinedOutput()

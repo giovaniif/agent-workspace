@@ -103,7 +103,7 @@ func start(t *testing.T, poll, prPoll time.Duration) env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sockDir, err := os.MkdirTemp("/tmp", "agentws-i")
+	sockDir, err := os.MkdirTemp("/tmp", "crew-i")
 	if err != nil {
 		t.Fatal(err)
 	}

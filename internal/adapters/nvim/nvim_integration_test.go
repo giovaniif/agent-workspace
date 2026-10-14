@@ -20,7 +20,7 @@ func startNvim(t *testing.T) string {
 	if _, err := exec.LookPath("nvim"); err != nil {
 		t.Skip("nvim not installed")
 	}
-	dir, err := os.MkdirTemp("/tmp", "agentws-nvim")
+	dir, err := os.MkdirTemp("/tmp", "crew-nvim")
 	if err != nil {
 		t.Fatal(err)
 	}

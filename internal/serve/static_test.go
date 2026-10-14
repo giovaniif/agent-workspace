@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	appHTML         = "<!doctype html><title>agentws</title><div id=\"root\"></div>"
+	appHTML         = "<!doctype html><title>crew</title><div id=\"root\"></div>"
 	placeholderHTML = "<!doctype html><p>Run make web</p>"
 )
 
@@ -123,8 +123,8 @@ func TestStaticEmbedsThePlaceholderThatAsksForMakeWeb(t *testing.T) {
 }
 
 func TestStaticServesTheEmbeddedBuildAfterMakeWeb(t *testing.T) {
-	if os.Getenv("AGENTWS_WEB_BUILT") == "" {
-		t.Skip("set AGENTWS_WEB_BUILT=1 after make web")
+	if os.Getenv("CREW_WEB_BUILT") == "" {
+		t.Skip("set CREW_WEB_BUILT=1 after make web")
 	}
 	res := get(t, serve.Dist(), http.MethodGet, "/")
 	page := body(t, res)

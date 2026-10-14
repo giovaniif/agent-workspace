@@ -22,8 +22,8 @@ import (
 func browserDaemon(t *testing.T) string {
 	t.Helper()
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
-	t.Setenv("AGENTWS_SESSION", "")
+	t.Setenv("CREW_HOME", home)
+	t.Setenv("CREW_SESSION", "")
 	t.Setenv("TMUX_PANE", "")
 	d, err := daemon.New(nopStore{}, 1)
 	if err != nil {
@@ -103,7 +103,7 @@ func TestBrowserCLIRefusesBadArgumentsWithUsage(t *testing.T) {
 
 func TestBrowserCLISendsTheCommandForTheSessionAndPrintsTheSnapshotText(t *testing.T) {
 	home := browserDaemon(t)
-	t.Setenv("AGENTWS_SESSION", "s1")
+	t.Setenv("CREW_SESSION", "s1")
 	calls := serveBrowser(t, home, func(rpc.BrowserCall) (any, string) {
 		return map[string]string{"url": "http://devbox:3000/", "title": "api", "text": "- button \"Log in\" @e1\n"}, ""
 	})

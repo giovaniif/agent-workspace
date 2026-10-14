@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event SessionStart",
+            "command": "/opt/crew/bin/crew hook --harness codex --event SessionStart",
             "async": true
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event UserPromptSubmit"
+            "command": "/opt/crew/bin/crew hook --harness codex --event UserPromptSubmit"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event PreToolUse",
+            "command": "/opt/crew/bin/crew hook --harness codex --event PreToolUse",
             "async": true
           }
         ]
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event PostToolUse",
+            "command": "/opt/crew/bin/crew hook --harness codex --event PostToolUse",
             "async": true
           }
         ]
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event PermissionRequest",
+            "command": "/opt/crew/bin/crew hook --harness codex --event PermissionRequest",
             "async": true
           }
         ]
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event Stop",
+            "command": "/opt/crew/bin/crew hook --harness codex --event Stop",
             "async": true
           }
         ]
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event Interrupt",
+            "command": "/opt/crew/bin/crew hook --harness codex --event Interrupt",
             "async": true
           }
         ]
@@ -84,7 +84,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/opt/agentws/bin/agentws hook --harness codex --event SessionEnd",
+            "command": "/opt/crew/bin/crew hook --harness codex --event SessionEnd",
             "async": true
           }
         ]

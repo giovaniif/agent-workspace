@@ -102,7 +102,7 @@ func TestReviewSendReachesARealAgentPaneAcrossARestart(t *testing.T) {
 	for _, kv := range [][2]string{{"GIT_AUTHOR_NAME", "t"}, {"GIT_AUTHOR_EMAIL", "t@example.com"}, {"GIT_COMMITTER_NAME", "t"}, {"GIT_COMMITTER_EMAIL", "t@example.com"}} {
 		t.Setenv(kv[0], kv[1])
 	}
-	tmp, err := os.MkdirTemp("/tmp", "agentws-r")
+	tmp, err := os.MkdirTemp("/tmp", "crew-r")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestReviewSendReachesARealAgentPaneAcrossARestart(t *testing.T) {
 	if err := os.WriteFile(agent, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	socket := fmt.Sprintf("agentws-it-%d-%d", os.Getpid(), time.Now().UnixNano())
+	socket := fmt.Sprintf("crew-it-%d-%d", os.Getpid(), time.Now().UnixNano())
 	t.Cleanup(func() {
 		_ = tmux.New(tmux.Config{Socket: socket, ConfigPath: filepath.Join(home, "tmux.conf")}).Close(context.Background())
 	})

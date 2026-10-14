@@ -49,7 +49,7 @@ func startLiveTerm(t *testing.T) liveTerm {
 			t.Fatal(err)
 		}
 	}
-	l.host = tmux.New(tmux.Config{Socket: fmt.Sprintf("agentws-shell-%d-%d", os.Getpid(), time.Now().UnixNano()), ConfigPath: filepath.Join(home, "tmux.conf")})
+	l.host = tmux.New(tmux.Config{Socket: fmt.Sprintf("crew-shell-%d-%d", os.Getpid(), time.Now().UnixNano()), ConfigPath: filepath.Join(home, "tmux.conf")})
 	t.Cleanup(func() { _ = l.host.Close(context.Background()) })
 	ctx := context.Background()
 	l.agent, err = l.host.Create(ctx, app.PaneSpec{Name: "agent", Dir: l.wtA, Command: []string{"cat"}})

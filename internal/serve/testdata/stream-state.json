@@ -35,7 +35,7 @@
       {
         "ID": "w1",
         "Repo": "api",
-        "Path": "/home/me/.agentws/worktrees/api-login",
+        "Path": "/home/me/.crew/worktrees/api-login",
         "Branch": "login",
         "PR": null,
         "SubtaskSlug": "",

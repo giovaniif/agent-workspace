@@ -12,7 +12,7 @@ import (
 
 func TestNotifyTerminalNotifierGroupsAndFocusesOnClick(t *testing.T) {
 	r := &recorder{}
-	n := notify.TerminalNotifier{Run: r.run, Bin: "/opt/bin/terminal-notifier", Self: "/usr/local/bin/agentws", Home: "/tmp/it's home"}
+	n := notify.TerminalNotifier{Run: r.run, Bin: "/opt/bin/terminal-notifier", Self: "/usr/local/bin/crew", Home: "/tmp/it's home"}
 	b := domain.Banner{Title: "fix login", Body: "needs permission: Bash", Sound: "Glass", Group: "s1", Terminal: "com.mitchellh.ghostty"}
 	if err := n.Notify(context.Background(), b); err != nil {
 		t.Fatal(err)
@@ -20,7 +20,7 @@ func TestNotifyTerminalNotifierGroupsAndFocusesOnClick(t *testing.T) {
 	want := []string{"/opt/bin/terminal-notifier",
 		"-title", "fix login", "-message", "needs permission: Bash", "-group", "s1",
 		"-sound", "Glass", "-activate", "com.mitchellh.ghostty",
-		"-execute", `CREW_HOME='/tmp/it'\''s home' '/usr/local/bin/agentws' focus 's1'`,
+		"-execute", `CREW_HOME='/tmp/it'\''s home' '/usr/local/bin/crew' focus 's1'`,
 	}
 	if len(r.calls) != 1 || !reflect.DeepEqual(r.calls[0], want) {
 		t.Fatalf("argv\n got %q\nwant %q", r.calls, want)
@@ -29,7 +29,7 @@ func TestNotifyTerminalNotifierGroupsAndFocusesOnClick(t *testing.T) {
 
 func TestNotifyTerminalNotifierLeavesOutWhatIsUnknown(t *testing.T) {
 	r := &recorder{}
-	n := notify.TerminalNotifier{Run: r.run, Bin: "terminal-notifier", Self: "/bin/agentws", Home: "/h"}
+	n := notify.TerminalNotifier{Run: r.run, Bin: "terminal-notifier", Self: "/bin/crew", Home: "/h"}
 	if err := n.Notify(context.Background(), domain.Banner{Title: "claude", Body: "done"}); err != nil {
 		t.Fatal(err)
 	}
@@ -81,12 +81,12 @@ func TestNotifyOsascriptRemoveRunsNothing(t *testing.T) {
 
 func TestNotifySelectPrefersTerminalNotifierFallingBackToOsascript(t *testing.T) {
 	found := func(name string) (string, error) { return "/opt/bin/" + name, nil }
-	got, ok := notify.Select(found, notify.Click{Self: "/bin/agentws", Home: "/h", FocusCmd: "ssh -T 'vps' agentws focus"}).(notify.Fallback)
+	got, ok := notify.Select(found, notify.Click{Self: "/bin/crew", Home: "/h", FocusCmd: "ssh -T 'vps' agentws focus"}).(notify.Fallback)
 	if !ok {
 		t.Fatalf("got %#v", got)
 	}
 	tn, ok := got.Primary.(notify.TerminalNotifier)
-	if !ok || tn.Bin != "/opt/bin/terminal-notifier" || tn.Self != "/bin/agentws" || tn.Home != "/h" || tn.FocusCmd != "ssh -T 'vps' agentws focus" || tn.Run == nil {
+	if !ok || tn.Bin != "/opt/bin/terminal-notifier" || tn.Self != "/bin/crew" || tn.Home != "/h" || tn.FocusCmd != "ssh -T 'vps' agentws focus" || tn.Run == nil {
 		t.Fatalf("primary %#v", got.Primary)
 	}
 	if o, ok := got.Secondary.(notify.Osascript); !ok || o.Run == nil {

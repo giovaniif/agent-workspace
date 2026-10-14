@@ -159,7 +159,7 @@ func TestNewSessionCwdAndWorktreeLayoutPerWorkspaceKindAndRestart(t *testing.T) 
 	if err := os.WriteFile(fakeAgent, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	socket := fmt.Sprintf("agentws-it-%d-%d", os.Getpid(), time.Now().UnixNano())
+	socket := fmt.Sprintf("crew-it-%d-%d", os.Getpid(), time.Now().UnixNano())
 	t.Cleanup(func() {
 		_ = tmux.New(tmux.Config{Socket: socket, ConfigPath: filepath.Join(home, "tmux.conf")}).Close(context.Background())
 	})

@@ -16,7 +16,7 @@ import (
 )
 
 func TestReviewCommentArgsBecomeCommentParams(t *testing.T) {
-	t.Setenv("AGENTWS_SESSION", "from-env")
+	t.Setenv("CREW_SESSION", "from-env")
 	got, err := parseCommentArgs([]string{"--file", "/wt/api/a.go", "--start", "3", "--end", "5", "--code", "x := 1", "--body", "why?"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +35,7 @@ func TestReviewCommentArgsBecomeCommentParams(t *testing.T) {
 }
 
 func TestReviewCommentNeedsASessionAFileALineAndABody(t *testing.T) {
-	t.Setenv("AGENTWS_SESSION", "")
+	t.Setenv("CREW_SESSION", "")
 	cases := map[string][]string{
 		"no session": {"--file", "/a.go", "--start", "1", "--body", "x"},
 		"no file":    {"--session", "s", "--start", "1", "--body", "x"},
@@ -54,7 +54,7 @@ func TestReviewCommentNeedsASessionAFileALineAndABody(t *testing.T) {
 
 func TestReviewCommentLandsInTheDaemonsDraft(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	d, err := daemon.New(nopStore{}, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +107,7 @@ func TestReviewCommentLandsInTheDaemonsDraft(t *testing.T) {
 }
 
 func TestReviewScopeWithoutAFlagLeavesTheScopeToTheDaemon(t *testing.T) {
-	t.Setenv("AGENTWS_SESSION", "s1")
+	t.Setenv("CREW_SESSION", "s1")
 	got, err := parseScopeArgs(nil, io.Discard)
 	if err != nil || got != (rpc.ReviewParams{Session: "s1"}) {
 		t.Fatalf("got %+v, %v; want only the session, so the daemon uses the TUI's scope", got, err)
@@ -116,8 +116,8 @@ func TestReviewScopeWithoutAFlagLeavesTheScopeToTheDaemon(t *testing.T) {
 
 func TestReviewScopePrintsEachWorktreesBaseAndFiles(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
-	t.Setenv("AGENTWS_SESSION", "s1")
+	t.Setenv("CREW_HOME", home)
+	t.Setenv("CREW_SESSION", "s1")
 	var asked rpc.ReviewParams
 	fakeDaemon(t, home, func(req rpc.Request) *rpc.Response {
 		if req.Method != rpc.MethodReviewOpen {

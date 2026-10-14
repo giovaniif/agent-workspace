@@ -1,10 +1,10 @@
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'split the work'
+exec crew workspace add api
+exec crew new --workspace api 'split the work'
 capture SID '^session (\S+) on pane'
 
-eventually '/api-a\s+feat-a\s+'$SID'\s' agentws worktree list
-eventually '/api-b\s+feat-b\s+'$SID'\s' agentws worktree list
+eventually '/api-a\s+feat-a\s+'$SID'\s' crew worktree list
+eventually '/api-b\s+feat-b\s+'$SID'\s' crew worktree list
 
 -- claude.steps --
 hook UserPromptSubmit {"prompt":"split the work"}

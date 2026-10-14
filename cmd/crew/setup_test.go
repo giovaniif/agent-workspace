@@ -17,7 +17,7 @@ func setupCodex(t *testing.T, codexHome string, args ...string) (int, string, st
 		}
 		return ""
 	}
-	code := runSetup(append([]string{"codex"}, args...), &out, &errOut, env, "/opt/agentws/bin/agentws")
+	code := runSetup(append([]string{"codex"}, args...), &out, &errOut, env, "/opt/crew/bin/crew")
 	return code, out.String(), errOut.String()
 }
 
@@ -31,7 +31,7 @@ func TestSetupCodexWritesHooksAndPrintsTheTrustStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(hooks), "/opt/agentws/bin/agentws hook --harness codex --event Stop") {
+	if !strings.Contains(string(hooks), "/opt/crew/bin/crew hook --harness codex --event Stop") {
 		t.Fatalf("hooks.json:\n%s", hooks)
 	}
 	if !strings.Contains(out, filepath.Join(dir, "hooks.json")) || !strings.Contains(out, "trust") {
