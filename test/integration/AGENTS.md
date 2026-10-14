@@ -4,4 +4,5 @@
 
 - `go test -tags integration -run CodexPicker ./test/integration/` controls a fake Codex model picker (`testdata/fake-codex-picker.py`, needs `python3`) in a real tmux pane. See [ADR 0034](../../docs/adr/0034-codex-model-picker-switching.md).
 - `TestNvimPluginSpecs` runs `nvim/test/spec.lua` headless with `nvim --clean` and temporary XDG dirs. Never point plugin tests at `~/.config/nvim`. See [nvim/](../../nvim/AGENTS.md).
+- `TestHeadlessChromium...` runs the browser commands in a real headless Chromium through the daemon. It skips when no Chromium is found. Point it at a binary with `CREW_CHROMIUM`, for example a Playwright `chrome-headless-shell`. See [ADR 0053](../../docs/adr/0053-headless-browser-fallback.md).
 - `CleanupExec`, `Ports`, `ReviewSend` and worktree detection also have end-to-end cases here. One `ReviewSend` case pastes into a real tmux pane. Their feature notes are in [internal/daemon/](../../internal/daemon/AGENTS.md).

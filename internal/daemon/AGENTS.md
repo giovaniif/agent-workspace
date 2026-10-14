@@ -299,6 +299,17 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 - When the attached connection closes, or a new attach replaces it, each call that waits on it fails at once.
 - The daemon keeps no browser state and never logs args or results.
 
+### Headless fallback
+
+`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0053](../../docs/adr/0053-headless-browser-fallback.md).
+
+- `browser.command` picks the backend with `domain.ChooseBrowser`. The inputs are the `browser` of the automation that started the session, if the Mac app is attached, and `[browser]` in `config.toml`.
+- `[browser]` has `fallback` (`"headless"` or `"off"`, default `"off"`), `max_headless` (default 2) and `idle` (default `"10m"`). `config.set` and a daemon start read it again.
+- `headlessPool` keeps one `app.HeadlessTab` for each session, under its own mutex. It is not loop state. A command opens the tab if necessary, under the `max_headless` limit (`domain.AdmitHeadless`).
+- A reaper runs every 15 s (`WithHeadlessBrowser`). It stops the tabs of ended sessions and idle tabs (`domain.HeadlessToStop`). It never stops a tab while a command runs. When the daemon stops, it stops all tabs.
+- `browser.cookies.import` merges the cookies into `$CREW_HOME/browser/profiles/default/cookies.json` (0600) and sends them to each tab that runs. A new tab gets all kept cookies.
+- The automation `browser` is kept in memory when the run starts its session. After a daemon restart, that session uses `any`.
+
 ## Shell and nvim
 
 `go test ./... -run Shell -tags integration` runs the shell tests: the daemon against real tmux, and the split, popup and key pass-through of the tmux adapter. The shell and nvim tests need `tmux` and `nvim`. See [ADR 0029](../../docs/adr/0029-shell-and-nvim.md).
