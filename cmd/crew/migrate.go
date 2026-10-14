@@ -34,7 +34,7 @@ type migration struct {
 }
 
 type pendingService struct {
-	path, name string
+	path, name, oldPath string
 }
 
 func migrateState(services bool, stderr io.Writer) {
@@ -100,11 +100,15 @@ func (m migration) run(ctx context.Context) {
 	if m.Services {
 		started = m.stopLegacyServices(ctx)
 	}
-	m.moveHome()
+	ready := m.moveHome()
 	m.rewriteHooks()
 	m.moveNvim()
 	for _, s := range started {
-		m.startService(ctx, s)
+		if ready {
+			_ = m.startService(ctx, s)
+		} else {
+			m.restoreService(ctx, s)
+		}
 	}
 }
 
@@ -118,20 +122,22 @@ func exists(path string) bool {
 	return err == nil
 }
 
-func (m migration) moveHome() {
+func (m migration) moveHome() bool {
 	old, home := m.oldHome(), m.newHome()
 	switch domain.PlanHomeMove(realDir(old), exists(home), m.Live(rpc.SocketPath(old))) {
 	case domain.HomeMoveDir:
 		if err := moveAndLink(old, home); err != nil {
 			m.logf("could not move %s to %s: %v", old, home, err)
-			return
+			return false
 		}
 		m.logf("moved %s to %s; %s links to it for one release", old, home, old)
 	case domain.HomeBlocked:
 		m.logf("an agentws daemon still runs from %s, so the state stays there; run 'crew daemon stop', then start crew again to move it to %s", old, home)
+		return false
 	case domain.HomeBoth:
 		m.logf("both %s and %s exist; crew uses %s and leaves %s as it is", old, home, home, old)
 	}
+	return true
 }
 
 func moveAndLink(old, home string) error {
@@ -225,7 +231,7 @@ func (m migration) stopLegacyServices(ctx context.Context) []pendingService {
 			continue
 		}
 		m.logf("replaced %s with %s (backup: %s.bak)", oldPath, newPath, oldPath)
-		pending = append(pending, pendingService{path: newPath, name: newName})
+		pending = append(pending, pendingService{path: newPath, name: newName, oldPath: oldPath})
 	}
 	return pending
 }
@@ -257,7 +263,7 @@ func (m migration) stopService(ctx context.Context, file string) error {
 	return m.exec(ctx, "systemctl", "--user", "disable", "--now", file)
 }
 
-func (m migration) startService(ctx context.Context, s pendingService) {
+func (m migration) startService(ctx context.Context, s pendingService) error {
 	var err error
 	if m.GOOS == "darwin" {
 		err = m.exec(ctx, "launchctl", "bootstrap", fmt.Sprintf("gui/%d", m.UID), s.path)
@@ -270,4 +276,23 @@ func (m migration) startService(ctx context.Context, s pendingService) {
 	if err != nil {
 		m.logf("could not start %s: %v", s.path, err)
 	}
+	return err
+}
+
+func (m migration) restoreService(ctx context.Context, s pendingService) {
+	b, err := os.ReadFile(s.oldPath + ".bak")
+	if err == nil {
+		err = os.WriteFile(s.oldPath, b, 0o644)
+	}
+	if err == nil {
+		err = os.Remove(s.path)
+	}
+	if err == nil {
+		err = m.startService(ctx, pendingService{path: s.oldPath, name: filepath.Base(s.oldPath)})
+	}
+	if err != nil {
+		m.logf("could not put back %s: %v", s.oldPath, err)
+		return
+	}
+	m.logf("put back %s, because %s did not move; run crew setup again after 'crew daemon stop'", s.oldPath, m.oldHome())
 }
