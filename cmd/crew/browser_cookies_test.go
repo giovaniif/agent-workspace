@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/giovaniif/crew/internal/adapters/chromium"
 	"github.com/giovaniif/crew/internal/app"
 	"github.com/giovaniif/crew/internal/daemon"
 	"github.com/giovaniif/crew/internal/domain"
@@ -98,6 +99,9 @@ func TestSetupClaudeSaysWhetherChromiumIsInstalled(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	t.Setenv("CREW_CHROMIUM", "")
 	t.Setenv("PATH", t.TempDir())
+	if bin := chromium.FromEnv().Binary; bin != "" {
+		t.Skipf("Chromium at a fixed path: %s", bin)
+	}
 	out.Reset()
 	if code := run([]string{"setup", "claude"}, &out, &errOut); code != 0 {
 		t.Fatalf("code %d: %s", code, errOut.String())
