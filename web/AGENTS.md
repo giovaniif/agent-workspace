@@ -1,13 +1,13 @@
 # web
 
-The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](../docs/adr/0046-remote-app.md)). The toolchain and decisions are in ADR [0048](../docs/adr/0048-web-toolchain-and-tdd-parity.md). The repo-wide rules in the [root AGENTS.md](../AGENTS.md) also apply here, for example no comments and test first.
+The phone app: a PWA that `crew serve` embeds and serves at `/` (ADR [0046](../docs/adr/0046-remote-app.md)). The toolchain and decisions are in ADR [0048](../docs/adr/0048-web-toolchain-and-tdd-parity.md). The repo-wide rules in the [root AGENTS.md](../AGENTS.md) also apply here, for example no comments and test first.
 
 ## Commands
 
 - Run `npm ci` one time. Then run `npm test` (Vitest, jsdom) and `npm run typecheck`.
 - `make web` (from the repo root) builds into `internal/serve/dist`. It writes the shell as `app.html`. The committed `index.html` in that dir is the placeholder that a `go build` without Node embeds. Then `make build` gives a binary that serves the app.
 - `npm run dev` runs Vite.
-  - `AGENTWS_API=http://127.0.0.1:7420 npm run dev` proxies `/api` (and the stream) to a running `agentws serve`.
+  - `AGENTWS_API=http://127.0.0.1:7420 npm run dev` proxies `/api` (and the stream) to a running `crew serve`.
   - Add `AGENTWS_API_INSECURE=1` to accept its `--self-signed` certificate.
   - `npm run fake` uses the fake API in `fake-api.ts` instead.
   - The dev server binds all interfaces and accepts `.ts.net` hosts.
@@ -21,19 +21,19 @@ The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](.
   - else, a code from the status (`401` → `unauthorized`, `429` → `rate_limited`)
   - `network`, when the client cannot get to the server.
 - `src/App.tsx` selects the screen:
-  - the session list, when `localStorage` holds `agentws.auth`
+  - the session list, when `localStorage` holds `crew.auth` (it copies an old `agentws.auth` one time)
   - Add to Home Screen, in a browser tab
   - pairing, in the installed app.
 
   `AppEnv` holds all inputs from the browser (fetch, storage, display mode, URL hash, host, user agent), so tests can give fakes.
-- `src/build.ts` and `src/sw.ts`/`src/sw-cache.ts`: the app registers the worker as `/sw.js?build=<hello build>`. The worker caches into `agentws-shell-<build>`. If the worker build of a page is not the build of `hello`, `checkBuild` reloads the page. `vite.config.ts` writes the built file list into `sw.js`.
+- `src/build.ts` and `src/sw.ts`/`src/sw-cache.ts`: the app registers the worker as `/sw.js?build=<hello build>`. The worker caches into `crew-shell-<build>` (activate deletes old `agentws-shell-*` caches). If the worker build of a page is not the build of `hello`, `checkBuild` reloads the page. `vite.config.ts` writes the built file list into `sw.js`.
 - `src/stream.ts`: the `/api/v1/stream` client and its types. The types use the Go field names that the goldens pin. `StreamClient`:
   - sends the token first and applies diffs (`applyDiff`)
   - backs off from 1 s, doubling to 30 s. The backoff resets when a state arrives.
   - on close code 4401, asks `confirmRefused` before it stops. The app passes `tokenRefused`, an authed `GET /api/v1/workspaces`. Only a 401 `unauthorized` from that call makes the status `unauthorized`. All other results (success, 5xx, a network error) retry with the same token, as for all other closes.
   - retries on all other close codes, also 4400 (a late or malformed first frame).
 
-  The app forgets `agentws.auth` only on `unauthorized` (or Sign out). Then it shows pairing, with a note that the device was removed or its login was rejected. Tests: `npm test -- stream SessionList`.
+  The app forgets `crew.auth` (it copies an old `agentws.auth` one time) only on `unauthorized` (or Sign out). Then it shows pairing, with a note that the device was removed or its login was rejected. Tests: `npm test -- stream SessionList`.
   - `onFrame` passes all frames (transcripts, watch errors). `send` writes `watch`/`unwatch` frames while `live`.
   - With `visible` set (`AppEnv.visibility`, `document.visibilityState` in `main.tsx`), it sends `{"visible":bool}` when live and on each `visibilitychange` (`visibilityChanged`). While the app is shown, it sends `{"visible":true}` every 30 s. Thus the daemon does not push to a phone that has the app open.
   - `useStreamClient` owns one client for each token. `useStream` reads its `StreamSnapshot` (`status`, `state`, `retryAt`).
@@ -63,7 +63,7 @@ The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](.
   Ended sessions are not shown.
 - `src/route.ts`:
   - `#/sessions/<id>` opens a session. Push notifications use the same URL.
-  - `#/new` is the new session form (`screens/NewSession.tsx`). Its fields are workspace, task (optional), first prompt, agent, model and effort. After 350 ms, the form checks the work item through `/work-items/resolve`. It keeps the choices in `agentws.new` in `localStorage`. The default workspace is the last one that the daemon used. A launch error, also the output of a setup recipe, shows in the form. A success opens `#/sessions/<id>`.
+  - `#/new` is the new session form (`screens/NewSession.tsx`). Its fields are workspace, task (optional), first prompt, agent, model and effort. After 350 ms, the form checks the work item through `/work-items/resolve`. It keeps the choices in `crew.new` in `localStorage`. The default workspace is the last one that the daemon used. A launch error, also the output of a setup recipe, shows in the form. A success opens `#/sessions/<id>`.
   - All other routes show the list.
 - `src/push.ts` and `src/sw-push.ts`: Web Push. `AppEnv.push` (`browserPush(window)` in `main.tsx`, `FakePush` in tests) wraps `Notification` and `pushManager`.
   - When Settings opens, it reads the real state. If permission is granted, it calls `PushEnv.subscribed()`: the `pushManager` of the worker registration holds a subscription. Then it shows "Notifications are on for this device" with Turn off (`disablePush`), not Enable. It does not ask the server, because the server has no endpoint that reports the subscription of a device.
@@ -76,7 +76,7 @@ The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](.
   Tests: `npm test -- Push` and `npm test -- Settings`.
 - `#/automations` (`screens/Automations.tsx`) lists the automations with agent, trigger and state. Run… opens a form with a multi-line context and an optional work item, then posts `/api/v1/automations/<name>/run`. A started run opens its session. A skipped or failed run shows its reason. Tests: `npm test -- Automations`.
 - `#/settings` shows Settings (server, this device, Enable notifications, sign out). A tab bar under the session list and Settings switches between them.
-- `src/screens/`: one component for each screen. `src/theme.css`: the Latte palette of the TUI as CSS variables, and IBM Plex Sans and JetBrains Mono from `@fontsource`.
+- `src/screens/`: one component for each screen. `src/theme.css`: the Latte palette as CSS variables, and Mocha under `prefers-color-scheme: dark`, and IBM Plex Sans and JetBrains Mono from `@fontsource`.
 - `src/test/`: test helpers (`FakeServer`, `MemoryStorage`, the Vitest setup). tdd-check treats them as port fakes.
 
 ## Tests
@@ -84,3 +84,11 @@ The phone app: a PWA that `agentws serve` embeds and serves at `/` (ADR [0046](.
 - Text colors must have a contrast of 4.5:1 or more on their background. Tap targets must be 44 px or more. `src/theme.test.ts` checks the token pairs and the `min-height` of the tappable classes. When you use a new pair or class, add it there.
 - Test through the rendered screen with Testing Library (roles, labels, text), and through module inputs and outputs. Use `FakeServer` for the network. Never mock modules.
 - For tdd-check, `*.test.ts(x)` files count as Go tests do. Commit them before the code. They must fail on base.
+
+## Identity and new screens
+
+- `Brand` shows the crew wordmark (`public/crew-wordmark.svg`, Mocha variant for dark) and the host. Session cards show the state glyphs of the Mac app (`stateStyle`).
+- New session: Add workspace… (`POST /api/v1/workspaces`, `~` expands with `home` from `session-options`) and Remove workspace (with a confirmation, `POST /api/v1/workspaces/remove`).
+- Automations: the last run outcome, History (`GET /api/v1/automations/runs`) and Run with context.
+- A session whose tool rows run `crew browser` (or `agentws browser`) shows a note that only the Mac app shows that browser.
+- `scripts/web-screenshot` has a `scheme light|dark` step.

@@ -18,7 +18,28 @@
   --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 12px;
-  color-scheme: light;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #cdd6f4;
+    --subtext: #a6adc8;
+    --overlay: #6c7086;
+    --surface: #313244;
+    --mantle: #181825;
+    --base: #1e1e2e;
+    --selected: #45475a;
+    --blue: #89b4fa;
+    --link: #89b4fa;
+    --peach: #fab387;
+    --green: #a6e3a1;
+    --red: #f38ba8;
+    --teal: #94e2d5;
+    --mauve: #cba6f7;
+    --deleted-bg: #4a2b37;
+    --on-accent: #1e1e2e;
+  }
 }
 
 * {
@@ -63,9 +84,100 @@ body {
 }
 
 .brand img {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  height: 26px;
+  width: auto;
+  display: block;
+}
+
+.brand .host {
+  font-size: 13px;
+}
+
+.glyph {
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+  font-family: var(--mono);
+}
+
+.state-permission .glyph {
+  color: var(--red);
+}
+
+.state-waiting .glyph {
+  color: var(--peach);
+}
+
+.state-running .glyph {
+  color: var(--blue);
+}
+
+.state-done .glyph {
+  color: var(--green);
+}
+
+.state-idle .glyph {
+  color: var(--overlay);
+}
+
+.browser-note {
+  border-left: 3px solid var(--mauve);
+  background: var(--mantle);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.automation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 13px;
+  color: var(--subtext);
+}
+
+.outcome-failed {
+  color: var(--red);
+}
+
+.runs {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.runs li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  background: var(--mantle);
+  border-radius: 8px;
+}
+
+.workspace-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.workspace-tools button,
+.add-workspace button,
+.confirm button {
+  min-height: 44px;
+}
+
+.add-workspace,
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--mantle);
+  border-radius: var(--radius);
 }
 
 h1 {
@@ -1098,4 +1210,51 @@ button.danger {
 .run-actions button {
   min-height: 44px;
   padding: 8px 16px;
+}
+
+.automation-meta .history {
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: var(--link);
+  font: inherit;
+  padding: 0 4px;
+}
+
+.automations ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.automations > ul > li {
+  background: var(--mantle);
+  border: 1px solid var(--surface);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.automations .runs li {
+  background: var(--base);
+}
+
+.automation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.automation-row button {
+  margin-left: auto;
+}
+
+.automation-meta {
+  align-items: center;
 }
