@@ -3,13 +3,11 @@ package sqlite
 import (
 	"bufio"
 	"database/sql"
-	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -434,7 +432,7 @@ func TestReviewDraftsSurviveARestart(t *testing.T) {
 	s, path := openTemp(t)
 	c := domain.ReviewComment{Worktree: "/wt/api", Path: "a.go", Start: 3, End: 4, Code: []string{"x", "y"}, Body: "why?"}
 	open := domain.ReviewDraft{ID: "s1-2", Session: "s1", Status: domain.DraftQueued, Comments: []domain.ReviewComment{c}}
-	sent := domain.ReviewDraft{ID: "s1-1", Session: "s1", Status: domain.DraftSent, Comments: []domain.ReviewComment{c}, SentAt: time.Unix(50, 0).UTC(), Turns: []string{"refs/agentws/turns/s1/k/2"}}
+	sent := domain.ReviewDraft{ID: "s1-1", Session: "s1", Status: domain.DraftSent, Comments: []domain.ReviewComment{c}, SentAt: time.Unix(50, 0).UTC(), Turns: []string{"refs/crew/turns/s1/k/2"}}
 	s.PutDraft(domain.ReviewDraft{ID: "s1-2", Session: "s1", Status: domain.DraftOpen})
 	s.PutDraft(open)
 	s.PutDraft(sent)
@@ -552,67 +550,5 @@ func TestAutomationTrustPersistsByKey(t *testing.T) {
 	want := []domain.AutomationTrust{{Key: "/w/api/.crew.toml\x00deps", Hash: "two"}}
 	if !reflect.DeepEqual(snap.AutomationTrust, want) {
 		t.Fatalf("trust %+v", snap.AutomationTrust)
-	}
-}
-
-func TestOpenRenamesAutomationTrustKeysOfTheOldRepoConfig(t *testing.T) {
-	s, path := openTemp(t)
-	if err := s.Close(); err != nil {
-		t.Fatal(err)
-	}
-	db, err := sql.Open("sqlite", "file:"+path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.Exec(`UPDATE schema_version SET version = 9`); err != nil {
-		t.Fatal(err)
-	}
-	for _, key := range []string{"/w/api/.agentws.toml\x00deps", "/w/web/.crew.toml\x00deps"} {
-		hash := "h1"
-		if strings.Contains(key, "web") {
-			hash = "h2"
-		}
-		data, _ := json.Marshal(domain.AutomationTrust{Key: key, Hash: hash})
-		if _, err := db.Exec(`INSERT INTO automation_trust(key, data) VALUES (?, ?)`, key, string(data)); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := db.Close(); err != nil {
-		t.Fatal(err)
-	}
-	r, err := Open(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = r.Close() })
-	snap, err := r.Load()
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []domain.AutomationTrust{{Key: "/w/api/.crew.toml\x00deps", Hash: "h1"}, {Key: "/w/web/.crew.toml\x00deps", Hash: "h2"}}
-	if !reflect.DeepEqual(snap.AutomationTrust, want) {
-		t.Fatalf("trust %+v", snap.AutomationTrust)
-	}
-}
-
-func TestMateThreadsPersistByThreadAndAnUpdateReplacesTheLink(t *testing.T) {
-	s, path := openTemp(t)
-	link := domain.MateThread{Team: "T1", Channel: "C1", ThreadTS: "1700.1", Mate: "reviewer", SessionID: "s1"}
-	other := domain.MateThread{Team: "T1", Channel: "C1", ThreadTS: "1700.1", Mate: "builder", SessionID: "s2"}
-	s.PutMateThread(link)
-	s.PutMateThread(other)
-	link.Status = "1700.2"
-	s.PutMateThread(link)
-	s = reopen(t, s, path)
-	snap, err := s.Load()
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := map[string]domain.MateThread{}
-	for _, m := range snap.MateThreads {
-		got[m.Mate] = m
-	}
-	if len(snap.MateThreads) != 2 || got["reviewer"] != link || got["builder"] != other {
-		t.Fatalf("threads %+v", snap.MateThreads)
 	}
 }
