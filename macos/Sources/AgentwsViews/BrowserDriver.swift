@@ -47,6 +47,7 @@ public final class BrowserDriver {
             webViews.requested[tab] = url
             watcher.refused = nil
             view.load(URLRequest(url: target))
+            page.loading(tab)
             await settle(view)
             if let reason = watcher.refused { return .error(reason) }
             let now = view.url?.absoluteString ?? url
