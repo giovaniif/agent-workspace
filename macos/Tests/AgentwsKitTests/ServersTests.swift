@@ -288,7 +288,7 @@ struct ServersTests {
     }
 
     @Test func eachServerHasItsEndpoint() {
-        #expect(ServerKind.ssh(host: "box").endpoint(localBinary: "/a/agentws") == .ssh(host: "box", remoteBinary: "~/.local/bin/agentws"))
+        #expect(ServerKind.ssh(host: "box").endpoint(localBinary: "/a/agentws") == .ssh(host: "box", remoteBinary: "~/.local/bin/crew"))
         #expect(ServerKind.thisMac.endpoint(localBinary: "/a/agentws") == .local(binary: "/a/agentws"))
         #expect(ServerKind.ssh(host: "box").name == "box")
         #expect(ServerKind.thisMac.name == "This Mac")
