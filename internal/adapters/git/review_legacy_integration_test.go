@@ -6,6 +6,7 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/giovaniif/crew/internal/adapters/git"
@@ -14,7 +15,7 @@ import (
 
 func TestReviewListsTurnRefsFromBothPrefixes(t *testing.T) {
 	repo := reviewRepo(t)
-	head := gitOut(t, repo, "rev-parse", "HEAD")
+	head := strings.TrimSpace(gitOut(t, repo, "rev-parse", "HEAD"))
 	old := "refs/agentws/turns/s1/" + domain.WorktreeKey(repo) + "/2"
 	gitOut(t, repo, "update-ref", old, head)
 	gitOut(t, repo, "update-ref", domain.TurnRef("s1", repo, 3), head)

@@ -3,11 +3,13 @@ package sqlite
 import (
 	"bufio"
 	"database/sql"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -562,12 +564,16 @@ func TestOpenRenamesAutomationTrustKeysOfTheOldRepoConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, q := range []string{
-		`UPDATE schema_version SET version = 9`,
-		`INSERT INTO automation_trust(key, data) VALUES ('/w/api/.agentws.toml` + "\x00" + `deps', '{"Key":"/w/api/.agentws.toml` + "\x00" + `deps","Hash":"h1"}')`,
-		`INSERT INTO automation_trust(key, data) VALUES ('/w/web/.crew.toml` + "\x00" + `deps', '{"Key":"/w/web/.crew.toml` + "\x00" + `deps","Hash":"h2"}')`,
-	} {
-		if _, err := db.Exec(q); err != nil {
+	if _, err := db.Exec(`UPDATE schema_version SET version = 9`); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"/w/api/.agentws.toml\x00deps", "/w/web/.crew.toml\x00deps"} {
+		hash := "h1"
+		if strings.Contains(key, "web") {
+			hash = "h2"
+		}
+		data, _ := json.Marshal(domain.AutomationTrust{Key: key, Hash: hash})
+		if _, err := db.Exec(`INSERT INTO automation_trust(key, data) VALUES (?, ?)`, key, string(data)); err != nil {
 			t.Fatal(err)
 		}
 	}
