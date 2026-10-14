@@ -91,7 +91,7 @@ func automationCommand(args []string, stdin io.Reader, stdout io.Writer) error {
 		return nil
 	case "trust":
 		var a rpc.Automation
-		if err := c.Call(ctx, rpc.MethodAutomationTrust, rpc.AutomationShowParams{Name: args[1], Repo: repo}, &a); err != nil {
+		if err := c.Call(ctx, rpc.MethodAutomationTrust, rpc.AutomationShowParams{Name: args[1], Repo: cwd()}, &a); err != nil {
 			return err
 		}
 		fmt.Fprintf(stdout, "trusted %s from %s\n", a.Name, a.Source)
@@ -212,4 +212,9 @@ func printAutomationRuns(w io.Writer, runs []domain.AutomationRun) {
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.ID, r.Automation, r.Trigger, r.Start.Local().Format("2006-01-02 15:04"), r.Outcome, dash(r.SessionID), dash(note))
 	}
 	_ = tw.Flush()
+}
+
+func cwd() string {
+	dir, _ := os.Getwd()
+	return dir
 }
