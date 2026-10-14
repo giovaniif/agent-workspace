@@ -249,6 +249,32 @@ struct FirstRunHost: View {
     }
 }
 
+struct MainWindowFrame: NSViewRepresentable {
+    final class Probe: NSView {
+        private var applied = false
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window, !applied else { return }
+            applied = true
+            Task { @MainActor in MainWindowFrame.apply(to: window) }
+        }
+    }
+
+    @MainActor
+    static func apply(to window: NSWindow) {
+        guard window.frameAutosaveName != WindowFrame.autosaveName else { return }
+        window.setFrameAutosaveName(WindowFrame.autosaveName)
+        if window.setFrameUsingName(WindowFrame.autosaveName) { return }
+        guard let screen = window.screen ?? NSScreen.main else { return }
+        window.setFrame(WindowFrame.initial(visible: screen.visibleFrame), display: true, animate: false)
+    }
+
+    func makeNSView(context: Context) -> Probe { Probe() }
+
+    func updateNSView(_ nsView: Probe, context: Context) {}
+}
+
 struct AgentwsApp: App {
     @State private var launcher = Launcher()
     private var router: WindowRouter { launcher.router }
@@ -256,7 +282,7 @@ struct AgentwsApp: App {
     var body: some Scene {
         WindowGroup("agentws", id: "main") {
             if Launch.demo {
-                MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560)
+                MainWindow(scene: .seeded()).frame(minWidth: 900, minHeight: 560).background(MainWindowFrame())
             } else if let build = launcher.build, launcher.needsFirstRun {
                 FirstRunHost(launcher: launcher, build: build).preferredColorScheme(launcher.colorScheme)
             } else if let store = launcher.store, let current = launcher.current {
@@ -266,6 +292,7 @@ struct AgentwsApp: App {
                     confirmEnd: launcher.settings.settings.general.confirmOnEnd, servers: launcher.servers.servers, switchServer: { launcher.connect($0) }
                 )
                 .id(current)
+                .background(MainWindowFrame())
                 .preferredColorScheme(launcher.colorScheme)
             } else {
                 MainWindow(scene: WindowScene(state: nil, connection: .connecting, now: .now))
