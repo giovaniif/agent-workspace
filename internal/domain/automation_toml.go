@@ -55,6 +55,7 @@ func AutomationTOML(a Automation) string {
 	}
 	field("precheck", a.Precheck)
 	field("session", a.Session)
+	field("browser", a.Browser)
 	if !a.Enabled {
 		b.WriteString("enabled = false\n")
 	}

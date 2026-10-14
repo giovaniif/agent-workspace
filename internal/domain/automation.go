@@ -21,6 +21,7 @@ type Automation struct {
 	Precheck string           `json:"precheck,omitempty"`
 	Filter   AutomationFilter `json:"filter,omitzero"`
 	Session  string           `json:"session,omitempty"`
+	Browser  string           `json:"browser,omitempty"`
 	Enabled  bool             `json:"enabled"`
 	Source   string           `json:"source"`
 	Trusted  bool             `json:"trusted,omitempty"`
@@ -71,6 +72,9 @@ func ValidateAutomation(a Automation) error {
 	}
 	if a.Session != "" && a.Session != AutomationSessionFresh && a.Session != AutomationSessionReuse {
 		return fail("session %q must be fresh or reuse", a.Session)
+	}
+	if !ValidBrowserChoice(a.Browser) {
+		return fail("browser %q must be any, mac or headless", a.Browser)
 	}
 	if strings.TrimSpace(a.Prompt) == "" {
 		return fail("prompt is empty")

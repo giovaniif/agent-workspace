@@ -83,6 +83,12 @@ func (h *browserHub) send(session, command string, args json.RawMessage) (uint64
 	return id, ch, true
 }
 
+func (h *browserHub) connected() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.conn != nil
+}
+
 func (h *browserHub) forget(id uint64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -148,13 +154,24 @@ func (d *Daemon) browserCommand(req rpc.Request) (*rpc.Response, bool) {
 	if err != nil || p.Args == nil {
 		args = json.RawMessage(`{}`)
 	}
-	id, ch, ok := d.browser.send(session, p.Command, args)
-	if !ok {
-		return errorResponse(req.ID, rpc.CodeUnavailable, rpc.NoBrowser), true
-	}
 	timeout := browserTimeout
 	if p.TimeoutMS > 0 {
 		timeout = min(time.Duration(p.TimeoutMS)*time.Millisecond, browserMaxTimeout)
+	}
+	cfg := d.headless.config()
+	if d.headless.opener == nil {
+		cfg.Fallback = domain.BrowserFallbackOff
+	}
+	backend, ok := domain.ChooseBrowser(d.headless.want(session), d.browser.connected(), cfg)
+	if !ok {
+		return errorResponse(req.ID, rpc.CodeUnavailable, rpc.NoBrowser), true
+	}
+	if backend == domain.BrowserHeadless {
+		return d.headlessCommand(req, session, p.Command, args, timeout), true
+	}
+	id, ch, ok := d.browser.send(session, p.Command, args)
+	if !ok {
+		return errorResponse(req.ID, rpc.CodeUnavailable, rpc.NoBrowser), true
 	}
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()

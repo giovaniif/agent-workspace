@@ -167,6 +167,7 @@ type Daemon struct {
 	presence presenceCfg
 	auto     automationCfg
 	browser  browserHub
+	headless headlessPool
 }
 
 func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
@@ -261,6 +262,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 	for _, o := range opts {
 		o(d)
 	}
+	d.loadBrowserConfig()
 	return d, nil
 }
 
@@ -305,6 +307,9 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	go d.snapshotTurns(ctx)
 	d.cl.schedule()
 	go d.cleanupEvery(ctx)
+	if d.headless.opener != nil {
+		go d.reapHeadless(ctx)
+	}
 	if d.auto.scheduleEvery > 0 {
 		go d.runSchedules(ctx)
 		events := make(chan domain.AutomationEvent, automationEventBuffer)
@@ -639,6 +644,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.browserReply(c, req)
 	case rpc.MethodBrowserCommand:
 		return d.browserCommand(req)
+	case rpc.MethodBrowserCookiesImport:
+		return d.browserCookiesImport(req), true
 	case rpc.MethodClientViewing:
 		return d.clientViewing(c, req)
 	default:

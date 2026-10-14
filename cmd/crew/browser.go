@@ -20,7 +20,7 @@ import (
 )
 
 const browserUsage = "usage: crew browser [--session id] [--json] [--out file.png] [--timeout 30s] <" +
-	"goto url | snapshot | click @eN | fill @eN text | type text | press key | wait @eN|ms|text | screenshot | eval js | tabs | cookies [domain] | set-device desktop|ipad|iphone>"
+	"goto url | snapshot | click @eN | fill @eN text | type text | press key | wait @eN|ms|text | screenshot | eval js | tabs | cookies [domain] | cookies import file | set-device desktop|ipad|iphone>"
 
 type browserShot struct {
 	PNG    string `json:"png"`
@@ -38,6 +38,9 @@ func runBrowser(args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintln(stderr, browserUsage)
 		return 2
+	}
+	if rest := fs.Args(); len(rest) > 1 && rest[0] == "cookies" && rest[1] == "import" {
+		return importCookies(rest[2:], *timeout, stdout, stderr)
 	}
 	call, err := domain.ParseBrowserCommand(fs.Args())
 	if err != nil {
@@ -74,6 +77,43 @@ func runBrowser(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 	printBrowserResult(stdout, res, *asJSON)
+	return 0
+}
+
+func importCookies(args []string, timeout time.Duration, stdout, stderr io.Writer) int {
+	if len(args) != 1 {
+		fmt.Fprintln(stderr, "usage: crew browser cookies import <cookies.txt | cookies.json | storageState.json>")
+		return 2
+	}
+	data, err := os.ReadFile(args[0])
+	if err != nil {
+		fmt.Fprintf(stderr, "crew browser: %v\n", err)
+		return 1
+	}
+	cookies, err := domain.ParseCookieFile(data)
+	if err != nil {
+		fmt.Fprintf(stderr, "crew browser: %s: %v\n", args[0], err)
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout+5*time.Second)
+	defer cancel()
+	c, err := connectHome(ctx)
+	if err != nil {
+		fmt.Fprintf(stderr, "crew browser: %v\n", err)
+		return 1
+	}
+	defer func() { _ = c.Close() }()
+	var res rpc.BrowserCookiesResult
+	if err := c.Call(ctx, rpc.MethodBrowserCookiesImport, rpc.BrowserCookiesParams{Cookies: cookies}, &res); err != nil {
+		var rerr *rpc.Error
+		if errors.As(err, &rerr) {
+			fmt.Fprintf(stderr, "crew browser: %s\n", rerr.Message)
+		} else {
+			fmt.Fprintf(stderr, "crew browser: %v\n", err)
+		}
+		return 1
+	}
+	fmt.Fprintf(stdout, "imported %d cookies into the server browser profile (%d kept)\n", res.Imported, res.Total)
 	return 0
 }
 

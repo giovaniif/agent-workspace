@@ -110,6 +110,7 @@ func (d *Daemon) replaceConfig(src, next string) error {
 func (d *Daemon) applyConfig() {
 	defaults, errDefaults := LoadStartDefaults(d.cfg.path)
 	awayAfter, errAway := LoadAwayAfter(d.cfg.path)
+	d.loadBrowserConfig()
 	d.query(func(s *state) {
 		if errDefaults == nil {
 			d.hs.defaults = defaults
