@@ -120,13 +120,13 @@ func tuiIn(home string, newSession, setup bool) error {
 	}
 	if newSession {
 		opts.LaunchDir = launchDir()
-		opts.Project = os.Getenv("AGENTWS_PROJECT")
+		opts.Project = domain.Env(os.Getenv, "PROJECT")
 	} else {
-		opts.LaunchDir = os.Getenv("AGENTWS_LAUNCH_DIR")
+		opts.LaunchDir = domain.Env(os.Getenv, "LAUNCH_DIR")
 	}
 	if self, err := os.Executable(); err == nil && !newSession && !setup {
-		opts.SetupPopup = rpc.ClientPopupParams{Command: []string{self, "tui", "--setup"}, Env: map[string]string{"AGENTWS_HOME": home}}
-		opts.DialogPopup = rpc.ClientPopupParams{Command: []string{self, "tui", "--new-session"}, Env: map[string]string{"AGENTWS_HOME": home}}
+		opts.SetupPopup = rpc.ClientPopupParams{Command: []string{self, "tui", "--setup"}, Env: map[string]string{domain.EnvName("HOME"): home}}
+		opts.DialogPopup = rpc.ClientPopupParams{Command: []string{self, "tui", "--new-session"}, Env: map[string]string{domain.EnvName("HOME"): home}}
 		opts.Redial = tui.Redialer(rpc.SocketPath(home))
 		opts.CanRestart = true
 	}

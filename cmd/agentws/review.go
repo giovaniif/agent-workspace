@@ -22,13 +22,13 @@ const (
 
 var errBadComment = errors.New("bad comment arguments")
 
-func sessionFromEnv() string { return os.Getenv("AGENTWS_SESSION") }
+func sessionFromEnv() string { return domain.Env(os.Getenv, "SESSION") }
 
 func parseCommentArgs(args []string, stderr io.Writer) (rpc.CommentParams, error) {
 	fs := flag.NewFlagSet("review comment", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var p rpc.CommentParams
-	fs.StringVar(&p.Session, "session", sessionFromEnv(), "session id (default $AGENTWS_SESSION)")
+	fs.StringVar(&p.Session, "session", sessionFromEnv(), "session id (default $CREW_SESSION)")
 	fs.StringVar(&p.File, "file", "", "absolute path of the file")
 	fs.StringVar(&p.Worktree, "worktree", "", "worktree id, with --path")
 	fs.StringVar(&p.Path, "path", "", "path in the worktree, with --worktree")
@@ -85,7 +85,7 @@ func runReview(args []string, stdout, stderr io.Writer) int {
 	case "send":
 		fs := flag.NewFlagSet("review send", flag.ContinueOnError)
 		fs.SetOutput(stderr)
-		session := fs.String("session", sessionFromEnv(), "session id (default $AGENTWS_SESSION)")
+		session := fs.String("session", sessionFromEnv(), "session id (default $CREW_SESSION)")
 		if err := fs.Parse(args[1:]); err != nil || *session == "" || fs.NArg() > 0 {
 			fmt.Fprintln(stderr, sendUsage)
 			return 2
@@ -127,7 +127,7 @@ func parseScopeArgs(args []string, stderr io.Writer) (rpc.ReviewParams, error) {
 	fs.SetOutput(stderr)
 	var p rpc.ReviewParams
 	scope := fs.String("scope", "", "last_turn, uncommitted or branch (default: the scope the review has open)")
-	fs.StringVar(&p.Session, "session", sessionFromEnv(), "session id (default $AGENTWS_SESSION)")
+	fs.StringVar(&p.Session, "session", sessionFromEnv(), "session id (default $CREW_SESSION)")
 	fs.StringVar(&p.Worktree, "worktree", "", "one worktree id (default: all)")
 	if err := fs.Parse(args); err != nil {
 		return p, err

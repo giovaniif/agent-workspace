@@ -31,7 +31,7 @@ type browserShot struct {
 func runBrowser(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("browser", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	session := fs.String("session", sessionFromEnv(), "session id (default $AGENTWS_SESSION, else the session on $TMUX_PANE)")
+	session := fs.String("session", sessionFromEnv(), "session id (default $CREW_SESSION, else the session on $TMUX_PANE)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	out := fs.String("out", "", "file for the screenshot PNG (default a temp file)")
 	timeout := fs.Duration("timeout", 30*time.Second, "how long to wait for the macOS app")

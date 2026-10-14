@@ -15,6 +15,7 @@ import (
 	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
 	"github.com/giovaniif/agent-workspace/internal/adapters/loginshell"
 	"github.com/giovaniif/agent-workspace/internal/adapters/systemd"
+	"github.com/giovaniif/agent-workspace/internal/domain"
 )
 
 const setupDaemonUsage = "usage: agentws setup daemon [--remove | --check]"
@@ -107,7 +108,7 @@ func runSetupDaemon(args []string, stdout, stderr io.Writer, env func(string) st
 }
 
 func daemonService(env func(string) string, self, userHome string, uid int, goos string) serveService {
-	home := env("AGENTWS_HOME")
+	home := domain.Env(env, "HOME")
 	if home == "" {
 		home = filepath.Join(userHome, ".agentws")
 	}
@@ -115,7 +116,7 @@ func daemonService(env func(string) string, self, userHome string, uid int, goos
 		home = abs
 	}
 	program := []string{self, "daemon"}
-	svcEnv := map[string]string{"AGENTWS_HOME": home}
+	svcEnv := map[string]string{domain.EnvName("HOME"): home}
 	log := filepath.Join(home, "daemon-service.log")
 	if goos == "darwin" {
 		return serveService{launchd: true, agent: launchd.Agent{

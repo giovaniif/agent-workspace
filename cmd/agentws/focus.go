@@ -33,7 +33,7 @@ func runFocus(args []string, stderr io.Writer) int {
 func openClientParams(self, home, dir string, getenv func(string) string) rpc.OpenClientParams {
 	return rpc.OpenClientParams{
 		Command:  []string{self, "tui"},
-		Env:      map[string]string{"AGENTWS_HOME": home, "AGENTWS_LAUNCH_DIR": dir},
+		Env:      map[string]string{domain.EnvName("HOME"): home, domain.EnvName("LAUNCH_DIR"): dir},
 		Dir:      dir,
 		Terminal: domain.TerminalBundle(getenv("__CFBundleIdentifier"), getenv("TERM_PROGRAM")),
 	}

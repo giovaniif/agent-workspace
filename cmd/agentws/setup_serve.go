@@ -120,7 +120,7 @@ func setupServeService(args []string, env func(string) string, self, userHome st
 	}
 	given := map[string]bool{}
 	fs.Visit(func(f *flag.Flag) { given[f.Name] = true })
-	home := env("AGENTWS_HOME")
+	home := domain.Env(env, "HOME")
 	if home == "" {
 		home = filepath.Join(userHome, ".agentws")
 	}
@@ -131,7 +131,7 @@ func setupServeService(args []string, env func(string) string, self, userHome st
 			return serveService{}, false, err
 		}
 	}
-	svcEnv := map[string]string{"AGENTWS_HOME": home}
+	svcEnv := map[string]string{domain.EnvName("HOME"): home}
 	if p := env("PATH"); p != "" {
 		svcEnv["PATH"] = p
 	}

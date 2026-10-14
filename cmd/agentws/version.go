@@ -29,7 +29,7 @@ func runVersion(current, commit string, latest func(context.Context) (string, er
 var errUpdateCheckOff = errors.New("update check off")
 
 func latestRelease(ctx context.Context) (string, error) {
-	if os.Getenv("AGENTWS_NO_UPDATE_CHECK") != "" {
+	if domain.Env(os.Getenv, "NO_UPDATE_CHECK") != "" {
 		return "", errUpdateCheckOff
 	}
 	home, err := rpc.Home()

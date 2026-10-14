@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/giovaniif/agent-workspace/internal/adapters/launchd"
+	"github.com/giovaniif/agent-workspace/internal/domain"
 )
 
 const setupBridgeUsage = "usage: agentws setup bridge [--remote-bin path] [--remove] <ssh host>"
@@ -70,7 +71,7 @@ func setupBridgeAgent(args []string, env func(string) string, self, userHome str
 		return launchd.Agent{}, false, errors.New("needs exactly one ssh host")
 	}
 	host := fs.Arg(0)
-	home := env("AGENTWS_HOME")
+	home := domain.Env(env, "HOME")
 	if home == "" {
 		home = filepath.Join(userHome, ".agentws")
 	}
@@ -78,7 +79,7 @@ func setupBridgeAgent(args []string, env func(string) string, self, userHome str
 	if *remote != "agentws" {
 		program = append(program, "--remote-bin", *remote)
 	}
-	agentEnv := map[string]string{"AGENTWS_HOME": home}
+	agentEnv := map[string]string{domain.EnvName("HOME"): home}
 	if p := env("PATH"); p != "" {
 		agentEnv["PATH"] = p
 	}

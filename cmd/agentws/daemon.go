@@ -85,7 +85,7 @@ func spawn(home string) error {
 	}
 	defer func() { _ = log.Close() }()
 	cmd := exec.Command(self, "daemon")
-	cmd.Env = append(os.Environ(), "AGENTWS_HOME="+home)
+	cmd.Env = append(os.Environ(), domain.EnvName("HOME")+"="+home)
 	cmd.Stdout, cmd.Stderr = log, log
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {

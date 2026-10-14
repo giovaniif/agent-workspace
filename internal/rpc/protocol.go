@@ -544,7 +544,7 @@ type Diff struct {
 }
 
 func Home() (string, error) {
-	if home := os.Getenv("AGENTWS_HOME"); home != "" {
+	if home := domain.Env(os.Getenv, "HOME"); home != "" {
 		return home, nil
 	}
 	home, err := os.UserHomeDir()

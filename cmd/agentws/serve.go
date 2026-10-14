@@ -58,7 +58,7 @@ func parseServe(args []string, home string, stderr io.Writer) (serveFlags, error
 	fs.StringVar(&f.opts.Addr, "addr", serve.DefaultAddr, "address to listen on; plain HTTP only on loopback")
 	fs.StringVar(&f.opts.Cert, "cert", "", "TLS certificate file")
 	fs.StringVar(&f.opts.Key, "key", "", "TLS key file")
-	fs.BoolVar(&f.opts.SelfSigned, "self-signed", false, "serve TLS with a self-signed certificate kept in $AGENTWS_HOME/serve")
+	fs.BoolVar(&f.opts.SelfSigned, "self-signed", false, "serve TLS with a self-signed certificate kept in $CREW_HOME/serve")
 	fs.StringVar(&f.url, "url", "", "public URL the app is opened from (default: [serve] url in config.toml)")
 	if err := fs.Parse(args); err != nil || fs.NArg() > 0 {
 		return serveFlags{}, errServeUsage

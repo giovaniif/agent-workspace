@@ -132,7 +132,7 @@ func runBridge(b bridge, stderr io.Writer) int {
 	defer stop()
 	log.SetOutput(stderr)
 	self, _ := os.Executable()
-	home := os.Getenv("AGENTWS_HOME")
+	home := domain.Env(os.Getenv, "HOME")
 	n := notify.Detect(notify.Click{Self: self, Home: home, FocusCmd: b.focusCmd()})
 	if _, ok := n.(notify.Osascript); ok {
 		log.Print("terminal-notifier not on PATH: banners use osascript and clicks do nothing")
