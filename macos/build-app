@@ -4,6 +4,8 @@ cd "$(dirname "$0")"
 config="${1:-release}"
 version="${CREW_APP_VERSION:-${AGENTWS_APP_VERSION:-v0.0.0}}"
 binaries="${CREW_APP_BINARIES:-${AGENTWS_APP_BINARIES:-}}"
+name=crew
+[ -n "${CREW_APP_BINARIES:-}" ] || [ -z "${AGENTWS_APP_BINARIES:-}" ] || name=agentws
 swift build -c "$config" --product AgentwsApp
 bin="$(swift build -c "$config" --show-bin-path)/AgentwsApp"
 app=build/crew.app
@@ -28,7 +30,7 @@ iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
 rm -rf "$(dirname "$iconset")"
 if [ -n "$binaries" ]; then
   for target in darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
-    src="$binaries/$target/crew"
+    src="$binaries/$target/$name"
     [ -f "$src" ] || { echo "missing $src" >&2; exit 1; }
     mkdir -p "$app/Contents/Resources/bin/$target"
     cp "$src" "$app/Contents/Resources/bin/$target/crew"

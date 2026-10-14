@@ -78,6 +78,7 @@ public struct Probe: Equatable, Sendable {
     public var user = ""
     public var home = ""
     public var build: String?
+    public var legacy = false
     public var daemon: DaemonCheck?
     public var tools: Set<String> = []
     public var ghSignedIn = false
@@ -96,6 +97,7 @@ public struct Probe: Equatable, Sendable {
             case "user": probe.user = value
             case "home": probe.home = value
             case "build": probe.build = value.isEmpty ? nil : value
+            case "legacy": probe.legacy = value == "1"
             case "daemon": probe.daemon = try? JSONDecoder().decode(DaemonCheck.self, from: Data(value.utf8))
             case "tool": probe.tools.insert(value)
             case "gh": probe.ghSignedIn = value == "signed-in"
@@ -309,7 +311,7 @@ public final class ServerSetup {
                 throw ServerSetupError(message: "crew has no build for \(before.kernel) \(before.machine); it runs on Linux and macOS, amd64 or arm64")
             }
             var replaced = false
-            if self.server.isRemote, before.build != self.appBuild {
+            if self.server.isRemote, before.build != self.appBuild || before.legacy {
                 try await self.install(platform)
                 replaced = true
             }
@@ -360,7 +362,7 @@ public final class ServerSetup {
         PATH="$PATH:$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin"
         echo "kernel=$(uname -s)"; echo "machine=$(uname -m)"; echo "user=$(id -un)"; echo "home=$HOME"
         b=\(binary)
-        \(server.isRemote ? #"[ -x "$b" ] || b="$HOME/.local/bin/agentws""# : "")
+        \(server.isRemote ? #"[ -x "$b" ] || { b="$HOME/.local/bin/agentws"; [ -x "$b" ] && echo legacy=1; }"# : "")
         if [ -x "$b" ]; then echo "build=$("$b" version --build 2>/dev/null)"; echo "daemon=$("$b" setup daemon --check 2>/dev/null)"; fi
         for t in git tmux gh; do command -v "$t" >/dev/null 2>&1 && echo "tool=$t"; done
         command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 && echo gh=signed-in
