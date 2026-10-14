@@ -20,8 +20,8 @@ func TestHasAgentPanesIsTrueOnlyWhileTheServerParksAnAgentPane(t *testing.T) {
 	}
 	ctx := context.Background()
 	socket := fmt.Sprintf("crew-legacy-%d-%d", os.Getpid(), time.Now().UnixNano())
-	if tmux.HasAgentPanes(ctx, socket) {
-		t.Fatal("no server, but panes reported")
+	if has, err := tmux.HasAgentPanes(ctx, socket); has || err != nil {
+		t.Fatalf("no server: %v, %v", has, err)
 	}
 	h := tmux.New(tmux.Config{Socket: socket, ConfigPath: filepath.Join(t.TempDir(), "tmux.conf")})
 	t.Cleanup(func() { _ = h.Close(context.Background()) })
@@ -29,11 +29,19 @@ func TestHasAgentPanesIsTrueOnlyWhileTheServerParksAnAgentPane(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !tmux.HasAgentPanes(ctx, socket) {
-		t.Fatal("an agent pane is parked, but none reported")
+	if has, err := tmux.HasAgentPanes(ctx, socket); !has || err != nil {
+		t.Fatalf("an agent pane is parked: %v, %v", has, err)
+	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if _, err := tmux.HasAgentPanes(cancelled, socket); err == nil {
+		t.Fatal("a failed probe of a live server reads as no panes")
 	}
 	if err := h.Kill(ctx, pane); err != nil {
 		t.Fatal(err)
 	}
-	waitFor(t, "no agent panes", func() bool { return !tmux.HasAgentPanes(ctx, socket) })
+	waitFor(t, "no agent panes", func() bool {
+		has, err := tmux.HasAgentPanes(ctx, socket)
+		return !has && err == nil
+	})
 }
