@@ -37,7 +37,7 @@ func Find(env func(string) string, look func(string) (string, error)) (string, b
 }
 
 func InstallHint() string {
-	return "install Chromium (Debian or Ubuntu: sudo apt install chromium; macOS: brew install --cask chromium), or set CREW_CHROMIUM to a Chrome or Chromium binary"
+	return "install Chromium (Debian or Ubuntu: sudo apt install chromium) or the lighter chrome-headless-shell (npx @puppeteer/browsers install chrome-headless-shell), and set CREW_CHROMIUM to its binary if it is not on PATH"
 }
 
 type Browsers struct {
