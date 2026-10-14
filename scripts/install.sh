@@ -20,8 +20,8 @@ if [ -z "$tag" ] && [ -n "${CREW_DOWNLOAD_BASE:-${AGENTWS_DOWNLOAD_BASE:-}}" ]; 
   tag=snapshot
 fi
 if [ -z "$tag" ]; then
-  tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases?per_page=1" |
-    sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
+  tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases?per_page=50" |
+    sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | grep -v -- '-alpha' | head -n 1)
 fi
 [ -n "$tag" ] || { echo "crew: no release found" >&2; exit 1; }
 
