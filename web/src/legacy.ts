@@ -1,4 +1,7 @@
-import type { KeyValue } from "./auth";
+type KeyValue = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+};
 
 export const legacyAuthKey = "agentws.auth";
 export const legacyChoicesKey = "agentws.new";
