@@ -144,32 +144,33 @@ type state struct {
 }
 
 type Daemon struct {
-	pid      int
-	started  time.Time
-	events   chan Event
-	queries  chan func(*state)
-	stopped  chan struct{}
-	st       *state
-	ws       workspaces
-	clients  clients
-	hs       harnesses
-	wt       worktreeScanner
-	ports    portScanner
-	sess     sessionDeps
-	titles   app.TitleResolver
-	restored []domain.Session
-	rv       review
-	cl       cleanupWorker
-	disk     DiskDeps
-	onboard  app.Onboarder
-	cfg      configCfg
-	term     terminals
-	tx       *transcripts
-	push     app.PushProvider
-	presence presenceCfg
-	auto     automationCfg
-	browser  browserHub
-	headless headlessPool
+	pid         int
+	started     time.Time
+	events      chan Event
+	queries     chan func(*state)
+	stopped     chan struct{}
+	st          *state
+	ws          workspaces
+	clients     clients
+	hs          harnesses
+	wt          worktreeScanner
+	ports       portScanner
+	sess        sessionDeps
+	titles      app.TitleResolver
+	restored    []domain.Session
+	rv          review
+	cl          cleanupWorker
+	disk        DiskDeps
+	onboard     app.Onboarder
+	cfg         configCfg
+	term        terminals
+	tx          *transcripts
+	push        app.PushProvider
+	mateSecrets app.MateSecrets
+	presence    presenceCfg
+	auto        automationCfg
+	browser     browserHub
+	headless    headlessPool
 }
 
 func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
@@ -578,7 +579,7 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
-	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove:
+	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens:
 		return d.mateMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true
