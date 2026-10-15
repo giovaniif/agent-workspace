@@ -3,7 +3,7 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 import { fakeApi } from "./fake-api.ts";
 
-const shellFilesMarker = "__AGENTWS_SHELL_FILES__";
+const shellFilesMarker = "__CREW_SHELL_FILES__";
 
 function appShell(): Plugin {
   return {
@@ -34,10 +34,10 @@ function appShell(): Plugin {
   };
 }
 
-const api = process.env.AGENTWS_API;
+const api = process.env.CREW_API;
 
 export default defineConfig({
-  plugins: [react(), appShell(), process.env.AGENTWS_FAKE_API ? fakeApi() : null],
+  plugins: [react(), appShell(), process.env.CREW_FAKE_API ? fakeApi() : null],
   build: {
     outDir: "../internal/serve/dist",
     emptyOutDir: false,
@@ -51,7 +51,7 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: [".ts.net"],
-    proxy: api ? { "/api": { target: api, ws: true, secure: process.env.AGENTWS_API_INSECURE !== "1" } } : undefined,
+    proxy: api ? { "/api": { target: api, ws: true, secure: process.env.CREW_API_INSECURE !== "1" } } : undefined,
   },
   test: {
     environment: "jsdom",

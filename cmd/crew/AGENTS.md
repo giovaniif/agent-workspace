@@ -30,6 +30,7 @@ Hooks call `crew hook`. It writes one message to the socket and exits. It never 
 - `crew automation list` prints each automation, its trigger and its source file, then the problems. `crew automation show <name>` prints one automation from the same list. `crew automation run [--work-item w] <name> [context...]` starts a run. With `-` as the context, it reads the context from stdin. `crew automation runs [name]` and `crew automation rerun <run id>` show and repeat runs. `crew automation trust <name>` approves a repo automation of the current folder. Tests: `go test ./cmd/crew/ -run Automation`.
 - `crew mate list` prints each mate and then the problems. `crew mate show <name>` prints one mate and its prompt. `crew mate remove <name>` deletes it. `crew mate set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]` makes a mate or changes the fields that you name and keeps the others. A new mate starts enabled. `--repo` can repeat, and it replaces the list. The daemon does the validation.
   - `crew mate add <name> [--agent a] [--prompt p] [--no-open]` makes the mate (the agent is `claude` and the prompt is short, unless you give them), prints the Slack app manifest and the api.slack.com "new app from manifest" link, and opens the link when it can (`open` on macOS, `xdg-open` on Linux). Then it asks for the bot token (`xoxb-`) and the app token (`xapp-`) and sends them with `mate.set_tokens`. A terminal does not echo the input. Without a terminal, it reads one line for each token. It refuses a name that exists. If a token is wrong, the mate stays and the command tells you to run `crew mate tokens <name>`.
+  - After the tokens are stored, `add` and `tokens` call `mate.claim` and print the one-time code. The user sends it to the mate in a direct message in Slack in 10 minutes, and becomes the owner. `crew mate claim <name>` prints a new code. Use it to change the owner.
   - `crew mate tokens <name>` asks for the two tokens again. `crew mate tokens <name> --clear` removes them. No command prints a token.
   - Tests: `go test ./cmd/crew/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md).
 - `crew setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]` keeps `crew serve` running. On Linux, it uses a systemd user unit (`crew-serve.service`). On macOS, it uses the launchd agent `dev.crew.serve`. The service gets the PATH and `CREW_HOME` of the shell that ran the command.
@@ -57,7 +58,7 @@ Hooks call `crew hook`. It writes one message to the socket and exits. It never 
   - Tests: `go test ./cmd/crew/ -run Remote`. See [internal/daemon/](../../internal/daemon/AGENTS.md) and ADR 0046.
 - `crew serve [--addr 127.0.0.1:7420] [--cert f --key f | --self-signed] [--url u]` runs the API of the phone app (see [internal/serve/](../../internal/serve/AGENTS.md)). It refuses plain HTTP off loopback before it starts anything. The public URL for the `Origin` check of the stream comes from `--url` or `[serve] url`. It starts the daemon like the TUI does. Tests: `go test ./cmd/crew/ -run Serve`.
 - `crew rpc` is the one transport of the Mac app, local or through `ssh -T host crew rpc`.
-  - It connects to `$CREW_HOME/agentws.sock` and copies protocol lines in both directions between the socket and stdin/stdout. The line limit is `rpc.MaxMessage` (16 MiB).
+  - It connects to `$CREW_HOME/crew.sock` and copies protocol lines in both directions between the socket and stdin/stdout. The line limit is `rpc.MaxMessage` (16 MiB).
   - It never starts a daemon. If nothing listens, it writes one `{"v":1,"id":0,"error":{"code":"unavailable",...}}` line and exits 1.
   - EOF on stdin half-closes the socket. When the socket closes, it exits with status 0. An oversized line ends it with status 1.
   - The copy code is in `internal/rpcpipe`. Depguard lets it import only `rpc`, `view` and `syntax` from `internal/`, and never `os/exec`.
@@ -87,15 +88,18 @@ Hooks call `crew hook`. It writes one message to the socket and exits. It never 
 - `crew debug session [--once] <id>` prints the state, harness, pane, model, effort, context left and limit used of a session. Then it prints each change until you interrupt it. `--once` prints only the current line.
 - `crew debug launch --harness claude --dir <dir> [--model m] [--effort e]` opens a harness pane in any dir, with no task or worktree.
 
-## Migration from agentws
+## Migration from the alphas
 
-`crew`, `crew tui`, `crew daemon`, `crew serve` and `crew setup` run `migrateState` (`migrate.go`) before they start. It does not run when `CREW_HOME` or `AGENTWS_HOME` is set. It writes one `crew:` line on stderr for each step that it does. A second run changes nothing and writes nothing. The rules are in `internal/domain/migrate.go`.
+`crew`, `crew tui`, `crew daemon`, `crew serve` and `crew setup` run `migrateState` (`migrate.go`) before they start. It does not run when `CREW_HOME` is set. It writes one `crew:` line on stderr for each step that it does. A second run changes nothing and writes nothing. The names of the alphas are only in `migrate.go`, in the `legacy*` files of the packages, and in their tests. The rules are in `internal/domain/migrate.go`.
 
-1. **Services** (only `crew setup`): for each `agentws-daemon`, `agentws-serve` or `dev.agentws.*` file in the systemd user dir or `~/Library/LaunchAgents`, it keeps a `.bak` copy, writes the `crew` file (`domain.RewriteServiceFile`), stops and removes the old service, and starts the new service after the other steps.
-2. **Home:** it moves `~/.agentws` to `~/.crew` and makes `~/.agentws` a symlink to it. If a daemon answers on the old socket, it does not move the dir and tells you to run `crew daemon stop`. Until the move, `rpc.Home` uses `~/.agentws`. If both dirs exist, it uses `~/.crew` and does not change `~/.agentws`.
-3. **Hooks:** if `settings.json` of Claude or `hooks.json` of Codex runs `agentws hook`, it runs the normal setup merge with the `crew` binary. The merge makes a backup first.
-4. **nvim:** it moves `$XDG_DATA_HOME/agentws` to `$XDG_DATA_HOME/crew`, makes a symlink, and points the nvim setup file at the new dir.
+1. **Services** (only `crew setup`): for each systemd or launchd file of the alphas in the systemd user dir or `~/Library/LaunchAgents`, it keeps a `.bak` copy, writes the `crew` file (`domain.RewriteServiceFile`), stops and removes the old service, and starts the new service after the other steps.
+2. **Home:** it moves the old home dir to `~/.crew` and makes the old path a symlink to it. If a daemon answers on the old socket, it does not move the dir and tells you to run `crew daemon stop`. Until the move, `rpc.Home` uses the old dir. If both dirs exist, it uses `~/.crew` and does not change the old dir. It then removes the stale socket, pid and lock files of the old daemon, unless that daemon is live.
+3. **Hooks:** if `settings.json` of Claude, `hooks.json` of Codex or the omp hook runs the old command, it runs the normal setup merge with the `crew` binary. The merge makes a backup first. The old omp hook moves to a `.bak` file. The old Claude settings backup moves to the new backup name.
+4. **nvim:** it moves the old plugin dir in `$XDG_DATA_HOME` to `$XDG_DATA_HOME/crew`, makes a symlink, writes the new nvim setup file and moves the old setup file to a `.bak` file.
+5. **Link:** it removes the link with the old command name that sits next to the binary.
 
-The daemon uses the tmux server `crew`. While the old `agentws` server has a parked agent pane, the daemon uses the old server, so that no session stops (`domain.TmuxSocket`, `tmux.HasAgentPanes`).
+The daemon finds the other old names itself. A client reaches a live old daemon through its socket. A new daemon does not start while an old daemon holds its lock. The repo config file, the browser skill and the turn refs of the alphas are read or moved when they are first needed, with a `.bak` copy. The state database renames the trust keys of automations in migration 0010.
+
+The daemon uses the tmux server `crew`. While the old server has a parked agent pane, the daemon uses the old server and its old session name, so that no session stops (`domain.TmuxSocket`, `tmux.HasAgentPanes`).
 
 Tests: `go test ./cmd/crew/ ./internal/domain/ ./internal/rpc/ -run 'Migrate|Home|Tmux|Legacy|Rewrite'` and `go test -tags integration ./internal/adapters/tmux/ -run HasAgentPanes`.

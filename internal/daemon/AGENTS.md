@@ -12,9 +12,9 @@ Files in `$CREW_HOME` (default `~/.crew`):
 
 | File | Purpose |
 |---|---|
-| `agentws.lock` | `flock` held for the daemon's life; the kernel drops it if the daemon dies. A second daemon exits 1 with `already running (pid N)`. |
-| `agentws.pid` | written after taking the lock, removed on clean exit |
-| `agentws.sock` | the socket, mode 0600; a stale one is removed by the next lock holder |
+| `crew.lock` | `flock` held for the daemon's life; the kernel drops it if the daemon dies. A second daemon exits 1 with `already running (pid N)`. |
+| `crew.pid` | written after taking the lock, removed on clean exit |
+| `crew.sock` | the socket, mode 0600; a stale one is removed by the next lock holder |
 | `state.db` | the SQLite store; loaded once on start |
 
 **Event loop.** One goroutine owns all state.
@@ -41,7 +41,7 @@ A project (`domain.Project`: `Root`, `Name`, `Setup`) is a registered workspace 
 - `project.remove` forgets the project and keeps the workspace.
 - To open a project is `session.new` with its root as `workspace`, so it works from any cwd.
 - `domain.ProjectOf` finds the project that holds a path. The deepest root wins.
-- **Setup script.** When `session.new` creates a worktree in the workspace of a project, the `Setup` of the project runs there as `sh -c <script>` (`WithProjectSetup`, `setup.Shell`). It runs after the `.agentws.toml` recipe and before the harness starts. An empty script runs nothing.
+- **Setup script.** When `session.new` creates a worktree in the workspace of a project, the `Setup` of the project runs there as `sh -c <script>` (`WithProjectSetup`, `setup.Shell`). It runs after the `.crew.toml` recipe and before the harness starts. An empty script runs nothing.
   - A failing script fails the start, as a failing recipe does, and keeps the worktree.
   - An orchestration root starts with no worktree, so nothing runs there. Worktrees that an agent adds itself do not get the setup.
   - Tests: `go test ./internal/app/ ./internal/daemon/ -run 'ProjectSetup|SetupScript'`.
@@ -133,7 +133,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - An empty value removes the line.
   - Before it writes, it parses the result again. The result must hold exactly the new value.
   - It refuses a key that is set in a different way (an inline table, dotted keys), with a message to edit it by hand. It never touches a file that does not parse.
-- **Backup.** A changed file is first copied to `config.toml.agentws-<UTC time>.bak` (mode 600). Then it is replaced atomically with its old mode. If you set the value that it already has, nothing is written and there is no backup. A missing file is created without a backup.
+- **Backup.** A changed file is first copied to `config.toml.crew-<UTC time>.bak` (mode 600). Then it is replaced atomically with its old mode. If you set the value that it already has, nothing is written and there is no backup. A missing file is created without a backup.
 - **Live.** After a write, the daemon reloads `[defaults.<harness>]` and `[push] away_after`. `[push] away_after` reloads only when presence runs. To turn it on from `"0"`, restart. The TUI reads `[fallback]` and `[theme]` when it starts.
 
 ## Automations
@@ -160,6 +160,24 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - A load validates each `[[mate]]` table against the registered workspaces (`domain.CheckMates`). An invalid or repeated mate gives a problem with the file path, and the other mates load.
 - A write parses the new text again. The result must hold exactly the mate that was set. If it does not, the daemon refuses and tells you to edit the file by hand. It never touches a file that does not parse.
 - Tokens are not part of a mate. `WithMateSecrets(app.MateSecrets)` turns on `mate.set_tokens` and `mate.clear_tokens`. `Run` passes `secrets.Files` for `$CREW_HOME/secrets`. The mate must exist. The daemon validates the prefixes (`domain.ValidateMateTokens`) before it stores anything, and it never logs or returns a token. `mate.remove` clears the tokens of the mate. Tests: `go test ./internal/daemon/ -run MateSetTokens\|MateClearTokens\|NoMateMethod`.
+- **Slack worker.** `WithSlack(app.SlackConnector, every)` starts one goroutine that syncs the mates: at start, after each `mate.set`, `mate.remove`, `mate.set_tokens` and `mate.clear_tokens`, and every `every` (`Run` passes `slack.New` and 30 s). It never runs on the loop.
+  - Each enabled mate with both tokens gets its own goroutine that runs `SlackMate.Run`. A mate that is not enabled is `paused`. A mate with no tokens is `no_tokens`. When the tokens change (a SHA-256 of them), the worker stops and starts again. When the mate goes, it stops.
+  - The status from the adapter is the state of the mate in `mate.list`. After a token error, the mate stays in `error` until its tokens change. The log has the Slack error, never a token.
+- **Owner claim.** `mate.claim` draws a code with `crypto/rand` (`domain.NewPairCode`) and keeps one `domain.MateClaim` for each mate in memory. A direct message to that mate whose text is the code (case, spaces and `-` do not count), from a Slack user ID, before the 10 minutes end, writes that user ID to `owner` with the backup of `config.set`. Then the mate replies in the direct message. The code works one time. A mention or a message in a channel never claims. Tests: `go test ./internal/daemon/ -run 'MateWorker|MateClaim|MateToken|MateNewTokens|MateClearTokens'`.
+
+## Mate threads
+
+`go test ./internal/domain/ ./internal/daemon/ ./internal/adapters/sqlite/ -run 'Mate'` and `go test -tags integration ./internal/daemon/ -run MateThreadIntegration`. See [ADR 0053](../../docs/adr/0053-mates.md).
+
+- The Slack worker hands each mention and each thread message of a mate to its own goroutine, never to the loop. The same message (channel and timestamp) counts one time, because Slack sends a mention in a thread as two events. One mutex puts the thread events in order.
+- **Link.** `domain.MateThread` (team, channel, thread timestamp, mate) points to a session. It is in `state.mateThreads` and in the `mate_threads` table, so a restart keeps it. `Status` is the timestamp of the status message.
+- **Start.** A mention in a thread with no live link starts a session through the `session.new` path:
+  - `domain.MateWorkspace` selects a registered single-repo workspace whose repo is in `repos`, in the order of `repos`. Thus a repo out of the mate is never used. If there is none, the mate posts the error in the thread.
+  - The first prompt is `domain.MateFirstPrompt`: the mate prompt, the thread from `conversations.replies` with display names, and the person who asked. The Slack text is in `slack-thread` tags as data.
+  - The daemon sets `Session.Mate` with the owner and the authority (the Slack user ID of the event), records the link and posts "Working on it." as the status message.
+- **Reply.** A message in a linked thread goes to the same session through `session.send` (`domain.MateReplyPrompt`), so it waits in the queue while the session is busy. A thread message with no link does nothing.
+  - `domain.NextMateAuthority` sets the authority. When the session is busy (in a turn, a send in flight, or a send in the queue), the owner cannot raise the authority of a turn that a different person started. The owner can only keep it or lower it.
+- **Post back.** For each `PreToolUse` of a mate session, the status message shows the tool (a maximum of one update each 5 s). At `Stop`, the status changes to "Done." and the mate posts `domain.MateResultText` (the last assistant message) as a new message. At `SessionEnd`, the status changes to "Stopped.". Errors go in the thread.
 
 ## Codex fallback
 
@@ -321,7 +339,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 
 ### Headless fallback
 
-`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0053](../../docs/adr/0053-headless-browser-fallback.md).
+`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0054](../../docs/adr/0054-headless-browser-fallback.md).
 
 - `browser.command` picks the backend with `domain.ChooseBrowser`. The inputs are the `browser` of the automation that started the session, if the Mac app is attached, and `[browser]` in `config.toml`.
 - `[browser]` has `fallback` (`"headless"` or `"off"`, default `"off"`), `max_headless` (default 2) and `idle` (default `"10m"`). `config.set` and a daemon start read it again.

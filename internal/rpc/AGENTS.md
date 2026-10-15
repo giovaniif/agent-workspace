@@ -4,7 +4,7 @@ This package holds the protocol types (`protocol.go`) and the client. The TUI, t
 
 ## Protocol
 
-The transport is a Unix socket at `$CREW_HOME/agentws.sock`. It carries one JSON object per line, at most 16 MiB. Each message has `"v":1`.
+The transport is a Unix socket at `$CREW_HOME/crew.sock`. It carries one JSON object per line, at most 16 MiB. Each message has `"v":1`.
 
 ```
 → {"v":1,"id":1,"method":"status"}
@@ -75,17 +75,17 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - Values are strings. Unset keys are absent.
   - `config.set` validates with `domain.ConfigLiteral` (else `bad_request`). An empty value removes the key. See [internal/daemon/](../daemon/AGENTS.md#config).
   - Without `WithConfig`, both answer `unavailable`.
-- `automation.list` (`{"repo"}` → `{"automations","problems"}`) reads the `[[automation]]` tables of `config.toml` and of `<repo>/.agentws.toml` on the connection goroutine. See [ADR 0050](../../docs/adr/0050-automations.md).
+- `automation.list` (`{"repo"}` → `{"automations","problems"}`) reads the `[[automation]]` tables of `config.toml` and of `<repo>/.crew.toml` on the connection goroutine. See [ADR 0050](../../docs/adr/0050-automations.md).
   - With `repo`, a repo automation replaces the global one with the same name (`domain.MergeAutomations`). Without `repo`, the list has the global automations, then the automations of each registered repo.
   - An automation that `domain.ValidateAutomation` refuses is not in the list. Its error is in `problems`, with the file path.
   - `automation.show` (`{"name","repo"}` → an automation) uses the same list. An unknown name is `not_found`.
 - `automation.run` (`{"name","context","work_item","repo"}` or `{"rerun":"<run id>"}` → `{"run","session"}`) starts one run (`domain.PlanAutomationRun`).
-  - The repo is `repo`, else the folder of the `.agentws.toml` of the automation, else the last used workspace.
+  - The repo is `repo`, else the folder of the `.crew.toml` of the automation, else the last used workspace.
   - `new-worktree` goes through `session.new`. `workspace` and `worktree:<path>` open a pane in that folder, as `session.launch` does. `session = "reuse"` sends the prompt to the live session of the last run.
   - A `precheck` runs as `sh -c` in the repo (or the target folder) first, with a 2 min limit. A non-zero exit records the run as `skipped` and starts nothing. A failed start records `failed`.
   - `rerun` repeats the name, context, work item and repo of a recorded run.
 - `automation.trust` (`{"name","repo"}` → the automation) approves a repo automation with a `schedule`, `on` or `precheck`. The daemon stores a hash of the definition (`domain.AutomationHash`) in the `automation_trust` table. A changed definition is not trusted. The list sets `trusted`. The schedule and events start only automations that are enabled and trusted (`domain.AutomationCanRunAlone`). Global automations need no approval.
-- `automation.save` (`{"automation"}` → the saved automation) validates it and writes it as an `[[automation]]` table in `config.toml` (`domain.SetAutomationBlock`). It replaces the table with the same `name`, else it appends one. It makes the same backup and atomic write as `config.set`. It never writes a repo `.agentws.toml`.
+- `automation.save` (`{"automation"}` → the saved automation) validates it and writes it as an `[[automation]]` table in `config.toml` (`domain.SetAutomationBlock`). It replaces the table with the same `name`, else it appends one. It makes the same backup and atomic write as `config.set`. It never writes a repo `.crew.toml`.
 - `automation.runs` (`{"name","limit"}` → `{"runs"}`) lists recorded runs, newest first. An empty `name` lists all. Runs are in the `automation_runs` table.
 - `mate.list` (`{}` → `{"mates","problems"}`) reads the `[[mate]]` tables of `config.toml` on the connection goroutine. See [ADR 0053](../../docs/adr/0053-mates.md).
   - A mate that `domain.CheckMates` refuses is not in the list. Its error is in `problems`, with the file path. The other mates still load.
@@ -96,9 +96,11 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - All four answer `unavailable` without `WithConfig`. No result holds a token.
   - `mate.set_tokens` (`{"name","bot_token","app_token"}` → `{"name","has_bot_token","has_app_token"}`) stores the Slack tokens of a mate in files with mode 600 under `$CREW_HOME/secrets/`. The bot token starts with `xoxb-` and the app token with `xapp-`. A wrong prefix is `bad_request`, and the error never holds the value. An unknown mate is `not_found`. Without a secret store, it is `unavailable`.
   - `mate.clear_tokens` (`{"name"}` → the same status) removes both files. `mate.remove` also removes them.
+  - `mate.claim` (`{"name"}` → `{"name","code","expires_at"}`) makes a one-time owner code for the mate. It is good for 10 minutes. A new claim replaces the old code. An unknown mate is `not_found`. Without the Slack worker, it is `unavailable`.
+  - With the Slack worker, `mate.list` also has `states`: `{"name","state","error"}` for each mate. `state` is `connecting`, `connected`, `error`, `paused` (not enabled) or `no_tokens`. `error` has the Slack error code, never a token.
   - A client can set or clear a token. No method returns one.
 - Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
-  - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.agentws-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
+  - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.crew-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
 - Workspace and project methods:
   - `workspace.add` (`{"path": abs}` → `Workspace`).
   - `workspace.list` (→ `{"workspaces": [...], "last_used": root}`).
@@ -143,7 +145,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - With no attached app, it is `unavailable` with the message `no browser: the macOS app is not connected`. If the app disconnects first, it is also `unavailable`.
   - An `error` from the app is `failed` with that message. No reply in `timeout_ms` (default 30 s, a maximum of 10 min) is `failed`.
   - An unknown command, or no session and no known pane, is `bad_request`.
-  - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0053](../../docs/adr/0053-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
+  - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0054](../../docs/adr/0054-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
   - `browser.cookies.import` (`{"cookies":[{"name","value","domain","path","expires","secure","httpOnly","sameSite"}]}` → `{"imported","total"}`) keeps the cookies for the headless browser. No cookies, or a cookie with no name or domain, is `bad_request`.
 - Web Push (ADR 0046):
   - `push.key` (→ `{"public_key"}`).

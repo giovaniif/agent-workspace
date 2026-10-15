@@ -141,6 +141,8 @@ type state struct {
 	activeTabs      map[string]string
 	orphanPanes     []app.PaneID
 	transcriptMoved func(sessionID, path string, gone bool)
+	mateThreads     map[string]domain.MateThread
+	matePost        func(link domain.MateThread, ev domain.SessionEvent)
 }
 
 type Daemon struct {
@@ -167,6 +169,7 @@ type Daemon struct {
 	tx          *transcripts
 	push        app.PushProvider
 	mateSecrets app.MateSecrets
+	slack       slackWorkers
 	presence    presenceCfg
 	auto        automationCfg
 	browser     browserHub
@@ -196,6 +199,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		pasting:         map[string]bool{},
 		inFlight:        map[string]sendFlight{},
 		booting:         map[string]bool{},
+		mateThreads:     map[string]domain.MateThread{},
 		devices:         map[string]domain.Device{},
 		projects:        map[string]domain.Project{},
 		automationRuns:  map[string]domain.AutomationRun{},
@@ -206,6 +210,9 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		gate:            domain.NewPushGate(),
 		views:           map[*conn]domain.ViewReport{},
 		clients:         map[*conn]domain.ClientView{},
+	}
+	for _, t := range snap.MateThreads {
+		st.mateThreads[t.Key()] = t
 	}
 	for _, tr := range snap.AutomationTrust {
 		st.automationTrust[tr.Key] = tr.Hash
@@ -301,6 +308,9 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	}
 	if d.presence.activity != nil {
 		go d.samplePresence(ctx)
+	}
+	if d.slack.connect != nil {
+		go d.runMates(ctx)
 	}
 	go d.watchWorktrees(ctx)
 	go d.watchPorts(ctx)
@@ -437,6 +447,7 @@ func (s *state) hook(h rpc.Hook, now time.Time) {
 	ev.SessionID = session.ID
 	s.emit(SessionHooked{Session: next, Event: ev})
 	s.trackSubagents(session.ID, kind, at, h.Payload)
+	s.mateHooked(next, ev)
 	if domain.BannerStale(session.State, next.State) {
 		s.withdraw(session.ID)
 	}
@@ -579,7 +590,7 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
-	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens:
+	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens, rpc.MethodMateClaim:
 		return d.mateMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true

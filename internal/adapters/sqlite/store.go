@@ -40,6 +40,7 @@ const (
 	tableProjects        table = "projects"
 	tableAutomationRuns  table = "automation_runs"
 	tableAutomationTrust table = "automation_trust"
+	tableMateThreads     table = "mate_threads"
 )
 
 var keyColumn = map[table]string{
@@ -53,6 +54,7 @@ var keyColumn = map[table]string{
 	tableProjects:        "root",
 	tableAutomationRuns:  "id",
 	tableAutomationTrust: "key",
+	tableMateThreads:     "key",
 }
 
 type Store struct {
@@ -230,6 +232,7 @@ func (s *Store) DeleteProject(root string) { s.enqueue(tableProjects, root, nil)
 func (s *Store) PutAutomationRun(r domain.AutomationRun) { s.put(tableAutomationRuns, r.ID, r) }
 
 func (s *Store) PutAutomationTrust(t domain.AutomationTrust) { s.put(tableAutomationTrust, t.Key, t) }
+func (s *Store) PutMateThread(t domain.MateThread)           { s.put(tableMateThreads, t.Key(), t) }
 
 func (s *Store) put(t table, key string, v any) {
 	data, err := json.Marshal(v)
@@ -427,6 +430,9 @@ func (s *Store) Load() (app.Snapshot, error) {
 		return snap, err
 	}
 	if snap.AutomationTrust, err = loadAll[domain.AutomationTrust](s.db, tableAutomationTrust); err != nil {
+		return snap, err
+	}
+	if snap.MateThreads, err = loadAll[domain.MateThread](s.db, tableMateThreads); err != nil {
 		return snap, err
 	}
 	snap.Events, err = loadEvents(s.db)

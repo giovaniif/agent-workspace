@@ -14,7 +14,7 @@ Run `crew`. The first time, a setup screen opens on top of the sidebar:
    `⏎` installs, `s` skips.
 3. **Codex.** The same for `~/.codex/hooks.json` (or `$CODEX_HOME`). Codex then needs a one-time trust step. Start `codex` and accept the review prompt for the new hooks, or trust them in `/hooks`.
 4. **Neovim (optional).** This step applies if `nvim` is on `PATH` and no part of your nvim config configures the plugin yet.
-   - The screen shows the file that it will write: `~/.config/nvim/plugin/agentws.lua`. This file loads the plugin that the install script put in `${XDG_DATA_HOME:-~/.local/share}/crew/nvim`.
+   - The screen shows the file that it will write: `~/.config/nvim/plugin/crew.lua`. This file loads the plugin that the install script put in `${XDG_DATA_HOME:-~/.local/share}/crew/nvim`.
    - `⏎` writes it, `s` skips.
    - It does not edit your own files (init.lua, init.vim, lazy.nvim specs). `crew setup nvim --remove` deletes the file.
    - Without nvim, the step tells how to install it (`brew install neovim`), and `⏎` continues. All keys except `e` and `o` work without nvim.
@@ -33,6 +33,9 @@ To add a mate:
 3. Copy the bot token (`xoxb-`) from OAuth & Permissions.
 4. In Basic Information, make an app-level token with the scope `connections:write`. Copy it (`xapp-`).
 5. Paste the two tokens when the command asks. The terminal does not show them.
+6. The command then shows a one-time code. In Slack, send the code to the mate in a direct message in the next 10 minutes. The mate replies, and you are its owner. Only the owner can approve a dangerous action. To get a new code, or to change the owner, run `crew mate claim <name>`.
+
+When the mate has tokens and is enabled, the daemon connects it to Slack. The `states` of `mate.list` show if each mate is connected. If Slack refuses a token, the state is `error` with the Slack error code.
 
 crew keeps the tokens in files with mode 600 under `$CREW_HOME/secrets/`. They are never in `config.toml`, a log or an answer of the daemon. If you gave a wrong token, run `crew mate tokens <name>`. To remove the tokens, run `crew mate tokens <name> --clear`.
 
@@ -67,13 +70,13 @@ In the review, `o` opens the file in that nvim, at the top line of the diff. In 
 The setup screen shows the exact lines for your install. To set it up by hand:
 
 1. Put the plugin dir on the runtimepath, with your plugin manager or with `vim.opt.rtp:prepend('<dir>')`. The dir is `${XDG_DATA_HOME:-~/.local/share}/crew/nvim` from a release, or the repo's `nvim/` in a checkout.
-2. Call `require('agentws').setup({})`.
+2. Call `require('crew').setup({})`.
 
 The plugin needs `crew` on `PATH`. It works in the nvim that the `e` key starts, which has `CREW_SESSION` set.
 
-- `:AgentwsDiff [last_turn|uncommitted|branch]` opens a review scope of the session in diffview. The default is the scope that the review pane has open.
-- `:'<,'>AgentwsComment [text]` adds the selected lines as a draft review comment.
-- `require('agentws').setup({ bin = 'crew', tmux = 'tmux', navigate = true })`. With `navigate = false`, the plugin does not change `C-h/j/k/l` in nvim.
+- `:CrewDiff [last_turn|uncommitted|branch]` opens a review scope of the session in diffview. The default is the scope that the review pane has open.
+- `:'<,'>CrewComment [text]` adds the selected lines as a draft review comment.
+- `require('crew').setup({ bin = 'crew', tmux = 'tmux', navigate = true })`. With `navigate = false`, the plugin does not change `C-h/j/k/l` in nvim.
 
 ## Mouse
 

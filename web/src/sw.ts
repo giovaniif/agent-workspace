@@ -3,7 +3,7 @@ import { appURL, notificationFor, openFromNotification, payloadOf } from "./sw-p
 
 declare const self: ServiceWorkerGlobalScope;
 
-const shellFiles = "__AGENTWS_SHELL_FILES__" as unknown as string[];
+const shellFiles = "__CREW_SHELL_FILES__" as unknown as string[];
 const current = cacheName(buildFromWorkerLocation(self.location.href));
 
 self.addEventListener("install", (event) => {

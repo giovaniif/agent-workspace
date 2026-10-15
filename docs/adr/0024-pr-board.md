@@ -11,9 +11,9 @@ Status: accepted, 2026-09-30.
 - **Failing checks** carry a name and a URL: a CheckRun's `detailsUrl`, or a StatusContext's `targetUrl`.
 - **Blockers** (`PullRequest.Blockers`), for open PRs only, in this order: checks failing or pending, changes requested or review required, merge conflicts, unresolved threads. Unknown mergeability is not a blocker, since GitHub settles it on a later poll. `ReadyToMerge` is open with no blockers.
 - **Pacing** (`domain.NextPRPoll`): the base interval (60 s), a quarter of it while an open PR has checks running, doubled per consecutive failed poll up to 10x. Backoff wins over fast polling. Any error from the finder counts as a failure and any success resets it.
-- **`agentws pr <session id or name> [--json]`** reads the daemon's state (no GitHub call) and lists the PRs on the session's worktrees, one entry per PR number. A name must match exactly one session; an ID always wins. The TUI no longer draws the PR board (the sidebar card was removed, see ADR 0014).
+- **`crew pr <session id or name> [--json]`** reads the daemon's state (no GitHub call) and lists the PRs on the session's worktrees, one entry per PR number. A name must match exactly one session; an ID always wins. The TUI no longer draws the PR board (the sidebar card was removed, see ADR 0014).
 
-## `agentws pr --json`
+## `crew pr --json`
 
 The shape is pinned by `cmd/crew/testdata/pr.json.golden`. Fields are only ever added.
 

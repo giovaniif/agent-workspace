@@ -26,12 +26,12 @@ Claude Code and Codex load an `AGENTS.md` from each directory they work in. Here
 | [internal/adapters/](internal/adapters/AGENTS.md) | Claude and Codex adapters and their `setup`, notify, procs, fs, github, sqlite |
 | [internal/adapters/git/](internal/adapters/git/AGENTS.md) | git CLI use, repo facts, worktree listing, review diffs, turn snapshots, hunks |
 | [internal/adapters/tmux/](internal/adapters/tmux/AGENTS.md) | the `crew` tmux server, layout, shell panes, keys |
-| [internal/adapters/setup/](internal/adapters/setup/AGENTS.md) | `.agentws.toml` setup recipes |
+| [internal/adapters/setup/](internal/adapters/setup/AGENTS.md) | `.crew.toml` setup recipes |
 | [internal/adapters/onboard/](internal/adapters/onboard/AGENTS.md) | the first-run walkthrough and `crew setup nvim` |
 | [nvim/](nvim/AGENTS.md) | the Lua plugin |
 | [scripts/](scripts/AGENTS.md) | `lint-comments`, `lint-agents`, `tdd-check`, `mutate`, `bench-hook.sh`, `dev`, `screenshot`, `web-screenshot`, `install.sh` |
 | [web/](web/AGENTS.md) | the PWA: toolchain, `make web`, the service worker, pairing |
-| [macos/](macos/AGENTS.md) | the Mac app: the `AgentwsKit` package, the app target, `swift test`, `build-app` |
+| [macos/](macos/AGENTS.md) | the Mac app: the `CrewKit` package, the app target, `swift test`, `build-app` |
 | [test/e2e/](test/e2e/AGENTS.md) | the core e2e suite and its fakes |
 | [test/integration/](test/integration/AGENTS.md) | daemon-with-real-adapters integration tests |
 
@@ -43,7 +43,7 @@ Write all prose docs and new ADRs in ASD-STE100 Simplified Technical English. Us
 
 ## Commands
 
-- `make build`: makes `./bin/agentws`.
+- `make build`: makes `./bin/crew`.
 - `make test`: `go test ./...`.
 - `make web`: builds the PWA in `web/` into `internal/serve/dist`. It needs Node 22.18+ (see [web/](web/AGENTS.md)). `go build` works without it.
 - `make lint`: `golangci-lint` (with the `depguard` layer rules and the `gofmt` formatter check in `.golangci.yml`), then `scripts/lint-comments` and `scripts/lint-agents`.

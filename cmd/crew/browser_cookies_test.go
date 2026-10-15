@@ -28,8 +28,8 @@ func (noHeadless) Open(context.Context, string) (app.HeadlessTab, error) {
 func cookieDaemon(t *testing.T) (string, string) {
 	t.Helper()
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
-	t.Setenv("AGENTWS_SESSION", "")
+	t.Setenv("CREW_HOME", home)
+	t.Setenv("CREW_SESSION", "")
 	t.Setenv("TMUX_PANE", "")
 	jar := filepath.Join(t.TempDir(), "cookies.json")
 	d, err := daemon.New(nopStore{}, 1, daemon.WithHeadlessBrowser(noHeadless{}, jar, time.Hour))
@@ -72,7 +72,7 @@ func TestBrowserCookiesImportSendsTheFileToTheServerProfile(t *testing.T) {
 }
 
 func TestBrowserCookiesImportOfABadFileFailsBeforeTheDaemon(t *testing.T) {
-	t.Setenv("AGENTWS_HOME", shortHome(t))
+	t.Setenv("CREW_HOME", shortHome(t))
 	file := filepath.Join(t.TempDir(), "cookies.json")
 	if err := os.WriteFile(file, []byte(`{"hello":"world"}`), 0o600); err != nil {
 		t.Fatal(err)
