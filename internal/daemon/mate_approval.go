@@ -100,12 +100,21 @@ func (d *Daemon) askApproval(a domain.Approval) {
 		log.Printf("[mates] %s: %v", a.Mate, err)
 		return
 	}
+	var decided *domain.Approval
 	d.query(func(s *state) {
 		if cur, ok := s.findApproval(a.ID); ok {
 			cur.Message = ts
 			s.putApproval(cur)
+			if cur.State != domain.ApprovalPending {
+				decided = &cur
+			}
 		}
 	})
+	if decided != nil {
+		if err := client.UpdateMessage(ctx, a.Channel, ts, domain.ApprovalOutcomeText(*decided)); err != nil {
+			log.Printf("[mates] %s: %v", a.Mate, err)
+		}
+	}
 }
 
 func (d *Daemon) slackApproval(name string, e app.SlackEvent) {
