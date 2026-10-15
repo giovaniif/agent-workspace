@@ -47,6 +47,7 @@ Implementations of the `app` ports. All exec, disk and network calls are here. g
   - `Find` uses `CREW_CHROMIUM`, then `chromium`, `chromium-browser`, `google-chrome`, `google-chrome-stable`, `chrome` and `headless_shell` on `PATH`. `CREW_CHROMIUM_FLAGS` adds flags, for example `--no-sandbox`.
   - `chrome-headless-shell` uses much less memory than full Chromium (see ARCHITECTURE.md).
   - Tests drive a fake CDP server: `go test ./internal/adapters/chromium/`.
+- **secrets** (`app.MateSecrets`): `secrets.Files{Dir}` keeps the Slack tokens of a mate as `<name>.bot` and `<name>.app` with mode 600, in a directory with mode 700 (`$CREW_HOME/secrets`). A write goes to a temp file first and then renames it. A name that is not a valid mate name is refused, so a path never leaves the directory. It can only set, clear and tell if a token exists. Nothing reads a token back to a client. Test: `go test ./internal/adapters/secrets/`.
 - **launchd**: writes and loads (or unloads and deletes) the launchd agent for `crew setup bridge` and `crew setup serve`. Tests use a temp dir and a fake runner.
 - **systemd**: on Linux, writes and starts (or stops and deletes) the systemd user unit for `crew setup serve`. It has the same idempotency and `.bak` backup as launchd. Tests use a temp dir and a fake runner, never `~/.config/systemd`.
   - If `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` are not set, `systemd.Exec` sets them from `/run/user/<uid>`. Non-interactive ssh has neither.

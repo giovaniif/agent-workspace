@@ -3,6 +3,7 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -80,6 +81,8 @@ func (d *Daemon) mateMethod(req rpc.Request) *rpc.Response {
 		return d.mateSet(req)
 	case rpc.MethodMateRemove:
 		return d.mateRemove(req)
+	case rpc.MethodMateSetTokens, rpc.MethodMateClearTokens:
+		return d.mateTokens(req)
 	}
 	src, err := readConfig(d.cfg.path)
 	if err != nil {
@@ -175,6 +178,11 @@ func (d *Daemon) mateRemove(req rpc.Request) *rpc.Response {
 	}
 	if err := d.replaceConfig(src, next); err != nil {
 		return errorResponse(req.ID, rpc.CodeFailed, err.Error())
+	}
+	if d.mateSecrets != nil {
+		if err := d.mateSecrets.ClearMateTokens(gone.Name); err != nil {
+			log.Printf("mate %s: its tokens stay on disk: %v", gone.Name, err)
+		}
 	}
 	return result(req.ID, *gone)
 }
