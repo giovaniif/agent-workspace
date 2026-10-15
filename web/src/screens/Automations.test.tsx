@@ -27,13 +27,13 @@ function setup(hash: string) {
     .on("GET", "/api/v1/automations", { status: 200, body: automations })
     .on("GET", "/api/v1/automations/runs?limit=100", { status: 200, body: runs });
   const storage = new MemoryStorage();
-  storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+  storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
   const env: AppEnv = {
     fetch: server.fetch,
     storage,
     installed: true,
     hash,
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     openStream: new FakeSockets().open,
     now: () => Date.parse("2026-10-03T12:00:00Z"),

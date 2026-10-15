@@ -11,13 +11,13 @@ const device = { id: "k3m9p2qx", name: "work phone", created_at: "2026-10-03T10:
 function setup(hash: string) {
   const server = new FakeServer().on("GET", "/api/v1/hello", { status: 200, body: { api: "v1", build: "v0.12.0+abc" } });
   const storage = new MemoryStorage();
-  storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+  storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
   const env: AppEnv = {
     fetch: server.fetch,
     storage,
     installed: true,
     hash,
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     openStream: new FakeSockets().open,
     now: () => Date.parse("2026-10-03T12:00:00Z"),
@@ -38,7 +38,7 @@ describe("Settings", () => {
     const { env } = setup("#/settings");
     render(<App env={env} />);
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Server" })).toHaveTextContent("agentws.example.ts.net");
+    expect(screen.getByRole("region", { name: "Server" })).toHaveTextContent("crew.example.ts.net");
     expect(screen.getByRole("region", { name: "This device" })).toHaveTextContent("work phone");
     expect(screen.getByRole("link", { name: "Sessions" })).toHaveAttribute("href", "#/");
   });

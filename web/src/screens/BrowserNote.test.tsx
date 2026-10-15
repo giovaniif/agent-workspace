@@ -46,11 +46,6 @@ describe("a session that uses the browser of the Mac app", () => {
     expect(await screen.findByRole("note")).toHaveTextContent("This session uses the browser of the Mac app");
   });
 
-  it("also knows the agentws name of the command", async () => {
-    open([tool("t1", 10, "agentws browser goto localhost:3000")]);
-    expect(await screen.findByRole("note")).toHaveTextContent("Mac app");
-  });
-
   it("shows no note for other tools", async () => {
     open([tool("t1", 10, "go test ./...")]);
     await screen.findByText(/go test/);

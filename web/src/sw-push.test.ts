@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { notificationFor, openFromNotification, payloadOf, type WindowLike } from "./sw-push";
 
-const origin = "https://agentws.example.ts.net";
+const origin = "https://crew.example.ts.net";
 
 function pushData(value: unknown) {
   return {

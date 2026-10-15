@@ -18,7 +18,7 @@ function setup(over: Partial<AppEnv> = {}) {
     storage,
     installed: true,
     hash: "#pair=ABCD2345",
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: iPhone,
     openStream: sockets.open,
     now: () => Date.parse("2026-10-03T12:00:00Z"),
@@ -54,7 +54,7 @@ describe("in the installed app", () => {
     expect(screen.getByRole("heading", { name: "Pair this device" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Pairing code" })).toHaveValue("ABCD2345");
     expect(screen.getByRole("textbox", { name: "Device name" })).toHaveValue("iPhone");
-    expect(screen.getByText("agentws.example.ts.net", { selector: "dd" })).toBeInTheDocument();
+    expect(screen.getByText("crew.example.ts.net", { selector: "dd" })).toBeInTheDocument();
     expect(await screen.findByText("v1")).toBeInTheDocument();
     expect(screen.getByText("v0.12.0+abc")).toBeInTheDocument();
   });
@@ -109,7 +109,7 @@ describe("in the installed app", () => {
 
   it("opens on the session list when a token is stored and connects the stream with it", () => {
     const { storage, env, sockets } = setup();
-    storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+    storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
     render(<App env={env} />);
     expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Connecting");
@@ -131,7 +131,7 @@ describe("in the installed app", () => {
         },
       },
     });
-    storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+    storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
     render(<App env={env} />);
     sockets.last.open();
     sockets.last.push({ state: { seq: 1, workspaces: [], tasks: [], worktrees: [], sessions: [], limits: [], queue: [], sends: [] } });
@@ -143,7 +143,7 @@ describe("in the installed app", () => {
 
   it("asks to pair again when the stored token is unreadable", () => {
     const { storage, env } = setup();
-    storage.setItem("agentws.auth", "{not json");
+    storage.setItem("crew.auth", "{not json");
     render(<App env={env} />);
     expect(screen.getByRole("heading", { name: "Pair this device" })).toBeInTheDocument();
   });

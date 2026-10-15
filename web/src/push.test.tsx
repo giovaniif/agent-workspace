@@ -53,14 +53,14 @@ function setup(over: Partial<AppEnv> = {}) {
     .on("POST", "/api/v1/push/subscribe", { status: 200, body: {} })
     .on("POST", "/api/v1/push/unsubscribe", { status: 200, body: {} });
   const storage = new MemoryStorage();
-  storage.setItem("agentws.auth", JSON.stringify({ token: "t0k", device }));
+  storage.setItem("crew.auth", JSON.stringify({ token: "t0k", device }));
   const push = new FakePush();
   const env: AppEnv = {
     fetch: server.fetch,
     storage,
     installed: true,
     hash: "#/settings",
-    host: "agentws.example.ts.net",
+    host: "crew.example.ts.net",
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     openStream: new FakeSockets().open,
     now: () => Date.parse("2026-10-03T12:00:00Z"),
