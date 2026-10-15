@@ -71,3 +71,8 @@ type MateClaim struct {
 	Code      string    `json:"code"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
+
+type ApprovalDecideParams struct {
+	ID      string `json:"id"`
+	Approve bool   `json:"approve"`
+}

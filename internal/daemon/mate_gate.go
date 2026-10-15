@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"slices"
 	"strconv"
 	"time"
 
@@ -33,15 +32,17 @@ func (s *state) gateHook(h rpc.Hook, now time.Time) rpc.HookReply {
 		return rpc.HookReply{}
 	}
 	action := *h.Action
-	decision := domain.Gate(session.Mate.Authority, session.Mate.Owner, action, s.sessionApprovals(session.ID), now)
+	mine := s.sessionApprovals(session.ID)
+	decision := domain.Gate(session.Mate.Authority, session.Mate.Owner, action, mine, now)
 	if decision.Allow {
 		if decision.Use >= 0 {
-			used := s.sessionApprovals(session.ID)[decision.Use].ID
-			s.approvals = slices.DeleteFunc(s.approvals, func(a domain.Approval) bool { return a.ID == used })
+			used := mine[decision.Use]
+			used.State = domain.ApprovalUsed
+			s.putApproval(used)
 		}
 		return rpc.HookReply{}
 	}
-	s.addPendingApproval(session.ID, action, now)
+	s.addPendingApproval(session, action, now)
 	return rpc.HookReply{Output: domain.GateDenyOutput(action)}
 }
 
@@ -55,24 +56,64 @@ func (s *state) sessionApprovals(sessionID string) []domain.Approval {
 	return out
 }
 
-func (s *state) addPendingApproval(sessionID string, action domain.Action, now time.Time) {
+func (s *state) findApproval(id string) (domain.Approval, bool) {
 	for _, a := range s.approvals {
-		if a.SessionID == sessionID && a.State == domain.ApprovalPending && a.Action == action && !now.After(a.At.Add(domain.ApprovalTTL)) {
+		if a.ID == id {
+			return a, true
+		}
+	}
+	return domain.Approval{}, false
+}
+
+func (s *state) putApproval(a domain.Approval) {
+	s.store.PutApproval(a)
+	for i, x := range s.approvals {
+		if x.ID == a.ID {
+			s.approvals[i] = a
 			return
 		}
 	}
-	s.approvalSeq++
-	s.approvals = append(s.approvals, domain.Approval{
-		ID: "approval-" + strconv.Itoa(s.approvalSeq), SessionID: sessionID, Action: action, At: now, State: domain.ApprovalPending,
-	})
+	s.approvals = append(s.approvals, a)
 }
 
-func (s *state) pendingApprovals() []domain.Approval {
-	out := []domain.Approval{}
-	for _, a := range s.approvals {
-		if a.State == domain.ApprovalPending {
-			out = append(out, a)
+func (s *state) newApprovalID() string {
+	for {
+		s.approvalSeq++
+		id := "approval-" + strconv.Itoa(s.approvalSeq)
+		if _, taken := s.findApproval(id); !taken {
+			return id
 		}
 	}
-	return out
+}
+
+func (s *state) addPendingApproval(session domain.Session, action domain.Action, now time.Time) {
+	for _, a := range s.approvals {
+		if a.SessionID == session.ID && a.State == domain.ApprovalPending && a.Action == action && !a.Expired(now) {
+			return
+		}
+	}
+	a := domain.Approval{
+		ID: s.newApprovalID(), SessionID: session.ID, Mate: session.Mate.Name, Requester: session.Mate.Authority,
+		Action: action, At: now, State: domain.ApprovalPending,
+	}
+	for _, t := range s.mateThreads {
+		if t.SessionID == session.ID {
+			a.Channel, a.ThreadTS = t.Channel, t.ThreadTS
+			break
+		}
+	}
+	s.putApproval(a)
+	if s.pushes != nil {
+		s.enqueuePushMessage(domain.ApprovalPush(a))
+	}
+	if s.approvalAsk != nil {
+		s.approvalAsk(a)
+	}
+}
+
+func (s *state) approvalOwner(a domain.Approval) string {
+	if session, ok := s.sessions[a.SessionID]; ok && session.Mate != nil {
+		return session.Mate.Owner
+	}
+	return ""
 }

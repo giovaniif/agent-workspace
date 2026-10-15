@@ -4,6 +4,7 @@ import { clearAuth, loadAuth, saveAuth, type Auth, type KeyValue } from "./auth"
 import { pairCodeFromHash } from "./display";
 import { disablePush, noPush, type PushEnv } from "./push";
 import { parseRoute } from "./route";
+import { Approvals } from "./screens/Approvals";
 import { Automations } from "./screens/Automations";
 import { Install } from "./screens/Install";
 import { NewSession } from "./screens/NewSession";
@@ -33,16 +34,22 @@ export type PageVisibility = {
   onChange: (listener: () => void) => () => void;
 };
 
-function Tabs({ settings, automations = false }: { settings: boolean; automations?: boolean }) {
+type Tab = "sessions" | "approvals" | "automations" | "settings";
+
+function Tabs({ current }: { current: Tab }) {
+  const mark = (tab: Tab) => (current === tab ? "page" : undefined);
   return (
     <nav className="tabs" aria-label="Screens">
-      <a href="#/" aria-current={settings || automations ? undefined : "page"}>
+      <a href="#/" aria-current={mark("sessions")}>
         Sessions
       </a>
-      <a href="#/automations" aria-current={automations ? "page" : undefined}>
+      <a href="#/approvals" aria-current={mark("approvals")}>
+        Approvals
+      </a>
+      <a href="#/automations" aria-current={mark("automations")}>
         Automations
       </a>
-      <a href="#/settings" aria-current={settings ? "page" : undefined}>
+      <a href="#/settings" aria-current={mark("settings")}>
         Settings
       </a>
     </nav>
@@ -99,7 +106,15 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
     return (
       <>
         <Automations api={api} />
-        <Tabs settings={false} automations />
+        <Tabs current="automations" />
+      </>
+    );
+  }
+  if (hash === "#/approvals") {
+    return (
+      <>
+        <Approvals api={api} now={now} />
+        <Tabs current="approvals" />
       </>
     );
   }
@@ -114,14 +129,14 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
           push={env.push ?? noPush}
           onSignOut={onSignOut}
         />
-        <Tabs settings />
+        <Tabs current="settings" />
       </>
     );
   }
   return (
     <>
       <SessionList host={env.host} snapshot={snapshot} now={now} onRetry={retry} />
-      <Tabs settings={false} />
+      <Tabs current="sessions" />
     </>
   );
 }

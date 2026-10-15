@@ -68,6 +68,9 @@ Unknown paths under `/api/` answer `not_found`.
 | `GET /api/v1/push/key` | yes | `push.key` | → `{"public_key"}`, the VAPID public key (base64url), for `pushManager.subscribe` |
 | `POST /api/v1/push/subscribe` | yes | `push.subscribe` | the browser's `PushSubscription.toJSON()` (`{"endpoint","keys":{"p256dh","auth"}}`) → `{}`; stored with the calling device |
 | `POST /api/v1/push/unsubscribe` | yes | `push.unsubscribe` | → `{}`; drops the calling device's subscription (the app's sign out) |
+| `GET /api/v1/approvals` | yes | `approval.list` | → `[Approval]`, the pending approvals of mates, oldest first (`[]` when none) |
+| `POST /api/v1/approvals/{id}/approve` | yes | `approval.decide` | → the granted `Approval`; `stale` (409) when it is decided or expired, `not_found` for an unknown ID |
+| `POST /api/v1/approvals/{id}/deny` | yes | `approval.decide` | → the denied `Approval`; the same errors |
 
 - Auth is `Authorization: Bearer <token>`. Before the method runs, serve checks it with `device.check` on the connection of the request. Then it checks it against the set of revoked device IDs.
 - `pair` passes the address of the caller as `addr`. This is `RemoteAddr`. If the peer is a loopback or private address (the location of a proxy in front of serve), it is the last `X-Forwarded-For` entry, else `X-Real-IP`. serve ignores a forged header from a direct client.

@@ -42,6 +42,7 @@ type SlackStatus struct {
 type SlackMate interface {
 	Run(ctx context.Context, handle func(SlackEvent), status func(SlackStatus)) error
 	PostMessage(ctx context.Context, channel, threadTS, text string) (string, error)
+	PostApproval(ctx context.Context, channel, threadTS, text, id string) (string, error)
 	UpdateMessage(ctx context.Context, channel, ts, text string) error
 	Replies(ctx context.Context, channel, threadTS string) ([]SlackMessage, error)
 	UserName(ctx context.Context, user string) (string, error)

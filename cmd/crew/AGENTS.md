@@ -33,6 +33,7 @@ Hooks call `crew hook`. It writes one message to the socket and exits. It never 
   - After the tokens are stored, `add` and `tokens` call `mate.claim` and print the one-time code. The user sends it to the mate in a direct message in Slack in 10 minutes, and becomes the owner. `crew mate claim <name>` prints a new code. Use it to change the owner.
   - `crew mate tokens <name>` asks for the two tokens again. `crew mate tokens <name> --clear` removes them. No command prints a token.
   - Tests: `go test ./cmd/crew/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md).
+- `crew approval list` prints the pending approvals of mates: ID, mate, action, the Slack user ID of the requester, the time until it expires and the input. `crew approval approve <id>` and `crew approval deny <id>` decide one as the owner (`approval.decide`). Tests: `go test ./cmd/crew/ -run Approval`.
 - `crew setup serve [--remove] [--addr host:port] [--cert file --key file | --self-signed] [--url https://host]` keeps `crew serve` running. On Linux, it uses a systemd user unit (`crew-serve.service`). On macOS, it uses the launchd agent `dev.crew.serve`. The service gets the PATH and `CREW_HOME` of the shell that ran the command.
   - It writes the flags in a fixed order. Thus the same arguments change nothing, and different arguments make a backup and write the file again.
   - Like `serve`, it refuses plain HTTP off loopback.

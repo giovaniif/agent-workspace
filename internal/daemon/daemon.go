@@ -143,6 +143,7 @@ type state struct {
 	transcriptMoved func(sessionID, path string, gone bool)
 	mateThreads     map[string]domain.MateThread
 	matePost        func(link domain.MateThread, ev domain.SessionEvent)
+	approvalAsk     func(domain.Approval)
 }
 
 type Daemon struct {
@@ -214,6 +215,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 	for _, t := range snap.MateThreads {
 		st.mateThreads[t.Key()] = t
 	}
+	st.approvals = append(st.approvals, snap.Approvals...)
 	for _, tr := range snap.AutomationTrust {
 		st.automationTrust[tr.Key] = tr.Hash
 	}
@@ -567,8 +569,10 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, reply), ok
 	case rpc.MethodApprovalList:
 		var list []domain.Approval
-		ok := d.query(func(s *state) { list = s.pendingApprovals() })
+		ok := d.query(func(s *state) { list = domain.OpenApprovals(s.approvals, d.ws.now()) })
 		return result(req.ID, list), ok
+	case rpc.MethodApprovalDecide:
+		return d.approvalDecide(req)
 	case rpc.MethodStatusLine:
 		var sl rpc.StatusLine
 		if err := json.Unmarshal(req.Params, &sl); err != nil {

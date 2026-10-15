@@ -1258,3 +1258,68 @@ button.danger {
 .automation-meta {
   align-items: center;
 }
+
+.approvals ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.approvals > ul > li {
+  background: var(--mantle);
+  border: 1px solid var(--surface);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.approval-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.approval-head span {
+  color: var(--subtext);
+}
+
+.approval-input {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--base);
+  border-radius: 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.approval-actions button {
+  min-height: 44px;
+  padding: 8px 18px;
+  color: var(--on-accent);
+}
+
+.approval-actions .approve {
+  background: var(--blue);
+}
+
+.approval-actions .deny {
+  background: var(--red);
+}
+
+.approval-actions button:disabled {
+  opacity: 0.6;
+}

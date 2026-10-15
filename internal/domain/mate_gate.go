@@ -50,11 +50,17 @@ const (
 	ApprovalPending ApprovalState = "pending"
 	ApprovalGranted ApprovalState = "granted"
 	ApprovalDenied  ApprovalState = "denied"
+	ApprovalUsed    ApprovalState = "used"
 )
 
 type Approval struct {
 	ID        string
 	SessionID string
+	Mate      string
+	Requester string
+	Channel   string
+	ThreadTS  string
+	Message   string
 	Action    Action
 	At        time.Time
 	State     ApprovalState
@@ -75,7 +81,7 @@ func Gate(authority, owner string, action Action, approvals []Approval, now time
 		return GateDecision{Allow: true, Use: -1}
 	}
 	for i, a := range approvals {
-		if a.State == ApprovalGranted && a.Action == action && !now.After(a.At.Add(ApprovalTTL)) {
+		if a.State == ApprovalGranted && a.Action == action && !a.Expired(now) {
 			return GateDecision{Allow: true, Use: i}
 		}
 	}

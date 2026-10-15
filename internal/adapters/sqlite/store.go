@@ -41,6 +41,7 @@ const (
 	tableAutomationRuns  table = "automation_runs"
 	tableAutomationTrust table = "automation_trust"
 	tableMateThreads     table = "mate_threads"
+	tableApprovals       table = "approvals"
 )
 
 var keyColumn = map[table]string{
@@ -55,6 +56,7 @@ var keyColumn = map[table]string{
 	tableAutomationRuns:  "id",
 	tableAutomationTrust: "key",
 	tableMateThreads:     "key",
+	tableApprovals:       "id",
 }
 
 type Store struct {
@@ -233,6 +235,7 @@ func (s *Store) PutAutomationRun(r domain.AutomationRun) { s.put(tableAutomation
 
 func (s *Store) PutAutomationTrust(t domain.AutomationTrust) { s.put(tableAutomationTrust, t.Key, t) }
 func (s *Store) PutMateThread(t domain.MateThread)           { s.put(tableMateThreads, t.Key(), t) }
+func (s *Store) PutApproval(a domain.Approval)               { s.put(tableApprovals, a.ID, a) }
 
 func (s *Store) put(t table, key string, v any) {
 	data, err := json.Marshal(v)
@@ -433,6 +436,9 @@ func (s *Store) Load() (app.Snapshot, error) {
 		return snap, err
 	}
 	if snap.MateThreads, err = loadAll[domain.MateThread](s.db, tableMateThreads); err != nil {
+		return snap, err
+	}
+	if snap.Approvals, err = loadAll[domain.Approval](s.db, tableApprovals); err != nil {
 		return snap, err
 	}
 	snap.Events, err = loadEvents(s.db)

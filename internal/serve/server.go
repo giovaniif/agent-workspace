@@ -101,6 +101,9 @@ func (s *Server) routes() []route {
 		{"GET /api/v1/push/key", pushKey},
 		{"POST /api/v1/push/subscribe", pushSubscribe},
 		{"POST /api/v1/push/unsubscribe", pushUnsubscribe},
+		{"GET /api/v1/approvals", listApprovals},
+		{"POST /api/v1/approvals/{id}/approve", decideApproval(true)},
+		{"POST /api/v1/approvals/{id}/deny", decideApproval(false)},
 	}
 }
 
