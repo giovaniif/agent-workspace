@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clearAuth, loadAuth, saveAuth } from "./auth";
+import { adoptLegacy } from "./legacy";
 import { loadChoices } from "./newsession";
 import { usesBrowser } from "./screens/Session";
 import { cacheName, staleCaches } from "./sw-cache";
@@ -48,5 +49,14 @@ describe("the names of the old tool", () => {
   it("still knows the old name of the browser command", () => {
     const message = { role: "tool", tool: { summary: "agentws browser goto localhost:3000" } };
     expect(usesBrowser([message] as never)).toBe(true);
+  });
+
+  it("adopts an old key one time and keeps a new one", () => {
+    const storage = new MemoryStorage();
+    storage.setItem("old", "a");
+    expect(adoptLegacy(storage, "new", "old")).toBe("a");
+    expect(storage.getItem("new")).toBe("a");
+    storage.setItem("new", "b");
+    expect(adoptLegacy(storage, "new", "old")).toBe("b");
   });
 });
