@@ -29,6 +29,11 @@ type fakeSlackMate struct {
 	stopped bool
 	posts   []fakeSlackPost
 	updates []fakeSlackPost
+	asks    []fakeSlackAsk
+}
+
+type fakeSlackAsk struct {
+	channel, thread, text, id string
 }
 
 type fakeSlackPost struct {
@@ -69,6 +74,14 @@ func (m *fakeSlackMate) PostMessage(_ context.Context, channel, thread, text str
 	m.posts = append(m.posts, fakeSlackPost{channel, thread, text})
 	m.hub.seq++
 	return fmt.Sprintf("1800.%04d", m.hub.seq), nil
+}
+
+func (m *fakeSlackMate) PostApproval(_ context.Context, channel, thread, text, id string) (string, error) {
+	m.hub.mu.Lock()
+	defer m.hub.mu.Unlock()
+	m.asks = append(m.asks, fakeSlackAsk{channel, thread, text, id})
+	m.hub.seq++
+	return fmt.Sprintf("1900.%04d", m.hub.seq), nil
 }
 
 func (m *fakeSlackMate) UpdateMessage(_ context.Context, channel, ts, text string) error {
@@ -123,7 +136,7 @@ func (h *fakeSlackHub) snapshot() []fakeSlackMate {
 	defer h.mu.Unlock()
 	out := make([]fakeSlackMate, len(h.mates))
 	for i, m := range h.mates {
-		out[i] = fakeSlackMate{bot: m.bot, appTok: m.appTok, stopped: m.stopped, posts: append([]fakeSlackPost(nil), m.posts...), updates: append([]fakeSlackPost(nil), m.updates...)}
+		out[i] = fakeSlackMate{bot: m.bot, appTok: m.appTok, stopped: m.stopped, posts: append([]fakeSlackPost(nil), m.posts...), asks: append([]fakeSlackAsk(nil), m.asks...), updates: append([]fakeSlackPost(nil), m.updates...)}
 	}
 	return out
 }

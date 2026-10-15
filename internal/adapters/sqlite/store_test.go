@@ -552,3 +552,27 @@ func TestAutomationTrustPersistsByKey(t *testing.T) {
 		t.Fatalf("trust %+v", snap.AutomationTrust)
 	}
 }
+func TestApprovalsPersistByIDAndAnUpdateReplacesTheState(t *testing.T) {
+	s, path := openTemp(t)
+	at := time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC)
+	a := domain.Approval{ID: "a1", SessionID: "s1", Mate: "helper", Requester: "U0GUEST01", Channel: "C1", ThreadTS: "1700.1", Message: "1700.2",
+		Action: domain.Action{Kind: domain.ActionPush, Tool: "Bash", Input: `{"command":"git push"}`}, At: at, State: domain.ApprovalPending}
+	b := a
+	b.ID = "a2"
+	s.PutApproval(a)
+	s.PutApproval(b)
+	a.State = domain.ApprovalGranted
+	s.PutApproval(a)
+	s = reopen(t, s, path)
+	snap, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]domain.Approval{}
+	for _, x := range snap.Approvals {
+		got[x.ID] = x
+	}
+	if len(snap.Approvals) != 2 || got["a1"].State != domain.ApprovalGranted || got["a2"].State != domain.ApprovalPending || !got["a1"].At.Equal(at) || got["a1"].Action != a.Action || got["a1"].Message != "1700.2" {
+		t.Fatalf("approvals %+v", snap.Approvals)
+	}
+}

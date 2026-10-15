@@ -188,6 +188,24 @@ func (s *memStore) PutMateThread(link domain.MateThread) {
 	s.snap.MateThreads = append(s.snap.MateThreads, link)
 }
 
+func (s *memStore) PutApproval(a domain.Approval) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, x := range s.snap.Approvals {
+		if x.ID == a.ID {
+			s.snap.Approvals[i] = a
+			return
+		}
+	}
+	s.snap.Approvals = append(s.snap.Approvals, a)
+}
+
+func (s *memStore) approvals() []domain.Approval {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]domain.Approval(nil), s.snap.Approvals...)
+}
+
 func (s *memStore) mateThreads() []domain.MateThread {
 	s.mu.Lock()
 	defer s.mu.Unlock()
