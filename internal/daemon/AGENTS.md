@@ -165,6 +165,20 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - The status from the adapter is the state of the mate in `mate.list`. After a token error, the mate stays in `error` until its tokens change. The log has the Slack error, never a token.
 - **Owner claim.** `mate.claim` draws a code with `crypto/rand` (`domain.NewPairCode`) and keeps one `domain.MateClaim` for each mate in memory. A direct message to that mate whose text is the code (case, spaces and `-` do not count), from a Slack user ID, before the 10 minutes end, writes that user ID to `owner` with the backup of `config.set`. Then the mate replies in the direct message. The code works one time. A mention or a message in a channel never claims. Tests: `go test ./internal/daemon/ -run 'MateWorker|MateClaim|MateToken|MateNewTokens|MateClearTokens'`.
 
+## Mate threads
+
+`go test ./internal/domain/ ./internal/daemon/ ./internal/adapters/sqlite/ -run 'Mate'` and `go test -tags integration ./internal/daemon/ -run MateThreadIntegration`. See [ADR 0053](../../docs/adr/0053-mates.md).
+
+- The Slack worker hands each mention and each thread message of a mate to its own goroutine, never to the loop. The same message (channel and timestamp) counts one time, because Slack sends a mention in a thread as two events. One mutex puts the thread events in order.
+- **Link.** `domain.MateThread` (team, channel, thread timestamp, mate) points to a session. It is in `state.mateThreads` and in the `mate_threads` table, so a restart keeps it. `Status` is the timestamp of the status message.
+- **Start.** A mention in a thread with no live link starts a session through the `session.new` path:
+  - `domain.MateWorkspace` selects a registered single-repo workspace whose repo is in `repos`, in the order of `repos`. Thus a repo out of the mate is never used. If there is none, the mate posts the error in the thread.
+  - The first prompt is `domain.MateFirstPrompt`: the mate prompt, the thread from `conversations.replies` with display names, and the person who asked. The Slack text is in `slack-thread` tags as data.
+  - The daemon sets `Session.Mate` with the owner and the authority (the Slack user ID of the event), records the link and posts "Working on it." as the status message.
+- **Reply.** A message in a linked thread goes to the same session through `session.send` (`domain.MateReplyPrompt`), so it waits in the queue while the session is busy. A thread message with no link does nothing.
+  - `domain.NextMateAuthority` sets the authority. When the session is busy (in a turn, a send in flight, or a send in the queue), the owner cannot raise the authority of a turn that a different person started. The owner can only keep it or lower it.
+- **Post back.** For each `PreToolUse` of a mate session, the status message shows the tool (a maximum of one update each 5 s). At `Stop`, the status changes to "Done." and the mate posts `domain.MateResultText` (the last assistant message) as a new message. At `SessionEnd`, the status changes to "Stopped.". Errors go in the thread.
+
 ## Codex fallback
 
 `go test ./... -run Fallback`. `[fallback]` in `$CREW_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row, the new-session dialog shows the low-quota warning of `domain.Advise`. `ctrl+s` takes the offer: it switches to the other harness when that harness has reported limits. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).
