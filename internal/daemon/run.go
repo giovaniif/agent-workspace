@@ -23,6 +23,7 @@ import (
 	"github.com/giovaniif/crew/internal/adapters/procs"
 	"github.com/giovaniif/crew/internal/adapters/secrets"
 	"github.com/giovaniif/crew/internal/adapters/setup"
+	"github.com/giovaniif/crew/internal/adapters/slack"
 	"github.com/giovaniif/crew/internal/adapters/sqlite"
 	"github.com/giovaniif/crew/internal/adapters/tmux"
 	"github.com/giovaniif/crew/internal/adapters/webpush"
@@ -114,6 +115,7 @@ func Run(ctx context.Context, home string) (err error) {
 		WithTranscripts(Transcripts(wsfs.Transcripts{}), wsfs.Transcripts{}),
 		WithPush(webpush.New(filepath.Join(home, "vapid"), nil)),
 		WithMateSecrets(secrets.Files{Dir: filepath.Join(home, "secrets")}),
+		WithSlack(func(bot, appToken string) app.SlackMate { return slack.New(bot, appToken) }, mateSyncEvery),
 		WithHeadlessBrowser(chromium.FromEnv(), filepath.Join(home, "browser", "profiles", "default", "cookies.json"), DefaultHeadlessReap),
 	}
 	awayAfter, err := LoadAwayAfter(filepath.Join(home, "config.toml"))
