@@ -141,6 +141,8 @@ type state struct {
 	activeTabs      map[string]string
 	orphanPanes     []app.PaneID
 	transcriptMoved func(sessionID, path string, gone bool)
+	mateThreads     map[string]domain.MateThread
+	matePost        func(link domain.MateThread, ev domain.SessionEvent)
 }
 
 type Daemon struct {
@@ -197,6 +199,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		pasting:         map[string]bool{},
 		inFlight:        map[string]sendFlight{},
 		booting:         map[string]bool{},
+		mateThreads:     map[string]domain.MateThread{},
 		devices:         map[string]domain.Device{},
 		projects:        map[string]domain.Project{},
 		automationRuns:  map[string]domain.AutomationRun{},
@@ -207,6 +210,9 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		gate:            domain.NewPushGate(),
 		views:           map[*conn]domain.ViewReport{},
 		clients:         map[*conn]domain.ClientView{},
+	}
+	for _, t := range snap.MateThreads {
+		st.mateThreads[t.Key()] = t
 	}
 	for _, tr := range snap.AutomationTrust {
 		st.automationTrust[tr.Key] = tr.Hash
@@ -441,6 +447,7 @@ func (s *state) hook(h rpc.Hook, now time.Time) {
 	ev.SessionID = session.ID
 	s.emit(SessionHooked{Session: next, Event: ev})
 	s.trackSubagents(session.ID, kind, at, h.Payload)
+	s.mateHooked(next, ev)
 	if domain.BannerStale(session.State, next.State) {
 		s.withdraw(session.ID)
 	}
