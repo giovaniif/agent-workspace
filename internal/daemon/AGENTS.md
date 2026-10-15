@@ -325,7 +325,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 
 ### Headless fallback
 
-`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0053](../../docs/adr/0053-headless-browser-fallback.md).
+`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0054](../../docs/adr/0054-headless-browser-fallback.md).
 
 - `browser.command` picks the backend with `domain.ChooseBrowser`. The inputs are the `browser` of the automation that started the session, if the Mac app is attached, and `[browser]` in `config.toml`.
 - `[browser]` has `fallback` (`"headless"` or `"off"`, default `"off"`), `max_headless` (default 2) and `idle` (default `"10m"`). `config.set` and a daemon start read it again.

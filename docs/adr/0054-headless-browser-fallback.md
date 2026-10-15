@@ -1,4 +1,4 @@
-# ADR 0053: A headless browser on the server when no Mac app is connected
+# ADR 0054: A headless browser on the server when no Mac app is connected
 
 Status: accepted, 2026-10-14. Epic: #330. Work item: #361. This ADR changes the "No Mac app means no browser" and "Cookies stay on the Mac" parts of [ADR 0051](0051-browser-in-mac-app.md).
 
