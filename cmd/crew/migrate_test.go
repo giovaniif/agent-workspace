@@ -419,3 +419,19 @@ func TestMigrateKeepsANewClaudeBackupThatAlreadyExists(t *testing.T) {
 		t.Fatalf("old backup = %q", got)
 	}
 }
+
+func TestMigrateKeepsAnEarlierBackupOfTheOldNvimSetupFile(t *testing.T) {
+	r := newMigrateRig(t)
+	writeFile(t, filepath.Join(r.path(".local", "share", "crew", "nvim"), "plugin", "crew.lua"), "-- plugin\n")
+	oldSetup := r.path(".config", "nvim", "plugin", "agentws.lua")
+	legacy := fmt.Sprintf(legacyNvimSetup, r.path(".local", "share", "agentws", "nvim"))
+	writeFile(t, oldSetup, legacy)
+	writeFile(t, oldSetup+".bak", "earlier backup")
+	r.run(false)
+	if got := readFile(t, oldSetup+".bak"); got != "earlier backup" {
+		t.Fatalf("earlier backup = %q", got)
+	}
+	if got := readFile(t, oldSetup+".bak.1"); got != legacy {
+		t.Fatalf("new backup = %q", got)
+	}
+}

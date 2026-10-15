@@ -45,3 +45,18 @@ func TestRemoveMovesTheOldHookAside(t *testing.T) {
 		t.Fatalf("old hook still runs: %v", err)
 	}
 }
+
+func TestSetupKeepsAnEarlierBackupOfTheOldHook(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, LegacyHookFile(dir), legacyHook)
+	writeFile(t, LegacyHookFile(dir)+".bak", "earlier backup")
+	if _, err := Setup(SetupConfig{Dir: dir, Command: testBin}); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(t, LegacyHookFile(dir)+".bak"); got != "earlier backup" {
+		t.Fatalf("earlier backup = %q", got)
+	}
+	if got := read(t, LegacyHookFile(dir)+".bak.1"); got != legacyHook {
+		t.Fatalf("new backup = %q", got)
+	}
+}

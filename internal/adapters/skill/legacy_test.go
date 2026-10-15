@@ -59,3 +59,20 @@ func TestRemoveMovesTheOldSkillAside(t *testing.T) {
 		t.Fatalf("old skill still loads: %v", err)
 	}
 }
+
+func TestInstallKeepsAnEarlierBackupOfTheOldSkill(t *testing.T) {
+	dir := t.TempDir()
+	old := writeLegacy(t, dir, "<!-- agentws:browser-skill -->\nold text\n")
+	if err := os.WriteFile(old+".bak", []byte("earlier backup"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := skill.Install(dir); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(old + ".bak"); string(b) != "earlier backup" {
+		t.Fatalf("earlier backup = %q", b)
+	}
+	if b, err := os.ReadFile(old + ".bak.1"); err != nil || string(b) != "<!-- agentws:browser-skill -->\nold text\n" {
+		t.Fatalf("new backup = %q, %v", b, err)
+	}
+}
