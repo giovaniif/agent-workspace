@@ -133,3 +133,20 @@ func TestSetRefusesTokensWithTheWrongPrefix(t *testing.T) {
 		t.Errorf("wrote %v", entries)
 	}
 }
+
+func TestMateTokensReadsBothTokensForTheDaemon(t *testing.T) {
+	f, _ := newFiles(t)
+	if _, _, err := f.MateTokens("reviewer"); err == nil {
+		t.Error("MateTokens of a mate with no tokens gave no error")
+	}
+	if err := f.SetMateTokens("reviewer", bot, app); err != nil {
+		t.Fatal(err)
+	}
+	gotBot, gotApp, err := f.MateTokens("reviewer")
+	if err != nil || gotBot != bot || gotApp != app {
+		t.Errorf("MateTokens = %q, %q, %v", gotBot, gotApp, err)
+	}
+	if _, _, err := f.MateTokens("../x"); err == nil {
+		t.Error("a bad name gave no error")
+	}
+}

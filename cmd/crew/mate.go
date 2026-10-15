@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/crew/internal/rpc"
 )
 
-const mateUsage = "usage: crew mate list | show <name> | remove <name> | add <name> [--agent a] [--prompt p] [--no-open] | tokens <name> [--clear] | set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]"
+const mateUsage = "usage: crew mate list | show <name> | remove <name> | add <name> [--agent a] [--prompt p] [--no-open] | tokens <name> [--clear] | claim <name> | set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]"
 
 func runMate(args []string, stdout, stderr io.Writer) int {
 	if !mateArgsOK(args) {
@@ -34,7 +34,7 @@ func mateArgsOK(args []string) bool {
 	switch args[0] {
 	case "list":
 		return len(args) == 1
-	case "show", "remove":
+	case "show", "remove", "claim":
 		return len(args) == 2
 	case "set":
 		return len(args) >= 2
@@ -119,6 +119,8 @@ func mateCommand(args []string, stdout io.Writer) error {
 			return err
 		}
 		return mateAdd(ctx, c, stdMateIO(stdout), name, opts)
+	case "claim":
+		return mateClaim(ctx, c, stdout, args[1])
 	case "tokens":
 		return mateTokens(ctx, c, stdMateIO(stdout), args[1], len(args) == 3)
 	case "show":
