@@ -18,6 +18,7 @@ const (
 	MethodNotifyStream     = "notify.stream"
 	MethodHook             = "hook"
 	MethodApprovalList     = "approval.list"
+	MethodApprovalDecide   = "approval.decide"
 	MethodWorkspaceAdd     = "workspace.add"
 	MethodWorkspaceList    = "workspace.list"
 	MethodWorkspaceRemove  = "workspace.remove"

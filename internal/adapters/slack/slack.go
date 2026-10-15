@@ -117,7 +117,43 @@ func (c *Client) PostMessage(ctx context.Context, channel, threadTS, text string
 }
 
 func (c *Client) UpdateMessage(ctx context.Context, channel, ts, text string) error {
-	return c.call(ctx, "chat.update", c.Bot, url.Values{"channel": {channel}, "ts": {ts}, "text": {text}}, nil)
+	return c.call(ctx, "chat.update", c.Bot, url.Values{"channel": {channel}, "ts": {ts}, "text": {text}, "blocks": {"[]"}}, nil)
+}
+
+type plainText struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type button struct {
+	Type     string    `json:"type"`
+	ActionID string    `json:"action_id"`
+	Value    string    `json:"value"`
+	Style    string    `json:"style"`
+	Text     plainText `json:"text"`
+}
+
+func (c *Client) PostApproval(ctx context.Context, channel, threadTS, text, id string) (string, error) {
+	blocks := []any{
+		map[string]any{"type": "section", "text": plainText{Type: "mrkdwn", Text: text}},
+		map[string]any{"type": "actions", "elements": []button{
+			{Type: "button", ActionID: domain.ApprovalApproveAction, Value: id, Style: "primary", Text: plainText{Type: "plain_text", Text: "Approve"}},
+			{Type: "button", ActionID: domain.ApprovalDenyAction, Value: id, Style: "danger", Text: plainText{Type: "plain_text", Text: "Deny"}},
+		}},
+	}
+	raw, err := json.Marshal(blocks)
+	if err != nil {
+		return "", err
+	}
+	form := url.Values{"channel": {channel}, "text": {text}, "blocks": {string(raw)}}
+	if threadTS != "" {
+		form.Set("thread_ts", threadTS)
+	}
+	var out struct {
+		TS string `json:"ts"`
+	}
+	err = c.call(ctx, "chat.postMessage", c.Bot, form, &out)
+	return out.TS, err
 }
 
 func (c *Client) Replies(ctx context.Context, channel, threadTS string) ([]app.SlackMessage, error) {

@@ -45,7 +45,7 @@ type mateRig struct {
 	host  *fakeHost
 }
 
-func startMateRig(t *testing.T, store *memStore) mateRig {
+func startMateRig(t *testing.T, store *memStore, extra ...daemon.Option) mateRig {
 	t.Helper()
 	home := t.TempDir()
 	path := filepath.Join(home, "config.toml")
@@ -59,14 +59,15 @@ func startMateRig(t *testing.T, store *memStore) mateRig {
 	for _, s := range store.snap.Sessions {
 		host.panes = append(host.panes, app.PaneInfo{ID: app.PaneID(s.Pane), Alive: true})
 	}
-	_, sock := start(t, store,
+	opts := []daemon.Option{
 		daemon.WithHarnesses(host, claude.Adapter{}),
 		daemon.WithSessions(r.wts, nil, "/h/worktrees"),
 		daemon.WithFirstPromptGrace(time.Hour),
 		daemon.WithConfig(path),
 		daemon.WithMateSecrets(secrets.Files{Dir: filepath.Join(home, "secrets")}),
 		daemon.WithSlack(r.hub.connect, time.Hour),
-	)
+	}
+	_, sock := start(t, store, append(opts, extra...)...)
 	r.c = dial(t, sock)
 	return r
 }

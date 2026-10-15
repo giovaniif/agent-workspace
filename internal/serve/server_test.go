@@ -40,6 +40,7 @@ var (
 		rpc.MethodSessionSend, rpc.MethodSessionUnsend, rpc.MethodSessionInterrupt,
 		rpc.MethodSessionPrompt, rpc.MethodSessionAnswer, rpc.MethodDeviceViewing,
 		rpc.MethodSessionOptions, rpc.MethodWorkspaceAdd, rpc.MethodWorkspaceRemove, rpc.MethodAutomationRuns,
+		rpc.MethodApprovalList, rpc.MethodApprovalDecide,
 	}
 )
 
@@ -70,6 +71,9 @@ var authedEndpoints = []authedEndpoint{
 	{"GET", "/api/v1/push/key", ""},
 	{"POST", "/api/v1/push/subscribe", browserSubscription},
 	{"POST", "/api/v1/push/unsubscribe", ""},
+	{"GET", "/api/v1/approvals", ""},
+	{"POST", "/api/v1/approvals/a1/approve", ""},
+	{"POST", "/api/v1/approvals/a1/deny", ""},
 }
 
 func startServer(t *testing.T, f *fakeDaemon, cfg serve.Config) (*serve.Server, *httptest.Server) {

@@ -53,6 +53,7 @@ Implementations of the `app` ports. All exec, disk and network calls are here. g
   - It drops a retried envelope: the key is the `event_id`, else the envelope ID. It keeps the last 512 keys.
   - After `disconnect` or a closed socket, it connects again with a backoff (1 s, doubled, a maximum of 1 min).
   - A token error from Slack (`invalid_auth`, `token_revoked` and similar) stops `Run` with `ErrToken`. Other errors retry. The status and the errors have the Slack method and error code, never a token.
+  - `PostApproval` posts a message with a section and an actions block: Approve (`crew_approve`, primary) and Deny (`crew_deny`, danger). The value of each button is the approval ID. `UpdateMessage` sends `blocks=[]`, so an update removes the buttons.
   - Web API calls use the bot token: `chat.postMessage`, `chat.update`, `conversations.replies` and `users.info` (`UserName` gives the display name, else the real name, else the user name).
   - Tests use a fake Socket Mode server: `go test ./internal/adapters/slack/`.
 - **launchd**: writes and loads (or unloads and deletes) the launchd agent for `crew setup bridge` and `crew setup serve`. Tests use a temp dir and a fake runner.

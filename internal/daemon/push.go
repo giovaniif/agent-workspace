@@ -31,10 +31,14 @@ func (s *state) queuePush(b domain.Banner) {
 }
 
 func (s *state) enqueuePush(b domain.Banner) {
+	s.enqueuePushMessage(domain.PushFor(b))
+}
+
+func (s *state) enqueuePushMessage(msg domain.PushMessage) {
 	select {
-	case s.pushes <- domain.PushFor(b):
+	case s.pushes <- msg:
 	default:
-		log.Printf("push: queue full, dropped a push for %s", b.Group)
+		log.Printf("push: queue full, dropped a push for %s", msg.Tag)
 	}
 }
 

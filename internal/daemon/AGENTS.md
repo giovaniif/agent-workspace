@@ -324,9 +324,24 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 - A mate session has `Session.Mate` (`Name`, `Owner`, `Authority`). Other sessions have none, and the gate does not apply to them.
 - `MateTurn{SessionID, User}` sets `Authority` to the Slack user ID of the event that started the turn. The Slack worker posts it. Text in the thread never sets it. On a session that is not a mate, it does nothing.
 - For each `PreToolUse` hook of a mate session, the loop uses the `action` of the hook if it is dangerous. Else it classifies the call again with `Session.Dir` as the root. Then it calls `domain.Gate`.
-  - If the gate allows the action, the reply is empty. A granted approval that the gate used is removed.
+  - If the gate allows the action, the reply is empty. The gate marks a granted approval that it used as `used`.
   - If the gate stops the action, the reply has the deny output, and the daemon records one pending `domain.Approval` (the same pending action is not added two times).
-- `approval.list` returns the pending approvals. They are in memory only.
+- `approval.list` returns the pending approvals that did not expire (`domain.OpenApprovals`).
+
+## Mate approvals
+
+`go test ./internal/domain/ ./internal/daemon/ ./internal/adapters/sqlite/ ./internal/adapters/slack/ -run 'Approval|Gate'`. See [ADR 0053](../../docs/adr/0053-mates.md).
+
+- **Store.** Each approval is in `state.approvals` and in the `approvals` table, so a restart keeps it. It has the mate, the session, the Slack user ID of the requester, the thread of the session, the exact `Action` (kind, tool and compact input), the time and the state: `pending`, `granted`, `denied` or `used`. A new ID is never an ID that the store has.
+- **Ask.** A new pending approval does these things from the loop, with no wait:
+  - It puts `domain.ApprovalPush` (`url` `/#/approvals`) in the push queue. The presence gate does not hold it.
+  - With the Slack worker, a goroutine posts `domain.ApprovalRequestText` in the thread with Approve and Deny buttons (`SlackMate.PostApproval`, the action IDs `crew_approve` and `crew_deny`, the value is the approval ID). It then records the timestamp of that message in `Message`.
+- **Decide.** `domain.DecideApproval(approval, by, owner, allow, now)`:
+  - A Slack click counts only when the Slack user ID is the `Owner` of the mate session, and the button is from the app of the same mate. The daemon ignores other clicks and posts nothing.
+  - `approval.decide` on the socket acts as the owner.
+  - A decided or expired approval (more than 24 h) does not change.
+- **After.** A goroutine sends `domain.ApprovalSessionPrompt` to the session through `session.send`: try the same action again, or the owner said no. It changes the Slack message to `domain.ApprovalOutcomeText` and removes the buttons.
+- **Use.** The gate allows a granted approval only for the same action and the same input, and only one time, before it expires. Then its state is `used`.
 
 ## Browser
 

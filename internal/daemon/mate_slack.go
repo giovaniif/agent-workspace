@@ -52,6 +52,7 @@ func WithSlack(connect app.SlackConnector, every time.Duration) Option {
 		d.slack.claims = map[string]domain.MateClaim{}
 		d.slack.shown = map[string]time.Time{}
 		d.st.matePost = d.queueMatePost
+		d.st.approvalAsk = func(a domain.Approval) { go d.askApproval(a) }
 	}
 }
 
@@ -205,6 +206,9 @@ func (d *Daemon) slackEvent(ctx context.Context, name string, client app.SlackMa
 		if d.firstSight(name, e) {
 			go d.mateThreadEvent(ctx, name, client, e)
 		}
+		return
+	case app.SlackAction:
+		go d.slackApproval(name, e)
 		return
 	case app.SlackDirectMessage:
 	default:

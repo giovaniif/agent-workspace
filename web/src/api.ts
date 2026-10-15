@@ -312,3 +312,23 @@ export function listAutomations(a: Authed): Promise<AutomationList> {
 export function runAutomation(a: Authed, name: string, body: { context: string; work_item: string }): Promise<{ run: AutomationRun }> {
   return authedRequest<{ run: AutomationRun }>(a, "/api/v1/automations/" + encodeURIComponent(name) + "/run", "POST", body);
 }
+
+export type ApprovalAction = { Kind: string; Tool: string; Input: string };
+
+export type Approval = {
+  ID: string;
+  SessionID: string;
+  Mate: string;
+  Requester: string;
+  Action: ApprovalAction;
+  At: string;
+  State: string;
+};
+
+export async function listApprovals(a: Authed): Promise<Approval[]> {
+  return (await authedRequest<Approval[] | null>(a, "/api/v1/approvals")) ?? [];
+}
+
+export function decideApproval(a: Authed, id: string, approve: boolean): Promise<Approval> {
+  return authedRequest<Approval>(a, "/api/v1/approvals/" + encodeURIComponent(id) + (approve ? "/approve" : "/deny"), "POST");
+}

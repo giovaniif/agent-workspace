@@ -17,6 +17,7 @@ type Snapshot struct {
 	AutomationRuns  []domain.AutomationRun
 	AutomationTrust []domain.AutomationTrust
 	MateThreads     []domain.MateThread
+	Approvals       []domain.Approval
 }
 
 type Store interface {
@@ -38,6 +39,7 @@ type Store interface {
 	PutAutomationRun(domain.AutomationRun)
 	PutAutomationTrust(domain.AutomationTrust)
 	PutMateThread(domain.MateThread)
+	PutApproval(domain.Approval)
 	Load() (Snapshot, error)
 	Flush() error
 	Close() error

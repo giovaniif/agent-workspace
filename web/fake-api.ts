@@ -291,6 +291,33 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           });
           return;
         }
+        if (req.method === "GET" && path === "/api/v1/approvals") {
+          send(res, 200, [
+            {
+              ID: "approval-2",
+              SessionID: "s3",
+              Mate: "helper",
+              Requester: "U0GUEST01",
+              Action: { Kind: "create_pr", Tool: "Bash", Input: '{"command":"gh pr create --fill --base main"}' },
+              At: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+              State: "pending",
+            },
+            {
+              ID: "approval-1",
+              SessionID: "s3",
+              Mate: "helper",
+              Requester: "U0GUEST01",
+              Action: { Kind: "push", Tool: "Bash", Input: '{"command":"git push origin fix-login"}' },
+              At: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+              State: "pending",
+            },
+          ]);
+          return;
+        }
+        if (req.method === "POST" && /^\/api\/v1\/approvals\/[^/]+\/(approve|deny)$/.test(path)) {
+          send(res, 200, { ID: path.split("/")[4], State: path.endsWith("approve") ? "granted" : "denied" });
+          return;
+        }
         if (req.method === "GET" && path === "/api/v1/automations/runs") {
           send(res, 200, {
             runs: [

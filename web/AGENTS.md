@@ -75,6 +75,7 @@ The phone app: a PWA that `crew serve` embeds and serves at `/` (ADR [0046](../d
 
   Tests: `npm test -- Push` and `npm test -- Settings`.
 - `#/automations` (`screens/Automations.tsx`) lists the automations with agent, trigger and state. Run… opens a form with a multi-line context and an optional work item, then posts `/api/v1/automations/<name>/run`. A started run opens its session. A skipped or failed run shows its reason. Tests: `npm test -- Automations`.
+- `#/approvals` (`screens/Approvals.tsx`) shows a card for each pending approval of a mate (`GET /api/v1/approvals`): the mate, the action, who asked, the tool, the exact input, the time until it expires and a link to the session. Approve and Deny post `/api/v1/approvals/<id>/approve|deny`, then the card shows the result. A 409 `stale` or a `not_found` shows "This approval is gone". The push of an approval opens this screen. Tests: `npm test -- Approvals`.
 - `#/settings` shows Settings (server, this device, Enable notifications, sign out). A tab bar under the session list and Settings switches between them.
 - `src/screens/`: one component for each screen. `src/theme.css`: the Latte palette as CSS variables, and Mocha under `prefers-color-scheme: dark`, and IBM Plex Sans and JetBrains Mono from `@fontsource`.
 - `src/test/`: test helpers (`FakeServer`, `MemoryStorage`, the Vitest setup). tdd-check treats them as port fakes.

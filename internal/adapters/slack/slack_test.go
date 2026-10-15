@@ -396,7 +396,7 @@ func TestWebAPICallsUseTheBotToken(t *testing.T) {
 	_, _, calls := f.snapshot()
 	want := []apiCall{
 		{"chat.postMessage", "Bearer " + testBot, map[string]string{"channel": "C0CHAN001", "thread_ts": "1700.0001", "text": "working on it"}},
-		{"chat.update", "Bearer " + testBot, map[string]string{"channel": "C0CHAN001", "ts": "1700.0002", "text": "done"}},
+		{"chat.update", "Bearer " + testBot, map[string]string{"channel": "C0CHAN001", "ts": "1700.0002", "text": "done", "blocks": "[]"}},
 		{"conversations.replies", "Bearer " + testBot, map[string]string{"channel": "C0CHAN001", "ts": "1700.0001"}},
 		{"users.info", "Bearer " + testBot, map[string]string{"user": "U0ANA0001"}},
 	}
@@ -421,5 +421,49 @@ func TestWebAPIErrorNamesTheSlackErrorAndNotTheToken(t *testing.T) {
 	err := f.client().UpdateMessage(context.Background(), "C0CHAN001", "", "x")
 	if err == nil || !strings.Contains(err.Error(), "message_not_found") || strings.Contains(err.Error(), "zz") {
 		t.Errorf("UpdateMessage = %v", err)
+	}
+}
+
+func TestPostApprovalPutsApproveAndDenyButtonsInTheThread(t *testing.T) {
+	f := newFakeSlack(t)
+	ts, err := f.client().PostApproval(context.Background(), "C0CHAN001", "1700.0001", "push needs the owner", "a7")
+	if err != nil || ts != "1700.0002" {
+		t.Fatalf("PostApproval = %q, %v", ts, err)
+	}
+	_, _, calls := f.snapshot()
+	if len(calls) != 1 || calls[0].method != "chat.postMessage" || calls[0].auth != "Bearer "+testBot {
+		t.Fatalf("calls %+v", calls)
+	}
+	form := calls[0].form
+	if form["channel"] != "C0CHAN001" || form["thread_ts"] != "1700.0001" || form["text"] != "push needs the owner" {
+		t.Fatalf("form %+v", form)
+	}
+	var blocks []struct {
+		Type string `json:"type"`
+		Text struct {
+			Text string `json:"text"`
+		} `json:"text"`
+		Elements []struct {
+			Type     string `json:"type"`
+			ActionID string `json:"action_id"`
+			Value    string `json:"value"`
+			Style    string `json:"style"`
+			Text     struct {
+				Text string `json:"text"`
+			} `json:"text"`
+		} `json:"elements"`
+	}
+	if err := json.Unmarshal([]byte(form["blocks"]), &blocks); err != nil {
+		t.Fatalf("blocks %q: %v", form["blocks"], err)
+	}
+	if len(blocks) != 2 || blocks[0].Type != "section" || blocks[0].Text.Text != "push needs the owner" || blocks[1].Type != "actions" || len(blocks[1].Elements) != 2 {
+		t.Fatalf("blocks %+v", blocks)
+	}
+	approve, deny := blocks[1].Elements[0], blocks[1].Elements[1]
+	if approve.Type != "button" || approve.ActionID != domain.ApprovalApproveAction || approve.Value != "a7" || approve.Text.Text != "Approve" || approve.Style != "primary" {
+		t.Errorf("approve %+v", approve)
+	}
+	if deny.Type != "button" || deny.ActionID != domain.ApprovalDenyAction || deny.Value != "a7" || deny.Text.Text != "Deny" || deny.Style != "danger" {
+		t.Errorf("deny %+v", deny)
 	}
 }
