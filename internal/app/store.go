@@ -16,6 +16,7 @@ type Snapshot struct {
 	Projects        []domain.Project
 	AutomationRuns  []domain.AutomationRun
 	AutomationTrust []domain.AutomationTrust
+	MateThreads     []domain.MateThread
 }
 
 type Store interface {
@@ -36,6 +37,7 @@ type Store interface {
 	DeleteProject(root string)
 	PutAutomationRun(domain.AutomationRun)
 	PutAutomationTrust(domain.AutomationTrust)
+	PutMateThread(domain.MateThread)
 	Load() (Snapshot, error)
 	Flush() error
 	Close() error

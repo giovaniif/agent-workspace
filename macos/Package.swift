@@ -2,23 +2,23 @@
 import PackageDescription
 
 let package = Package(
-    name: "agentws",
+    name: "crew",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "AgentwsKit", targets: ["AgentwsKit"]),
-        .library(name: "AgentwsViews", targets: ["AgentwsViews"]),
-        .executable(name: "AgentwsApp", targets: ["AgentwsApp"]),
+        .library(name: "CrewKit", targets: ["CrewKit"]),
+        .library(name: "CrewViews", targets: ["CrewViews"]),
+        .executable(name: "CrewApp", targets: ["CrewApp"]),
     ],
     dependencies: [
         .package(url: "https://github.com/migueldeicaza/SwiftTerm", from: "1.20.0"),
     ],
     targets: [
-        .target(name: "AgentwsKit"),
-        .target(name: "AgentwsViews", dependencies: [
-            "AgentwsKit",
+        .target(name: "CrewKit"),
+        .target(name: "CrewViews", dependencies: [
+            "CrewKit",
             .product(name: "SwiftTerm", package: "SwiftTerm", condition: .when(platforms: [.macOS])),
         ]),
-        .executableTarget(name: "AgentwsApp", dependencies: ["AgentwsKit", "AgentwsViews"]),
-        .testTarget(name: "AgentwsKitTests", dependencies: ["AgentwsKit", "AgentwsViews"]),
+        .executableTarget(name: "CrewApp", dependencies: ["CrewKit", "CrewViews"]),
+        .testTarget(name: "CrewKitTests", dependencies: ["CrewKit", "CrewViews"]),
     ]
 )

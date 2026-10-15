@@ -78,11 +78,16 @@ func (d *Daemon) mateMethod(req rpc.Request) *rpc.Response {
 	defer d.cfg.mu.Unlock()
 	switch req.Method {
 	case rpc.MethodMateSet:
+		defer d.kickMates()
 		return d.mateSet(req)
 	case rpc.MethodMateRemove:
+		defer d.kickMates()
 		return d.mateRemove(req)
 	case rpc.MethodMateSetTokens, rpc.MethodMateClearTokens:
+		defer d.kickMates()
 		return d.mateTokens(req)
+	case rpc.MethodMateClaim:
+		return d.mateClaim(req)
 	}
 	src, err := readConfig(d.cfg.path)
 	if err != nil {
@@ -90,6 +95,7 @@ func (d *Daemon) mateMethod(req rpc.Request) *rpc.Response {
 	}
 	list := d.loadMates(src)
 	if req.Method == rpc.MethodMateList {
+		list.States = d.mateStates(list.Mates)
 		return result(req.ID, list)
 	}
 	var p rpc.MateShowParams
