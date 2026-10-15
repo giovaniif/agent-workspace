@@ -186,8 +186,10 @@ func TestMateClaimIgnoresAMentionAndAWrongCode(t *testing.T) {
 	if owner := ownerOf(t, c, "helper"); owner != "" {
 		t.Errorf("owner %q", owner)
 	}
-	if posts := hub.snapshot()[0].posts; len(posts) != 0 {
-		t.Errorf("posts %+v", posts)
+	for _, p := range hub.snapshot()[0].posts {
+		if p.channel == "D0DIRECT1" {
+			t.Errorf("post %+v", p)
+		}
 	}
 }
 

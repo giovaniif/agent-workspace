@@ -3,6 +3,7 @@ package daemon_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -12,9 +13,12 @@ import (
 )
 
 type fakeSlackHub struct {
-	mu    sync.Mutex
-	mates []*fakeSlackMate
-	fail  string
+	mu      sync.Mutex
+	mates   []*fakeSlackMate
+	fail    string
+	replies []app.SlackMessage
+	names   map[string]string
+	seq     int
 }
 
 type fakeSlackMate struct {
@@ -24,6 +28,7 @@ type fakeSlackMate struct {
 	handle  func(app.SlackEvent)
 	stopped bool
 	posts   []fakeSlackPost
+	updates []fakeSlackPost
 }
 
 type fakeSlackPost struct {
@@ -62,16 +67,31 @@ func (m *fakeSlackMate) PostMessage(_ context.Context, channel, thread, text str
 	m.hub.mu.Lock()
 	defer m.hub.mu.Unlock()
 	m.posts = append(m.posts, fakeSlackPost{channel, thread, text})
-	return "1700.9999", nil
+	m.hub.seq++
+	return fmt.Sprintf("1800.%04d", m.hub.seq), nil
 }
 
-func (m *fakeSlackMate) UpdateMessage(context.Context, string, string, string) error { return nil }
+func (m *fakeSlackMate) UpdateMessage(_ context.Context, channel, ts, text string) error {
+	m.hub.mu.Lock()
+	defer m.hub.mu.Unlock()
+	m.updates = append(m.updates, fakeSlackPost{channel, ts, text})
+	return nil
+}
 
 func (m *fakeSlackMate) Replies(context.Context, string, string) ([]app.SlackMessage, error) {
-	return nil, nil
+	m.hub.mu.Lock()
+	defer m.hub.mu.Unlock()
+	return append([]app.SlackMessage(nil), m.hub.replies...), nil
 }
 
-func (m *fakeSlackMate) UserName(context.Context, string) (string, error) { return "", nil }
+func (m *fakeSlackMate) UserName(_ context.Context, user string) (string, error) {
+	m.hub.mu.Lock()
+	defer m.hub.mu.Unlock()
+	if name, ok := m.hub.names[user]; ok {
+		return name, nil
+	}
+	return "", nil
+}
 
 func (h *fakeSlackHub) live(t *testing.T) *fakeSlackMate {
 	t.Helper()
@@ -103,7 +123,7 @@ func (h *fakeSlackHub) snapshot() []fakeSlackMate {
 	defer h.mu.Unlock()
 	out := make([]fakeSlackMate, len(h.mates))
 	for i, m := range h.mates {
-		out[i] = fakeSlackMate{bot: m.bot, appTok: m.appTok, stopped: m.stopped, posts: append([]fakeSlackPost(nil), m.posts...)}
+		out[i] = fakeSlackMate{bot: m.bot, appTok: m.appTok, stopped: m.stopped, posts: append([]fakeSlackPost(nil), m.posts...), updates: append([]fakeSlackPost(nil), m.updates...)}
 	}
 	return out
 }

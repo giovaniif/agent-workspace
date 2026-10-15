@@ -27,6 +27,9 @@ type slackWorkers struct {
 	states  map[string]rpc.MateState
 	running map[string]*mateWorker
 	claims  map[string]domain.MateClaim
+	seen    []string
+	threads sync.Mutex
+	shown   map[string]time.Time
 }
 
 type mateWorker struct {
@@ -47,6 +50,8 @@ func WithSlack(connect app.SlackConnector, every time.Duration) Option {
 		d.slack.states = map[string]rpc.MateState{}
 		d.slack.running = map[string]*mateWorker{}
 		d.slack.claims = map[string]domain.MateClaim{}
+		d.slack.shown = map[string]time.Time{}
+		d.st.matePost = d.queueMatePost
 	}
 }
 
@@ -195,7 +200,14 @@ func (d *Daemon) mateClaim(req rpc.Request) *rpc.Response {
 }
 
 func (d *Daemon) slackEvent(ctx context.Context, name string, client app.SlackMate, e app.SlackEvent) {
-	if e.Kind != app.SlackDirectMessage {
+	switch e.Kind {
+	case app.SlackMention, app.SlackThreadMessage:
+		if d.firstSight(name, e) {
+			go d.mateThreadEvent(ctx, name, client, e)
+		}
+		return
+	case app.SlackDirectMessage:
+	default:
 		return
 	}
 	d.slack.mu.Lock()

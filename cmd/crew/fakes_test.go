@@ -23,6 +23,7 @@ func (nopStore) DeleteDevice(string)                       {}
 func (nopStore) PutProject(domain.Project)                 {}
 func (nopStore) PutAutomationRun(domain.AutomationRun)     {}
 func (nopStore) PutAutomationTrust(domain.AutomationTrust) {}
+func (nopStore) PutMateThread(domain.MateThread)           {}
 func (nopStore) DeleteProject(string)                      {}
 func (nopStore) Load() (app.Snapshot, error)               { return app.Snapshot{}, nil }
 func (nopStore) Flush() error                              { return nil }
