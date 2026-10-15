@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/giovaniif/crew/internal/domain"
 	"github.com/giovaniif/crew/internal/rpc"
@@ -42,6 +43,9 @@ func (f *fakeMateCaller) Call(_ context.Context, method string, params, out any)
 			return f.failSet
 		}
 		data, _ := json.Marshal(rpc.MateTokenStatus{Name: params.(rpc.MateSetTokensParams).Name, HasBotToken: true, HasAppToken: true})
+		return json.Unmarshal(data, out)
+	case rpc.MethodMateClaim:
+		data, _ := json.Marshal(rpc.MateClaim{Name: params.(rpc.MateClaimParams).Name, Code: "ABCD2345", ExpiresAt: time.Date(2026, 10, 14, 9, 10, 0, 0, time.UTC)})
 		return json.Unmarshal(data, out)
 	}
 	return nil
@@ -89,7 +93,7 @@ func TestMateAddWritesTheDefinitionShowsTheManifestAndStoresTheTokens(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(c.methods(), " "); got != "mate.show mate.set mate.set_tokens" {
+	if got := strings.Join(c.methods(), " "); got != "mate.show mate.set mate.set_tokens mate.claim" {
 		t.Fatalf("calls: %s", got)
 	}
 	set := c.calls[1].params.(rpc.MateSetParams).Mate
@@ -182,7 +186,7 @@ func TestMateTokensAsksForBothTokensOfAnExistingMate(t *testing.T) {
 	if err := mateTokens(context.Background(), c, rig.io(), "demo", false); err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(c.methods(), " "); got != "mate.show mate.set_tokens" {
+	if got := strings.Join(c.methods(), " "); got != "mate.show mate.set_tokens mate.claim" {
 		t.Errorf("calls: %s", got)
 	}
 }
@@ -231,8 +235,37 @@ func TestLineSecretReaderReadsOneLinePerTokenAndTrimsIt(t *testing.T) {
 	}
 }
 
+func TestMateAddShowsTheClaimCodeAfterTheTokens(t *testing.T) {
+	c := &fakeMateCaller{}
+	rig := &addRig{secrets: []string{addBot, addApp}}
+	if err := mateAdd(context.Background(), c, rig.io(), "demo", mateAddOptions{NoOpen: true}); err != nil {
+		t.Fatal(err)
+	}
+	text := rig.out.String()
+	if !strings.Contains(text, "ABCD2345") || !strings.Contains(text, "direct message") || strings.Index(text, "stored the tokens") > strings.Index(text, "ABCD2345") {
+		t.Errorf("the output lacks the claim step:\n%s", text)
+	}
+}
+
+func TestMateClaimPrintsTheCodeAndHowToSendIt(t *testing.T) {
+	c := &fakeMateCaller{}
+	var out bytes.Buffer
+	if err := mateClaim(context.Background(), c, &out, "demo"); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(c.methods(), " "); got != "mate.claim" {
+		t.Errorf("calls: %s", got)
+	}
+	text := out.String()
+	for _, want := range []string{"ABCD2345", "@demo", "direct message", "10 minutes"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the output lacks %q:\n%s", want, text)
+		}
+	}
+}
+
 func TestRunMateAddAndTokensNeedAName(t *testing.T) {
-	for _, args := range [][]string{{"add"}, {"tokens"}, {"add", "a", "b"}, {"tokens", "a", "--bogus"}} {
+	for _, args := range [][]string{{"add"}, {"tokens"}, {"claim"}, {"claim", "a", "b"}, {"add", "a", "b"}, {"tokens", "a", "--bogus"}} {
 		var out, errOut bytes.Buffer
 		if code := runMate(args, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "usage: crew mate") {
 			t.Errorf("%v: code %d, stderr %q", args, code, errOut.String())
