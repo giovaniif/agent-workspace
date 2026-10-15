@@ -167,6 +167,7 @@ type Daemon struct {
 	tx          *transcripts
 	push        app.PushProvider
 	mateSecrets app.MateSecrets
+	slack       slackWorkers
 	presence    presenceCfg
 	auto        automationCfg
 	browser     browserHub
@@ -301,6 +302,9 @@ func (d *Daemon) Serve(ctx context.Context, ln net.Listener) error {
 	}
 	if d.presence.activity != nil {
 		go d.samplePresence(ctx)
+	}
+	if d.slack.connect != nil {
+		go d.runMates(ctx)
 	}
 	go d.watchWorktrees(ctx)
 	go d.watchPorts(ctx)
@@ -579,7 +583,7 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
-	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens:
+	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens, rpc.MethodMateClaim:
 		return d.mateMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true
