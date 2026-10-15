@@ -2,7 +2,7 @@ package chromium
 
 const (
 	scriptSnapshot = `const skip = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "SVG", "HEAD"]);
-for (const old of document.querySelectorAll("[data-agentws-ref]")) old.removeAttribute("data-agentws-ref");
+for (const old of document.querySelectorAll("[data-crew-ref]")) old.removeAttribute("data-crew-ref");
 let next = 1;
 const lines = [];
 const visible = (el) => {
@@ -45,7 +45,7 @@ const walk = (el, depth) => {
   let inner = depth;
   if (role) {
     const ref = "e" + next++;
-    el.setAttribute("data-agentws-ref", ref);
+    el.setAttribute("data-crew-ref", ref);
     const name = nameOf(el).replace(/\s+/g, " ").slice(0, 100);
     lines.push("  ".repeat(depth) + "- " + role + (name ? " " + JSON.stringify(name) : "") + " [@" + ref + "]");
     inner = depth + 1;
@@ -57,12 +57,12 @@ const walk = (el, depth) => {
 };
 if (document.body) walk(document.body, 0);
 return {text: "# " + document.title + " — " + location.href + "\n" + lines.join("\n"), url: location.href, title: document.title, refs: next - 1};`
-	scriptClick = `const el = document.querySelector(` + "`" + `[data-agentws-ref="${ref}"]` + "`" + `);
+	scriptClick = `const el = document.querySelector(` + "`" + `[data-crew-ref="${ref}"]` + "`" + `);
 if (!el) throw new Error("no element @" + ref + ": take a new snapshot");
 el.scrollIntoView({block: "center"});
 el.click();
 return "clicked @" + ref;`
-	scriptFill = `const el = document.querySelector(` + "`" + `[data-agentws-ref="${ref}"]` + "`" + `);
+	scriptFill = `const el = document.querySelector(` + "`" + `[data-crew-ref="${ref}"]` + "`" + `);
 if (!el) throw new Error("no element @" + ref + ": take a new snapshot");
 el.focus();
 const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
@@ -90,6 +90,6 @@ if (allowed && key === "Enter" && el.form) {
 return "pressed " + key;`
 	scriptEval = `const value = await (0, eval)(js);
 return value === undefined ? null : JSON.parse(JSON.stringify(value));`
-	scriptHasRef  = `return document.querySelector(` + "`" + `[data-agentws-ref="${ref}"]` + "`" + `) !== null;`
+	scriptHasRef  = `return document.querySelector(` + "`" + `[data-crew-ref="${ref}"]` + "`" + `) !== null;`
 	scriptHasText = `return document.body !== null && document.body.innerText.includes(text);`
 )
