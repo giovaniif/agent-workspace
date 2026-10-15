@@ -81,12 +81,12 @@ func TestNotifyOsascriptRemoveRunsNothing(t *testing.T) {
 
 func TestNotifySelectPrefersTerminalNotifierFallingBackToOsascript(t *testing.T) {
 	found := func(name string) (string, error) { return "/opt/bin/" + name, nil }
-	got, ok := notify.Select(found, notify.Click{Self: "/bin/crew", Home: "/h", FocusCmd: "ssh -T 'vps' agentws focus"}).(notify.Fallback)
+	got, ok := notify.Select(found, notify.Click{Self: "/bin/crew", Home: "/h", FocusCmd: "ssh -T 'vps' crew focus"}).(notify.Fallback)
 	if !ok {
 		t.Fatalf("got %#v", got)
 	}
 	tn, ok := got.Primary.(notify.TerminalNotifier)
-	if !ok || tn.Bin != "/opt/bin/terminal-notifier" || tn.Self != "/bin/crew" || tn.Home != "/h" || tn.FocusCmd != "ssh -T 'vps' agentws focus" || tn.Run == nil {
+	if !ok || tn.Bin != "/opt/bin/terminal-notifier" || tn.Self != "/bin/crew" || tn.Home != "/h" || tn.FocusCmd != "ssh -T 'vps' crew focus" || tn.Run == nil {
 		t.Fatalf("primary %#v", got.Primary)
 	}
 	if o, ok := got.Secondary.(notify.Osascript); !ok || o.Run == nil {

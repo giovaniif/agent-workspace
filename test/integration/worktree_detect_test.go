@@ -108,7 +108,7 @@ func start(t *testing.T, poll, prPoll time.Duration) env {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(sockDir) })
-	e.sock = filepath.Join(sockDir, "agentws.sock")
+	e.sock = filepath.Join(sockDir, "crew.sock")
 	ln, err := net.Listen("unix", e.sock)
 	if err != nil {
 		t.Fatal(err)
