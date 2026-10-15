@@ -43,7 +43,7 @@ Use these terms with these meanings only.
 | **scope** | The part of the changes that a review shows: `last_turn`, `uncommitted` or `branch`. |
 | **turn** | One prompt and the agent's work on it, until the agent stops. |
 | **banner** | A desktop notification for a session. |
-| **setup recipe** | The `[setup]` table in a repo's `.agentws.toml`. It prepares a new worktree. |
+| **setup recipe** | The `[setup]` table in a repo's `.crew.toml`. It prepares a new worktree. |
 | **cleanup** | The removal of a worktree after its PR merges, with a backup of any uncommitted changes. |
 | **port** | In `internal/app` and the layer rules: an interface that an adapter implements. In the ports view and `ports.*` methods: a TCP port that a dev server listens on. Use "port interface" or "TCP port" when the context does not make the meaning clear. |
 | **adapter** | Code in `internal/adapters` that implements a port with a real tool or library. |

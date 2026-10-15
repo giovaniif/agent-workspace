@@ -4,9 +4,9 @@ Status: proposed, 2026-10-03.
 
 ## Context
 
-Sessions run in the `agentws` tmux server and are driven from the TUI. Away from the terminal there is no way to see which session needs you, answer it, or start a new one. The remote app is a phone client for that: a session list, a chat view over each session, and new sessions. Review, nvim, shells, ports, disk and cleanup stay terminal-only.
+Sessions run in the `crew` tmux server and are driven from the TUI. Away from the terminal there is no way to see which session needs you, answer it, or start a new one. The remote app is a phone client for that: a session list, a chat view over each session, and new sessions. Review, nvim, shells, ports, disk and cleanup stay terminal-only.
 
-It is a feature for anyone running `agentws`, not one setup. How the phone reaches the machine (Tailscale, a LAN, a VPN, a tunnel) is the user's choice; `agentws` only exposes an HTTPS endpoint and pairs devices with it.
+It is a feature for anyone running `crew`, not one setup. How the phone reaches the machine (Tailscale, a LAN, a VPN, a tunnel) is the user's choice; `crew` only exposes an HTTPS endpoint and pairs devices with it.
 
 ## Decision
 
@@ -23,14 +23,14 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 - `transcript.watch` (`{"session","after"}`), with `after` the `Cursor` of the newest message the client holds, streams the messages after it like `subscribe` streams diffs. A worker per watched session tails the file with fsnotify and stops when the last watcher leaves. Nothing reads transcripts while no client watches, and the event loop never reads them. `transcript.unwatch` (`{"watch"}`) ends one watch; a client keeps messages by `ID` and replaces a message when its `ID` comes again (a tool call finished by a later result).
 - `session.send` (`{"session","text"}` → `{"queued"}`) uses a text queue of its own, separate from `review.send`'s review-draft queue but dispatched by the same rule: one bracketed paste and Enter once the session is idle, done or waiting. A send to a busy session waits, and the app shows it as queued.
 - `session.interrupt` (`{"session"}`) sends Escape to the pane.
-- `session.prompt` (`{"session"}` → `{"text","choices"}`) and `session.answer` (`{"session","choice"}`) handle a permission dialog: the daemon captures the pane, the harness adapter turns the dialog into choices and maps a choice to its keys. This is tied to each harness's dialog layout and is tested against captured fixtures; a structured path through a blocking permission hook is left to a later ADR, because it cannot meet the `agentws hook` budget as it stands.
+- `session.prompt` (`{"session"}` → `{"text","choices"}`) and `session.answer` (`{"session","choice"}`) handle a permission dialog: the daemon captures the pane, the harness adapter turns the dialog into choices and maps a choice to its keys. This is tied to each harness's dialog layout and is tested against captured fixtures; a structured path through a blocking permission hook is left to a later ADR, because it cannot meet the `crew hook` budget as it stands.
 - `session.new` gains an optional `prompt`, sent through `session.send` once the session is up.
 
-### `agentws serve`
+### `crew serve`
 
 - A new subcommand and a new package, `internal/serve`. Like `tui`, it talks to the daemon only through `rpc` and may import `domain` types; depguard gets a `serve` rule. It starts the daemon the same way the TUI does when none is running.
 - It listens on `--addr` (default `127.0.0.1:7420`). With `--cert` and `--key` it serves TLS itself (for example the files `tailscale cert` writes); without them it listens on loopback only, behind a reverse proxy on the same host. A device token never crosses a network in clear: plain HTTP on a non-loopback address is refused, with no override. A proxy that cannot reach loopback (one in a container) connects over TLS; `--self-signed` makes a certificate for that hop, which the proxy is set to trust.
-- `agentws setup serve [--remove]` installs it as a systemd user unit on Linux or a launchd agent on macOS, with the PATH of the shell that ran it, like `setup bridge`.
+- `crew setup serve [--remove]` installs it as a systemd user unit on Linux or a launchd agent on macOS, with the PATH of the shell that ran it, like `setup bridge`.
 - The HTTP API lives under `/api/v1` and is an allowlist, not a passthrough of the socket protocol:
 
   | Endpoint | Daemon method |
@@ -52,10 +52,10 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 
 ### Pairing and devices
 
-- `agentws remote pair [--name phone]` asks the daemon for a pairing code and prints a QR code and the plain URL, `https://<public url>/#pair=<code>`. The public URL comes from `--url` or `[serve] url` in `config.toml`.
+- `crew remote pair [--name phone]` asks the daemon for a pairing code and prints a QR code and the plain URL, `https://<public url>/#pair=<code>`. The public URL comes from `--url` or `[serve] url` in `config.toml`.
 - A code is 8 characters from an alphabet without look-alikes, valid for 5 minutes and single use. A wrong code voids nothing, so nobody can cancel a pairing by guessing; instead `pair` accepts at most 5 failed tries a minute from one address and 20 a minute in all, which keeps guessing a 40-bit code in 5 minutes out of reach. `POST /api/v1/pair` swaps it for a device token: 32 random bytes, shown once, stored only as its SHA-256 in a `devices` table with a name, created and last-seen times.
 - Every other request carries `Authorization: Bearer <token>`. A WebSocket sends the token in its first frame, since browsers cannot set headers on one, and is closed if that frame is late or wrong. The stream also checks `Origin` against the public URL.
-- `agentws remote devices` lists devices; `agentws remote revoke <id>` deletes one and closes its open streams.
+- `crew remote devices` lists devices; `crew remote revoke <id>` deletes one and closes its open streams.
 - Code expiry, attempt counting, token checks and revocation are pure rules in `domain`, table-tested.
 
 ### The app is a PWA served by `serve`
@@ -73,7 +73,7 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 
 ### Push (later phase)
 
-- Web Push with VAPID: `serve` creates a key pair in `$AGENTWS_HOME/vapid` (600) on first use. After pairing the app may subscribe; the subscription is stored with its device and dropped on revoke or when the push service answers 404 or 410.
+- Web Push with VAPID: `serve` creates a key pair in `$CREW_HOME/vapid` (600) on first use. After pairing the app may subscribe; the subscription is stored with its device and dropped on revoke or when the push service answers 404 or 410.
 - A `PushProvider` port in `app`, fed from the same banners `notify.stream` carries (ADR 0016), sends title, body and the session URL. iOS shows a notification for every push, so `serve` never sends silent ones.
 - It works on iOS 16.4+ only for an app added to the Home Screen, with no Apple developer account.
 
@@ -106,7 +106,7 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 ## Phases
 
 1. `transcript.page`, `Session.Transcript` and the Claude and Codex parsers.
-2. `agentws serve`, the allowlisted API, pairing, devices and `setup serve`.
+2. `crew serve`, the allowlisted API, pairing, devices and `setup serve`.
 3. The PWA shell: pairing, the session list, the read-only transcript.
 4. Chat: `session.send`, `session.interrupt`, `transcript.watch`, live updates.
 5. New sessions from the app, and permission answers.
@@ -115,18 +115,18 @@ It is a feature for anyone running `agentws`, not one setup. How the phone reach
 ## Amendment, 2026-10-04 (#183): who sends Web Push
 
 - The daemon sends pushes, not `serve`. `app.PushProvider` (`PublicKey`, `Send`) is wired into the daemon by `daemon.WithPush`, with the `adapters/webpush` implementation. `serve` may import only `rpc` and `domain`, so a port in `app` could not be used from it; and the daemon already holds what push needs: the banners after mute and coalescing (ADR 0016), the devices and their revocation, and the store.
-- So the VAPID pair is created by the daemon's adapter in `$AGENTWS_HOME/vapid` (JSON, mode 600) on first use, not by `serve`. Both run as the same user on the same host, so the file and its mode are as the decision above says.
+- So the VAPID pair is created by the daemon's adapter in `$CREW_HOME/vapid` (JSON, mode 600) on first use, not by `serve`. Both run as the same user on the same host, so the file and its mode are as the decision above says.
 - New daemon methods: `push.key` (→ `{"public_key"}`) and `push.subscribe` (`{"device","endpoint","keys"}`). New endpoints: `GET /api/v1/push/key` and `POST /api/v1/push/subscribe` (the browser's `PushSubscription.toJSON()`), both behind the device token; `serve` adds the calling device's ID.
 - A subscription is stored on its device (`Device.Push`, inside the `devices` row), one per device, so revoking the device deletes it with no second table to keep in step. A push service answer of 404 or 410 clears it.
-- The payload is `{"title","body","url","tag"}`: the banner's title and body (falling back to `agentws` and the state word, never empty), `url` `/#/sessions/<id>` and `tag` the session ID, so a session's newer notification replaces its older one. The terminal-in-front check of the Mac banner does not apply to push.
+- The payload is `{"title","body","url","tag"}`: the banner's title and body (falling back to `crew` and the state word, never empty), `url` `/#/sessions/<id>` and `tag` the session ID, so a session's newer notification replaces its older one. The terminal-in-front check of the Mac banner does not apply to push.
 
 Rejected: `serve` subscribing to `notify.stream` and sending through an adapter injected from `cmd/crew`. It keeps sending out of the daemon, but subscriptions would still have to be stored and dropped through new daemon methods, revocation and a gone subscription would cross the socket twice, and a push would be lost whenever `serve` is not running even though the daemon saw the banner.
 
 ## Amendment, 2026-10-06 (#206): don't push while the owner is at the terminal or on the app
 
-The owner asked for no phone notifications while working at the terminal, and for the phone to be told when that stops. The common setup is a headless host reached over ssh with the TUI inside the `agentws` tmux server, so presence has to come from tmux and from the app, not from a screen.
+The owner asked for no phone notifications while working at the terminal, and for the phone to be told when that stops. The common setup is a headless host reached over ssh with the TUI inside the `crew` tmux server, so presence has to come from tmux and from the app, not from a screen.
 
-- **At the terminal** means at least one client attached to the `agentws` tmux server whose last input (`#{client_activity}`, tmux's per-client time of the last key or mouse event, in seconds) is less than `away_after` ago. `away_after` is `[push] away_after` in `config.toml`, a Go duration (`"2m"` by default, `"90s"`, `"10m"`); `"0"` turns presence suppression off, and a value that does not parse logs and keeps the default. No attached client, no tmux server, or a failed sample counts as away, so a push is never lost on a guess.
+- **At the terminal** means at least one client attached to the `crew` tmux server whose last input (`#{client_activity}`, tmux's per-client time of the last key or mouse event, in seconds) is less than `away_after` ago. `away_after` is `[push] away_after` in `config.toml`, a Go duration (`"2m"` by default, `"90s"`, `"10m"`); `"0"` turns presence suppression off, and a value that does not parse logs and keeps the default. No attached client, no tmux server, or a failed sample counts as away, so a push is never lost on a guess.
 - tmux is read only by `internal/adapters/tmux` (`Host.LastInput`, the port `app.TerminalActivity`). A daemon goroutine samples it every 5 s with a 2 s cap and hands the time to the loop, which only stores it (`domain.Presence`). Nothing on the loop runs tmux, as in ADR 0016.
 - `domain.PushGate` decides on the loop, after mute and the coalescer: while present, a push is held (the newest per session); while away, it goes, and any held push for that session is dropped. After each sample, a held push is sent once if the owner is now away and the session still needs them (`domain.NeedsYou`: permission or waiting, or done and still unread; not muted, not ended). One that was answered, read (focusing clears unread) or muted meanwhile is forgotten. So stepping away with a session waiting buzzes the phone within about 5 s of the window running out; nothing is sent twice.
 - Urgent states are not exempt: a permission prompt is held too. The owner asked for no phone notifications at all while working at the terminal, and the TUI already shows it.
@@ -146,7 +146,7 @@ Rejected:
 
 Limits:
 
-- Activity in another tmux server, or in a terminal that is not attached to `agentws`, does not count. Reading the TUI without touching a key for longer than `away_after` counts as away.
+- Activity in another tmux server, or in a terminal that is not attached to `crew`, does not count. Reading the TUI without touching a key for longer than `away_after` counts as away.
 - An idle attached client left open on a desk counts as away once its window runs out, which is the intent; one that keeps receiving input (a key repeat, a mouse jiggle into the terminal) counts as present.
 - Held pushes are in memory: a daemon restart forgets them; the session list still shows the state.
 - Up to 5 s pass between the window running out and the held push.

@@ -4,8 +4,8 @@ Status: accepted, 2026-09-30.
 
 ## Decision
 
-- The agentws tmux config binds `ctrl+\` in the root table (`bind-key -n C-\\ select-pane -t :.0`), right after `unbind-key -a`. From an agent pane it moves keyboard focus to the sidebar, pane 0 of the client window. The key is `tmux.FocusSidebarKey`.
-- The binding lives only in the config file the adapter writes for `tmux -L agentws`. The user's default server and `~/.tmux.conf` are never read or written; an integration test checks the default server has no such binding.
+- The crew tmux config binds `ctrl+\` in the root table (`bind-key -n C-\\ select-pane -t :.0`), right after `unbind-key -a`. From an agent pane it moves keyboard focus to the sidebar, pane 0 of the client window. The key is `tmux.FocusSidebarKey`.
+- The binding lives only in the config file the adapter writes for `tmux -L crew`. The user's default server and `~/.tmux.conf` are never read or written; an integration test checks the default server has no such binding.
 - `ctrl+\` is a raw control byte with no readline meaning, and neither Claude Code nor Codex binds it. Keys with a modifier that terminals send inconsistently (`alt+<key>` needs "Option as Meta" on macOS) were not used. The agent no longer receives that one key.
 - When `session.end` ends the session that is in view, the daemon shows the next session in sidebar order that still has a pane, wrapping to the top (`domain.NextInView`), and marks it in view. Keyboard focus stays in the sidebar.
 - With no session left to show, `ClientHost.EnsureSlot` gives the slot a pane that prints "No session in view. Press n to start one.". `Show` uses the same pane when it has to recreate a slot.

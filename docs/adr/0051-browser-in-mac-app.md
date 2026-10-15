@@ -8,7 +8,7 @@ Agents on the server change web apps. They cannot see the result. The owner want
 
 These facts apply:
 
-- The Mac app connects to the daemon through `agentws rpc` over SSH (ADR 0049). The connection is open while the app runs.
+- The Mac app connects to the daemon through `crew rpc` over SSH (ADR 0049). The connection is open while the app runs.
 - A dev server on the server is available on the tailnet at `host.<tailnet>.ts.net:<port>`. The daemon knows the TCP ports of each worktree (ADR 0022).
 - The logins of the owner are in the browsers of the Mac: Chrome, Arc, Brave, Edge and Safari.
 
@@ -23,13 +23,13 @@ These facts apply:
 
 ### Agents control it through the daemon
 
-1. An agent runs `agentws browser <command>` in its pane, for example `goto`, `snapshot`, `click` or `fill`.
+1. An agent runs `crew browser <command>` in its pane, for example `goto`, `snapshot`, `click` or `fill`.
 2. The CLI sends `browser.command` to the daemon on its socket. The CLI finds the session from its pane.
 3. The daemon sends the command to the Mac app that is attached as the browser.
 4. The app runs the command in the tab of that session. Then it sends the result back on the same connection.
 5. The daemon gives the result to the CLI. The CLI prints it, or prints JSON with `--json`.
 
-- The app attaches with `browser.attach` on its `agentws rpc` connection. The daemon keeps one browser connection. A new attach replaces the old one. The attach ends when the connection closes.
+- The app attaches with `browser.attach` on its `crew rpc` connection. The daemon keeps one browser connection. A new attach replaces the old one. The attach ends when the connection closes.
 - The daemon does not keep browser state. It only sends commands and results. Each command has a timeout.
 - `snapshot` returns an accessibility tree with element refs (`@e1`). The refs are valid until the next `snapshot`.
 - `screenshot` writes a PNG file into the worktree or into a temporary folder on the server. Thus the agent can read it.
@@ -55,7 +55,7 @@ The Mac is on networks that the server cannot reach. An agent must not use the b
 - The app imports cookies from Chrome, Arc, Brave and Edge (the SQLite store and the Safe Storage key from the Keychain), from Safari (`Cookies.binarycookies`), or from a file (Netscape `cookies.txt`, a JSON cookie list or Playwright `storageState`).
 - The app imports into one browser profile. A new import replaces the cookies of those domains.
 - Cookies never go to the server or into a log. The `cookies` command of the CLI shows names and domains, not values.
-- The parsers are in `AgentwsKit`, with tests on fixture files.
+- The parsers are in `CrewKit`, with tests on fixture files.
 
 ## Why
 
@@ -73,6 +73,6 @@ The Mac is on networks that the server cannot reach. An agent must not use the b
 ## Consequences
 
 - The browser works only while the Mac app runs and is connected. Agents must accept the `unavailable` error.
-- `browser.attach`, `browser.command` and the `agentws browser` CLI are new public surface.
+- `browser.attach`, `browser.command` and the `crew browser` CLI are new public surface.
 - One round trip of a browser command has a latency budget in ARCHITECTURE.md (#337).
 - A cookie import from a Chrome-type browser needs the approval of the user for the Keychain. An import from Safari needs Full Disk Access.

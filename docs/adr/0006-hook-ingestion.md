@@ -4,7 +4,7 @@ Status: accepted, 2026-09-29.
 
 ## Decision
 
-- `agentws hook --harness claude|codex --event <name>` reads the hook JSON from stdin, adds `$TMUX_PANE` and a timestamp, and sends one `hook` request on the socket. It always exits 0 and logs failures to `$AGENTWS_HOME/hook.log`.
+- `crew hook --harness claude|codex --event <name>` reads the hook JSON from stdin, adds `$TMUX_PANE` and a timestamp, and sends one `hook` request on the socket. It always exits 0 and logs failures to `$CREW_HOME/hook.log`.
 - It dials the socket directly with a 50 ms deadline for the whole exchange, instead of `rpc.Client` or `rpc.Connect`. It never starts the daemon.
 - Fire-and-forget: it closes right after writing, except for `UserPromptSubmit`, where it reads the `HookReply` within the same deadline and prints its `output`.
 - The daemon owns the mapping: pane to session (`Session.Pane`) and hook name to harness event, both pure functions in `domain`.

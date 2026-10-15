@@ -11,7 +11,7 @@ Orca has automations: a saved prompt with an agent, a target, an optional schedu
 What exists:
 
 - `session.new` starts a session from a workspace, a work item, a harness, a model, an effort and a first prompt.
-- `$AGENTWS_HOME/config.toml` holds global settings. A repo's `.agentws.toml` holds its setup recipe (ADR 0013).
+- `$CREW_HOME/config.toml` holds global settings. A repo's `.crew.toml` holds its setup recipe (ADR 0013).
 - The daemon already sees PR changes (ADR 0024), session state changes (ADR 0015) and new worktrees.
 - The store is sqlite (ADR 0004).
 
@@ -36,8 +36,8 @@ An automation has these fields:
 
 ### Where automations are defined
 
-- Global automations are `[[automation]]` tables in `~/.agentws/config.toml` (`$AGENTWS_HOME/config.toml`).
-- Repo automations are `[[automation]]` tables in the repo's `.agentws.toml`. They apply only to that repo.
+- Global automations are `[[automation]]` tables in `~/.crew/config.toml` (`$CREW_HOME/config.toml`).
+- Repo automations are `[[automation]]` tables in the repo's `.crew.toml`. They apply only to that repo.
 - A repo automation with the same name as a global one replaces the global one for that repo. The merge does not combine fields.
 - The validation, the merge and the template expansion are pure functions in `domain`, with table tests.
 - We do not add a new file or a new store for definitions. The two TOML files are the only source. Users can put them in their dotfiles and in the repo.
@@ -59,17 +59,17 @@ An automation has these fields:
 
 - A `precheck` runs with the rights of the daemon user, as a `[setup] run` step does (ADR 0013). The daemon does not put it in a sandbox.
 - The daemon runs repo automations only for repos in a registered workspace. To register a workspace is the trust decision, as it is for the setup recipe.
-- A repo automation with a `schedule`, `on` or `precheck` does not run by itself until the user approves it one time (`agentws automation trust <name>`). The daemon records the approval with a hash of the definition. A change to the definition removes the approval.
+- A repo automation with a `schedule`, `on` or `precheck` does not run by itself until the user approves it one time (`crew automation trust <name>`). The daemon records the approval with a hash of the definition. A change to the definition removes the approval.
 - The launcher limit controls how many sessions start. It does not control what a `precheck` command does.
 
 ### Methods
 
 - `automation.list` and `automation.show` (#331), `automation.run` and `automation.runs` (#332).
-- The CLI is `agentws automation list|show|run|runs`. The Mac app, the TUI and the PWA use the same methods.
+- The CLI is `crew automation list|show|run|runs`. The Mac app, the TUI and the PWA use the same methods.
 
 ## Consequences
 
-- The definitions are text in files that the user already has. A client that edits an automation writes to `config.toml` with the backup and atomic rename of `config.set`. A client does not edit a repo's `.agentws.toml`. It shows where that file is.
+- The definitions are text in files that the user already has. A client that edits an automation writes to `config.toml` with the backup and atomic rename of `config.set`. A client does not edit a repo's `.crew.toml`. It shows where that file is.
 - A schedule or an event can start sessions when the owner is away. The launcher limit (`launcher.max_parallel`) still applies, and a run never starts while the last run of the same automation is live.
 - The browser of epic #330 is a different decision. It gets its own ADR.
 
