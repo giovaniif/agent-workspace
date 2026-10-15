@@ -134,6 +134,8 @@ type state struct {
 	projects        map[string]domain.Project
 	automationRuns  map[string]domain.AutomationRun
 	automationTrust map[string]string
+	approvals       []domain.Approval
+	approvalSeq     int
 	autoEvents      chan domain.AutomationEvent
 	shellTabs       map[string]domain.ShellTab
 	activeTabs      map[string]string
@@ -142,32 +144,33 @@ type state struct {
 }
 
 type Daemon struct {
-	pid      int
-	started  time.Time
-	events   chan Event
-	queries  chan func(*state)
-	stopped  chan struct{}
-	st       *state
-	ws       workspaces
-	clients  clients
-	hs       harnesses
-	wt       worktreeScanner
-	ports    portScanner
-	sess     sessionDeps
-	titles   app.TitleResolver
-	restored []domain.Session
-	rv       review
-	cl       cleanupWorker
-	disk     DiskDeps
-	onboard  app.Onboarder
-	cfg      configCfg
-	term     terminals
-	tx       *transcripts
-	push     app.PushProvider
-	presence presenceCfg
-	auto     automationCfg
-	browser  browserHub
-	headless headlessPool
+	pid         int
+	started     time.Time
+	events      chan Event
+	queries     chan func(*state)
+	stopped     chan struct{}
+	st          *state
+	ws          workspaces
+	clients     clients
+	hs          harnesses
+	wt          worktreeScanner
+	ports       portScanner
+	sess        sessionDeps
+	titles      app.TitleResolver
+	restored    []domain.Session
+	rv          review
+	cl          cleanupWorker
+	disk        DiskDeps
+	onboard     app.Onboarder
+	cfg         configCfg
+	term        terminals
+	tx          *transcripts
+	push        app.PushProvider
+	mateSecrets app.MateSecrets
+	presence    presenceCfg
+	auto        automationCfg
+	browser     browserHub
+	headless    headlessPool
 }
 
 func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
@@ -373,6 +376,10 @@ func (d *Daemon) loop(ctx context.Context) {
 func (s *state) emit(e Event) {
 	var id string
 	switch ev := e.(type) {
+	case MateTurn:
+		if session, ok := s.sessions[ev.SessionID]; !ok || session.Mate == nil {
+			return
+		}
 	case SessionChanged:
 		id = ev.Session.ID
 	case SessionHooked:
@@ -540,8 +547,17 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		if err := json.Unmarshal(req.Params, &h); err != nil {
 			return errorResponse(req.ID, rpc.CodeBadRequest, "hook params: "+err.Error()), true
 		}
-		ok := d.query(func(s *state) { s.hook(h, d.ws.now()) })
-		return result(req.ID, rpc.HookReply{}), ok
+		var reply rpc.HookReply
+		ok := d.query(func(s *state) {
+			now := d.ws.now()
+			reply = s.gateHook(h, now)
+			s.hook(h, now)
+		})
+		return result(req.ID, reply), ok
+	case rpc.MethodApprovalList:
+		var list []domain.Approval
+		ok := d.query(func(s *state) { list = s.pendingApprovals() })
+		return result(req.ID, list), ok
 	case rpc.MethodStatusLine:
 		var sl rpc.StatusLine
 		if err := json.Unmarshal(req.Params, &sl); err != nil {
@@ -563,7 +579,7 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
-	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove:
+	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens:
 		return d.mateMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true

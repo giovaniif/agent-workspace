@@ -69,6 +69,7 @@ type Session struct {
 	LimitsAt       time.Time
 	Switches       []Switch
 	SwitchWarning  bool
+	Mate           *MateSeat `json:",omitempty"`
 }
 
 func (s Session) Apply(ev HarnessEvent) (Session, []Effect) {

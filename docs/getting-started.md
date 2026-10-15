@@ -22,6 +22,20 @@ Run `crew`. The first time, a setup screen opens on top of the sidebar:
 
 At each step, `esc` skips the remaining steps. After you finish or skip, the screen does not open again automatically. It never opens when a harness is already set up and nvim has nothing more to configure. To open it again, press `S` in the sidebar or run `crew setup`. `crew setup claude`, `crew setup codex` and `crew setup nvim` do the same installs without the screen.
 
+## Mates in Slack
+
+A mate is a named personality of crew in Slack. Each mate is its own Slack app, so it has its own name and avatar. The app uses Socket Mode. Your server needs no public URL and no open port. The app is not in the Slack Marketplace, so Slack does not review it. See [ADR 0053](adr/0053-mates.md).
+
+To add a mate:
+
+1. Run `crew mate add <name>`. The command saves the mate, prints the Slack app manifest and the link to make the app from it. It opens the link when it can. Add `--no-open` to only print it. Add `--agent codex` or `--prompt "..."` to set those fields.
+2. In Slack, make the app from the manifest and install it in your workspace. A workspace admin can require an approval for the install. If so, ask the admin to approve the app.
+3. Copy the bot token (`xoxb-`) from OAuth & Permissions.
+4. In Basic Information, make an app-level token with the scope `connections:write`. Copy it (`xapp-`).
+5. Paste the two tokens when the command asks. The terminal does not show them.
+
+crew keeps the tokens in files with mode 600 under `$CREW_HOME/secrets/`. They are never in `config.toml`, a log or an answer of the daemon. If you gave a wrong token, run `crew mate tokens <name>`. To remove the tokens, run `crew mate tokens <name> --clear`.
+
 ## Build and test
 
 You need Go (the version in `go.mod`) and `golangci-lint` v2. For `make mutate`, you also need `gremlins`.

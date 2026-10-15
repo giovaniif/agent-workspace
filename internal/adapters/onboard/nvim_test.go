@@ -38,13 +38,13 @@ func TestInstallNvimWritesItsOwnFileForEveryConfigStyle(t *testing.T) {
 			}
 			ctx := context.Background()
 			n, err := w.probe.InstallNvim(ctx)
-			file := filepath.Join(w.probe.NvimConfigDir, "plugin", "agentws.lua")
+			file := filepath.Join(w.probe.NvimConfigDir, "plugin", "crew.lua")
 			if err != nil || !n.Configured || n.ConfigFile != file {
 				t.Fatalf("install = %+v, %v", n, err)
 			}
 			got := read(t, file)
-			if !strings.Contains(got, "local dir = '"+w.probe.PluginDirs[0]+"'") || !strings.Contains(got, "require('agentws').setup({})") {
-				t.Errorf("plugin/agentws.lua = %s", got)
+			if !strings.Contains(got, "local dir = '"+w.probe.PluginDirs[0]+"'") || !strings.Contains(got, "require('crew').setup({})") {
+				t.Errorf("plugin/crew.lua = %s", got)
 			}
 			for name, body := range c.files {
 				if read(t, filepath.Join(w.probe.NvimConfigDir, name)) != body {
@@ -73,11 +73,11 @@ func TestNvimSetupLeavesAUsersOwnFileAlone(t *testing.T) {
 	if err := os.MkdirAll(w.probe.PluginDirs[0], 0o755); err != nil {
 		t.Fatal(err)
 	}
-	file := filepath.Join(w.probe.NvimConfigDir, "plugin", "agentws.lua")
+	file := filepath.Join(w.probe.NvimConfigDir, "plugin", "crew.lua")
 	write(t, file, "print('mine')\n")
 	ctx := context.Background()
 	if _, err := w.probe.InstallNvim(ctx); err == nil {
-		t.Error("install overwrote a file agentws did not write")
+		t.Error("install overwrote a file crew did not write")
 	}
 	if removed, err := w.probe.RemoveNvim(ctx); removed || err == nil {
 		t.Errorf("remove = %v, %v on the user's own file", removed, err)

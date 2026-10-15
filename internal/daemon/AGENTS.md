@@ -159,7 +159,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - `mate.*` use the `config.toml` path, the mutex and the backup of the Config section. They run on the connection goroutine, never on the loop.
 - A load validates each `[[mate]]` table against the registered workspaces (`domain.CheckMates`). An invalid or repeated mate gives a problem with the file path, and the other mates load.
 - A write parses the new text again. The result must hold exactly the mate that was set. If it does not, the daemon refuses and tells you to edit the file by hand. It never touches a file that does not parse.
-- Tokens are not part of a mate. They go in a separate file with mode 600 (a later issue of the epic).
+- Tokens are not part of a mate. `WithMateSecrets(app.MateSecrets)` turns on `mate.set_tokens` and `mate.clear_tokens`. `Run` passes `secrets.Files` for `$CREW_HOME/secrets`. The mate must exist. The daemon validates the prefixes (`domain.ValidateMateTokens`) before it stores anything, and it never logs or returns a token. `mate.remove` clears the tokens of the mate. Tests: `go test ./internal/daemon/ -run MateSetTokens\|MateClearTokens\|NoMateMethod`.
 
 ## Codex fallback
 
@@ -298,6 +298,17 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
   - A 404 or 410 from the push service is `app.ErrPushGone`. The worker then clears that subscription from its device and stores it, only if the device still has the same endpoint and keys. A renewed subscription stays.
   - The worker logs other failures (by host, never the endpoint URL) and does not try them again.
   - A full queue drops the push.
+
+## Mate gate
+
+`go test ./internal/daemon/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md) and the rules in [internal/domain/](../domain/AGENTS.md).
+
+- A mate session has `Session.Mate` (`Name`, `Owner`, `Authority`). Other sessions have none, and the gate does not apply to them.
+- `MateTurn{SessionID, User}` sets `Authority` to the Slack user ID of the event that started the turn. The Slack worker posts it. Text in the thread never sets it. On a session that is not a mate, it does nothing.
+- For each `PreToolUse` hook of a mate session, the loop uses the `action` of the hook if it is dangerous. Else it classifies the call again with `Session.Dir` as the root. Then it calls `domain.Gate`.
+  - If the gate allows the action, the reply is empty. A granted approval that the gate used is removed.
+  - If the gate stops the action, the reply has the deny output, and the daemon records one pending `domain.Approval` (the same pending action is not added two times).
+- `approval.list` returns the pending approvals. They are in memory only.
 
 ## Browser
 

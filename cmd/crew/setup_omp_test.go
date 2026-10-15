@@ -23,7 +23,7 @@ func setupOmp(t *testing.T, agentDir string, args ...string) (int, string, strin
 
 func TestSetupOmpWritesTheHookFileOnce(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "hooks", "post", "agentws.ts")
+	file := filepath.Join(dir, "hooks", "post", "crew.ts")
 	code, out, errOut := setupOmp(t, dir)
 	if code != 0 || errOut != "" || out != "wrote the crew hook file "+file+"\n" {
 		t.Fatalf("code %d, stdout %q, stderr %q", code, out, errOut)
@@ -39,7 +39,7 @@ func TestSetupOmpWritesTheHookFileOnce(t *testing.T) {
 
 func TestSetupOmpRemoveDeletesOnlyOurFile(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "hooks", "post", "agentws.ts")
+	file := filepath.Join(dir, "hooks", "post", "crew.ts")
 	setupOmp(t, dir)
 	if code, out, _ := setupOmp(t, dir, "--remove"); code != 0 || out != "removed the crew hook file "+file+"\n" {
 		t.Fatalf("code %d, stdout %q", code, out)
@@ -54,7 +54,7 @@ func TestSetupOmpRemoveDeletesOnlyOurFile(t *testing.T) {
 
 func TestSetupOmpLeavesAHookFileOfTheUsers(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "hooks", "post", "agentws.ts")
+	file := filepath.Join(dir, "hooks", "post", "crew.ts")
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 		t.Fatal(err)
 	}

@@ -30,15 +30,15 @@ func OnboardingNeeded(o Onboarding) bool {
 	return !harness || !nvimDone
 }
 
-const nvimSetupMarker = "-- agentws: written by agentws setup nvim; agentws setup nvim --remove deletes this file."
+const nvimSetupMarker = "-- crew: written by crew setup nvim; crew setup nvim --remove deletes this file."
 
 func NvimSetupFile(pluginDir string) string {
 	return strings.Join([]string{
 		nvimSetupMarker,
 		"local dir = '" + luaQuote(pluginDir) + "'",
 		"vim.opt.runtimepath:prepend(dir)",
-		"dofile(dir .. '/plugin/agentws.lua')",
-		"require('agentws').setup({})",
+		"dofile(dir .. '/plugin/crew.lua')",
+		"require('crew').setup({})",
 	}, "\n") + "\n"
 }
 
@@ -173,7 +173,7 @@ func NvimSnippet(pluginDir, configFile string) []string {
 	quoted := luaQuote(pluginDir)
 	lua := []string{
 		"vim.opt.runtimepath:prepend('" + quoted + "')",
-		"require('agentws').setup({})",
+		"require('crew').setup({})",
 	}
 	if strings.HasSuffix(configFile, ".vim") {
 		return append(append([]string{"lua << EOF"}, lua...), "EOF")

@@ -17,6 +17,7 @@ const (
 	MethodSubscribe        = "subscribe"
 	MethodNotifyStream     = "notify.stream"
 	MethodHook             = "hook"
+	MethodApprovalList     = "approval.list"
 	MethodWorkspaceAdd     = "workspace.add"
 	MethodWorkspaceList    = "workspace.list"
 	MethodWorkspaceRemove  = "workspace.remove"
@@ -340,6 +341,7 @@ type Hook struct {
 	Pane    string          `json:"pane"`
 	At      time.Time       `json:"at"`
 	Payload json.RawMessage `json:"payload,omitempty"`
+	Action  *domain.Action  `json:"action,omitempty"`
 }
 
 type HookReply struct {

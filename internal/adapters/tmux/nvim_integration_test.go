@@ -18,7 +18,7 @@ func TestNavigationKeysPassThroughNvimAndLeaveItAtTheEdge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(plugin, "lua", "agentws", "init.lua")); err != nil {
+	if _, err := os.Stat(filepath.Join(plugin, "lua", "crew", "init.lua")); err != nil {
 		t.Fatalf("the nvim plugin is missing: %v", err)
 	}
 	if _, err := exec.LookPath("nvim"); err != nil {
@@ -30,7 +30,7 @@ func TestNavigationKeysPassThroughNvimAndLeaveItAtTheEdge(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.RemoveAll(dir) })
 	initLua := filepath.Join(dir, "init.lua")
-	if err := os.WriteFile(initLua, []byte("vim.opt.rtp:prepend('"+plugin+"')\nrequire('agentws').setup({})\n"), 0o644); err != nil {
+	if err := os.WriteFile(initLua, []byte("vim.opt.rtp:prepend('"+plugin+"')\nrequire('crew').setup({})\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	sock := filepath.Join(dir, "n.sock")
