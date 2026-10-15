@@ -206,6 +206,10 @@ func (d *Daemon) slackEvent(ctx context.Context, name string, client app.SlackMa
 	}
 	delete(d.slack.claims, name)
 	d.slack.mu.Unlock()
+	go d.finishClaim(ctx, name, client, e)
+}
+
+func (d *Daemon) finishClaim(ctx context.Context, name string, client app.SlackMate, e app.SlackEvent) {
 	reply := fmt.Sprintf("You are now the owner of %s.", name)
 	if err := d.setMateOwner(name, e.User); err != nil {
 		log.Printf("[mates] %s: the owner is not saved: %v", name, err)
