@@ -14,7 +14,7 @@ Run `crew`. The first time, a setup screen opens on top of the sidebar:
    `⏎` installs, `s` skips.
 3. **Codex.** The same for `~/.codex/hooks.json` (or `$CODEX_HOME`). Codex then needs a one-time trust step. Start `codex` and accept the review prompt for the new hooks, or trust them in `/hooks`.
 4. **Neovim (optional).** This step applies if `nvim` is on `PATH` and no part of your nvim config configures the plugin yet.
-   - The screen shows the file that it will write: `~/.config/nvim/plugin/agentws.lua`. This file loads the plugin that the install script put in `${XDG_DATA_HOME:-~/.local/share}/crew/nvim`.
+   - The screen shows the file that it will write: `~/.config/nvim/plugin/crew.lua`. This file loads the plugin that the install script put in `${XDG_DATA_HOME:-~/.local/share}/crew/nvim`.
    - `⏎` writes it, `s` skips.
    - It does not edit your own files (init.lua, init.vim, lazy.nvim specs). `crew setup nvim --remove` deletes the file.
    - Without nvim, the step tells how to install it (`brew install neovim`), and `⏎` continues. All keys except `e` and `o` work without nvim.
@@ -70,13 +70,13 @@ In the review, `o` opens the file in that nvim, at the top line of the diff. In 
 The setup screen shows the exact lines for your install. To set it up by hand:
 
 1. Put the plugin dir on the runtimepath, with your plugin manager or with `vim.opt.rtp:prepend('<dir>')`. The dir is `${XDG_DATA_HOME:-~/.local/share}/crew/nvim` from a release, or the repo's `nvim/` in a checkout.
-2. Call `require('agentws').setup({})`.
+2. Call `require('crew').setup({})`.
 
 The plugin needs `crew` on `PATH`. It works in the nvim that the `e` key starts, which has `CREW_SESSION` set.
 
-- `:AgentwsDiff [last_turn|uncommitted|branch]` opens a review scope of the session in diffview. The default is the scope that the review pane has open.
-- `:'<,'>AgentwsComment [text]` adds the selected lines as a draft review comment.
-- `require('agentws').setup({ bin = 'crew', tmux = 'tmux', navigate = true })`. With `navigate = false`, the plugin does not change `C-h/j/k/l` in nvim.
+- `:CrewDiff [last_turn|uncommitted|branch]` opens a review scope of the session in diffview. The default is the scope that the review pane has open.
+- `:'<,'>CrewComment [text]` adds the selected lines as a draft review comment.
+- `require('crew').setup({ bin = 'crew', tmux = 'tmux', navigate = true })`. With `navigate = false`, the plugin does not change `C-h/j/k/l` in nvim.
 
 ## Mouse
 

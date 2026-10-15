@@ -53,7 +53,7 @@ Select a workspace, a task (a PR URL or text, optional), the agent, the model an
 
 ### Automations
 
-Define `[[automation]]` tables in `config.toml` or in a repo's `.agentws.toml`. Run them by hand with context, on a schedule, or on an event such as a failed CI. See the outcome and history of each run.
+Define `[[automation]]` tables in `config.toml` or in a repo's `.crew.toml`. Run them by hand with context, on a schedule, or on an event such as a failed CI. See the outcome and history of each run.
 
 <img src="docs/images/readme/mac-automations.png" alt="The automations window of the Mac app">
 
@@ -115,7 +115,7 @@ The script does these steps:
 
 1. It downloads the archive for your OS and CPU from GitHub Releases.
 2. It checks the archive against `checksums.txt`.
-3. It puts the `crew` binary in `~/.local/bin`, and makes `agentws` a link to it.
+3. It puts the `crew` binary in `~/.local/bin`.
 4. It puts the nvim plugin in `~/.local/share/crew/nvim` (`$XDG_DATA_HOME/crew/nvim` if that is set).
 
 Two environment variables change this behavior:
@@ -159,18 +159,18 @@ crew daemon stop
 crew
 ```
 
-### Upgrade from agentws
+### Upgrade from the alphas
 
-crew was called agentws in the alphas. The first start of `crew` (or `crew setup`) moves your state one time, and writes one line for each step:
+The alpha releases had another name. The first start of `crew` (or `crew setup`) moves your state one time, and writes one line for each step:
 
-- If only `~/.agentws` exists, it moves to `~/.crew` (sessions, worktrees, `config.toml` and paired phones), and `~/.agentws` becomes a link. If both dirs exist, crew uses `~/.crew` and does not change `~/.agentws`. If an agentws daemon still runs, crew does not move the dir and tells you to run `crew daemon stop`.
+- The old home dir moves to `~/.crew` (sessions, worktrees, `config.toml` and paired phones), and the old path becomes a link. If both dirs exist, crew uses `~/.crew` and does not change the old dir. If an old daemon still runs, crew does not move the dir and tells you to run `crew daemon stop`.
 - Live sessions keep running: the daemon uses the old tmux server until its sessions end.
-- The Claude and Codex hooks run `crew hook` after the move. crew backs up each file first.
-- `crew setup` replaces the `agentws-*` systemd units and `dev.agentws.*` launchd agents with `crew-*` and `dev.crew.*`.
-- The nvim plugin dir moves to `$XDG_DATA_HOME/crew` (`~/.local/share/crew` when `XDG_DATA_HOME` is not set).
+- The Claude, Codex and omp hooks run `crew hook` after the move. crew backs up each file first.
+- `crew setup` replaces the systemd units and launchd agents of the alphas with `crew-*` and `dev.crew.*`.
+- The old nvim plugin dir, nvim setup file, browser skill, Claude settings backup and repo config files move to their crew names (`.crew.toml` in a repo). Each old file stays as a `.bak` copy.
+- The link with the old command name next to the binary goes away. Scripts that call the old command must call `crew`.
+- Environment variables with the old prefix still work as a fallback.
 - The Mac app keeps your servers, settings and shortcuts.
-
-The `agentws` command and the `AGENTWS_*` variables work for one more release, and stop in v0.2.0.
 
 ## Getting started
 
@@ -179,7 +179,7 @@ Run `crew`. The first time, a setup screen opens on top of the sidebar:
 1. **Agents.** Select Claude Code, Codex or both. Each agent shows if its hooks are already set up.
 2. **Claude Code.** The screen shows the file that it changes (`~/.claude/settings.json`), what it adds, where the backup goes, and how to undo it (`crew setup claude --remove`).
 3. **Codex.** The same for `~/.codex/hooks.json`. Codex then needs a one-time trust step: start `codex` and accept the review prompt for the new hooks.
-4. **Neovim (optional).** It writes `~/.config/nvim/plugin/agentws.lua`, which loads the plugin. It does not edit your own files.
+4. **Neovim (optional).** It writes `~/.config/nvim/plugin/crew.lua`, which loads the plugin. It does not edit your own files.
 5. **Done.** Press `⏎` to close the setup screen, then press `n` to start your first session.
 
 To open it again, press `S` in the sidebar or run `crew setup`. `crew setup claude`, `crew setup codex` and `crew setup nvim` do the same installs without the screen. More: [docs/getting-started.md](docs/getting-started.md).
@@ -188,7 +188,7 @@ To open it again, press `S` in the sidebar or run `crew setup`. `crew setup clau
 
 - macOS or Linux, tmux, git and the GitHub CLI (`gh`, signed in).
 - Claude Code, the Codex CLI or both.
-- For the nvim integration: Neovim 0.10+. For `:AgentwsDiff`, also [diffview.nvim](https://github.com/sindrets/diffview.nvim).
+- For the nvim integration: Neovim 0.10+. For `:CrewDiff`, also [diffview.nvim](https://github.com/sindrets/diffview.nvim).
 
 ## Remote app
 

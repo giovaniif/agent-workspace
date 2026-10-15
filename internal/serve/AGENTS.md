@@ -92,7 +92,7 @@ The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`. `Handler(nil)` s
   - `assets/*` is hashed and `immutable`.
   - Other files (`sw.js`, the manifest, icons) are `no-cache`.
   - `/api` and the paths below it are 404. Behind `Handler`, the JSON `not_found` of the API answers first.
-- Tests: `go test ./internal/serve/ -run Static`. After `make web`, `AGENTWS_WEB_BUILT=1` also checks the embedded build.
+- Tests: `go test ./internal/serve/ -run Static`. After `make web`, `CREW_WEB_BUILT=1` also checks the embedded build.
 
 ## Stream (`GET /api/v1/stream`, WebSocket)
 

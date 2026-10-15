@@ -26,7 +26,7 @@ Codex runs a hook only after the user trusts it. It records a hash for each hook
 
 - Other hooks and unknown keys stay, in their order.
 - A second run changes nothing and makes no backup.
-- Before a run changes an existing file, it saves the file as `hooks.json.agentws-<UTC time>.bak`.
+- Before a run changes an existing file, it saves the file as `hooks.json.crew-<UTC time>.bak`.
 - `--remove` removes only our hooks. It deletes `hooks.json` if the file had nothing else in it.
 - If `hooks.json` is not valid JSON, the command does not change it and fails.
 - The command finds our hooks by the `hook --harness codex --event` in their command. Thus, if the binary moves, it writes the hook again and does not make a duplicate.

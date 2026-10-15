@@ -10,7 +10,7 @@ ADR 0046 puts a PWA in `web/`, built into `internal/serve/dist` and embedded in 
 
 ### Toolchain
 
-- React 19, TypeScript, Vite, Vitest with Testing Library and jsdom. npm with a committed `web/package-lock.json`. Building the UI needs Node 22.18 or newer (the repo's scripts in `web/scripts/` run as TypeScript through Node's type stripping); running `agentws` needs no Node.
+- React 19, TypeScript, Vite, Vitest with Testing Library and jsdom. npm with a committed `web/package-lock.json`. Building the UI needs Node 22.18 or newer (the repo's scripts in `web/scripts/` run as TypeScript through Node's type stripping); running `crew` needs no Node.
 - Fonts (IBM Plex Sans, JetBrains Mono) come from `@fontsource` packages and are bundled as hashed assets, Latin subsets only. Nothing loads from a CDN at runtime. Colors are the TUI's Latte palette as CSS variables in `web/src/theme.css`.
 
 ### Build and embedding
@@ -18,17 +18,17 @@ ADR 0046 puts a PWA in `web/`, built into `internal/serve/dist` and embedded in 
 - `make web` runs `npm ci`, removes the previous build from `internal/serve/dist` (all but `index.html`) and runs `npm run build` (type check, then `vite build`).
 - The build writes its HTML shell as `dist/app.html`, not `index.html`. The committed placeholder `dist/index.html` is never overwritten, so a build leaves the tree clean and `go build` works without Node. Built files are ignored by git.
 - `serve.Static(fsys)` serves `app.html` (or the placeholder when there is no build) for `/` and for any path without an extension that is not a file (client routes), `no-cache`. Files under `assets/` are hashed and cached for a year as `immutable`; every other file (`sw.js`, the manifest, icons) is `no-cache`. `/api` and below answer 404, so a missing API route never returns the app. `serve.Dist()` is the embedded tree.
-- goreleaser runs `make web` as a `before` hook, so release binaries always carry the app. CI runs `make web`, `npm test` and `AGENTWS_WEB_BUILT=1 go test ./internal/serve/ -run Static`, whose last test checks that the embedded build is served.
+- goreleaser runs `make web` as a `before` hook, so release binaries always carry the app. CI runs `make web`, `npm test` and `CREW_WEB_BUILT=1 go test ./internal/serve/ -run Static`, whose last test checks that the embedded build is served.
 
 ### Service worker and builds
 
-- The app registers `/sw.js?build=<build>`, with the build `hello` reports. The worker caches into `agentws-shell-<build>`: on install it precaches `/` and the built files (the list is written into `sw.js` at build time), on activate it deletes other builds' caches and claims open pages. It answers same-origin `GET`s outside `/api` cache first, and navigations with the cached `/`.
+- The app registers `/sw.js?build=<build>`, with the build `hello` reports. The worker caches into `crew-shell-<build>`: on install it precaches `/` and the built files (the list is written into `sw.js` at build time), on activate it deletes other builds' caches and claims open pages. It answers same-origin `GET`s outside `/api` cache first, and navigations with the cached `/`.
 - The build a page runs is the `build` in its controlling worker's script URL. On start, when the page becomes visible and every 5 minutes, the app compares it with `hello`. Different: it installs the worker for the new build, waits for it to activate, and reloads. No controller (a first load): it installs the worker and does not reload.
 
 ### Install and pairing
 
 - The manifest has `display: standalone` and no `start_url`, so a Home Screen app added from the pair URL opens on that URL and finds its `#pair=` code. iOS gets `apple-touch-icon.png` and the `apple-mobile-web-app-*` tags.
-- In a browser tab (neither `display-mode: standalone` nor `navigator.standalone`) the app shows how to add it to the Home Screen, with the code. In the installed app it shows the server's address, API version and build from `hello`, takes the code (prefilled, normalized to the pairing alphabet) and a device name, and calls `POST /api/v1/pair`. The token and device are stored in `localStorage` under `agentws.auth`. `401 unauthorized` says the code is wrong or expired, `429 rate_limited` says to wait a minute, and an unreachable server says so.
+- In a browser tab (neither `display-mode: standalone` nor `navigator.standalone`) the app shows how to add it to the Home Screen, with the code. In the installed app it shows the server's address, API version and build from `hello`, takes the code (prefilled, normalized to the pairing alphabet) and a device name, and calls `POST /api/v1/pair`. The token and device are stored in `localStorage` under `crew.auth`. `401 unauthorized` says the code is wrong or expired, `429 rate_limited` says to wait a minute, and an unreachable server says so.
 
 ### Comments
 

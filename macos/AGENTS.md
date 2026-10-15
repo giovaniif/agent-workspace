@@ -5,19 +5,19 @@ The native Mac app ([ADR 0049](../docs/adr/0049-macos-app.md), UX in [docs/macos
 ## Layout
 
 - `Package.swift`: one SwiftPM package (Swift 6 tools, macOS 15).
-  - `Sources/AgentwsKit`: the library (protocol types, transport, state, view model; no UI). It must also build on Linux, so it does not import AppKit or SwiftUI.
-  - `Sources/AgentwsViews`: the SwiftUI views (`MainWindow`, `LiveWindow`, `ReviewView`, `Snapshot`), all inside `#if canImport(SwiftUI)`.
+  - `Sources/CrewKit`: the library (protocol types, transport, state, view model; no UI). It must also build on Linux, so it does not import AppKit or SwiftUI.
+  - `Sources/CrewViews`: the SwiftUI views (`MainWindow`, `LiveWindow`, `ReviewView`, `Snapshot`), all inside `#if canImport(SwiftUI)`.
     - Views draw a `WindowScene` and call `WindowActions`. Thus a seeded scene renders without a daemon. A `WindowScene` holds state, connection, selection, filter, inspector, clock, and `review` while review mode is on.
     - Settings work the same way: `SettingsView` draws a `SettingsScene` and calls `SettingsActions`. `LiveSettings` connects them to `SettingsStore` and `ServerSettings`.
-  - `Sources/AgentwsApp`: the executable target of the app (SwiftUI, and AppKit where necessary). Its UI code is inside `#if canImport(SwiftUI)`, so `swift build` and `swift test` still work on Linux.
-  - `Tests/AgentwsKitTests`: Swift Testing tests of `AgentwsKit`.
-- `Info.plist` and `build-app`: `build-app [release|debug]` builds `AgentwsApp` and wraps it into `build/crew.app` (bundle id `dev.crew.app`, display name crew). It signs the app ad-hoc (`codesign -s -`). There is no Developer ID and no notarization. These environment variables apply:
-  - `CREW_APP_VERSION` (default `v0.0.0`; `AGENTWS_APP_VERSION` is the fallback) is the release tag. Its numeric part becomes `CFBundleShortVersionString`, and the full tag becomes `AgentwsVersion`.
+  - `Sources/CrewApp`: the executable target of the app (SwiftUI, and AppKit where necessary). Its UI code is inside `#if canImport(SwiftUI)`, so `swift build` and `swift test` still work on Linux.
+  - `Tests/CrewKitTests`: Swift Testing tests of `CrewKit`.
+- `Info.plist` and `build-app`: `build-app [release|debug]` builds `CrewApp` and wraps it into `build/crew.app` (bundle id `dev.crew.app`, display name crew). It signs the app ad-hoc (`codesign -s -`). There is no Developer ID and no notarization. These environment variables apply:
+  - `CREW_APP_VERSION` (default `v0.0.0`) is the release tag. Its numeric part becomes `CFBundleShortVersionString`, and the full tag becomes `CrewVersion`.
   - `CREW_APP_BUILD` (default `0`, the workflow run number in CI) is `CFBundleVersion`.
   - `CREW_APP_BINARIES` points to a directory with `<os>_<arch>/crew` for `darwin_arm64`, `darwin_amd64`, `linux_amd64` and `linux_arm64`. `build-app` copies them into `Contents/Resources/bin/<os>_<arch>/crew`. Without it, the app has no bundled `crew`. This is correct for local UI work.
 - App icon: `AppIcon.png` (1024 px) comes from `web/public/icon.svg`. `npm run icons` in `web/` makes it again. `build-app` makes `Contents/Resources/AppIcon.icns` from it with `sips` and `iconutil` (16 px to 1024 px, with `@2x`). `CFBundleIconFile` in `Info.plist` points to it.
 - Menu bar icon: `build-app` copies `docs/images/brand/crewTemplate.png` and `crewTemplate@2x.png` into `Contents/Resources`. `MenuLabel` shows them as a template image, so macOS tints them for the menu bar. Without them, it shows an SF Symbol.
-- First launch after the rename: `DefaultsMigration.run` copies the `UserDefaults` of the old domain `dev.crew.app` (servers, settings, shortcuts, browser profiles) one time. A key that the new domain has already stays. `CLILink.adoptLegacy` points an `/usr/local/bin/agentws` link that an old app made (into an `.app` bundle) at the bundled `crew`. It never changes a different link or file.
+- First launch after the rename: `DefaultsMigration.run` copies the `UserDefaults` of the old domain of the alphas (servers, settings, shortcuts, browser profiles) one time. A key that the new domain has already stays. `CLILink.adoptLegacy` points a link that an old app made (into an old `.app` bundle) at the bundled `crew`. It never changes a different link or file. The old names are only in `LegacyNames.swift`, `DefaultsMigration.swift` and `LegacyTests.swift`.
 - `build-dmg [out]`: wraps `build/crew.app` and an `/Applications` link into an unsigned DMG (default `build/crew.dmg`, volume name crew). The DMG uses the same icon as its volume icon (`.VolumeIcon.icns`).
 
 ## Release
@@ -31,7 +31,7 @@ The `macos-app` job in `.github/workflows/release.yml` does these steps:
 
 The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` or the workflow, and on `workflow_dispatch`. Then goreleaser runs with `--snapshot`, and the DMG is only a workflow artifact. There is no Apple Developer account, so the app is ad-hoc signed and not notarized (issue #235). Gatekeeper blocks the first launch until the user clears the quarantine flag (see the README).
 
-## AgentwsKit
+## CrewKit
 
 - Protocol (`Envelope.swift`, `ViewTypes.swift`):
   - `Request` carries `v`, `id`, `method`, `params` and `build`. `build` is the handshake of ADR 0039: the build of the app must be equal to the build of the server.
@@ -42,7 +42,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `Endpoint.local(binary:)` runs `<binary> rpc`.
   - `Endpoint.ssh(host:remoteBinary:)` runs `ssh -T -o BatchMode=yes -o ServerAliveInterval=15 <host> <bin> rpc` through `/usr/bin/env`, so `ssh` comes from `PATH`.
   - `LineProcess` sends and receives newline-delimited lines on the stdio of the process. It keeps stdin open until `close()`.
-  - `RPCClient` matches replies to calls by `id`. A reply with `id` 0 fails all calls. The bridge sends this reply (`unavailable`) when no daemon listens. If the process stops, all calls fail with `AgentwsError.disconnected`.
+  - `RPCClient` matches replies to calls by `id`. A reply with `id` 0 fails all calls. The bridge sends this reply (`unavailable`) when no daemon listens. If the process stops, all calls fail with `CrewError.disconnected`.
 - Live state (`LiveState.swift`, `ViewStore.swift`):
   - `ViewState.apply(_:)` applies a diff as the TUI does: replace by key, removals, whole-list `limits`/`sends`, and the last 20 events for each session.
   - `ViewStore` (`@Observable`, main actor) keeps one process for `view.subscribe` and a different one for `call`. Thus diffs never delay a call.
@@ -68,7 +68,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - `AutomationsModel` (main actor, over `Caller`) calls `automation.list`, `automation.runs`, `automation.run` (with context and an optional work item, or `rerun`) and `automation.save`.
   - `AutomationTable.rows` gives the list: search by name or prompt text, filters (enabled or paused, last outcome, agent), sort by name or last run. `AutomationTable.move` moves the selection with the arrows and stops at the ends.
   - The detail has Overview (the definition) and Runs (history, Open session, Rerun). Run… (⌘R) opens `AutomationRunSheet` with a multi-line context field. A started run selects its session in the main window.
-  - New… and Edit… open `AutomationEditSheet`. Save writes the global `config.toml` through `automation.save`. A repo automation has no Edit…: the detail shows its `.agentws.toml`.
+  - New… and Edit… open `AutomationEditSheet`. Save writes the global `config.toml` through `automation.save`. A repo automation has no Edit…: the detail shows its `.crew.toml`.
   - Test: `swift test --filter Automations`. Snapshots: `automations*.png`.
 - New session (`NewSession.swift`, view `NewSessionSheet`):
   - ⌘N opens the sheet. The New button of the toolbar also opens it.
@@ -113,12 +113,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - A pane that paused while hidden gets `refresh-client -A '%p:continue'` and a redraw when it shows again.
   - Keys go as `send-keys -H` (256 bytes for each command). Sizes go as `refresh-client -C @w:CxR`, deduplicated for each window.
   - If the size of a pane is different from the grid of the view (because the TUI shows it), the pane is letterboxed with a note.
-- Terminal views (`AgentwsViews/TerminalPane.swift`, macOS only, SwiftTerm):
+- Terminal views (`CrewViews/TerminalPane.swift`, macOS only, SwiftTerm):
   - There is one `PaneHost` for each pane id, cached in `TerminalViews`. Thus a switch of sessions keeps scrollback and cursor.
   - In a focused terminal, each key without ⌘ goes to the pane (`performKeyEquivalent`, which decides by `TerminalKeys.goesToPane`). Thus ⌃C, Esc and ⌃H/J/K/L get to agents and nvim.
   - The exceptions are the combos bound in Settings › Shortcuts (`Shortcuts.bound`). For example, ⌃Space by default goes to the next waiting session. When you bind an action again or clear it, its old combo goes to the pane again.
   - After a session starts from the new-session sheet, `TerminalViews.focusNextShown()` gives keyboard focus to the next pane shown (the pane of the new session), after the sheet closes.
-  - `LiveWindow` makes the hub from the `client.native` of the `ViewStore` and gives it to the views as `\.agentwsTerminals`. Without it (snapshots, `--demo`), the main column shows a placeholder.
+  - `LiveWindow` makes the hub from the `client.native` of the `ViewStore` and gives it to the views as `\.crewTerminals`. Without it (snapshots, `--demo`), the main column shows a placeholder.
 - Session commands (`SessionCommands.swift`): the stored shortcuts for these commands:
   - Rename and pin (`session.rename`).
   - Model and Effort: choices from `session.options` for the harness of the session, then `session.switch`.
@@ -145,7 +145,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - Notifications: `push.away_after` and the phones (`device.list`, `device.revoke`, `pair.code`).
     - Appearance: the `[theme]` overrides.
   - With a daemon that does not have `config.get` or `device.list` (`unknown_method`), those groups are empty and show a note.
-  - You cannot set the cleanup interval, stale-limit age, worktree location and setup recipes. They are fixed in the daemon, or they are in the `.agentws.toml` of each repo.
+  - You cannot set the cleanup interval, stale-limit age, worktree location and setup recipes. They are fixed in the daemon, or they are in the `.crew.toml` of each repo.
 - Shell and nvim views (`ShellNvim.swift`):
   - `MainView` is the view switcher (Terminal, Review, Shell, nvim, Browser).
   - `Toolbar.views(session:)` gives the tabs. With no selected session, Review, Shell and nvim are grey and have a tooltip (`Toolbar.needsSession`). A click on one, or its shortcut, shows that text as the window message. Thus a click never does nothing.
@@ -174,7 +174,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
 - Browser for agents (`BrowserAgent.swift`, view side `BrowserDriver`; the CLI is in [cmd/crew/](../cmd/crew/AGENTS.md)):
   - `BrowserLink` keeps its own `crew rpc` process. It sends `browser.attach`, then runs each `browser` call that the daemon pushes and answers with `browser.reply`. After a drop, it connects again by `Backoff`. A `version_mismatch` stops it.
   - `BrowserStep.of` changes a call into one step: a load, a page script, a poll, a sleep, a screenshot, the tabs, the cookies or a device. A bad call is a `BrowserRefusal`.
-  - The page scripts (`BrowserScript`) get their values as arguments of `callAsyncJavaScript`, never in the source. `snapshot` marks each element that it lists with `data-agentws-ref`. `click`, `fill` and `wait @eN` find the element by this mark.
+  - The page scripts (`BrowserScript`) get their values as arguments of `callAsyncJavaScript`, never in the source. `snapshot` marks each element that it lists with `data-crew-ref`. `click`, `fill` and `wait @eN` find the element by this mark.
   - `BrowserPolicy` is the navigation policy of ADR 0051. `AgentGuard` applies it to each navigation, redirect and frame while an agent controls the tab. Before `snapshot`, `screenshot` and the other scripts, the driver checks the current address and the frames of the tab again.
   - `screenshot` returns the PNG as base64. The CLI on the server writes the file.
   - `cookies` returns names, domains and paths, never values.
@@ -203,7 +203,7 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - The app starts the store, notifier and stream from the menu bar label. Thus all of it works when all windows are closed.
   - Without permission, `UserNotifier` works with less function (ad-hoc signed, not notarized, or run outside the bundle). `problem` tells why, and the menu and badge still work.
   - `swift test --filter Attention` runs the suite.
-- Servers and first run (`Servers.swift`, `AgentwsViews/FirstRunWindow.swift`, screens 6 and 8):
+- Servers and first run (`Servers.swift`, `CrewViews/FirstRunWindow.swift`, screens 6 and 8):
   - `ServerList` keeps the servers (This Mac first, each SSH host one time) and the selected server in `UserDefaults` (`servers`, `servers.selected`).
   - The toolbar chip is a menu. It switches servers (the app makes a new `ViewStore` for each server), or it opens the "Add a server" window.
   - The "Add a server" window is the first-run flow (`FirstRunFlow`: Welcome, Where agents run, Server, Set up, Workspace, Done). This Mac skips Server.
@@ -211,15 +211,15 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
     - a sidebar list of `FirstRunFlow.steps` (ticked by `isComplete`)
     - the content of the step on the window background, with stock controls (radio-group pickers, `GroupBox`es through `SettingsGroup`, rounded text fields)
     - a bottom bar with Cancel (Esc, ⌘.), Back and the default button `primaryTitle`. On first launch, Cancel quits. Else it closes "Add a server".
-  - Main window frame (`WindowFrame.swift`, `MainWindowFrame` in the app): when the live main view shows for the first time, the window gets the autosave name `agentws.main`. If no frame is saved, the window gets 80% of the visible screen (minimum 1280×800, never larger than the screen), centered. After that, AppKit keeps the size and position that the user sets. The first-run view in the same window keeps its smaller size. Test: `swift test --filter WindowFrame`.
+  - Main window frame (`WindowFrame.swift`, `MainWindowFrame` in the app): when the live main view shows for the first time, the window gets the autosave name `crew.main`. If no frame is saved, the window gets 80% of the visible screen (minimum 1280×800, never larger than the screen), centered. After that, AppKit keeps the size and position that the user sets. The first-run view in the same window keeps its smaller size. Test: `swift test --filter WindowFrame`.
   - `Snapshot.renderFirstRun` draws each step (`first-run-<n>[-dark].png`).
   - Hosts come from `~/.ssh/config` (`SSHConfig.hosts`, without wildcards) or a typed `user@host`. `SSHConfig.target` refuses options and spaces.
   - `ServerSetup` runs each remote step through `ProcessShell`: `ssh -T -o BatchMode=yes -o ConnectTimeout=10 <host> sh -c '<script>'`. Thus a host that asks for a password fails immediately (exit 255), with a message about key, agent or Tailscale SSH login.
-  - The probe prints `uname -s`/`-m`, user, home, the installed build (`~/.local/bin/crew version --build`, else the old `~/.local/bin/agentws` on a server that runs an alpha) and `setup daemon --check`. It also prints which of git, tmux and gh exist, and if gh is signed in.
+  - The probe prints `uname -s`/`-m`, user, home, the installed build (`~/.local/bin/crew version --build`, else the binary of the alphas in the same dir, on a server that runs an alpha) and `setup daemon --check`. It also prints which of git, tmux and gh exist, and if gh is signed in.
   - `setUp` does these steps:
     1. It copies the bundled `Contents/Resources/bin/<os>_<arch>/crew` through the stdin of the same ssh to a temp file in `~/.local/bin`.
-    2. It `mv`s the file into place as `crew` (atomic), and makes `~/.local/bin/agentws` a symlink to it. An old `crew` binary there goes away. If the build already matches, it skips this, so a second run changes nothing.
-    3. It runs `crew setup daemon`. This also runs the migration from crew (see [cmd/crew/](../cmd/crew/AGENTS.md)).
+    2. It `mv`s the file into place as `crew` (atomic). It leaves a binary of the alphas where it is. If the build already matches, it skips this, so a second run changes nothing.
+    3. It runs `crew setup daemon`. This also runs the migration from the alphas (see [cmd/crew/](../cmd/crew/AGENTS.md)).
     4. If it replaced the binary of a running daemon, it restarts the service (`systemctl --user restart crew-daemon.service`, or `launchctl kickstart -k` of `dev.crew.daemon` on a Mac). It never stops the service, so tmux sessions continue.
   - `Checklist.items` changes the probe into the rows of the Servers tab, with fix-its: Set up, Update server, the linger command `sudo loginctl enable-linger <user>`, `ssh -t <host> gh auth login`.
   - Each row of the workspace step has Remove (also in its context menu). `WorkspaceRemoval` gives the confirmation: it says that no files, worktrees or branches are deleted, and it names the live sessions whose `Dir` is in the workspace. The new-session sheet has "Manage workspaces…", which opens Settings › Workspaces (the Settings tab is stored in `settings.tab`). Test: `swift test --filter WorkspaceRemoval`.
@@ -229,12 +229,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
 
 ## Why no Xcode project
 
-The app target is a SwiftPM executable and `build-app`, not an `.xcodeproj`. All files are plain text that you can edit and review on Linux. There is no generated project to keep in sync and no XcodeGen step. `swift test` runs the tests of `AgentwsKit` on each machine that has a Swift toolchain. Only the app bundle needs macOS. To use Xcode, open `Package.swift` (File > Open). Xcode reads the package directly.
+The app target is a SwiftPM executable and `build-app`, not an `.xcodeproj`. All files are plain text that you can edit and review on Linux. There is no generated project to keep in sync and no XcodeGen step. `swift test` runs the tests of `CrewKit` on each machine that has a Swift toolchain. Only the app bundle needs macOS. To use Xcode, open `Package.swift` (File > Open). Xcode reads the package directly.
 
 ## Commands
 
-- `swift test` (in `macos/`): the `AgentwsKit` tests. On Linux, install a toolchain with [swiftly](https://www.swift.org/install/linux/) (`swiftly install latest`).
-- `swift test --filter AgentwsKitTests.ProtocolTests`: one suite. `swift test --filter Terminal` runs the terminal suites. Their fake `tmux` scripts use control mode.
+- `swift test` (in `macos/`): the `CrewKit` tests. On Linux, install a toolchain with [swiftly](https://www.swift.org/install/linux/) (`swiftly install latest`).
+- `swift test --filter CrewKitTests.ProtocolTests`: one suite. `swift test --filter Terminal` runs the terminal suites. Their fake `tmux` scripts use control mode.
 - `macos/build-app` (macOS only): makes `macos/build/crew.app`. `open macos/build/crew.app` runs it. `open macos/build/crew.app --args --demo` shows the seeded window without a daemon.
 - CI's `macos` job runs both on `macos-15`.
 
@@ -243,7 +243,7 @@ The app target is a SwiftPM executable and `build-app`, not an `.xcodeproj`. All
 - Give each test file the name of the one suite type in it (`ProtocolTests.swift` holds `struct ProtocolTests`). For each changed test file, `scripts/tdd-check` runs `swift test --filter <Target>.<File>` on base. A filter that matches nothing exits 0, and that counts as a pass on base.
 - For tdd-check, test files count as Go tests do. Commit them before the code. They must fail on base (a compile error counts). A base without `macos/Package.swift` counts as a failure.
 - `swift test --filter Review` runs the review suites (`ReviewTests`, `ReviewControllerTests`). The controller tests answer calls from a `FakeCaller`.
-- Snapshots: `SnapshotTests` (macOS only, `#if canImport(AppKit)`) renders seeded `WindowScene`s and `SettingsScene`s (one PNG for each settings tab) through `NSHostingView`. It writes PNGs under `$AGENTWS_SNAPSHOTS` (default `$TMPDIR/agentws-snapshots`) and checks that the state colours appear.
+- Snapshots: `SnapshotTests` (macOS only, `#if canImport(AppKit)`) renders seeded `WindowScene`s and `SettingsScene`s (one PNG for each settings tab) through `NSHostingView`. It writes PNGs under `$CREW_SNAPSHOTS` (default `$TMPDIR/crew-snapshots`) and checks that the state colours appear.
   - CI uploads them as the `macos-snapshots` artifact. A UI PR embeds them from the `pr-assets` branch under `<issue>/`.
   - The tests do not compare them to stored references, because a change of the runner image changes the antialiasing.
 - `scripts/lint-comments` covers Swift: no `//`, `///` or `/* */` comments. Only the `// swift-tools-version:` line of `Package.swift` passes.

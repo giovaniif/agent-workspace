@@ -1,6 +1,6 @@
 # crew for macOS: UX design
 
-Status: draft, 2026-10-06. Mockups: the "agentws for macOS" design canvas. Architecture: [ADR 0049](adr/0049-macos-app.md).
+Status: draft, 2026-10-06. Mockups: the "crew for macOS" design canvas. Architecture: [ADR 0049](adr/0049-macos-app.md).
 
 ## Goal
 
@@ -87,7 +87,7 @@ There is no first-prompt field: you type the first prompt in the terminal of the
   - There is one banner for each session. A newer banner replaces it. It goes away when the session resumes or gets focus.
   - Actions: Allow / Open for permission. Reply… (inline text, `session.send`) / Open for waiting.
   - While the app is frontmost, there is no banner for the session in view.
-- **Menu bar extra.** An icon with counts (needs you · done unread). The menu lists Needs you (permission rows with Allow / Always / Open), Done · unread, Working, the quota meters, New session… and Open agentws. It works when the main window is closed.
+- **Menu bar extra.** An icon with counts (needs you · done unread). The menu lists Needs you (permission rows with Allow / Always / Open), Done · unread, Working, the quota meters, New session… and Open crew. It works when the main window is closed.
 - **Dock badge.** Number of sessions that need you.
 
 ## Worktrees, disk and ports (screen 5)
@@ -104,7 +104,7 @@ Settings tabs (screens 7a–7f):
 
 - **General:** open at login, server to connect at launch, menu bar and Dock (what the icon and badge count), ended sessions shown, confirm on end, show worktrees and subagents, the `crew` CLI on PATH, updates.
 - **Servers:** below.
-- **Workspaces** (per server): repos discovered, worktree location, auto-cleanup and its interval, setup recipes per repo (`.agentws.toml`).
+- **Workspaces** (per server): repos discovered, worktree location, auto-cleanup and its interval, setup recipes per repo (`.crew.toml`).
 - **Agents** (per server): Claude Code and Codex install, hooks (with backup, removable), status line, Codex trust, default model and effort; quota warning threshold, Codex fallback offer, stale-limit age; nvim and its plugin.
 - **Notifications:** banner and sound per event (permission, waiting, done, limit or API error), skip the session in view, muted sessions, and phones: the hold-while-present window (`[push] away_after`), paired devices with revoke, pair a phone.
 - **Appearance:** Latte, Mocha or match system, accent, `[theme]` overrides from `config.toml`, terminal font, size, line height and cursor with a live preview, sidebar density, default diff layout.

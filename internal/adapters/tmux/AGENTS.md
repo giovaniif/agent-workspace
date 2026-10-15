@@ -17,14 +17,14 @@ This is the only code that runs tmux. Only `internal/daemon` can import it. See 
 
 `OpenNative` implements `client.native` (ADR 0049, spike #216). Each call does these steps:
 
-1. It makes a session `agentws-native-<pid>-<n>` on the `crew` server.
-2. It links into it all parked windows (name `pane-*` in the `agentws` session of the server) and all TUI windows (`client-*`).
+1. It makes a session `crew-native-<pid>-<n>` on the `crew` server.
+2. It links into it all parked windows (name `pane-*` in the `crew` session of the server) and all TUI windows (`client-*`).
 3. It returns the control-mode argv.
 
 `Create`, `HideBelow` and `OpenClient` link new windows into all native sessions. Thus an attached client gets `%window-add`. A killed window leaves automatically. A pane that the TUI swaps into its slot stays in the native session, in the window of the TUI. Pane ids do not change with `swap-pane`, so clients use the pane id as the key of a view, not the window.
 
 - A TUI window has `window-size manual`. Thus the size of a client, native or not, does not resize it.
-  - The `client-attached` and `client-resized` hooks of the `agentws` session resize the current window of the session to the client size. The current window is the one that the terminal shows. `AttachCommand` targets `=agentws:@slot`, because `@slot` alone can select a native session.
+  - The `client-attached` and `client-resized` hooks of the `crew` session resize the current window of the session to the client size. The current window is the one that the terminal shows. `AttachCommand` targets `=crew:@slot`, because `@slot` alone can select a native session.
   - Then the hooks run the `window-resized` hook of the window again (`resize-window` alone does not start it). This keeps the sidebar pinned.
   - Control-mode `refresh-client -C` does not start `client-resized`. Thus the test of terminal sizes attaches through an outer tmux.
 - A session gets `destroy-unattached` from a `client-attached` hook. If it got it at creation, the session would stop immediately. Thus the session stops when its client detaches or stops. After a minute, the next call removes sessions that were never attached.
