@@ -159,7 +159,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - `mate.*` use the `config.toml` path, the mutex and the backup of the Config section. They run on the connection goroutine, never on the loop.
 - A load validates each `[[mate]]` table against the registered workspaces (`domain.CheckMates`). An invalid or repeated mate gives a problem with the file path, and the other mates load.
 - A write parses the new text again. The result must hold exactly the mate that was set. If it does not, the daemon refuses and tells you to edit the file by hand. It never touches a file that does not parse.
-- Tokens are not part of a mate. They go in a separate file with mode 600 (a later issue of the epic).
+- Tokens are not part of a mate. `WithMateSecrets(app.MateSecrets)` turns on `mate.set_tokens` and `mate.clear_tokens`. `Run` passes `secrets.Files` for `$CREW_HOME/secrets`. The mate must exist. The daemon validates the prefixes (`domain.ValidateMateTokens`) before it stores anything, and it never logs or returns a token. `mate.remove` clears the tokens of the mate. Tests: `go test ./internal/daemon/ -run MateSetTokens\|MateClearTokens\|NoMateMethod`.
 
 ## Codex fallback
 

@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/crew/internal/rpc"
 )
 
-const mateUsage = "usage: crew mate list | show <name> | remove <name> | set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]"
+const mateUsage = "usage: crew mate list | show <name> | remove <name> | add <name> [--agent a] [--prompt p] [--no-open] | tokens <name> [--clear] | set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]"
 
 func runMate(args []string, stdout, stderr io.Writer) int {
 	if !mateArgsOK(args) {
@@ -38,6 +38,11 @@ func mateArgsOK(args []string) bool {
 		return len(args) == 2
 	case "set":
 		return len(args) >= 2
+	case "add":
+		_, _, err := parseMateAdd(args[1:])
+		return err == nil
+	case "tokens":
+		return len(args) == 2 || len(args) == 3 && args[2] == "--clear"
 	}
 	return false
 }
@@ -108,6 +113,14 @@ func mateCommand(args []string, stdout io.Writer) error {
 	}
 	defer func() { _ = c.Close() }()
 	switch args[0] {
+	case "add":
+		name, opts, err := parseMateAdd(args[1:])
+		if err != nil {
+			return err
+		}
+		return mateAdd(ctx, c, stdMateIO(stdout), name, opts)
+	case "tokens":
+		return mateTokens(ctx, c, stdMateIO(stdout), args[1], len(args) == 3)
 	case "show":
 		var m rpc.Mate
 		if err := c.Call(ctx, rpc.MethodMateShow, rpc.MateShowParams{Name: args[1]}, &m); err != nil {
