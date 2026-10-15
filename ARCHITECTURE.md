@@ -10,9 +10,9 @@ This document gives the top-level design of `crew`. [FEATURES.md](FEATURES.md) t
 - **Git:** the `git` CLI through exec. Do not use a Go git library.
 - **GitHub:** the `gh` CLI (`gh api graphql`). It uses the user's `gh` auth. Each poll is one GraphQL request, with backoff.
 - **Terminals:** the `tmux` CLI on a dedicated server (`tmux -L crew`) with its own config. Only `internal/adapters/tmux` controls it. See [docs/adr/0003-tmux-terminal-host.md](docs/adr/0003-tmux-terminal-host.md).
-- **Config:** `github.com/BurntSushi/toml` reads the per-repo `.agentws.toml` setup recipe and `$CREW_HOME/config.toml`.
+- **Config:** `github.com/BurntSushi/toml` reads the per-repo `.crew.toml` setup recipe and `$CREW_HOME/config.toml`.
 - **Storage:** SQLite through `modernc.org/sqlite` (no cgo), with embedded migrations and write-behind. The file is `$CREW_HOME/state.db` (default `~/.crew`). See [docs/adr/0004-sqlite-store.md](docs/adr/0004-sqlite-store.md).
-- **IPC:** a Unix socket at `$CREW_HOME/agentws.sock`. It carries newline-delimited JSON: request/response calls and a subscribe stream for state updates. See [docs/adr/0005-daemon-rpc.md](docs/adr/0005-daemon-rpc.md).
+- **IPC:** a Unix socket at `$CREW_HOME/crew.sock`. It carries newline-delimited JSON: request/response calls and a subscribe stream for state updates. See [docs/adr/0005-daemon-rpc.md](docs/adr/0005-daemon-rpc.md).
 - **Notifications:** `terminal-notifier` if it is on `PATH`, else `osascript`. See [docs/adr/0016-notifications-and-attention.md](docs/adr/0016-notifications-and-attention.md).
 - **nvim:** a small Lua plugin in `nvim/` talks to the daemon through `crew` CLI calls. Each session has a long-lived nvim that the daemon controls through `nvim --listen`. See [docs/adr/0029-shell-and-nvim.md](docs/adr/0029-shell-and-nvim.md).
 - **Tooling:**

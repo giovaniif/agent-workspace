@@ -4,7 +4,7 @@ Status: accepted, 2026-09-30.
 
 ## Decision
 
-- Claude's `SubagentStart` and `SubagentStop` hooks map to their own harness events, `subagent_start` and `subagent_stop`. `Session.Apply` treats both like `post_tool_use`, so a subagent finishing never ends the parent's turn. `agentws setup claude` now installs the `SubagentStart` hook too; existing users re-run it.
+- Claude's `SubagentStart` and `SubagentStop` hooks map to their own harness events, `subagent_start` and `subagent_stop`. `Session.Apply` treats both like `post_tool_use`, so a subagent finishing never ends the parent's turn. `crew setup claude` now installs the `SubagentStart` hook too; existing users re-run it.
 - `domain.SubagentFromHook` reads `agent_id`, `agent_type` and, on stop, the first line of `last_assistant_message` (cut to 80 runes). `TrackSubagent` folds a start or stop into the session's list by `(SessionID, ID)`; a stop seen without its start is added as stopped. `EndSubagents` stops a session's running subagents on `session_start` and `session_end`, since nothing it spawned outlives the session. At most 30 per session are kept, dropping the oldest stopped ones first.
 - `domain.SubagentTree` orders them parent before children by `ParentID`; an agent with an unknown parent is a root, and a cycle still lists every agent.
 - The daemon keeps them in memory and publishes each change as a diff of its own (`Diff.Subagent`), after the session diff of the same hook. `State.Subagents` carries them in the snapshot. They are not stored: a restart drops the running state anyway, because the hooks that would end it are gone.

@@ -12,9 +12,9 @@ Files in `$CREW_HOME` (default `~/.crew`):
 
 | File | Purpose |
 |---|---|
-| `agentws.lock` | `flock` held for the daemon's life; the kernel drops it if the daemon dies. A second daemon exits 1 with `already running (pid N)`. |
-| `agentws.pid` | written after taking the lock, removed on clean exit |
-| `agentws.sock` | the socket, mode 0600; a stale one is removed by the next lock holder |
+| `crew.lock` | `flock` held for the daemon's life; the kernel drops it if the daemon dies. A second daemon exits 1 with `already running (pid N)`. |
+| `crew.pid` | written after taking the lock, removed on clean exit |
+| `crew.sock` | the socket, mode 0600; a stale one is removed by the next lock holder |
 | `state.db` | the SQLite store; loaded once on start |
 
 **Event loop.** One goroutine owns all state.
@@ -41,7 +41,7 @@ A project (`domain.Project`: `Root`, `Name`, `Setup`) is a registered workspace 
 - `project.remove` forgets the project and keeps the workspace.
 - To open a project is `session.new` with its root as `workspace`, so it works from any cwd.
 - `domain.ProjectOf` finds the project that holds a path. The deepest root wins.
-- **Setup script.** When `session.new` creates a worktree in the workspace of a project, the `Setup` of the project runs there as `sh -c <script>` (`WithProjectSetup`, `setup.Shell`). It runs after the `.agentws.toml` recipe and before the harness starts. An empty script runs nothing.
+- **Setup script.** When `session.new` creates a worktree in the workspace of a project, the `Setup` of the project runs there as `sh -c <script>` (`WithProjectSetup`, `setup.Shell`). It runs after the `.crew.toml` recipe and before the harness starts. An empty script runs nothing.
   - A failing script fails the start, as a failing recipe does, and keeps the worktree.
   - An orchestration root starts with no worktree, so nothing runs there. Worktrees that an agent adds itself do not get the setup.
   - Tests: `go test ./internal/app/ ./internal/daemon/ -run 'ProjectSetup|SetupScript'`.
@@ -133,7 +133,7 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - An empty value removes the line.
   - Before it writes, it parses the result again. The result must hold exactly the new value.
   - It refuses a key that is set in a different way (an inline table, dotted keys), with a message to edit it by hand. It never touches a file that does not parse.
-- **Backup.** A changed file is first copied to `config.toml.agentws-<UTC time>.bak` (mode 600). Then it is replaced atomically with its old mode. If you set the value that it already has, nothing is written and there is no backup. A missing file is created without a backup.
+- **Backup.** A changed file is first copied to `config.toml.crew-<UTC time>.bak` (mode 600). Then it is replaced atomically with its old mode. If you set the value that it already has, nothing is written and there is no backup. A missing file is created without a backup.
 - **Live.** After a write, the daemon reloads `[defaults.<harness>]` and `[push] away_after`. `[push] away_after` reloads only when presence runs. To turn it on from `"0"`, restart. The TUI reads `[fallback]` and `[theme]` when it starts.
 
 ## Automations

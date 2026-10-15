@@ -4,7 +4,7 @@ Status: accepted, 2026-09-29.
 
 ## Decision
 
-- The daemon owns the client layout. `agentws` calls `client.open`, gets back the tmux attach argv, and `exec`s it. The tmux adapter builds that argv, so tmux flags stay in one package.
+- The daemon owns the client layout. `crew` calls `client.open`, gets back the tmux attach argv, and `exec`s it. The tmux adapter builds that argv, so tmux flags stay in one package.
 - One client window per daemon, reused while it exists. `client.focus_main` needs no argument because there is only one.
 - The sidebar pane is a fixed 48 columns, kept there by a `window-resized` hook.
 - The top bar is drawn inside the sidebar pane, not across the full width as in the mockup. A tmux pane cannot be L-shaped, and a separate top pane would cost a row of the agent's pane plus a second TUI process.

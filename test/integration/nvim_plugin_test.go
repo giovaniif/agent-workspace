@@ -38,7 +38,7 @@ func TestNvimPluginSpecs(t *testing.T) {
 				"XDG_STATE_HOME="+filepath.Join(home, "state"),
 				"XDG_CACHE_HOME="+filepath.Join(home, "cache"),
 				"CREW_SESSION=",
-				"AGENTWS_SESSION=",
+				legacySessionEnv,
 				"TMUX=",
 			)
 			out, err := cmd.CombinedOutput()

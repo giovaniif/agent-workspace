@@ -4,7 +4,7 @@ Status: accepted, 2026-09-29.
 
 ## Decision
 
-- `agentws setup codex [--remove]` edits `$CODEX_HOME/hooks.json` (default `~/.codex`). It keeps every other hook and key in place, is a no-op when already applied, saves a timestamped backup before any change, and `--remove` undoes it. Tests only ever point it at a temp dir.
+- `crew setup codex [--remove]` edits `$CODEX_HOME/hooks.json` (default `~/.codex`). It keeps every other hook and key in place, is a no-op when already applied, saves a timestamped backup before any change, and `--remove` undoes it. Tests only ever point it at a temp dir.
 - The hook-name to event table stays in `domain.HookEvent`, so the daemon and the adapter share one mapping. `Interrupt` maps to `stop`. Subagent and compaction hooks are unmapped.
 - Model, effort, context and limits come from the session's rollout file, read by a daemon worker off the event loop: the last 512 KiB, one read at a time per session, throttled to one per 2 s except on `Stop`, `SessionStart` and `UserPromptSubmit`. The hook payload's model is applied at once.
 - Trust is left to the user. Codex keeps a hash per hook in `config.toml`; setup prints the step instead of writing hashes.

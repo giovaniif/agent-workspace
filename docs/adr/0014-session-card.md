@@ -12,7 +12,7 @@ Status: accepted, 2026-09-29. Amended 2026-10-04: the sidebar card was removed; 
   - `waiting`: the last assistant message's closing paragraph if it ends in `?`, else the notification message.
   - `done`: the closing question, if there is one.
   - Only events after the last user prompt count. The text is verbatim, cut to 3 lines with a trailing `…`.
-- The TUI no longer draws the card in the sidebar (removed in #203: the panel above the footer was not useful, and the session list gets its rows back). `BuildSessionCard` still feeds the review's agent column and `agentws pr`.
+- The TUI no longer draws the card in the sidebar (removed in #203: the panel above the footer was not useful, and the session list gets its rows back). `BuildSessionCard` still feeds the review's agent column and `crew pr`.
 
 ## Why
 

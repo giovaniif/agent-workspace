@@ -7,8 +7,8 @@ The phone app: a PWA that `crew serve` embeds and serves at `/` (ADR [0046](../d
 - Run `npm ci` one time. Then run `npm test` (Vitest, jsdom) and `npm run typecheck`.
 - `make web` (from the repo root) builds into `internal/serve/dist`. It writes the shell as `app.html`. The committed `index.html` in that dir is the placeholder that a `go build` without Node embeds. Then `make build` gives a binary that serves the app.
 - `npm run dev` runs Vite.
-  - `AGENTWS_API=http://127.0.0.1:7420 npm run dev` proxies `/api` (and the stream) to a running `crew serve`.
-  - Add `AGENTWS_API_INSECURE=1` to accept its `--self-signed` certificate.
+  - `CREW_API=http://127.0.0.1:7420 npm run dev` proxies `/api` (and the stream) to a running `crew serve`.
+  - Add `CREW_API_INSECURE=1` to accept its `--self-signed` certificate.
   - `npm run fake` uses the fake API in `fake-api.ts` instead.
   - The dev server binds all interfaces and accepts `.ts.net` hosts.
 - `npm run icons` redraws the PNG icons in `public/` from `public/icon.svg` with Playwright.
@@ -21,19 +21,19 @@ The phone app: a PWA that `crew serve` embeds and serves at `/` (ADR [0046](../d
   - else, a code from the status (`401` → `unauthorized`, `429` → `rate_limited`)
   - `network`, when the client cannot get to the server.
 - `src/App.tsx` selects the screen:
-  - the session list, when `localStorage` holds `crew.auth` (it copies an old `agentws.auth` one time)
+  - the session list, when `localStorage` holds `crew.auth` (it copies the login of the alphas one time, see `src/legacy.ts`)
   - Add to Home Screen, in a browser tab
   - pairing, in the installed app.
 
   `AppEnv` holds all inputs from the browser (fetch, storage, display mode, URL hash, host, user agent), so tests can give fakes.
-- `src/build.ts` and `src/sw.ts`/`src/sw-cache.ts`: the app registers the worker as `/sw.js?build=<hello build>`. The worker caches into `crew-shell-<build>` (activate deletes old `agentws-shell-*` caches). If the worker build of a page is not the build of `hello`, `checkBuild` reloads the page. `vite.config.ts` writes the built file list into `sw.js`.
+- `src/build.ts` and `src/sw.ts`/`src/sw-cache.ts`: the app registers the worker as `/sw.js?build=<hello build>`. The worker caches into `crew-shell-<build>` (activate deletes the caches of the alphas and old `crew-shell-*` caches). If the worker build of a page is not the build of `hello`, `checkBuild` reloads the page. `vite.config.ts` writes the built file list into `sw.js`.
 - `src/stream.ts`: the `/api/v1/stream` client and its types. The types use the Go field names that the goldens pin. `StreamClient`:
   - sends the token first and applies diffs (`applyDiff`)
   - backs off from 1 s, doubling to 30 s. The backoff resets when a state arrives.
   - on close code 4401, asks `confirmRefused` before it stops. The app passes `tokenRefused`, an authed `GET /api/v1/workspaces`. Only a 401 `unauthorized` from that call makes the status `unauthorized`. All other results (success, 5xx, a network error) retry with the same token, as for all other closes.
   - retries on all other close codes, also 4400 (a late or malformed first frame).
 
-  The app forgets `crew.auth` (it copies an old `agentws.auth` one time) only on `unauthorized` (or Sign out). Then it shows pairing, with a note that the device was removed or its login was rejected. Tests: `npm test -- stream SessionList`.
+  The app forgets `crew.auth` (it copies the login of the alphas one time, see `src/legacy.ts`) only on `unauthorized` (or Sign out). Then it shows pairing, with a note that the device was removed or its login was rejected. Tests: `npm test -- stream SessionList`.
   - `onFrame` passes all frames (transcripts, watch errors). `send` writes `watch`/`unwatch` frames while `live`.
   - With `visible` set (`AppEnv.visibility`, `document.visibilityState` in `main.tsx`), it sends `{"visible":bool}` when live and on each `visibilitychange` (`visibilityChanged`). While the app is shown, it sends `{"visible":true}` every 30 s. Thus the daemon does not push to a phone that has the app open.
   - `useStreamClient` owns one client for each token. `useStream` reads its `StreamSnapshot` (`status`, `state`, `retryAt`).

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/giovaniif/crew/internal/app"
+	"github.com/giovaniif/crew/internal/domain"
 )
 
 var _ app.ReviewGit = Review{}
@@ -73,7 +74,7 @@ func (Review) PointRef(ctx context.Context, dir, ref, tree string) error {
 }
 
 func (Review) TurnRefs(ctx context.Context, dir string) ([]string, error) {
-	out, err := output(ctx, dir, "for-each-ref", "--format=%(refname)", "refs/crew/turns/", "refs/agentws/turns/")
+	out, err := output(ctx, dir, "for-each-ref", "--format=%(refname)", "refs/crew/turns/", domain.LegacyTurnPrefix)
 	if err != nil {
 		return nil, err
 	}
