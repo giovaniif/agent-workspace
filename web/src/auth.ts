@@ -1,4 +1,5 @@
 import type { Device, Paired } from "./api";
+import { adoptLegacy, legacyAuthKey } from "./legacy";
 
 export type KeyValue = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -8,19 +9,6 @@ export type Auth = {
 };
 
 const authKey = "crew.auth";
-const legacyAuthKey = "agentws.auth";
-
-export function adoptLegacy(storage: KeyValue, key: string, legacy: string): string | null {
-  const current = storage.getItem(key);
-  if (current) {
-    return current;
-  }
-  const old = storage.getItem(legacy);
-  if (old) {
-    storage.setItem(key, old);
-  }
-  return old;
-}
 
 export function loadAuth(storage: KeyValue): Auth | null {
   try {

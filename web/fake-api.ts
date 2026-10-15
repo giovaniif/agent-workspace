@@ -140,7 +140,7 @@ let offlineServed = false;
 let refusedServed = false;
 
 function refusing(): boolean {
-  const mode = process.env.AGENTWS_FAKE_STREAM;
+  const mode = process.env.CREW_FAKE_STREAM;
   return mode === "revoked" || mode === "late";
 }
 
@@ -159,7 +159,7 @@ function publishSends() {
 }
 
 function fakeStream(req: IncomingMessage, socket: Duplex) {
-  const offline = process.env.AGENTWS_FAKE_STREAM === "offline";
+  const offline = process.env.CREW_FAKE_STREAM === "offline";
   if (offline && offlineServed) {
     socket.destroy();
     return;
@@ -250,7 +250,7 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           return;
         }
         if (session && req.method === "GET" && session[2] === "prompt") {
-          if (process.env.AGENTWS_FAKE_PROMPT === "raw") {
+          if (process.env.CREW_FAKE_PROMPT === "raw") {
             send(res, 200, { text: "", choices: [], raw: "Allow this unusual request?\n  [a] allow  [d] deny" });
             return;
           }
@@ -277,7 +277,7 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
           send(res, 200, {});
           return;
         }
-        if (req.method === "GET" && path === "/api/v1/workspaces" && process.env.AGENTWS_FAKE_STREAM === "revoked") {
+        if (req.method === "GET" && path === "/api/v1/workspaces" && process.env.CREW_FAKE_STREAM === "revoked") {
           send(res, 401, { error: { code: "unauthorized", message: "unknown or revoked device token" } });
           return;
         }
@@ -286,7 +286,7 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
             automations: [
               { name: "fix-ci", agent: "claude", prompt: "Fix the CI of {{work_item}}.", on: ["pr.ci_failed"], enabled: true, source: "/home/me/.crew/config.toml" },
               { name: "deps", agent: "codex", prompt: "Update the deps.", schedule: "weekly mon 09:00", enabled: false, source: "/home/me/.crew/config.toml" },
-              { name: "audit", agent: "claude", prompt: "Audit the api.", enabled: true, source: "/home/me/api/.agentws.toml" },
+              { name: "audit", agent: "claude", prompt: "Audit the api.", enabled: true, source: "/home/me/api/.crew.toml" },
             ],
           });
           return;

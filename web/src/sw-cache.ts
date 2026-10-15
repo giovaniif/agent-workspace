@@ -1,5 +1,6 @@
+import { legacyCachePrefix } from "./legacy";
+
 export const cachePrefix = "crew-shell-";
-const legacyPrefix = "agentws-shell-";
 
 export function cacheName(build: string): string {
   return cachePrefix + build;
@@ -10,7 +11,7 @@ export function buildFromWorkerLocation(href: string): string {
 }
 
 export function staleCaches(names: string[], current: string): string[] {
-  return names.filter((name) => (name.startsWith(cachePrefix) || name.startsWith(legacyPrefix)) && name !== current);
+  return names.filter((name) => (name.startsWith(cachePrefix) || name.startsWith(legacyCachePrefix)) && name !== current);
 }
 
 export type RequestKind = "shell" | "file" | "network";
