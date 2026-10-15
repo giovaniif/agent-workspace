@@ -1,6 +1,10 @@
 package rpc
 
-import "github.com/giovaniif/crew/internal/domain"
+import (
+	"time"
+
+	"github.com/giovaniif/crew/internal/domain"
+)
 
 const (
 	MethodMateList   = "mate.list"
@@ -12,8 +16,15 @@ const (
 type Mate = domain.Mate
 
 type MateList struct {
-	Mates    []Mate   `json:"mates"`
-	Problems []string `json:"problems,omitempty"`
+	Mates    []Mate      `json:"mates"`
+	Problems []string    `json:"problems,omitempty"`
+	States   []MateState `json:"states,omitempty"`
+}
+
+type MateState struct {
+	Name  string                `json:"name"`
+	State domain.MateConnection `json:"state"`
+	Error string                `json:"error,omitempty"`
 }
 
 type MateShowParams struct {
@@ -47,4 +58,16 @@ type MateTokenStatus struct {
 	Name        string `json:"name"`
 	HasBotToken bool   `json:"has_bot_token"`
 	HasAppToken bool   `json:"has_app_token"`
+}
+
+const MethodMateClaim = "mate.claim"
+
+type MateClaimParams struct {
+	Name string `json:"name"`
+}
+
+type MateClaim struct {
+	Name      string    `json:"name"`
+	Code      string    `json:"code"`
+	ExpiresAt time.Time `json:"expires_at"`
 }

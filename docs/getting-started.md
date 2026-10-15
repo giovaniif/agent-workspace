@@ -33,6 +33,9 @@ To add a mate:
 3. Copy the bot token (`xoxb-`) from OAuth & Permissions.
 4. In Basic Information, make an app-level token with the scope `connections:write`. Copy it (`xapp-`).
 5. Paste the two tokens when the command asks. The terminal does not show them.
+6. The command then shows a one-time code. In Slack, send the code to the mate in a direct message in the next 10 minutes. The mate replies, and you are its owner. Only the owner can approve a dangerous action. To get a new code, or to change the owner, run `crew mate claim <name>`.
+
+When the mate has tokens and is enabled, the daemon connects it to Slack. The `states` of `mate.list` show if each mate is connected. If Slack refuses a token, the state is `error` with the Slack error code.
 
 crew keeps the tokens in files with mode 600 under `$CREW_HOME/secrets/`. They are never in `config.toml`, a log or an answer of the daemon. If you gave a wrong token, run `crew mate tokens <name>`. To remove the tokens, run `crew mate tokens <name> --clear`.
 

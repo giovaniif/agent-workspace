@@ -57,6 +57,21 @@ func (f Files) HasMateTokens(name string) (bot, app bool) {
 	return f.exists(name + botSuffix), f.exists(name + appSuffix)
 }
 
+func (f Files) MateTokens(name string) (bot, app string, err error) {
+	if err := checkName(name); err != nil {
+		return "", "", err
+	}
+	b, err := os.ReadFile(filepath.Join(f.Dir, name+botSuffix))
+	if err != nil {
+		return "", "", fmt.Errorf("mate %s has no bot token", name)
+	}
+	a, err := os.ReadFile(filepath.Join(f.Dir, name+appSuffix))
+	if err != nil {
+		return "", "", fmt.Errorf("mate %s has no app token", name)
+	}
+	return string(b), string(a), nil
+}
+
 func (f Files) exists(file string) bool {
 	info, err := os.Stat(filepath.Join(f.Dir, file))
 	return err == nil && info.Mode().IsRegular()

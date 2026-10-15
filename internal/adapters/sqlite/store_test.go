@@ -594,3 +594,25 @@ func TestOpenRenamesAutomationTrustKeysOfTheOldRepoConfig(t *testing.T) {
 		t.Fatalf("trust %+v", snap.AutomationTrust)
 	}
 }
+
+func TestMateThreadsPersistByThreadAndAnUpdateReplacesTheLink(t *testing.T) {
+	s, path := openTemp(t)
+	link := domain.MateThread{Team: "T1", Channel: "C1", ThreadTS: "1700.1", Mate: "reviewer", SessionID: "s1"}
+	other := domain.MateThread{Team: "T1", Channel: "C1", ThreadTS: "1700.1", Mate: "builder", SessionID: "s2"}
+	s.PutMateThread(link)
+	s.PutMateThread(other)
+	link.Status = "1700.2"
+	s.PutMateThread(link)
+	s = reopen(t, s, path)
+	snap, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]domain.MateThread{}
+	for _, m := range snap.MateThreads {
+		got[m.Mate] = m
+	}
+	if len(snap.MateThreads) != 2 || got["reviewer"] != link || got["builder"] != other {
+		t.Fatalf("threads %+v", snap.MateThreads)
+	}
+}

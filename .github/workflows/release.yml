@@ -73,7 +73,7 @@ jobs:
         run: |
           app=macos/build/crew.app
           codesign --verify --deep --strict --verbose "$app"
-          [ "$(plutil -extract AgentwsVersion raw "$app/Contents/Info.plist")" = "$VERSION" ]
+          [ "$(plutil -extract CrewVersion raw "$app/Contents/Info.plist")" = "$VERSION" ]
           [ "$(plutil -extract CFBundleIconFile raw "$app/Contents/Info.plist")" = "AppIcon" ]
           [ "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = "dev.crew.app" ]
           test -f "$app/Contents/Resources/crewTemplate.png"
