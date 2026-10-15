@@ -118,6 +118,18 @@ func askTokens(ctx context.Context, c mateCaller, mio mateAddIO, name string) er
 		return err
 	}
 	fmt.Fprintf(mio.Out, "stored the tokens of %s\n", name)
+	if err := mateClaim(ctx, c, mio.Out, name); err != nil {
+		fmt.Fprintf(mio.Out, "crew could not make a claim code (%v). Run crew mate claim %s when the daemon runs.\n", err, name)
+	}
+	return nil
+}
+
+func mateClaim(ctx context.Context, c mateCaller, out io.Writer, name string) error {
+	var claim rpc.MateClaim
+	if err := c.Call(ctx, rpc.MethodMateClaim, rpc.MateClaimParams{Name: name}, &claim); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "\nTo become the owner of %s, send this code to @%s in a direct message in Slack in the next 10 minutes:\n\n    %s\n\n", name, name, claim.Code)
 	return nil
 }
 

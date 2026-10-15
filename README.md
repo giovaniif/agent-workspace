@@ -73,7 +73,7 @@ When the Mac app is not connected, the daemon can use a headless Chromium on the
 fallback = "headless"
 ```
 
-To give the headless browser your logins, run `crew browser cookies import <file>` with a `cookies.txt`, a JSON cookie list or a Playwright `storageState`. See [ADR 0053](docs/adr/0053-headless-browser-fallback.md).
+To give the headless browser your logins, run `crew browser cookies import <file>` with a `cookies.txt`, a JSON cookie list or a Playwright `storageState`. See [ADR 0054](docs/adr/0054-headless-browser-fallback.md).
 
 ### Phone app
 

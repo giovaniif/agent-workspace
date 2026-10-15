@@ -160,6 +160,10 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - A load validates each `[[mate]]` table against the registered workspaces (`domain.CheckMates`). An invalid or repeated mate gives a problem with the file path, and the other mates load.
 - A write parses the new text again. The result must hold exactly the mate that was set. If it does not, the daemon refuses and tells you to edit the file by hand. It never touches a file that does not parse.
 - Tokens are not part of a mate. `WithMateSecrets(app.MateSecrets)` turns on `mate.set_tokens` and `mate.clear_tokens`. `Run` passes `secrets.Files` for `$CREW_HOME/secrets`. The mate must exist. The daemon validates the prefixes (`domain.ValidateMateTokens`) before it stores anything, and it never logs or returns a token. `mate.remove` clears the tokens of the mate. Tests: `go test ./internal/daemon/ -run MateSetTokens\|MateClearTokens\|NoMateMethod`.
+- **Slack worker.** `WithSlack(app.SlackConnector, every)` starts one goroutine that syncs the mates: at start, after each `mate.set`, `mate.remove`, `mate.set_tokens` and `mate.clear_tokens`, and every `every` (`Run` passes `slack.New` and 30 s). It never runs on the loop.
+  - Each enabled mate with both tokens gets its own goroutine that runs `SlackMate.Run`. A mate that is not enabled is `paused`. A mate with no tokens is `no_tokens`. When the tokens change (a SHA-256 of them), the worker stops and starts again. When the mate goes, it stops.
+  - The status from the adapter is the state of the mate in `mate.list`. After a token error, the mate stays in `error` until its tokens change. The log has the Slack error, never a token.
+- **Owner claim.** `mate.claim` draws a code with `crypto/rand` (`domain.NewPairCode`) and keeps one `domain.MateClaim` for each mate in memory. A direct message to that mate whose text is the code (case, spaces and `-` do not count), from a Slack user ID, before the 10 minutes end, writes that user ID to `owner` with the backup of `config.set`. Then the mate replies in the direct message. The code works one time. A mention or a message in a channel never claims. Tests: `go test ./internal/daemon/ -run 'MateWorker|MateClaim|MateToken|MateNewTokens|MateClearTokens'`.
 
 ## Codex fallback
 
@@ -321,7 +325,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 
 ### Headless fallback
 
-`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0053](../../docs/adr/0053-headless-browser-fallback.md).
+`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0054](../../docs/adr/0054-headless-browser-fallback.md).
 
 - `browser.command` picks the backend with `domain.ChooseBrowser`. The inputs are the `browser` of the automation that started the session, if the Mac app is attached, and `[browser]` in `config.toml`.
 - `[browser]` has `fallback` (`"headless"` or `"off"`, default `"off"`), `max_headless` (default 2) and `idle` (default `"10m"`). `config.set` and a daemon start read it again.

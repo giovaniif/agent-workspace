@@ -96,6 +96,8 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - All four answer `unavailable` without `WithConfig`. No result holds a token.
   - `mate.set_tokens` (`{"name","bot_token","app_token"}` → `{"name","has_bot_token","has_app_token"}`) stores the Slack tokens of a mate in files with mode 600 under `$CREW_HOME/secrets/`. The bot token starts with `xoxb-` and the app token with `xapp-`. A wrong prefix is `bad_request`, and the error never holds the value. An unknown mate is `not_found`. Without a secret store, it is `unavailable`.
   - `mate.clear_tokens` (`{"name"}` → the same status) removes both files. `mate.remove` also removes them.
+  - `mate.claim` (`{"name"}` → `{"name","code","expires_at"}`) makes a one-time owner code for the mate. It is good for 10 minutes. A new claim replaces the old code. An unknown mate is `not_found`. Without the Slack worker, it is `unavailable`.
+  - With the Slack worker, `mate.list` also has `states`: `{"name","state","error"}` for each mate. `state` is `connecting`, `connected`, `error`, `paused` (not enabled) or `no_tokens`. `error` has the Slack error code, never a token.
   - A client can set or clear a token. No method returns one.
 - Other methods: `status`, `subscribe`, `session.mute` (`{"id","muted"}`), `session.focus` (`{"id"}`), `session.rename` (`{"id","name"}`), `session.unpin` (`{"id"}`), `ports.kill`, `disk.view`, `cleanup.worktree`, `review.open`, `review.viewed`, `review.comment`, `review.send`, `review.hunk`, `client.review`, `shell.toggle`, `shell.focus`, `nvim.toggle`, `nvim.open`, `onboarding.status`, `onboarding.install`, `onboarding.remove`, `onboarding.finish` and `debug.seed`.
   - `onboarding.remove` (`{"harness"}`) copies the hook file to `<file>.agentws-removed-<time>.bak`, then removes the hooks. `onboarding.install` puts them back.
@@ -143,7 +145,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - With no attached app, it is `unavailable` with the message `no browser: the macOS app is not connected`. If the app disconnects first, it is also `unavailable`.
   - An `error` from the app is `failed` with that message. No reply in `timeout_ms` (default 30 s, a maximum of 10 min) is `failed`.
   - An unknown command, or no session and no known pane, is `bad_request`.
-  - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0053](../../docs/adr/0053-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
+  - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0054](../../docs/adr/0054-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
   - `browser.cookies.import` (`{"cookies":[{"name","value","domain","path","expires","secure","httpOnly","sameSite"}]}` → `{"imported","total"}`) keeps the cookies for the headless browser. No cookies, or a cookie with no name or domain, is `bad_request`.
 - Web Push (ADR 0046):
   - `push.key` (→ `{"public_key"}`).
