@@ -4,12 +4,12 @@ Status: accepted, 2026-10-14. Epic: #349. Work item: #350.
 
 ## Context
 
-The tool has the name `agentws`. This name is long, difficult to say and does not tell what the tool does. Before the first beta release, the owner wants a short name and an icon in the current Catppuccin palette.
+The alpha releases of the tool have a long name. The name is difficult to say and does not tell what the tool does. Before the first beta release, the owner wants a short name and an icon in the current Catppuccin palette.
 
 These facts apply:
 
 - The user starts many agent sessions and gives each one a task. Then the user reviews the work of each session. The user is the lead of a small team of agents.
-- The binary, the Go module, the tmux server, the `AGENTWS_*` variables, `~/.agentws`, the Mac app and the PWA all use the name `agentws`. Users of the alpha releases have state in these locations.
+- The binary, the Go module, the tmux server, the environment variables, the home dir, the Mac app and the PWA all use the long name. Users of the alpha releases have state in these locations.
 
 ## Decision
 
@@ -19,11 +19,12 @@ These facts apply:
 - The name is short (four letters) and easy to type and to say.
 - The name tells the model of the tool: a crew is a team that you lead. The word is warm and not technical.
 
-### An alias period of one release
+### Migration, and no alias
 
-- `agentws` continues to work for one release as an alias: a symlink to the binary, and a fallback from each `CREW_*` variable to its `AGENTWS_*` variable.
-- Each rename of state has a migration and a test. Users of the alphas do not lose state, sessions, hooks or settings.
-- The release notes of the beta tell when the alias goes away.
+- Each rename of state has a migration and a test. Users of the alphas do not lose state, sessions, hooks or settings. The migration backs up each file before it changes it.
+- The old command name does not stay as an alias. The migration rewrites the hooks, and removes the link with the old name next to the binary.
+- Environment variables with the old prefix are read as a fallback.
+- The code that finds the old names is in files with the names `legacy` or `migrate`, with their tests. No other file uses the old name.
 - This ADR changes no names in the code. The work items after #350 in #349 do the rename.
 
 ### The known clash
@@ -58,9 +59,9 @@ The two large circles are the agents. The dot is the user, below them.
 
 ## Rejected
 
-- **Keep `agentws`:** the name is difficult to say and to remember.
+- **Keep the alpha name:** it is difficult to say and to remember.
 - **Variants A and C of the design file:** the owner selected B.
-- **A rename with no alias:** scripts and hooks of alpha users would stop.
+- **An alias for the old command name:** the owner wants no file but the migration code to use the old name. The migration rewrites the hooks, so only scripts of the user must change.
 
 ## Consequences
 
@@ -70,4 +71,4 @@ The two large circles are the agents. The dot is the user, below them.
 
 ## Note on older ADRs
 
-ADRs 0001 to 0051 keep the name agentws, because they record decisions as they were made. Read agentws in them as crew. The commands, paths and environment variables that they name have crew forms now (`crew`, `~/.crew`, `CREW_*`). The `agentws` binary link and the `AGENTWS_*` variables work for one release. The repo file `.agentws.toml`, the socket file `agentws.sock` and the tmux session name in the server keep their names.
+ADRs 0001 to 0051 say crew where they named the alpha name. The text changed. The decisions did not. The commands, paths and environment variables that they name have crew forms now (`crew`, `~/.crew`, `CREW_*`, `.crew.toml`, `crew.sock`).

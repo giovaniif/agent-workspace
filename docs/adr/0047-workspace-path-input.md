@@ -12,5 +12,5 @@ Status: accepted, 2026-10-03. Extends [ADR 0037](0037-new-session-popup.md)'s Wo
 
 ## Why
 
-- Starting in a folder that is not registered needed `agentws workspace add` first, or launching agentws from inside it. The dialog is where the choice is made, so it should take any folder.
+- Starting in a folder that is not registered needed `crew workspace add` first, or launching crew from inside it. The dialog is where the choice is made, so it should take any folder.
 - The TUI does no IO of its own (ADR 0037), so the daemon lists folders, as it already does for discovery.

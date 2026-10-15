@@ -7,7 +7,7 @@ Status: accepted, 2026-09-30.
 - `domain.OfferFallback(quotas, cfg, req)` proposes a Codex start for a Claude `StartRequest` (harness, model, effort) when Claude's shortest window has less than the threshold left. It returns the `SwitchAdvice` (the figures) and the Codex `StartRequest`. `domain.OfferFallbacks` does the same for a queue, keyed by index, so the launcher (#27) asks once per queued item.
 - It never touches a running session. Codex model and effort switching is refused (ADR 0018), so the fallback is always a new Codex session, never a switch of an existing one.
 - No offer when the request is not Claude, when Codex has no figure, or when Codex's own shortest window is also under the threshold. Moving between two exhausted accounts helps nobody. This is stricter than `Advise`, which still warns without an offer.
-- Config lives in `$AGENTWS_HOME/config.toml`, read by `tui.LoadFallback`:
+- Config lives in `$CREW_HOME/config.toml`, read by `tui.LoadFallback`:
 
   ```toml
   [fallback]
