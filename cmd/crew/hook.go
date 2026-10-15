@@ -47,7 +47,47 @@ func hook1(args []string, stdin io.Reader, stdout io.Writer, home, pane string) 
 		}
 		h.Payload = payload
 	}
-	return sendHook(home, h, domain.HookWantsReply(*event), stdout)
+	wantReply := domain.HookWantsReply(*event)
+	if *event == "PreToolUse" {
+		if a, ok := dangerousCall(domain.Harness(*harness), payload); ok {
+			h.Action = &a
+			wantReply = true
+		}
+	}
+	return sendHook(home, h, wantReply, stdout)
+}
+
+func dangerousCall(h domain.Harness, payload []byte) (domain.Action, bool) {
+	var p struct {
+		ToolName  string          `json:"tool_name"`
+		ToolInput json.RawMessage `json:"tool_input"`
+		Cwd       string          `json:"cwd"`
+	}
+	_ = json.Unmarshal(payload, &p)
+	root := os.Getenv("CLAUDE_PROJECT_DIR")
+	if root == "" {
+		root = p.Cwd
+	}
+	if r, err := filepath.EvalSymlinks(root); err == nil {
+		root = r
+	}
+	a := domain.ClassifyAction(h, p.ToolName, p.ToolInput, domain.ActionScope{Root: root, Real: realPath})
+	return a, a.Dangerous()
+}
+
+func realPath(p string) string {
+	rest := ""
+	for dir := p; ; {
+		if r, err := filepath.EvalSymlinks(dir); err == nil {
+			return filepath.Join(r, rest)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return p
+		}
+		rest = filepath.Join(filepath.Base(dir), rest)
+		dir = parent
+	}
 }
 
 func sendHook(home string, h rpc.Hook, wantReply bool, stdout io.Writer) error {
