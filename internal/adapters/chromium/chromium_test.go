@@ -183,7 +183,7 @@ func TestConnectAttachesToThePageAndHidesHeadlessInTheUserAgent(t *testing.T) {
 
 func TestSnapshotRunsTheSharedScriptAndReturnsItsValue(t *testing.T) {
 	f := &fakeCDP{answer: func(m cdpMessage) (any, *string) {
-		if m.Method == "Runtime.evaluate" && strings.Contains(string(m.Params), "data-agentws-ref") {
+		if m.Method == "Runtime.evaluate" && strings.Contains(string(m.Params), "data-crew-ref") {
 			return map[string]any{"result": map[string]any{"type": "object", "value": map[string]any{"text": "# t\n- button \"Go\" [@e1]", "refs": 1}}}, nil
 		}
 		return nil, nil
