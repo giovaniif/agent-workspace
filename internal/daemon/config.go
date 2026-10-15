@@ -66,7 +66,7 @@ func (d *Daemon) writeConfig(key, value, literal string) error {
 		return err
 	}
 	if _, err := configValues(src); err != nil {
-		return fmt.Errorf("%s does not parse, so agentws leaves it alone: %w", d.cfg.path, err)
+		return fmt.Errorf("%s does not parse, so crew leaves it alone: %w", d.cfg.path, err)
 	}
 	next := domain.SetTOMLValue(src, key, literal)
 	if next == src {
@@ -74,7 +74,7 @@ func (d *Daemon) writeConfig(key, value, literal string) error {
 	}
 	values, err := configValues(next)
 	if err != nil || values[key] != value {
-		return fmt.Errorf("%s sets %s in a form agentws cannot edit; change it there by hand", d.cfg.path, key)
+		return fmt.Errorf("%s sets %s in a form crew cannot edit; change it there by hand", d.cfg.path, key)
 	}
 	return d.replaceConfig(src, next)
 }
@@ -83,7 +83,7 @@ func (d *Daemon) replaceConfig(src, next string) error {
 	mode := fs.FileMode(0o600)
 	if info, err := os.Stat(d.cfg.path); err == nil {
 		mode = info.Mode().Perm()
-		backup := d.cfg.path + ".agentws-" + time.Now().UTC().Format("20060102T150405.000000000Z") + ".bak"
+		backup := d.cfg.path + ".crew-" + time.Now().UTC().Format("20060102T150405.000000000Z") + ".bak"
 		if err := os.WriteFile(backup, []byte(src), 0o600); err != nil {
 			return fmt.Errorf("back up %s: %w", d.cfg.path, err)
 		}
@@ -110,6 +110,7 @@ func (d *Daemon) replaceConfig(src, next string) error {
 func (d *Daemon) applyConfig() {
 	defaults, errDefaults := LoadStartDefaults(d.cfg.path)
 	awayAfter, errAway := LoadAwayAfter(d.cfg.path)
+	d.loadBrowserConfig()
 	d.query(func(s *state) {
 		if errDefaults == nil {
 			d.hs.defaults = defaults

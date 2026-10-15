@@ -1,21 +1,21 @@
 repo api
-mkdir $AGENTWS_HOME
-cp config.toml $AGENTWS_HOME/config.toml
-exec agentws workspace add api
+mkdir $CREW_HOME
+cp config.toml $CREW_HOME/config.toml
+exec crew workspace add api
 
-exec agentws automation list
+exec crew automation list
 stdout '^fix-ci\s+claude\s+new-worktree\s+manual\s+yes\s'
 
 cd api
-exec agentws automation run guarded
+exec crew automation run guarded
 stdout '\sskipped\s+-\s+precheck failed'
 
-exec agentws automation run --work-item 'red build' fix-ci only the lint job
+exec crew automation run --work-item 'red build' fix-ci only the lint job
 stdout '\sfix-ci\s+manual\s.*\ssucceeded\s'
-eventually 'only the lint job\n\z' cat $AGENTWS_E2E/received
-cmp $AGENTWS_E2E/received $WORK/want.txt
+eventually 'only the lint job\n\z' cat $CREW_E2E/received
+cmp $CREW_E2E/received $WORK/want.txt
 
-exec agentws automation runs fix-ci
+exec crew automation runs fix-ci
 stdout 'succeeded'
 ! stdout 'skipped'
 

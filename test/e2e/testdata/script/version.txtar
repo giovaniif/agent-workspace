@@ -1,2 +1,2 @@
-exec agentws version
+exec crew version
 stdout '^crew v0\.0\.0-e2e \(commit e2ecommit\)$'

@@ -22,7 +22,7 @@ func TestInstalledIsTrueOnlyAfterSetupWithTheSameBinary(t *testing.T) {
 	if ok, err := claude.Installed(path, bin); err != nil || !ok {
 		t.Errorf("after setup: installed = %v, %v", ok, err)
 	}
-	if ok, _ := claude.Installed(path, "/elsewhere/agentws"); ok {
+	if ok, _ := claude.Installed(path, "/elsewhere/crew"); ok {
 		t.Error("hooks pointing at another binary count as installed")
 	}
 }

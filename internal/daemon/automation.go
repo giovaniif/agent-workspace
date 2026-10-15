@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
 	"io/fs"
 	"maps"
 	"os"
@@ -17,8 +18,6 @@ import (
 	"github.com/giovaniif/crew/internal/rpc"
 )
 
-const repoConfigFile = ".agentws.toml"
-
 type automationDoc struct {
 	Name     string   `toml:"name"`
 	Agent    string   `toml:"agent"`
@@ -31,6 +30,7 @@ type automationDoc struct {
 	On       []string `toml:"on"`
 	Precheck string   `toml:"precheck"`
 	Session  string   `toml:"session"`
+	Browser  string   `toml:"browser"`
 	Enabled  *bool    `toml:"enabled"`
 	Filter   struct {
 		Repo   string `toml:"repo"`
@@ -70,7 +70,7 @@ func loadAutomationsText(text, path string) ([]domain.Automation, []string) {
 		a := domain.Automation{
 			Name: d.Name, Agent: d.Agent, Model: d.Model, Effort: d.Effort, Target: d.Target,
 			Prompt: d.Prompt, Schedule: d.Schedule, Timezone: d.Timezone, On: d.On,
-			Precheck: d.Precheck, Session: d.Session, Filter: domain.AutomationFilter(d.Filter), Enabled: d.Enabled == nil || *d.Enabled, Source: path,
+			Precheck: d.Precheck, Session: d.Session, Browser: d.Browser, Filter: domain.AutomationFilter(d.Filter), Enabled: d.Enabled == nil || *d.Enabled, Source: path,
 		}
 		if err := domain.ValidateAutomation(a); err != nil {
 			problems = append(problems, fmt.Sprintf("%s: %v", path, err))
@@ -103,12 +103,14 @@ func (d *Daemon) loadAutomationList(repo string) rpc.AutomationList {
 		global, problems = LoadAutomations(d.cfg.path)
 	}
 	if repo != "" {
-		local, more := LoadAutomations(filepath.Join(repo, repoConfigFile))
+		wsfs.AdoptRepoConfig(repo)
+		local, more := LoadAutomations(filepath.Join(repo, domain.RepoConfigFile))
 		return rpc.AutomationList{Automations: domain.MergeAutomations(global, local), Problems: append(problems, more...)}
 	}
 	out := domain.MergeAutomations(global, nil)
 	for _, r := range d.registeredRepos() {
-		local, more := LoadAutomations(filepath.Join(r, repoConfigFile))
+		wsfs.AdoptRepoConfig(r)
+		local, more := LoadAutomations(filepath.Join(r, domain.RepoConfigFile))
 		out = append(out, local...)
 		problems = append(problems, more...)
 	}
@@ -190,12 +192,12 @@ func (d *Daemon) automationSave(req rpc.Request) *rpc.Response {
 		return errorResponse(req.ID, rpc.CodeFailed, err.Error())
 	}
 	if _, err := configValues(src); err != nil {
-		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s does not parse, so agentws leaves it alone: %v", d.cfg.path, err))
+		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s does not parse, so crew leaves it alone: %v", d.cfg.path, err))
 	}
 	next := domain.SetAutomationBlock(src, a)
 	loaded, problems := loadAutomationsText(next, d.cfg.path)
 	if !slices.ContainsFunc(loaded, func(x domain.Automation) bool { return domain.AutomationHash(x) == domain.AutomationHash(a) }) {
-		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s has a form of %q that agentws cannot edit; change it there by hand %v", d.cfg.path, a.Name, problems))
+		return errorResponse(req.ID, rpc.CodeFailed, fmt.Sprintf("%s has a form of %q that crew cannot edit; change it there by hand %v", d.cfg.path, a.Name, problems))
 	}
 	if next != src {
 		if err := d.replaceConfig(src, next); err != nil {

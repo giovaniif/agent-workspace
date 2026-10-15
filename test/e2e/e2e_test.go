@@ -18,7 +18,7 @@ var binDir string
 const waitWithin = 15 * time.Second
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "agentws-e2e")
+	dir, err := os.MkdirTemp("", "crew-e2e")
 	if err != nil {
 		panic(err)
 	}
@@ -27,9 +27,6 @@ func TestMain(m *testing.M) {
 		"-o", filepath.Join(dir, "crew"), "../../cmd/crew")
 	build.Stdout, build.Stderr = os.Stdout, os.Stderr
 	if err := build.Run(); err != nil {
-		os.Exit(1)
-	}
-	if err := os.Symlink("crew", filepath.Join(dir, "agentws")); err != nil {
 		os.Exit(1)
 	}
 	binDir = dir
@@ -59,8 +56,8 @@ func TestScripts(t *testing.T) {
 
 func setup(env *testscript.Env, fakes string) error {
 	sep := string(os.PathListSeparator)
-	env.Setenv("AGENTWS_E2E_FAKES", fakes)
-	env.Setenv("AGENTWS_E2E_BARE_PATH", barePath())
+	env.Setenv("CREW_E2E_FAKES", fakes)
+	env.Setenv("CREW_E2E_BARE_PATH", barePath())
 	env.Setenv("PATH", binDir+sep+fakes+sep+env.Getenv("PATH"))
 	tmp, err := os.MkdirTemp("", "aws")
 	if err != nil {
@@ -74,21 +71,21 @@ func setup(env *testscript.Env, fakes string) error {
 	if err != nil {
 		return err
 	}
-	socket := fmt.Sprintf("agentws-e2e-%d-%d", os.Getpid(), time.Now().UnixNano())
+	socket := fmt.Sprintf("crew-e2e-%d-%d", os.Getpid(), time.Now().UnixNano())
 	for k, v := range map[string]string{
-		"AGENTWS_HOME":            home,
-		"AGENTWS_NO_UPDATE_CHECK": "1",
-		"AGENTWS_E2E":             work,
-		"AGENTWS_TMUX_SOCKET":     socket,
-		"AGENTWS_TEST_CLOCK":      "+5h",
-		"AGENTWS_TEST_PR_POLL":    "100ms",
-		"GIT_CONFIG_GLOBAL":       "/dev/null",
-		"GIT_CONFIG_SYSTEM":       "/dev/null",
-		"GIT_AUTHOR_NAME":         "t",
-		"GIT_AUTHOR_EMAIL":        "t@example.com",
-		"GIT_COMMITTER_NAME":      "t",
-		"GIT_COMMITTER_EMAIL":     "t@example.com",
-		"GIT_TERMINAL_PROMPT":     "0",
+		"CREW_HOME":            home,
+		"CREW_NO_UPDATE_CHECK": "1",
+		"CREW_E2E":             work,
+		"CREW_TMUX_SOCKET":     socket,
+		"CREW_TEST_CLOCK":      "+5h",
+		"CREW_TEST_PR_POLL":    "100ms",
+		"GIT_CONFIG_GLOBAL":    "/dev/null",
+		"GIT_CONFIG_SYSTEM":    "/dev/null",
+		"GIT_AUTHOR_NAME":      "t",
+		"GIT_AUTHOR_EMAIL":     "t@example.com",
+		"GIT_COMMITTER_NAME":   "t",
+		"GIT_COMMITTER_EMAIL":  "t@example.com",
+		"GIT_TERMINAL_PROMPT":  "0",
 	} {
 		env.Setenv(k, v)
 	}
@@ -96,8 +93,8 @@ func setup(env *testscript.Env, fakes string) error {
 		return err
 	}
 	env.Defer(func() {
-		stop := exec.Command(filepath.Join(binDir, "agentws"), "daemon", "stop")
-		stop.Env = append(os.Environ(), "AGENTWS_HOME="+home)
+		stop := exec.Command(filepath.Join(binDir, "crew"), "daemon", "stop")
+		stop.Env = append(os.Environ(), "CREW_HOME="+home)
 		_ = stop.Run()
 		_ = exec.Command("tmux", "-L", socket, "kill-server").Run()
 		dir := os.Getenv("TMUX_TMPDIR")
@@ -152,7 +149,7 @@ func repo(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("usage: repo <name>")
 	}
 	name := args[0]
-	work := ts.Getenv("AGENTWS_E2E")
+	work := ts.Getenv("CREW_E2E")
 	seed := filepath.Join(work, "seed-"+name)
 	bare := filepath.Join(work, "origin-"+name+".git")
 	dir := filepath.Join(work, name)

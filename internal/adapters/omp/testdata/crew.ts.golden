@@ -1,7 +1,7 @@
-// agentws: written by agentws setup omp; agentws setup omp --remove deletes this file.
+// crew: written by crew setup omp; crew setup omp --remove deletes this file.
 import { spawn } from "node:child_process";
 
-const agentws = "/opt/agent's bin/agentws";
+const crew = "/opt/agent's bin/crew";
 const events = ["agent_end", "agent_start", "session_shutdown", "session_start", "session_stop", "tool_approval_requested", "tool_approval_resolved", "tool_call", "tool_result"];
 
 function text(message: any): string | undefined {
@@ -14,7 +14,7 @@ function text(message: any): string | undefined {
 function send(event: string, fields: Record<string, unknown>): Promise<void> {
 	return new Promise(resolve => {
 		try {
-			const child = spawn(agentws, ["hook", "--harness", "omp", "--event", event], { stdio: ["pipe", "ignore", "ignore"] });
+			const child = spawn(crew, ["hook", "--harness", "omp", "--event", event], { stdio: ["pipe", "ignore", "ignore"] });
 			child.on("error", () => resolve());
 			child.on("close", () => resolve());
 			child.stdin.on("error", () => {});

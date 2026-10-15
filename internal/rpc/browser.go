@@ -1,6 +1,10 @@
 package rpc
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/giovaniif/crew/internal/domain"
+)
 
 const (
 	MethodBrowserAttach  = "browser.attach"
@@ -29,4 +33,15 @@ type BrowserReplyParams struct {
 	Call   uint64          `json:"call"`
 	Result json.RawMessage `json:"result,omitempty"`
 	Error  string          `json:"error,omitempty"`
+}
+
+const MethodBrowserCookiesImport = "browser.cookies.import"
+
+type BrowserCookiesParams struct {
+	Cookies []domain.BrowserCookie `json:"cookies"`
+}
+
+type BrowserCookiesResult struct {
+	Imported int `json:"imported"`
+	Total    int `json:"total"`
 }

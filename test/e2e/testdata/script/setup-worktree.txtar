@@ -8,7 +8,7 @@ exec git commit -q -m init
 exec git worktree add -q -b feature ../api-feature
 cd ..
 
-exec agentws setup-worktree api-feature
+exec crew setup-worktree api-feature
 stdout '^copy \.env\.example$'
 stdout '^link \.cache$'
 stdout '^deps clone node_modules$'
@@ -19,7 +19,7 @@ exists api-feature/.cache/warm
 grep 'module.exports' api-feature/node_modules/left-pad/index.js
 grep '^ready$' api-feature/ran.txt
 
-exec agentws setup-worktree api-feature
+exec crew setup-worktree api-feature
 stdout '^skip copy \.env\.example: already in the worktree$'
 stdout '^deps skip: node_modules already in the worktree$'
 
@@ -31,18 +31,18 @@ mkdir bin
 cp fake-npm bin/npm
 chmod 0755 bin/npm
 env PATH=$WORK/bin:$PATH
-exec agentws setup-worktree api-other
+exec crew setup-worktree api-other
 stdout '^deps install: package-lock\.json differs from the main checkout \(npm ci\)$'
 grep '^ci$' api-other/npm-args
 ! exists api-other/node_modules
 
-! exec agentws setup-worktree api
+! exec crew setup-worktree api
 stderr 'crew setup-worktree: .*is the main checkout'
 
-! exec agentws setup-worktree
+! exec crew setup-worktree
 stderr '^usage: crew setup-worktree <path>$'
 
-! exec agentws setup-worktree elsewhere
+! exec crew setup-worktree elsewhere
 stderr '^crew setup-worktree: .*elsewhere'
 
 -- api/package-lock.json --
@@ -57,7 +57,7 @@ TOKEN=changeme
 warm
 -- api/node_modules/left-pad/index.js --
 module.exports = 1
--- api/.agentws.toml --
+-- api/.crew.toml --
 [setup]
 copy = [".env.example"]
 link = [".cache"]

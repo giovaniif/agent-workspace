@@ -216,7 +216,7 @@ func startWithClient(t *testing.T, inView string, sessions ...domain.Session) (s
 	r.host.waitListed(t)
 	clientHost := &fakeClientHost{}
 	r.d.SetClientHost(clientHost)
-	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -307,7 +307,7 @@ func TestStartupFindingTheInViewAgentDeadShowsTheNextOne(t *testing.T) {
 	store.snap.Sessions = []domain.Session{{ID: "a", Pane: "%7"}, {ID: "b", Pane: "%8"}}
 	r := startSessionsOn(t, host, store, nil)
 	r.d.SetClientHost(&fakeClientHost{})
-	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +334,7 @@ func TestStartupSkipsOtherDeadAgentsWhenRefillingTheSlot(t *testing.T) {
 	store.snap.Sessions = []domain.Session{{ID: "a", Pane: "%7"}, {ID: "b", Pane: "%8"}, {ID: "c", Pane: "%9"}}
 	r := startSessionsOn(t, host, store, nil)
 	r.d.SetClientHost(&fakeClientHost{})
-	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -477,7 +477,7 @@ func TestFocusSessionShowsItsPaneInTheMainSlot(t *testing.T) {
 	}
 	clientHost := &fakeClientHost{}
 	r.d.SetClientHost(clientHost)
-	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -257,7 +257,7 @@ func AutomationTrustKey(a Automation) string {
 }
 
 func AutomationNeedsTrust(a Automation) bool {
-	return filepath.Base(a.Source) == ".agentws.toml" && (a.Schedule != "" || len(a.On) > 0 || a.Precheck != "")
+	return filepath.Base(a.Source) == RepoConfigFile && (a.Schedule != "" || len(a.On) > 0 || a.Precheck != "")
 }
 
 func AutomationCanRunAlone(a Automation, trusted map[string]string) bool {

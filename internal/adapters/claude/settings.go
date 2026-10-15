@@ -17,7 +17,7 @@ var HookEvents = []string{
 
 const hookMarker = " hook --harness claude --event "
 
-func BackupPath(settings string) string { return settings + ".agentws-backup" }
+func BackupPath(settings string) string { return settings + ".crew-backup" }
 
 func HookCommand(bin, event string) string { return shellQuote(bin) + hookMarker + event }
 
@@ -251,7 +251,7 @@ func writeFile(path string, b []byte) error {
 	if fi, err := os.Stat(path); err == nil {
 		mode = fi.Mode().Perm()
 	}
-	tmp := path + ".agentws-tmp"
+	tmp := path + ".crew-tmp"
 	if err := os.WriteFile(tmp, b, mode); err != nil {
 		return err
 	}

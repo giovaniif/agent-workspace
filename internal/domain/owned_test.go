@@ -2,7 +2,7 @@ package domain
 
 import "testing"
 
-const ownedMarker = "// agentws: written by agentws setup omp"
+const ownedMarker = "// crew: written by crew setup omp"
 
 func TestPlanOwnedInstall(t *testing.T) {
 	want := ownedMarker + "\nnew\n"

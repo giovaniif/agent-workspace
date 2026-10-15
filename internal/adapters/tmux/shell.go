@@ -19,8 +19,6 @@ const belowPaneIndex = "2"
 
 const ShellHeight = "35%"
 
-const popupSessionPrefix = "agentws-popup-"
-
 func (h *Host) BelowPane(ctx context.Context, slot app.Slot) app.PaneID {
 	out, err := h.run(ctx, "", "list-panes", "-t", string(slot), "-F", "#{pane_index} #{pane_id}")
 	if err != nil {
@@ -78,10 +76,10 @@ func (h *Host) Popup(ctx context.Context, pane app.PaneID) error {
 	if err != nil {
 		return err
 	}
-	name := fmt.Sprintf("%s%d-%d", popupSessionPrefix, os.Getpid(), h.bufferSeq.Add(1))
+	name := fmt.Sprintf("%s%d-%d", h.n.popupPrefix, os.Getpid(), h.bufferSeq.Add(1))
 	inner := strings.Join([]string{
 		"env", "-u", "TMUX", "tmux", "-L", shellQuote(h.socket), "-f", shellQuote(h.configPath),
-		"new-session", "-t", sessionName, "-s", name,
+		"new-session", "-t", h.n.session, "-s", name,
 		`\;`, "select-window", "-t", window,
 		`\;`, "set-option", "destroy-unattached", "on",
 	}, " ")
@@ -171,17 +169,17 @@ func (h *Host) popupClient(ctx context.Context) (string, error) {
 	if err != nil && !isServerGone(err) {
 		return "", err
 	}
-	if client, ok := activeClient(out); ok {
+	if client, ok := activeClient(out, h.n.popupPrefix); ok {
 		return client, nil
 	}
-	return "", errors.New("no terminal is attached to the agentws tmux server")
+	return "", errors.New("no terminal is attached to the crew tmux server")
 }
 
-func activeClient(out string) (string, bool) {
+func activeClient(out, popupPrefix string) (string, bool) {
 	client, newest := "", int64(-1)
 	for _, line := range strings.Split(out, "\n") {
 		fields := strings.Fields(line)
-		if len(fields) != 3 || strings.HasPrefix(fields[1], popupSessionPrefix) {
+		if len(fields) != 3 || strings.HasPrefix(fields[1], popupPrefix) {
 			continue
 		}
 		if n, err := strconv.ParseInt(fields[2], 10, 64); err == nil && n > newest {

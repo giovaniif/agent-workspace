@@ -94,7 +94,7 @@ func streamState() rpc.State {
 		Workspaces: []domain.Workspace{{Root: "/home/me/api", Kind: domain.WorkspaceSingle, LastUsed: at}},
 		Tasks: []domain.Task{{ID: "t1", Source: domain.TaskText, Text: "fix the login redirect"},
 			{ID: "t2", Source: domain.TaskText, Text: "add retries to the client"}},
-		Worktrees: []domain.Worktree{{ID: "w1", Repo: "api", Path: "/home/me/.agentws/worktrees/api-login", Branch: "login",
+		Worktrees: []domain.Worktree{{ID: "w1", Repo: "api", Path: "/home/me/.crew/worktrees/api-login", Branch: "login",
 			SessionID: "s1", Ports: []domain.Port{{Port: 5173, PID: 4242}}}},
 		Sessions: []domain.Session{{ID: "s1", TaskID: "t1", Harness: domain.HarnessClaude, Model: "opus", State: domain.StateRunning,
 			WorktreeIDs: []string{"w1"}, Limits: []domain.RateLimit{{Window: "five_hour", UsedPercent: 42, ResetsAt: at.Add(3 * time.Hour).Unix()},
@@ -114,7 +114,7 @@ func TestServeStreamRefusesAnotherOrigin(t *testing.T) {
 	f := newFakeDaemon()
 	f.devices[goodToken] = phone
 	_, ts := startServer(t, f, serve.Config{URL: publicURL})
-	for _, origin := range []string{"https://evil.example", "http://agentws.example.ts.net", "https://agentws.example.ts.net:8443", ""} {
+	for _, origin := range []string{"https://evil.example", "http://crew.example.ts.net", "https://crew.example.ts.net:8443", ""} {
 		_, resp, err := dialStream(t, ts, origin)
 		if err == nil {
 			t.Fatalf("origin %q: the stream opened", origin)
@@ -123,7 +123,7 @@ func TestServeStreamRefusesAnotherOrigin(t *testing.T) {
 			t.Fatalf("origin %q: response %v", origin, resp)
 		}
 	}
-	for _, origin := range []string{"https://AgentWS.example.ts.net", "https://agentws.example.ts.net:443"} {
+	for _, origin := range []string{"https://crew.example.ts.net", "https://crew.example.ts.net:443"} {
 		c, _, err := dialStream(t, ts, origin)
 		if err != nil {
 			t.Fatalf("origin %q refused: %v", origin, err)

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/giovaniif/crew/internal/adapters/chromium"
 	"github.com/giovaniif/crew/internal/adapters/claude"
 	"github.com/giovaniif/crew/internal/adapters/skill"
 	"github.com/giovaniif/crew/internal/rpc"
@@ -66,6 +67,11 @@ func installSkill(dir string, stdout io.Writer) error {
 	changed, err := skill.Install(dir)
 	if changed {
 		fmt.Fprintf(stdout, "installed the crew browser skill in %s\n", skill.Path(dir))
+	}
+	if bin := chromium.FromEnv().Binary; bin != "" {
+		fmt.Fprintf(stdout, "headless browser: %s\n", bin)
+	} else {
+		fmt.Fprintf(stdout, "no headless browser for [browser] fallback = \"headless\": %s\n", chromium.InstallHint())
 	}
 	return err
 }

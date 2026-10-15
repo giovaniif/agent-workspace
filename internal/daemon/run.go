@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/giovaniif/crew/internal/adapters/chromium"
 	"github.com/giovaniif/crew/internal/adapters/claude"
 	"github.com/giovaniif/crew/internal/adapters/codex"
 	wsfs "github.com/giovaniif/crew/internal/adapters/fs"
@@ -20,6 +21,7 @@ import (
 	"github.com/giovaniif/crew/internal/adapters/omp"
 	"github.com/giovaniif/crew/internal/adapters/onboard"
 	"github.com/giovaniif/crew/internal/adapters/procs"
+	"github.com/giovaniif/crew/internal/adapters/secrets"
 	"github.com/giovaniif/crew/internal/adapters/setup"
 	"github.com/giovaniif/crew/internal/adapters/sqlite"
 	"github.com/giovaniif/crew/internal/adapters/tmux"
@@ -111,6 +113,8 @@ func Run(ctx context.Context, home string) (err error) {
 		WithOnboarding(onboard.FromEnv(home, self, os.Getenv)),
 		WithTranscripts(Transcripts(wsfs.Transcripts{}), wsfs.Transcripts{}),
 		WithPush(webpush.New(filepath.Join(home, "vapid"), nil)),
+		WithMateSecrets(secrets.Files{Dir: filepath.Join(home, "secrets")}),
+		WithHeadlessBrowser(chromium.FromEnv(), filepath.Join(home, "browser", "profiles", "default", "cookies.json"), DefaultHeadlessReap),
 	}
 	awayAfter, err := LoadAwayAfter(filepath.Join(home, "config.toml"))
 	if err != nil {
@@ -128,7 +132,7 @@ func Run(ctx context.Context, home string) (err error) {
 	}
 	d.SetClientHost(host)
 
-	sock := rpc.SocketPath(home)
+	sock := rpc.ListenPath(home)
 	if err := os.Remove(sock); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}

@@ -17,6 +17,7 @@ const (
 	MethodSubscribe        = "subscribe"
 	MethodNotifyStream     = "notify.stream"
 	MethodHook             = "hook"
+	MethodApprovalList     = "approval.list"
 	MethodWorkspaceAdd     = "workspace.add"
 	MethodWorkspaceList    = "workspace.list"
 	MethodWorkspaceRemove  = "workspace.remove"
@@ -340,6 +341,7 @@ type Hook struct {
 	Pane    string          `json:"pane"`
 	At      time.Time       `json:"at"`
 	Payload json.RawMessage `json:"payload,omitempty"`
+	Action  *domain.Action  `json:"action,omitempty"`
 }
 
 type HookReply struct {
@@ -365,14 +367,14 @@ func AnyBuild(method string) bool {
 }
 
 func Mismatch(daemonBuild, clientBuild string, daemonBuilt, clientBuilt int64) *Error {
-	fix := "restart the daemon: run `agentws daemon stop`; the next command starts the new one"
+	fix := "restart the daemon: run `crew daemon stop`; the next command starts the new one"
 	if clientBuilt != 0 && daemonBuilt > clientBuilt {
 		fix = "restart this client: it is older than the daemon"
 	}
 	if daemonBuild == "" {
 		daemonBuild = "an unknown build"
 	}
-	return &Error{Code: CodeVersionMismatch, Message: fmt.Sprintf("daemon runs agentws %s but this client is %s; %s", daemonBuild, clientBuild, fix)}
+	return &Error{Code: CodeVersionMismatch, Message: fmt.Sprintf("daemon runs crew %s but this client is %s; %s", daemonBuild, clientBuild, fix)}
 }
 
 type WorkspaceAddParams struct {
@@ -560,4 +562,4 @@ func DefaultHome(user string) string {
 	return domain.ResolveHome(domain.HomeFacts{User: user, NewExists: err == nil, OldDir: oldErr == nil && old.IsDir()})
 }
 
-func SocketPath(home string) string { return filepath.Join(home, "agentws.sock") }
+func ListenPath(home string) string { return filepath.Join(home, "crew.sock") }

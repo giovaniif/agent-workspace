@@ -30,7 +30,7 @@ const serveOrigin = "https://box.example.ts.net"
 
 func startServeDaemon(t *testing.T) (string, *rpc.Client) {
 	t.Helper()
-	home, err := os.MkdirTemp("/tmp", "agentws-serve")
+	home, err := os.MkdirTemp("/tmp", "crew-serve")
 	if err != nil {
 		t.Fatal(err)
 	}

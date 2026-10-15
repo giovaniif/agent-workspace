@@ -187,8 +187,8 @@ func TestNativeClientsGetTheirOwnSessionsWhichGoWhenTheyDetach(t *testing.T) {
 		return !slices.Contains(strings.Fields(sessions), first.Session)
 	})
 	sessions := strings.Fields(tmuxOut(t, first.Argv, "list-sessions", "-F", "#{session_name}"))
-	if !slices.Contains(sessions, second.Session) || !slices.Contains(sessions, "agentws") {
-		t.Fatalf("sessions = %v; want the other native session and agentws kept", sessions)
+	if !slices.Contains(sessions, second.Session) || !slices.Contains(sessions, "crew") {
+		t.Fatalf("sessions = %v; want the other native session and crew kept", sessions)
 	}
 }
 

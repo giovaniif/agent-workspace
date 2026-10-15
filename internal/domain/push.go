@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	PushTitleFallback = "agentws"
+	PushTitleFallback = "crew"
 	PushBodyFallback  = "needs you"
 	pushP256dhBytes   = 65
 	pushAuthBytes     = 16

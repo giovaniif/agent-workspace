@@ -37,7 +37,7 @@ func (l *limitedLog) printf(format string, args ...any) {
 	now := l.now()
 	if now.Sub(l.start) >= LogWindow {
 		if l.dropped > 0 {
-			_, _ = fmt.Fprintf(l.w, "agentws serve: dropped %d log lines in the last %s\n", l.dropped, LogWindow)
+			_, _ = fmt.Fprintf(l.w, "crew serve: dropped %d log lines in the last %s\n", l.dropped, LogWindow)
 		}
 		l.start, l.written, l.dropped = now, 0, 0
 	}
@@ -46,5 +46,5 @@ func (l *limitedLog) printf(format string, args ...any) {
 		return
 	}
 	l.written++
-	_, _ = fmt.Fprintf(l.w, "agentws serve: "+format+"\n", args...)
+	_, _ = fmt.Fprintf(l.w, "crew serve: "+format+"\n", args...)
 }

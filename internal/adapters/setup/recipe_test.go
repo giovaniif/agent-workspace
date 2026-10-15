@@ -23,7 +23,7 @@ func writeFile(t *testing.T, path, body string) {
 
 func TestRecipeLoadParsesSetupTable(t *testing.T) {
 	repo := t.TempDir()
-	writeFile(t, filepath.Join(repo, ".agentws.toml"), `
+	writeFile(t, filepath.Join(repo, ".crew.toml"), `
 [setup]
 copy = [".env.example"]
 link = [".cache"]
@@ -47,7 +47,7 @@ deps = "clone"
 
 func TestRecipeLoadAcceptsAutomationTables(t *testing.T) {
 	repo := t.TempDir()
-	writeFile(t, filepath.Join(repo, ".agentws.toml"), `
+	writeFile(t, filepath.Join(repo, ".crew.toml"), `
 [setup]
 run = ["make"]
 
@@ -82,9 +82,9 @@ func TestRecipeLoadRejectsMistakes(t *testing.T) {
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
 			repo := t.TempDir()
-			writeFile(t, filepath.Join(repo, ".agentws.toml"), body)
+			writeFile(t, filepath.Join(repo, ".crew.toml"), body)
 			_, _, err := setup.Recipes{}.Load(repo)
-			if err == nil || !strings.Contains(err.Error(), ".agentws.toml") {
+			if err == nil || !strings.Contains(err.Error(), ".crew.toml") {
 				t.Errorf("err = %v, want one naming the file", err)
 			}
 		})
@@ -127,5 +127,20 @@ func TestShellFailureCarriesTheCommandOutput(t *testing.T) {
 	}
 	if !strings.Contains(shown.String(), "lockfile is stale") {
 		t.Fatalf("output not streamed: %q", shown.String())
+	}
+}
+
+func TestRecipeLoadAdoptsAnOldRepoConfig(t *testing.T) {
+	repo := t.TempDir()
+	writeFile(t, filepath.Join(repo, ".agentws.toml"), "[setup]\nrun = [\"make\"]\n")
+	got, found, err := setup.Recipes{}.Load(repo)
+	if err != nil || !found || !reflect.DeepEqual(got.Run, []string{"make"}) {
+		t.Fatalf("Load = %+v, %v, %v", got, found, err)
+	}
+	if _, err := os.Stat(filepath.Join(repo, ".crew.toml")); err != nil {
+		t.Fatalf("the config did not move to the new name: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(repo, ".agentws.toml.bak")); err != nil {
+		t.Fatalf("no backup of the old config: %v", err)
 	}
 }

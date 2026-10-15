@@ -76,7 +76,7 @@ func TestTranscriptMessagesEncodeWithSnakeCaseFields(t *testing.T) {
 }
 
 func TestTranscriptPageClientSendsItsParams(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	got := make(chan rpc.Request, 1)
 	serveStream(t, path, func(req rpc.Request, send func(rpc.Response)) {
 		got <- req
@@ -99,7 +99,7 @@ func TestTranscriptPageClientSendsItsParams(t *testing.T) {
 }
 
 func TestTranscriptWatchClientStreamsEventsAndUnwatchesOnCancel(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	unwatched := make(chan rpc.TranscriptUnwatchParams, 1)
 	var watchID uint64
 	serveStream(t, path, func(req rpc.Request, send func(rpc.Response)) {
@@ -163,7 +163,7 @@ func TestTranscriptWatchClientStreamsEventsAndUnwatchesOnCancel(t *testing.T) {
 }
 
 func TestTranscriptWatchClientClosesEventsAfterAClosedEvent(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	serveStream(t, path, func(req rpc.Request, send func(rpc.Response)) {
 		send(rpc.Response{ID: req.ID, Result: json.RawMessage(`{"messages":[]}`)})
 		send(rpc.Response{ID: req.ID, Transcript: &rpc.TranscriptEvent{Closed: true}})
@@ -187,7 +187,7 @@ func TestTranscriptWatchClientClosesEventsAfterAClosedEvent(t *testing.T) {
 }
 
 func TestTranscriptWatchClientReturnsTheDaemonsError(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	serveStream(t, path, func(req rpc.Request, send func(rpc.Response)) {
 		send(rpc.Response{ID: req.ID, Error: &rpc.Error{Code: rpc.CodeNotFound, Message: "no session s9"}})
 	})

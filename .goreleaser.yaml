@@ -5,8 +5,6 @@ project_name: crew
 before:
   hooks:
     - env -u GITHUB_TOKEN -u GH_TOKEN make web
-    - mkdir -p build/alias
-    - ln -sfn crew build/alias/agentws
 
 builds:
   - main: ./cmd/crew
@@ -23,8 +21,6 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
-      - src: build/alias/agentws
-        strip_parent: true
       - nvim/lua/**/*
       - nvim/plugin/*
 

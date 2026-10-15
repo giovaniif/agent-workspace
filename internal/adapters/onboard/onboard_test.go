@@ -12,7 +12,7 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 )
 
-const bin = "/opt/agentws/bin/agentws"
+const bin = "/opt/crew/bin/crew"
 
 type world struct {
 	probe onboard.Probe
@@ -29,13 +29,13 @@ func newWorld(t *testing.T, nvimOnPath bool) world {
 		return "", errors.New("not found")
 	}
 	return world{root: root, probe: onboard.Probe{
-		Home:           filepath.Join(root, "agentws"),
+		Home:           filepath.Join(root, "crew"),
 		Bin:            bin,
 		ClaudeSettings: filepath.Join(root, "claude", "settings.json"),
 		CodexHome:      filepath.Join(root, "codex"),
 		OmpAgentDir:    filepath.Join(root, "omp", "agent"),
 		NvimConfigDir:  filepath.Join(root, "config", "nvim"),
-		PluginDirs:     []string{filepath.Join(root, "share", "agentws", "nvim"), filepath.Join(root, "repo", "nvim")},
+		PluginDirs:     []string{filepath.Join(root, "share", "crew", "nvim"), filepath.Join(root, "repo", "nvim")},
 		LookPath:       look,
 	}}
 }
@@ -65,8 +65,8 @@ func TestAFreshMachineHasNothingSetUp(t *testing.T) {
 	if got.Harnesses[domain.HarnessClaude].Backup != "" || got.Harnesses[domain.HarnessCodex].Backup != "" {
 		t.Errorf("backups named for files that do not exist: %q, %q", got.Harnesses[domain.HarnessClaude].Backup, got.Harnesses[domain.HarnessCodex].Backup)
 	}
-	if got.Nvim.ConfigFile != filepath.Join(w.probe.NvimConfigDir, "plugin", "agentws.lua") {
-		t.Errorf("nvim setup file = %q, want plugin/agentws.lua under the config dir", got.Nvim.ConfigFile)
+	if got.Nvim.ConfigFile != filepath.Join(w.probe.NvimConfigDir, "plugin", "crew.lua") {
+		t.Errorf("nvim setup file = %q, want plugin/crew.lua under the config dir", got.Nvim.ConfigFile)
 	}
 	if got.Nvim.PluginFound || got.Nvim.PluginDir != w.probe.PluginDirs[0] {
 		t.Errorf("plugin = %q found %v, want the first candidate, not found", got.Nvim.PluginDir, got.Nvim.PluginFound)
@@ -132,13 +132,13 @@ func TestNvimPluginIsFoundAndItsConfigurationDetected(t *testing.T) {
 		configured bool
 		configFile string
 	}{
-		{"no config", nil, false, "plugin/agentws.lua"},
-		{"init.lua without agentws", map[string]string{"init.lua": "vim.o.number = true"}, false, "plugin/agentws.lua"},
-		{"init.lua requires it", map[string]string{"init.lua": "require('agentws').setup({})"}, true, "plugin/agentws.lua"},
-		{"a lua module requires it", map[string]string{"init.lua": "require('me')", "lua/me/plugins.lua": `require("agentws").setup{}`}, true, "plugin/agentws.lua"},
-		{"init.vim only", map[string]string{"init.vim": "set number"}, false, "plugin/agentws.lua"},
-		{"lazy.nvim spec in lua/plugins", map[string]string{"init.lua": "require('config.lazy')", "lua/plugins/agentws.lua": "return { dir = vim.fn.expand('~/.local/share/agentws/nvim'), config = function() require('agentws').setup({}) end }"}, true, "plugin/agentws.lua"},
-		{"plugin manager spec names the dir", map[string]string{"init.lua": "{ dir = '~/.local/share/agentws/nvim' }"}, true, "plugin/agentws.lua"},
+		{"no config", nil, false, "plugin/crew.lua"},
+		{"init.lua without crew", map[string]string{"init.lua": "vim.o.number = true"}, false, "plugin/crew.lua"},
+		{"init.lua requires it", map[string]string{"init.lua": "require('crew').setup({})"}, true, "plugin/crew.lua"},
+		{"a lua module requires it", map[string]string{"init.lua": "require('me')", "lua/me/plugins.lua": `require("crew").setup{}`}, true, "plugin/crew.lua"},
+		{"init.vim only", map[string]string{"init.vim": "set number"}, false, "plugin/crew.lua"},
+		{"lazy.nvim spec in lua/plugins", map[string]string{"init.lua": "require('config.lazy')", "lua/plugins/crew.lua": "return { dir = vim.fn.expand('~/.local/share/crew/nvim'), config = function() require('crew').setup({}) end }"}, true, "plugin/crew.lua"},
+		{"plugin manager spec names the dir", map[string]string{"init.lua": "{ dir = '~/.local/share/crew/nvim' }"}, true, "plugin/crew.lua"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -186,7 +186,7 @@ func TestFinishRecordsCompletionInHome(t *testing.T) {
 func TestOmpIsDetectedAndInstalledThroughItsHookFile(t *testing.T) {
 	w := newWorld(t, false)
 	ctx := context.Background()
-	file := filepath.Join(w.root, "omp", "agent", "hooks", "post", "agentws.ts")
+	file := filepath.Join(w.root, "omp", "agent", "hooks", "post", "crew.ts")
 	fresh, err := w.probe.Onboarding(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -199,7 +199,7 @@ func TestOmpIsDetectedAndInstalledThroughItsHookFile(t *testing.T) {
 		t.Fatalf("install omp = %+v, %v", installed, err)
 	}
 	b, err := os.ReadFile(file)
-	if err != nil || !strings.Contains(string(b), `const agentws = "`+bin+`";`) {
+	if err != nil || !strings.Contains(string(b), `const crew = "`+bin+`";`) {
 		t.Errorf("hook file = %s, %v", b, err)
 	}
 	if got, _ := w.probe.Onboarding(ctx); !got.Harnesses[domain.HarnessOmp].Installed {
@@ -209,7 +209,7 @@ func TestOmpIsDetectedAndInstalledThroughItsHookFile(t *testing.T) {
 
 func TestAnOmpHookFileOfTheUsersIsReportedNotOverwritten(t *testing.T) {
 	w := newWorld(t, false)
-	file := filepath.Join(w.root, "omp", "agent", "hooks", "post", "agentws.ts")
+	file := filepath.Join(w.root, "omp", "agent", "hooks", "post", "crew.ts")
 	write(t, file, "export default function () {}\n")
 	got, err := w.probe.Onboarding(context.Background())
 	if err != nil {
@@ -257,7 +257,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 		"XDG_DATA_HOME":       "/data",
 		"HOME":                "/home/me",
 	}
-	p := onboard.FromEnv("/h", "/repo/bin/agentws", func(k string) string { return env[k] })
+	p := onboard.FromEnv("/h", "/repo/bin/crew", func(k string) string { return env[k] })
 	if p.ClaudeSettings != "/c/settings.json" || p.CodexHome != "/x" || p.OmpAgentDir != "/pi" || p.NvimConfigDir != "/cfg/nvim" || p.Home != "/h" {
 		t.Errorf("probe = %+v", p)
 	}
@@ -265,7 +265,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 		t.Errorf("plugin dirs = %q, want the data dir first and the checkout's nvim/ last", p.PluginDirs)
 	}
 
-	bare := onboard.FromEnv("/h", "/usr/local/bin/agentws", func(k string) string {
+	bare := onboard.FromEnv("/h", "/usr/local/bin/crew", func(k string) string {
 		if k == "HOME" {
 			return "/home/me"
 		}
@@ -279,7 +279,7 @@ func TestFromEnvFollowsTheHarnessAndXDGVariables(t *testing.T) {
 func TestNvimConfigBehindASymlinkIsScanned(t *testing.T) {
 	w := newWorld(t, true)
 	real := filepath.Join(t.TempDir(), "dotfiles-nvim")
-	write(t, filepath.Join(real, "init.lua"), "require('agentws').setup({})")
+	write(t, filepath.Join(real, "init.lua"), "require('crew').setup({})")
 	if err := os.RemoveAll(w.probe.NvimConfigDir); err != nil {
 		t.Fatal(err)
 	}
@@ -359,8 +359,8 @@ func TestInstallAlsoTeachesClaudeAndCodexTheBrowserCommands(t *testing.T) {
 		}
 	}
 	for _, file := range []string{
-		filepath.Join(w.root, "claude", "skills", "agentws-browser", "SKILL.md"),
-		filepath.Join(w.root, "codex", "skills", "agentws-browser", "SKILL.md"),
+		filepath.Join(w.root, "claude", "skills", "crew-browser", "SKILL.md"),
+		filepath.Join(w.root, "codex", "skills", "crew-browser", "SKILL.md"),
 	} {
 		if body, err := os.ReadFile(file); err != nil || !strings.Contains(string(body), "crew browser snapshot") {
 			t.Errorf("%s: %v", file, err)

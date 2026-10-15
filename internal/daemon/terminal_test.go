@@ -44,7 +44,7 @@ func startTerm(t *testing.T, sessions []domain.Session, worktrees []domain.Workt
 	d.SetClientHost(r.client)
 	r.path = path
 	r.c = dial(t, path)
-	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"agentws", "tui"}})
+	opened, err := r.c.OpenClient(context.Background(), rpc.OpenClientParams{Command: []string{"crew", "tui"}})
 	if err != nil {
 		t.Fatal(err)
 	}

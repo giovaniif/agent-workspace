@@ -37,7 +37,7 @@ start() {
       exit 2
       ;;
     esac
-    if [ "$w" = crew ] || [ "$w" = agentws ]; then words+=("$bin"); else words+=("$w"); fi
+    if [ "$w" = crew ]; then words+=("$bin"); else words+=("$w"); fi
   done
   tmux -L "$sock" send-keys -t shot "$(printf '%q ' env COLORTERM=truecolor "HOME=$HOME" "XDG_CONFIG_HOME=$XDG_CONFIG_HOME" "XDG_DATA_HOME=$XDG_DATA_HOME" "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR" "CODEX_HOME=$CODEX_HOME" "CREW_HOME=$home" "CREW_TMUX_SOCKET=$sock-agents" "CREW_LAUNCH_DIR=$PWD" "${words[@]}")" Enter
   started=1

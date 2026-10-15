@@ -1,5 +1,5 @@
 #!/bin/sh
 for arg in "$@"; do
 	printf '%s\t' "$arg"
-done >>"$AGENTWS_E2E/osascript.log"
-echo >>"$AGENTWS_E2E/osascript.log"
+done >>"$CREW_E2E/osascript.log"
+echo >>"$CREW_E2E/osascript.log"

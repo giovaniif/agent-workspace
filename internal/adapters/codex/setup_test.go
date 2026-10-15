@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const testBinary = "/opt/agentws/bin/agentws"
+const testBinary = "/opt/crew/bin/crew"
 
 func readFixture(t *testing.T, name string) []byte {
 	t.Helper()
@@ -42,7 +42,7 @@ func codexHome(t *testing.T, hooksJSON []byte) (SetupConfig, string) {
 
 func backups(t *testing.T, dir string) []string {
 	t.Helper()
-	found, err := filepath.Glob(filepath.Join(dir, "hooks.json.agentws-*.bak"))
+	found, err := filepath.Glob(filepath.Join(dir, "hooks.json.crew-*.bak"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,12 +160,12 @@ func TestSetupMovesOurHooksWhenTheBinaryMoves(t *testing.T) {
 	if _, err := Setup(cfg); err != nil {
 		t.Fatal(err)
 	}
-	cfg.Command = "/usr/local/bin/agentws"
+	cfg.Command = "/usr/local/bin/crew"
 	if _, err := Setup(cfg); err != nil {
 		t.Fatal(err)
 	}
 	got := string(mustRead(t, path))
-	if strings.Contains(got, testBinary) || strings.Count(got, "/usr/local/bin/agentws hook --harness codex --event Stop") != 1 {
+	if strings.Contains(got, testBinary) || strings.Count(got, "/usr/local/bin/crew hook --harness codex --event Stop") != 1 {
 		t.Fatalf("hooks.json:\n%s", got)
 	}
 }
@@ -207,11 +207,11 @@ func TestSetupRefusesMalformedHooksFileAndLeavesItAlone(t *testing.T) {
 
 func TestSetupQuotesABinaryPathWithSpaces(t *testing.T) {
 	cfg, path := codexHome(t, nil)
-	cfg.Command = "/Users/dev/My Tools/agentws"
+	cfg.Command = "/Users/dev/My Tools/crew"
 	if _, err := Setup(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(mustRead(t, path)), `'/Users/dev/My Tools/agentws' hook --harness codex --event Stop`) {
+	if !strings.Contains(string(mustRead(t, path)), `'/Users/dev/My Tools/crew' hook --harness codex --event Stop`) {
 		t.Fatalf("hooks.json:\n%s", mustRead(t, path))
 	}
 	if _, err := Remove(cfg); err != nil {

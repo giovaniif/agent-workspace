@@ -190,7 +190,7 @@ func (s *Server) check(ctx context.Context, d Daemon, token string) (rpc.Device,
 func (s *Server) dial(ctx context.Context) (Daemon, error) {
 	d, err := s.cfg.Dial(ctx)
 	if err != nil {
-		return nil, &rpc.Error{Code: rpc.CodeUnavailable, Message: "the agentws daemon is not reachable: " + err.Error()}
+		return nil, &rpc.Error{Code: rpc.CodeUnavailable, Message: "the crew daemon is not reachable: " + err.Error()}
 	}
 	return d, nil
 }
@@ -412,7 +412,7 @@ func apiError(err error) *rpc.Error {
 	if errors.As(err, &rerr) {
 		return rerr
 	}
-	return &rpc.Error{Code: rpc.CodeUnavailable, Message: "the agentws daemon is not reachable: " + err.Error()}
+	return &rpc.Error{Code: rpc.CodeUnavailable, Message: "the crew daemon is not reachable: " + err.Error()}
 }
 
 func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {

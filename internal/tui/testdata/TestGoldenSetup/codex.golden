@@ -7,11 +7,11 @@
      
       ▌ Changes /Users/me/.codex/hooks.json                                          
       ▌ Adds the crew hooks. Your other hooks stay as they are.                      
-      ▌ Backup  /Users/me/.codex/hooks.json.agentws-<time>.bak                       
+      ▌ Backup  /Users/me/.codex/hooks.json.crew-<time>.bak                          
       ▌ Undo    crew setup codex --remove                                            
      
       ▌ ! One more step in Codex                                                     
       ▌ Codex runs a hook only after you trust it. Start codex and accept the review 
-      ▌ prompt for the new agentws hooks, or open /hooks and trust them there.       
+      ▌ prompt for the new crew hooks, or open /hooks and trust them there.          
      
       s skip                                                   esc skip   ⏎ install  

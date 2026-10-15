@@ -140,7 +140,7 @@ func TestPortsKillRefusesGroupsThatServeNoPort(t *testing.T) {
 
 func TestPortsKillNeverSignalsTheDaemonsOwnGroup(t *testing.T) {
 	own := syscall.Getpgrp()
-	p := startPorts(t, domain.Listener{Port: 8081, PID: own, PGID: own, Command: "agentws", Cwd: "/solo-feat"})
+	p := startPorts(t, domain.Listener{Port: 8081, PID: own, PGID: own, Command: "crew", Cwd: "/solo-feat"})
 	eventually(t, p.path, 2*time.Second, "port shown", func(st rpc.State) bool { return len(portsOf(st, "/solo-feat")) == 1 })
 	if _, err := kill(t, p.path, own); err == nil {
 		t.Fatal("kill of the daemon's own group succeeded")

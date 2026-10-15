@@ -16,7 +16,7 @@ import (
 
 func TestServeRefusesPlainHTTPOffLoopbackWhateverTheFlags(t *testing.T) {
 	home := shortHome(t)
-	t.Setenv("AGENTWS_HOME", home)
+	t.Setenv("CREW_HOME", home)
 	for _, args := range [][]string{
 		{"--addr", "0.0.0.0:7420"},
 		{"--addr", "0.0.0.0:7420", "--url", "https://box.example.ts.net"},
@@ -38,7 +38,7 @@ func TestServeRefusesPlainHTTPOffLoopbackWhateverTheFlags(t *testing.T) {
 }
 
 func TestServeSaysWhyPlainHTTPIsRefused(t *testing.T) {
-	t.Setenv("AGENTWS_HOME", shortHome(t))
+	t.Setenv("CREW_HOME", shortHome(t))
 	var stderr bytes.Buffer
 	code := run([]string{"serve", "--addr", "0.0.0.0:7420"}, io.Discard, &stderr)
 	if code != 1 || !strings.Contains(stderr.String(), "loopback") || !strings.Contains(stderr.String(), "--cert") || !strings.Contains(stderr.String(), "--self-signed") {
@@ -47,7 +47,7 @@ func TestServeSaysWhyPlainHTTPIsRefused(t *testing.T) {
 }
 
 func TestServeUsage(t *testing.T) {
-	t.Setenv("AGENTWS_HOME", shortHome(t))
+	t.Setenv("CREW_HOME", shortHome(t))
 	for _, args := range [][]string{{"serve", "extra"}, {"serve", "--nope"}} {
 		var stderr bytes.Buffer
 		if code := run(args, io.Discard, &stderr); code != 2 || !strings.Contains(stderr.String(), "usage: crew serve") {

@@ -83,7 +83,7 @@ func (d *Daemon) automationRepo(a domain.Automation, repo string) string {
 	if repo != "" {
 		return filepath.Clean(repo)
 	}
-	if filepath.Base(a.Source) == repoConfigFile {
+	if filepath.Base(a.Source) == domain.RepoConfigFile {
 		return filepath.Dir(a.Source)
 	}
 	var root string
@@ -129,6 +129,9 @@ func (d *Daemon) startAutomation(a domain.Automation, t automationTrigger) (doma
 			run.Outcome, run.Reason = domain.AutomationFailed, rerr.Message
 		} else {
 			run.Outcome, run.SessionID = domain.AutomationSucceeded, session.ID
+			if plan.Kind != domain.AutomationStartSend {
+				d.headless.setWant(session.ID, a.Browser)
+			}
 		}
 	}
 	run.End = d.ws.now()

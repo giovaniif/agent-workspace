@@ -28,10 +28,10 @@ func (l *launchctl) run(_ context.Context, name string, args ...string) error {
 func agent(dir string) launchd.Agent {
 	return launchd.Agent{
 		Dir:     dir,
-		Label:   "dev.agentws.bridge.me-vps",
-		Program: []string{"/usr/local/bin/agentws", "notify", "bridge", "me@vps"},
-		Env:     map[string]string{"PATH": "/opt/homebrew/bin:/usr/bin", "AGENTWS_HOME": "/Users/me/.agentws"},
-		Log:     "/Users/me/.agentws/bridge-me@vps.log",
+		Label:   "dev.crew.bridge.me-vps",
+		Program: []string{"/usr/local/bin/crew", "notify", "bridge", "me@vps"},
+		Env:     map[string]string{"PATH": "/opt/homebrew/bin:/usr/bin", "CREW_HOME": "/Users/me/.crew"},
+		Log:     "/Users/me/.crew/bridge-me@vps.log",
 		UID:     501,
 	}
 }
@@ -43,7 +43,7 @@ func TestLaunchdInstallWritesAKeptAliveAgentAndLoadsIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(dir, "dev.agentws.bridge.me-vps.plist")
+	path := filepath.Join(dir, "dev.crew.bridge.me-vps.plist")
 	if !res.Changed || res.Path != path || res.Backup != "" {
 		t.Fatalf("result %+v", res)
 	}
@@ -53,19 +53,19 @@ func TestLaunchdInstallWritesAKeptAliveAgentAndLoadsIt(t *testing.T) {
 	}
 	plist := string(raw)
 	for _, want := range []string{
-		"<key>Label</key>\n\t<string>dev.agentws.bridge.me-vps</string>",
-		"<string>/usr/local/bin/agentws</string>\n\t\t<string>notify</string>\n\t\t<string>bridge</string>\n\t\t<string>me@vps</string>",
-		"<key>AGENTWS_HOME</key>\n\t\t<string>/Users/me/.agentws</string>\n\t\t<key>PATH</key>\n\t\t<string>/opt/homebrew/bin:/usr/bin</string>",
+		"<key>Label</key>\n\t<string>dev.crew.bridge.me-vps</string>",
+		"<string>/usr/local/bin/crew</string>\n\t\t<string>notify</string>\n\t\t<string>bridge</string>\n\t\t<string>me@vps</string>",
+		"<key>CREW_HOME</key>\n\t\t<string>/Users/me/.crew</string>\n\t\t<key>PATH</key>\n\t\t<string>/opt/homebrew/bin:/usr/bin</string>",
 		"<key>RunAtLoad</key>\n\t<true/>",
 		"<key>KeepAlive</key>\n\t<true/>",
-		"<key>StandardErrorPath</key>\n\t<string>/Users/me/.agentws/bridge-me@vps.log</string>",
+		"<key>StandardErrorPath</key>\n\t<string>/Users/me/.crew/bridge-me@vps.log</string>",
 	} {
 		if !strings.Contains(plist, want) {
 			t.Errorf("plist lacks %q:\n%s", want, plist)
 		}
 	}
 	want := [][]string{
-		{"launchctl", "bootout", "gui/501/dev.agentws.bridge.me-vps"},
+		{"launchctl", "bootout", "gui/501/dev.crew.bridge.me-vps"},
 		{"launchctl", "bootstrap", "gui/501", path},
 	}
 	if !reflect.DeepEqual(l.calls, want) {
@@ -76,12 +76,12 @@ func TestLaunchdInstallWritesAKeptAliveAgentAndLoadsIt(t *testing.T) {
 func TestLaunchdInstallEscapesXML(t *testing.T) {
 	dir := t.TempDir()
 	a := agent(dir)
-	a.Program = []string{"/opt/a&b/agentws", "<x>"}
+	a.Program = []string{"/opt/a&b/crew", "<x>"}
 	if _, err := launchd.Install(context.Background(), a, (&launchctl{}).run); err != nil {
 		t.Fatal(err)
 	}
 	raw, _ := os.ReadFile(filepath.Join(dir, a.Label+".plist"))
-	if !strings.Contains(string(raw), "<string>/opt/a&amp;b/agentws</string>") || !strings.Contains(string(raw), "<string>&lt;x&gt;</string>") {
+	if !strings.Contains(string(raw), "<string>/opt/a&amp;b/crew</string>") || !strings.Contains(string(raw), "<string>&lt;x&gt;</string>") {
 		t.Fatalf("not escaped:\n%s", raw)
 	}
 }
@@ -96,7 +96,7 @@ func TestLaunchdInstallTwiceChangesNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := [][]string{{"launchctl", "print", "gui/501/dev.agentws.bridge.me-vps"}}; res.Changed || !reflect.DeepEqual(l.calls, want) {
+	if want := [][]string{{"launchctl", "print", "gui/501/dev.crew.bridge.me-vps"}}; res.Changed || !reflect.DeepEqual(l.calls, want) {
 		t.Fatalf("result %+v calls %q", res, l.calls)
 	}
 }
@@ -119,7 +119,7 @@ func TestLaunchdInstallLoadsAnUnchangedAgentThatIsNotLoaded(t *testing.T) {
 
 func TestLaunchdInstallOverADifferentAgentBacksItUpAndReloads(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "dev.agentws.bridge.me-vps.plist")
+	path := filepath.Join(dir, "dev.crew.bridge.me-vps.plist")
 	if err := os.WriteFile(path, []byte("old"), 0o644); err != nil {
 		t.Fatal(err)
 	}

@@ -152,6 +152,15 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
   - The PR link (or the session task) is `{{work_item}}`. A text that describes the event is `{{event}}`.
   - There is one run for each automation and subject (the PR link, the session or the worktree) at a time. While that run is live, a new event records a `skipped` run.
 
+## Mates
+
+`go test ./internal/domain/ ./internal/daemon/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md) and the methods in [internal/rpc/](../rpc/AGENTS.md).
+
+- `mate.*` use the `config.toml` path, the mutex and the backup of the Config section. They run on the connection goroutine, never on the loop.
+- A load validates each `[[mate]]` table against the registered workspaces (`domain.CheckMates`). An invalid or repeated mate gives a problem with the file path, and the other mates load.
+- A write parses the new text again. The result must hold exactly the mate that was set. If it does not, the daemon refuses and tells you to edit the file by hand. It never touches a file that does not parse.
+- Tokens are not part of a mate. `WithMateSecrets(app.MateSecrets)` turns on `mate.set_tokens` and `mate.clear_tokens`. `Run` passes `secrets.Files` for `$CREW_HOME/secrets`. The mate must exist. The daemon validates the prefixes (`domain.ValidateMateTokens`) before it stores anything, and it never logs or returns a token. `mate.remove` clears the tokens of the mate. Tests: `go test ./internal/daemon/ -run MateSetTokens\|MateClearTokens\|NoMateMethod`.
+
 ## Codex fallback
 
 `go test ./... -run Fallback`. `[fallback]` in `$CREW_HOME/config.toml` sets `threshold` and the `models`/`efforts` maps from Claude to Codex. Under the harness row, the new-session dialog shows the low-quota warning of `domain.Advise`. `ctrl+s` takes the offer: it switches to the other harness when that harness has reported limits. See [ADR 0027](../../docs/adr/0027-codex-fallback.md).
@@ -290,6 +299,17 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
   - The worker logs other failures (by host, never the endpoint URL) and does not try them again.
   - A full queue drops the push.
 
+## Mate gate
+
+`go test ./internal/daemon/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md) and the rules in [internal/domain/](../domain/AGENTS.md).
+
+- A mate session has `Session.Mate` (`Name`, `Owner`, `Authority`). Other sessions have none, and the gate does not apply to them.
+- `MateTurn{SessionID, User}` sets `Authority` to the Slack user ID of the event that started the turn. The Slack worker posts it. Text in the thread never sets it. On a session that is not a mate, it does nothing.
+- For each `PreToolUse` hook of a mate session, the loop uses the `action` of the hook if it is dangerous. Else it classifies the call again with `Session.Dir` as the root. Then it calls `domain.Gate`.
+  - If the gate allows the action, the reply is empty. A granted approval that the gate used is removed.
+  - If the gate stops the action, the reply has the deny output, and the daemon records one pending `domain.Approval` (the same pending action is not added two times).
+- `approval.list` returns the pending approvals. They are in memory only.
+
 ## Browser
 
 `go test ./internal/daemon/ -run Browser -bench BrowserRoundTrip`. The protocol is in [internal/rpc/](../rpc/AGENTS.md). See [ADR 0051](../../docs/adr/0051-browser-in-mac-app.md).
@@ -298,6 +318,17 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 - `browser.command` waits on its own connection goroutine. Thus a slow page never blocks the loop or other connections.
 - When the attached connection closes, or a new attach replaces it, each call that waits on it fails at once.
 - The daemon keeps no browser state and never logs args or results.
+
+### Headless fallback
+
+`go test ./internal/daemon/ -run 'Headless|Cookie'`. The real Chromium test is in [test/integration/](../../test/integration/AGENTS.md). See [ADR 0053](../../docs/adr/0053-headless-browser-fallback.md).
+
+- `browser.command` picks the backend with `domain.ChooseBrowser`. The inputs are the `browser` of the automation that started the session, if the Mac app is attached, and `[browser]` in `config.toml`.
+- `[browser]` has `fallback` (`"headless"` or `"off"`, default `"off"`), `max_headless` (default 2) and `idle` (default `"10m"`). `config.set` and a daemon start read it again.
+- `headlessPool` keeps one `app.HeadlessTab` for each session, under its own mutex. It is not loop state. A command opens the tab if necessary, under the `max_headless` limit (`domain.AdmitHeadless`).
+- A reaper runs every 15 s (`WithHeadlessBrowser`). It stops the tabs of ended sessions and idle tabs (`domain.HeadlessToStop`). It never stops a tab while a command runs. When the daemon stops, it stops all tabs.
+- `browser.cookies.import` merges the cookies into `$CREW_HOME/browser/profiles/default/cookies.json` (0600) and sends them to each tab that runs. A new tab gets all kept cookies.
+- The automation `browser` is kept in memory when the run starts its session. After a daemon restart, that session uses `any`.
 
 ## Shell and nvim
 

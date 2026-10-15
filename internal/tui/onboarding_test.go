@@ -21,18 +21,18 @@ var (
 	keySpace = tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 )
 
-var setupCommand = []string{"/bin/agentws", "tui", "--setup"}
+var setupCommand = []string{"/bin/crew", "tui", "--setup"}
 
 func freshMachine() domain.Onboarding {
 	return domain.Onboarding{
 		Harnesses: map[domain.Harness]domain.HarnessSetup{
-			domain.HarnessClaude: {File: "/Users/me/.claude/settings.json", Backup: "/Users/me/.claude/settings.json.agentws-backup"},
-			domain.HarnessCodex:  {File: "/Users/me/.codex/hooks.json", Backup: "/Users/me/.codex/hooks.json.agentws-<time>.bak"},
-			domain.HarnessOmp:    {File: "/Users/me/.omp/agent/hooks/post/agentws.ts"},
+			domain.HarnessClaude: {File: "/Users/me/.claude/settings.json", Backup: "/Users/me/.claude/settings.json.crew-backup"},
+			domain.HarnessCodex:  {File: "/Users/me/.codex/hooks.json", Backup: "/Users/me/.codex/hooks.json.crew-<time>.bak"},
+			domain.HarnessOmp:    {File: "/Users/me/.omp/agent/hooks/post/crew.ts"},
 		},
 		Nvim: domain.NvimSetup{
-			OnPath: true, ConfigFile: "/Users/me/.config/nvim/plugin/agentws.lua",
-			PluginDir: "/Users/me/.local/share/agentws/nvim", PluginFound: true,
+			OnPath: true, ConfigFile: "/Users/me/.config/nvim/plugin/crew.lua",
+			PluginDir: "/Users/me/.local/share/crew/nvim", PluginFound: true,
 		},
 	}
 }
@@ -96,7 +96,7 @@ func TestSetupPickStepHasARowPerCatalogHarness(t *testing.T) {
 	m = pressCmd(pressCmd(pressCmd(m, keyUp), keyUp), keySpace)
 	mustShow(t, screen(m), "[ ] Claude Code", "[x] Oh My Pi")
 	m = pressCmd(m, keyEnter)
-	mustShow(t, screen(m), "Oh My Pi", "/Users/me/.omp/agent/hooks/post/agentws.ts", "crew setup omp --remove", "⏎ install")
+	mustShow(t, screen(m), "Oh My Pi", "/Users/me/.omp/agent/hooks/post/crew.ts", "crew setup omp --remove", "⏎ install")
 	m = pressCmd(m, keyEnter)
 	if !slices.Equal(f.installed, []domain.Harness{domain.HarnessOmp}) {
 		t.Fatalf("installed = %v", f.installed)
@@ -107,7 +107,7 @@ func TestSetupPickStepHasARowPerCatalogHarness(t *testing.T) {
 func TestSetupInstallsOnlyThePickedHarnessesOnConfirmation(t *testing.T) {
 	m, f := setupModel(t, freshMachine())
 	m = pressCmd(m, keyEnter)
-	mustShow(t, screen(m), "Claude Code", "/Users/me/.claude/settings.json", "settings.json.agentws-backup", "crew setup claude --remove", "⏎ install")
+	mustShow(t, screen(m), "Claude Code", "/Users/me/.claude/settings.json", "settings.json.crew-backup", "crew setup claude --remove", "⏎ install")
 	if len(f.installed) != 0 {
 		t.Fatalf("installed before confirmation: %v", f.installed)
 	}
@@ -150,15 +150,15 @@ func TestSetupNvimStep(t *testing.T) {
 		not  []string
 	}{
 		{"snippet", freshMachine().Nvim, []string{
-			"require('agentws').setup({})",
-			"/Users/me/.config/nvim/plugin/agentws.lua",
-			"local dir = '/Users/me/.local/share/agentws/nvim'",
+			"require('crew').setup({})",
+			"/Users/me/.config/nvim/plugin/crew.lua",
+			"local dir = '/Users/me/.local/share/crew/nvim'",
 			"crew setup nvim --remove",
 			"⏎ write it",
 		}, nil},
 		{"configured", domain.NvimSetup{OnPath: true, Configured: true}, []string{"✓ the crew plugin is configured"}, []string{"prepend"}},
 		{"no nvim", domain.NvimSetup{}, []string{"optional", "nvim is not on PATH", "brew install neovim", "⏎ next"}, []string{"prepend", "s skip"}},
-		{"no plugin dir", domain.NvimSetup{OnPath: true, PluginDir: "/Users/me/.local/share/agentws/nvim", ConfigFile: "/c/init.lua"}, []string{"plugin files are not at /Users/me/.local/share/agentws/nvim", "install script"}, nil},
+		{"no plugin dir", domain.NvimSetup{OnPath: true, PluginDir: "/Users/me/.local/share/crew/nvim", ConfigFile: "/c/init.lua"}, []string{"plugin files are not at /Users/me/.local/share/crew/nvim", "install script"}, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -267,7 +267,7 @@ func TestSetupNvimStepAddsTheBlockOnlyOnConfirmation(t *testing.T) {
 	if f.nvimInstalls != 1 {
 		t.Fatalf("installs = %d", f.nvimInstalls)
 	}
-	mustShow(t, screen(m), "✓ wrote /Users/me/.config/nvim/plugin/agentws.lua", "crew setup nvim --remove", "⏎ next")
+	mustShow(t, screen(m), "✓ wrote /Users/me/.config/nvim/plugin/crew.lua", "crew setup nvim --remove", "⏎ next")
 	mustShow(t, screen(pressCmd(m, keyEnter)), "You're set", "plugin configured")
 
 	m, f = setupModel(t, freshMachine())

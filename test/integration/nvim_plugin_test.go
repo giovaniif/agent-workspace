@@ -16,7 +16,7 @@ func pluginDir(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "lua", "agentws", "init.lua")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "lua", "crew", "init.lua")); err != nil {
 		t.Fatalf("the nvim plugin is missing: %v", err)
 	}
 	return dir
@@ -27,23 +27,28 @@ func TestNvimPluginSpecs(t *testing.T) {
 	if _, err := exec.LookPath("nvim"); err != nil {
 		t.Skip("nvim not installed")
 	}
-	home := t.TempDir()
-	cmd := exec.Command("nvim", "--clean", "--headless", "-n", "-i", "NONE", "-l", filepath.Join(plugin, "test", "spec.lua"))
-	cmd.Env = append(os.Environ(),
-		"AGENTWS_NVIM_PLUGIN="+plugin,
-		"XDG_CONFIG_HOME="+filepath.Join(home, "config"),
-		"XDG_DATA_HOME="+filepath.Join(home, "data"),
-		"XDG_STATE_HOME="+filepath.Join(home, "state"),
-		"XDG_CACHE_HOME="+filepath.Join(home, "cache"),
-		"AGENTWS_SESSION=",
-		"TMUX=",
-	)
-	out, err := cmd.CombinedOutput()
-	t.Logf("%s", out)
-	if err != nil {
-		t.Fatalf("nvim specs failed: %v", err)
-	}
-	if !strings.Contains(string(out), "all specs passed") {
-		t.Fatalf("the specs did not finish:\n%s", out)
+	for _, spec := range []string{"spec.lua", "legacy_spec.lua"} {
+		t.Run(spec, func(t *testing.T) {
+			home := t.TempDir()
+			cmd := exec.Command("nvim", "--clean", "--headless", "-n", "-i", "NONE", "-l", filepath.Join(plugin, "test", spec))
+			cmd.Env = append(os.Environ(),
+				"CREW_NVIM_PLUGIN="+plugin,
+				"XDG_CONFIG_HOME="+filepath.Join(home, "config"),
+				"XDG_DATA_HOME="+filepath.Join(home, "data"),
+				"XDG_STATE_HOME="+filepath.Join(home, "state"),
+				"XDG_CACHE_HOME="+filepath.Join(home, "cache"),
+				"CREW_SESSION=",
+				"AGENTWS_SESSION=",
+				"TMUX=",
+			)
+			out, err := cmd.CombinedOutput()
+			t.Logf("%s", out)
+			if err != nil {
+				t.Fatalf("nvim specs failed: %v", err)
+			}
+			if !strings.Contains(string(out), "all specs passed") {
+				t.Fatalf("the specs did not finish:\n%s", out)
+			}
+		})
 	}
 }

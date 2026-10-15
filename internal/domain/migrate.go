@@ -11,6 +11,13 @@ const (
 	LegacyHomeDirName = ".agentws"
 	TmuxServer        = "crew"
 	LegacyTmuxServer  = "agentws"
+	LegacyEnvPrefix   = "AGENTWS_"
+
+	RepoConfigFile       = ".crew.toml"
+	LegacyRepoConfigFile = ".agentws.toml"
+	LegacyTurnPrefix     = "refs/agentws/turns/"
+
+	legacyNvimSetupMarker = "-- agentws: written by agentws setup nvim"
 )
 
 type HomeFacts struct {
@@ -62,6 +69,10 @@ func TmuxSocket(env string, legacyHasPanes bool) string {
 }
 
 var legacyHook = regexp.MustCompile(`(^|[/"'\s])agentws'? hook --harness `)
+
+func IsLegacyNvimSetupFile(content string) bool {
+	return strings.HasPrefix(content, legacyNvimSetupMarker)
+}
 
 func HasLegacyHook(content string) bool { return legacyHook.MatchString(content) }
 

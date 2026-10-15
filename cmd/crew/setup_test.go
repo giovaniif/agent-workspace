@@ -17,7 +17,7 @@ func setupCodex(t *testing.T, codexHome string, args ...string) (int, string, st
 		}
 		return ""
 	}
-	code := runSetup(append([]string{"codex"}, args...), &out, &errOut, env, "/opt/agentws/bin/agentws")
+	code := runSetup(append([]string{"codex"}, args...), &out, &errOut, env, "/opt/crew/bin/crew")
 	return code, out.String(), errOut.String()
 }
 
@@ -31,7 +31,7 @@ func TestSetupCodexWritesHooksAndPrintsTheTrustStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(hooks), "/opt/agentws/bin/agentws hook --harness codex --event Stop") {
+	if !strings.Contains(string(hooks), "/opt/crew/bin/crew hook --harness codex --event Stop") {
 		t.Fatalf("hooks.json:\n%s", hooks)
 	}
 	if !strings.Contains(out, filepath.Join(dir, "hooks.json")) || !strings.Contains(out, "trust") {
@@ -76,7 +76,7 @@ func TestSetupCodexFailsOnBrokenHooksFile(t *testing.T) {
 
 func TestSetupRejectsAnUnknownHarness(t *testing.T) {
 	var out, errOut bytes.Buffer
-	if code := runSetup([]string{"vim"}, &out, &errOut, func(string) string { return "" }, "agentws"); code != 2 {
+	if code := runSetup([]string{"vim"}, &out, &errOut, func(string) string { return "" }, "crew"); code != 2 {
 		t.Fatalf("code %d", code)
 	}
 	if !strings.Contains(errOut.String(), "usage: crew setup") {
@@ -86,7 +86,7 @@ func TestSetupRejectsAnUnknownHarness(t *testing.T) {
 
 func TestSetupCodexAlsoInstallsTheBrowserSkillAndRemoveTakesItAway(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "skills", "agentws-browser", "SKILL.md")
+	file := filepath.Join(dir, "skills", "crew-browser", "SKILL.md")
 	if code, _, errOut := setupCodex(t, dir); code != 0 {
 		t.Fatalf("code %d: %s", code, errOut)
 	}

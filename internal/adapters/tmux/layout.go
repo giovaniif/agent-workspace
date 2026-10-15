@@ -31,14 +31,16 @@ func (h *Host) OpenClient(ctx context.Context, name string, tui app.PaneSpec) (a
 	return slot, nil
 }
 
-const resizeToClient = "run-shell -C 'resize-window -t " + sessionName + ": -x #{client_width} -y #{client_height} ; set-hook -R -w -t " + sessionName + ": window-resized'"
+func resizeToClient(n names) string {
+	return "run-shell -C 'resize-window -t " + n.session + ": -x #{client_width} -y #{client_height} ; set-hook -R -w -t " + n.session + ": window-resized'"
+}
 
 func (h *Host) sizeByTerminalOnly(ctx context.Context, slot app.Slot) error {
 	if _, err := h.run(ctx, "", "set-option", "-w", "-t", string(slot), "window-size", "manual"); err != nil {
 		return err
 	}
 	for _, hook := range []string{"client-attached", "client-resized"} {
-		if _, err := h.run(ctx, "", "set-hook", "-t", sessionName, hook, resizeToClient); err != nil {
+		if _, err := h.run(ctx, "", "set-hook", "-t", h.n.session, hook, resizeToClient(h.n)); err != nil {
 			return err
 		}
 	}
@@ -121,7 +123,7 @@ func (h *Host) FocusSlot(ctx context.Context, slot app.Slot) error {
 }
 
 func (h *Host) AttachCommand(slot app.Slot) []string {
-	return []string{"tmux", "-L", h.socket, "-f", h.configPath, "attach-session", "-t", "=" + sessionName + ":" + string(slot)}
+	return []string{"tmux", "-L", h.socket, "-f", h.configPath, "attach-session", "-t", "=" + h.n.session + ":" + string(slot)}
 }
 
 func (h *Host) ShownIn(ctx context.Context, slot app.Slot) app.PaneID {

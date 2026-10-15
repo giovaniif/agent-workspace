@@ -1,23 +1,23 @@
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'ship two parts'
+exec crew workspace add api
+exec crew new --workspace api 'ship two parts'
 capture SID '^session (\S+) on pane'
-eventually ' state=done ' agentws debug session --once $SID
-mkdir $AGENTWS_E2E/gates/end
-eventually ' state=idle ' agentws debug session --once $SID
-eventually '/api-b\s+feat-b\s+'$SID'\s' agentws worktree list
+eventually ' state=done ' crew debug session --once $SID
+mkdir $CREW_E2E/gates/end
+eventually ' state=idle ' crew debug session --once $SID
+eventually '/api-b\s+feat-b\s+'$SID'\s' crew worktree list
 capture A '^(\S+/api-a)\s'
 capture B '^(\S+/api-b)\s'
 
 cp prs-merged.json prs.json
-eventually '/api-a","branch":"feat-a","action":"remove",.*"outcome":"removed"' cat $AGENTWS_HOME/cleanup.log
+eventually '/api-a","branch":"feat-a","action":"remove",.*"outcome":"removed"' cat $CREW_HOME/cleanup.log
 ! exists $A
 exists $B/b.txt
 exec git -C api branch --list feat-a
 stdout 'feat-a'
-! eventually '/api-a\s' agentws worktree list
+! eventually '/api-a\s' crew worktree list
 stdout '/api-b\s+feat-b\s+'$SID'\s'
-exec agentws cleanup
+exec crew cleanup
 stdout '^keep\s+\S+/api-b\s+feat-b\s+not merged\s+kept$'
 ! stdout 'api-a'
 

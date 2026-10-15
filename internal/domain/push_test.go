@@ -162,10 +162,10 @@ func TestPushForIsNeverSilent(t *testing.T) {
 		banner      Banner
 		title, body string
 	}{
-		{Banner{Group: "s1", State: StateDone}, "agentws", "done"},
-		{Banner{Title: "  ", Body: " \n", Group: "s1", State: StateWaiting}, "agentws", "waiting"},
-		{Banner{Group: "s1", State: StatePermission}, "agentws", "needs permission"},
-		{Banner{Group: "s1", State: StateIdle}, "agentws", "needs you"},
+		{Banner{Group: "s1", State: StateDone}, "crew", "done"},
+		{Banner{Title: "  ", Body: " \n", Group: "s1", State: StateWaiting}, "crew", "waiting"},
+		{Banner{Group: "s1", State: StatePermission}, "crew", "needs permission"},
+		{Banner{Group: "s1", State: StateIdle}, "crew", "needs you"},
 	}
 	for _, c := range cases {
 		got := PushFor(c.banner)

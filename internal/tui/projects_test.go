@@ -147,7 +147,7 @@ func TestClickingAProjectRowOpensTheDialogInIt(t *testing.T) {
 }
 
 func TestOpeningAProjectWithAPopupPassesItsRoot(t *testing.T) {
-	popup := rpc.ClientPopupParams{Command: []string{"agentws", "tui", "--new-session"}, Env: map[string]string{"CREW_HOME": "/h"}}
+	popup := rpc.ClientPopupParams{Command: []string{"crew", "tui", "--new-session"}, Env: map[string]string{"CREW_HOME": "/h"}}
 	m, c := projectsModel(t, withProjects(rpc.State{}), tui.Options{DialogPopup: popup})
 	m = press(m, "P", "j")
 	pressCmd(m, keyEnter)

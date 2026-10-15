@@ -18,7 +18,7 @@ import (
 
 func shortDir(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("/tmp", "agentws-rpc")
+	dir, err := os.MkdirTemp("/tmp", "crew-rpc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func serveStatus(t *testing.T, path string, pid int) {
 }
 
 func TestConnectStartsTheDaemonWhenTheSocketIsMissing(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	starts := 0
 	start := func() error {
 		starts++
@@ -84,7 +84,7 @@ func TestConnectStartsTheDaemonWhenTheSocketIsMissing(t *testing.T) {
 }
 
 func TestConnectDoesNotStartARunningDaemon(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	serveStatus(t, path, 7)
 	c, err := rpc.Connect(context.Background(), path, func() error {
 		t.Error("started a second daemon")
@@ -97,7 +97,7 @@ func TestConnectDoesNotStartARunningDaemon(t *testing.T) {
 }
 
 func TestConnectGivesUpAfterTheStartTimeout(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	began := time.Now()
 	_, err := rpc.Connect(context.Background(), path, func() error { return nil })
 	if err == nil {
@@ -109,7 +109,7 @@ func TestConnectGivesUpAfterTheStartTimeout(t *testing.T) {
 }
 
 func TestConnectReportsAFailedStart(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	boom := errors.New("boom")
 	_, err := rpc.Connect(context.Background(), path, func() error { return boom })
 	if !errors.Is(err, boom) {
@@ -143,7 +143,7 @@ func serveRaw(t *testing.T, path string, answer func(rpc.Request) rpc.Response) 
 }
 
 func TestCallsCarryTheClientBuild(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	got := make(chan rpc.Request, 1)
 	serveRaw(t, path, func(req rpc.Request) rpc.Response {
 		got <- req
@@ -164,7 +164,7 @@ func TestCallsCarryTheClientBuild(t *testing.T) {
 }
 
 func TestADaemonThatNamesNoBuildIsRefused(t *testing.T) {
-	path := filepath.Join(shortDir(t), "agentws.sock")
+	path := filepath.Join(shortDir(t), "crew.sock")
 	serveRaw(t, path, func(req rpc.Request) rpc.Response {
 		return rpc.Response{V: rpc.Version, ID: req.ID}
 	})
@@ -175,7 +175,7 @@ func TestADaemonThatNamesNoBuildIsRefused(t *testing.T) {
 	defer func() { _ = c.Close() }()
 	_, err = c.WorkspaceList(context.Background())
 	var rerr *rpc.Error
-	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeVersionMismatch || !strings.Contains(rerr.Message, "agentws daemon stop") {
+	if !errors.As(err, &rerr) || rerr.Code != rpc.CodeVersionMismatch || !strings.Contains(rerr.Message, "crew daemon stop") {
 		t.Fatalf("err %v", err)
 	}
 	if _, err := c.Status(context.Background()); err != nil {

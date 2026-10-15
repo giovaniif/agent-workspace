@@ -9,10 +9,10 @@ import (
 )
 
 func (h *Host) ensureSession(ctx context.Context) error {
-	if _, err := h.run(ctx, "", "has-session", "-t", "="+sessionName); err == nil {
+	if _, err := h.run(ctx, "", "has-session", "-t", "="+h.n.session); err == nil {
 		return nil
 	}
-	_, err := h.run(ctx, "", "new-session", "-d", "-s", sessionName, "-n", "park", "-x", "200", "-y", "50", placeholder)
+	_, err := h.run(ctx, "", "new-session", "-d", "-s", h.n.session, "-n", "park", "-x", "200", "-y", "50", placeholder)
 	if err != nil && strings.Contains(err.Error(), "duplicate session") {
 		return nil
 	}
@@ -25,7 +25,7 @@ func (h *Host) Create(ctx context.Context, spec app.PaneSpec) (app.PaneID, error
 		return "", err
 	}
 	pane := app.PaneID(id.pane)
-	if _, err := h.run(ctx, "", "set-option", "-p", "-t", id.pane, managedOption, "1"); err != nil {
+	if _, err := h.run(ctx, "", "set-option", "-p", "-t", id.pane, h.n.option, "1"); err != nil {
 		_ = h.Kill(ctx, pane)
 		return "", err
 	}
@@ -39,7 +39,7 @@ func (h *Host) newWindow(ctx context.Context, windowName string, spec app.PaneSp
 	if err := h.ensureSession(ctx); err != nil {
 		return newWindowResult{}, err
 	}
-	args := []string{"new-window", "-d", "-P", "-F", "#{window_id} #{pane_id}", "-t", sessionName + ":", "-n", windowName}
+	args := []string{"new-window", "-d", "-P", "-F", "#{window_id} #{pane_id}", "-t", h.n.session + ":", "-n", windowName}
 	if spec.Dir != "" {
 		args = append(args, "-c", spec.Dir)
 	}
@@ -72,7 +72,7 @@ func (h *Host) Kill(ctx context.Context, pane app.PaneID) error {
 }
 
 func (h *Host) List(ctx context.Context) ([]app.PaneInfo, error) {
-	out, err := h.run(ctx, "", "list-panes", "-a", "-F", "#{pane_id} #{pane_dead} #{"+managedOption+"}")
+	out, err := h.run(ctx, "", "list-panes", "-a", "-F", "#{pane_id} #{pane_dead} #{"+h.n.option+"}")
 	if isServerGone(err) {
 		return nil, nil
 	}
@@ -109,7 +109,7 @@ func (h *Host) SetTitle(ctx context.Context, pane app.PaneID, title string) erro
 	if err := h.turnTitlesOn(ctx); err != nil {
 		return err
 	}
-	_, err := h.run(ctx, "", "set-option", "-p", "-t", string(pane), "@agentws_title", title)
+	_, err := h.run(ctx, "", "set-option", "-p", "-t", string(pane), h.n.titleOption, title)
 	return err
 }
 
@@ -122,7 +122,7 @@ func (h *Host) turnTitlesOn(ctx context.Context) error {
 	if _, err := h.run(ctx, "", "set-option", "-g", "pane-border-status", "top"); err != nil {
 		return err
 	}
-	if _, err := h.run(ctx, "", "set-option", "-g", "pane-border-format", titleFormat); err != nil {
+	if _, err := h.run(ctx, "", "set-option", "-g", "pane-border-format", titleFormat(h.n)); err != nil {
 		return err
 	}
 	h.titlesOn = true

@@ -15,7 +15,7 @@ import (
 	"github.com/giovaniif/crew/internal/domain"
 )
 
-const testBin = "/opt/agent's bin/agentws"
+const testBin = "/opt/agent's bin/crew"
 
 func TestLaunchArgv(t *testing.T) {
 	cases := []struct {
@@ -62,7 +62,7 @@ func TestAgentDirIsTheEnvOverrideElseHomeOmpAgent(t *testing.T) {
 
 func readGolden(t *testing.T) string {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("testdata", "agentws.ts.golden"))
+	b, err := os.ReadFile(filepath.Join("testdata", "crew.ts.golden"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestSetupWritesOnlyTheHookFile(t *testing.T) {
 	if err != nil || !res.Changed {
 		t.Fatalf("setup = %+v, %v", res, err)
 	}
-	file := filepath.Join(dir, "hooks", "post", "agentws.ts")
+	file := filepath.Join(dir, "hooks", "post", "crew.ts")
 	if res.File != file {
 		t.Errorf("file = %q", res.File)
 	}
@@ -99,7 +99,7 @@ func TestSetupWritesOnlyTheHookFile(t *testing.T) {
 		}
 		return nil
 	})
-	if want := []string{"/hooks/post/agentws.ts"}; !slices.Equal(written, want) {
+	if want := []string{"/hooks/post/crew.ts"}; !slices.Equal(written, want) {
 		t.Errorf("wrote %q, want %q", written, want)
 	}
 }
@@ -127,7 +127,7 @@ func TestSetupTwiceDoesNotWriteAgain(t *testing.T) {
 func TestSetupReplacesAStaleFileOfOurs(t *testing.T) {
 	dir := t.TempDir()
 	file := HookFile(dir)
-	writeFile(t, file, "// agentws: written by agentws setup omp; agentws setup omp --remove deletes this file.\nconst agentws = \"/old/agentws\";\n")
+	writeFile(t, file, "// crew: written by crew setup omp; crew setup omp --remove deletes this file.\nconst crew = \"/old/crew\";\n")
 	res, err := Setup(SetupConfig{Dir: dir, Command: testBin})
 	if err != nil || !res.Changed {
 		t.Fatalf("setup = %+v, %v", res, err)
@@ -195,7 +195,7 @@ func TestInstalledWritesNothing(t *testing.T) {
 	if ok, err := Installed(cfg); !ok || err != nil {
 		t.Fatalf("installed after setup = %v, %v", ok, err)
 	}
-	if ok, _ := Installed(SetupConfig{Dir: dir, Command: "/moved/agentws"}); ok {
+	if ok, _ := Installed(SetupConfig{Dir: dir, Command: "/moved/crew"}); ok {
 		t.Fatal("a moved binary still counts as installed")
 	}
 }
@@ -238,7 +238,7 @@ func TestHookFileSendsTheEventsUnderBun(t *testing.T) {
 	}
 	dir := t.TempDir()
 	log := filepath.Join(dir, "calls.log")
-	fake := filepath.Join(dir, "agentws")
+	fake := filepath.Join(dir, "crew")
 	writeFile(t, fake, "#!/bin/sh\nprintf '%s %s ' \"$3\" \"$5\" >> '"+log+"'\ncat >> '"+log+"'\necho >> '"+log+"'\n")
 	if err := os.Chmod(fake, 0o755); err != nil {
 		t.Fatal(err)

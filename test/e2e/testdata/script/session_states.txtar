@@ -1,25 +1,25 @@
 repo api
-exec agentws workspace add api
-exec agentws new --workspace api 'add a thing'
+exec crew workspace add api
+exec crew new --workspace api 'add a thing'
 capture SID '^session (\S+) on pane %\d+$'
 
-mkdir $AGENTWS_E2E/gates/prompt
-eventually '^seq=\d+ state=running harness=claude ' agentws debug session --once $SID
-mkdir $AGENTWS_E2E/gates/ask
-eventually ' state=waiting ' agentws debug session --once $SID
-mkdir $AGENTWS_E2E/gates/finish
-eventually ' state=done ' agentws debug session --once $SID
-eventually '^-title\tadd a thing · api@\S+\t-message\twaiting: Shall I go on\?\t-group\t'$SID'\t-execute\tCREW_HOME=.* focus '''$SID'''\t$' cat $AGENTWS_E2E/terminal-notifier.log
-exec agentws focus $SID
-eventually '^-remove\t'$SID'\t$' cat $AGENTWS_E2E/terminal-notifier.log
+mkdir $CREW_E2E/gates/prompt
+eventually '^seq=\d+ state=running harness=claude ' crew debug session --once $SID
+mkdir $CREW_E2E/gates/ask
+eventually ' state=waiting ' crew debug session --once $SID
+mkdir $CREW_E2E/gates/finish
+eventually ' state=done ' crew debug session --once $SID
+eventually '^-title\tadd a thing · api@\S+\t-message\twaiting: Shall I go on\?\t-group\t'$SID'\t-execute\tCREW_HOME=.* focus '''$SID'''\t$' cat $CREW_E2E/terminal-notifier.log
+exec crew focus $SID
+eventually '^-remove\t'$SID'\t$' cat $CREW_E2E/terminal-notifier.log
 
-exec agentws new --workspace api --harness codex 'fix the build'
+exec crew new --workspace api --harness codex 'fix the build'
 capture CID '^session (\S+) on pane'
-mkdir $AGENTWS_E2E/gates/codex
-eventually '^seq=\d+ state=running harness=codex ' agentws debug session --once $CID
-mkdir $AGENTWS_E2E/gates/codex-stop
-eventually '^seq=\d+ state=done harness=codex ' agentws debug session --once $CID
-eventually '^-title\tfix the build · api@\S+\t-message\tFixed\..*\t-group\t'$CID'\t' cat $AGENTWS_E2E/terminal-notifier.log
+mkdir $CREW_E2E/gates/codex
+eventually '^seq=\d+ state=running harness=codex ' crew debug session --once $CID
+mkdir $CREW_E2E/gates/codex-stop
+eventually '^seq=\d+ state=done harness=codex ' crew debug session --once $CID
+eventually '^-title\tfix the build · api@\S+\t-message\tFixed\..*\t-group\t'$CID'\t' cat $CREW_E2E/terminal-notifier.log
 
 -- claude.steps --
 gate prompt

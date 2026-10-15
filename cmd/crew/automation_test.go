@@ -14,7 +14,7 @@ func TestPrintAutomationsListsTriggersAndProblems(t *testing.T) {
 	list := rpc.AutomationList{
 		Automations: []domain.Automation{
 			{Name: "deps", Agent: "claude", Prompt: "x", Schedule: "daily 09:00", Enabled: true, Source: "/h/config.toml"},
-			{Name: "fix-ci", Agent: "codex", Target: "workspace", Prompt: "x", On: []string{"pr.ci_failed", "pr.opened"}, Source: "/w/api/.agentws.toml"},
+			{Name: "fix-ci", Agent: "codex", Target: "workspace", Prompt: "x", On: []string{"pr.ci_failed", "pr.opened"}, Source: "/w/api/.crew.toml"},
 		},
 		Problems: []string{"/h/config.toml: automation \"x\": agent must be one of [claude codex omp]"},
 	}
@@ -22,7 +22,7 @@ func TestPrintAutomationsListsTriggersAndProblems(t *testing.T) {
 	printAutomations(&out, list)
 	want := "NAME    AGENT   TARGET        TRIGGER                    ENABLED  SOURCE\n" +
 		"deps    claude  new-worktree  daily 09:00                yes      /h/config.toml\n" +
-		"fix-ci  codex   workspace     on pr.ci_failed,pr.opened  no       /w/api/.agentws.toml\n" +
+		"fix-ci  codex   workspace     on pr.ci_failed,pr.opened  no       /w/api/.crew.toml\n" +
 		"problem: /h/config.toml: automation \"x\": agent must be one of [claude codex omp]\n"
 	if out.String() != want {
 		t.Errorf("got:\n%s\nwant:\n%s", out.String(), want)
