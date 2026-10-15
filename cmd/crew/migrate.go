@@ -235,11 +235,15 @@ func (m migration) retireNvimSetupFile() {
 		m.logf("could not replace %s: %v", old, err)
 		return
 	}
-	if err := os.Rename(old, old+".bak"); err != nil {
+	backup := old + ".bak"
+	for n := 1; exists(backup); n++ {
+		backup = fmt.Sprintf("%s.bak.%d", old, n)
+	}
+	if err := os.Rename(old, backup); err != nil {
 		m.logf("could not move %s aside: %v", old, err)
 		return
 	}
-	m.logf("replaced %s with %s (backup: %s.bak)", old, filepath.Join(probe.NvimConfigDir, "plugin", "crew.lua"), old)
+	m.logf("replaced %s with %s (backup: %s)", old, filepath.Join(probe.NvimConfigDir, "plugin", "crew.lua"), backup)
 }
 
 func (m migration) rewriteOmpHook() {

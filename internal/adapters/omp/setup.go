@@ -56,7 +56,9 @@ func Setup(cfg SetupConfig) (SetupResult, error) {
 	if err := writeAtomic(file, want); err != nil {
 		return SetupResult{File: file}, err
 	}
-	retireLegacyHook(cfg.Dir)
+	if _, err := retireLegacyHook(cfg.Dir); err != nil {
+		return SetupResult{Changed: true, File: file}, err
+	}
 	return SetupResult{Changed: true, File: file}, nil
 }
 
@@ -77,7 +79,10 @@ func Installed(cfg SetupConfig) (bool, error) {
 
 func Remove(cfg SetupConfig) (SetupResult, error) {
 	file := HookFile(cfg.Dir)
-	retired := retireLegacyHook(cfg.Dir)
+	retired, err := retireLegacyHook(cfg.Dir)
+	if err != nil {
+		return SetupResult{File: file}, err
+	}
 	current, exists, err := readOwned(file)
 	if err != nil {
 		return SetupResult{File: file}, err

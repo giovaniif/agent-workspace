@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,5 +19,15 @@ func retireLegacy(dir string) bool {
 	if err != nil || !strings.Contains(string(got), legacyMarker) {
 		return false
 	}
-	return os.Rename(file, file+".bak") == nil
+	return os.Rename(file, freeBackup(file)) == nil
+}
+
+func freeBackup(file string) string {
+	backup := file + ".bak"
+	for n := 1; ; n++ {
+		if _, err := os.Lstat(backup); err != nil {
+			return backup
+		}
+		backup = fmt.Sprintf("%s.bak.%d", file, n)
+	}
 }

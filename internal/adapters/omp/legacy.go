@@ -1,6 +1,7 @@
 package omp
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,10 +16,23 @@ func HasLegacyHook(dir string) bool {
 	return err == nil && strings.HasPrefix(string(b), legacyMarker)
 }
 
-func retireLegacyHook(dir string) bool {
+func retireLegacyHook(dir string) (bool, error) {
 	if !HasLegacyHook(dir) {
-		return false
+		return false, nil
 	}
 	file := LegacyHookFile(dir)
-	return os.Rename(file, file+".bak") == nil
+	if err := os.Rename(file, freeBackup(file)); err != nil {
+		return false, fmt.Errorf("move the old hook aside: %w", err)
+	}
+	return true, nil
+}
+
+func freeBackup(file string) string {
+	backup := file + ".bak"
+	for n := 1; ; n++ {
+		if _, err := os.Lstat(backup); err != nil {
+			return backup
+		}
+		backup = fmt.Sprintf("%s.bak.%d", file, n)
+	}
 }
