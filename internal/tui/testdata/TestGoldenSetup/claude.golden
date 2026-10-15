@@ -8,7 +8,7 @@
       ▌ Changes /Users/me/.claude/settings.json                                      
       ▌ Adds the crew hooks and wraps your status line. Your own hooks and status    
       ▌ line keep running.                                                           
-      ▌ Backup  /Users/me/.claude/settings.json.agentws-backup                       
+      ▌ Backup  /Users/me/.claude/settings.json.crew-backup                          
       ▌ Undo    crew setup claude --remove                                           
      
       s skip                                                   esc skip   ⏎ install  

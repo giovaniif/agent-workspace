@@ -1,8 +1,8 @@
 ---
-name: agentws-browser
+name: crew-browser
 description: Drive the browser of the crew Mac app from this session with the crew browser CLI. Use it to open a dev server, read a page, click, fill forms, take screenshots or check a UI change in a real browser.
 ---
-<!-- agentws:browser-skill -->
+<!-- crew:browser-skill -->
 
 # crew browser
 

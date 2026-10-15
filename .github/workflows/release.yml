@@ -38,7 +38,7 @@ jobs:
           args: release --clean ${{ startsWith(github.ref, 'refs/tags/v') && ' ' || '--snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: tar -tvzf dist/crew_linux_amd64.tar.gz && tar -tvzf dist/crew_linux_amd64.tar.gz | grep -E "^l.* agentws -> crew\$"
+      - run: tar -tvzf dist/crew_linux_amd64.tar.gz && ! tar -tvzf dist/crew_linux_amd64.tar.gz | grep -E "^l"
       - id: meta
         run: echo "version=$(jq -r .tag dist/metadata.json)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
