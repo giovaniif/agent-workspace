@@ -27,3 +27,24 @@ type MateSetParams struct {
 type MateRemoveParams struct {
 	Name string `json:"name"`
 }
+
+const (
+	MethodMateSetTokens   = "mate.set_tokens"
+	MethodMateClearTokens = "mate.clear_tokens"
+)
+
+type MateSetTokensParams struct {
+	Name     string `json:"name"`
+	BotToken string `json:"bot_token"`
+	AppToken string `json:"app_token"`
+}
+
+type MateClearTokensParams struct {
+	Name string `json:"name"`
+}
+
+type MateTokenStatus struct {
+	Name        string `json:"name"`
+	HasBotToken bool   `json:"has_bot_token"`
+	HasAppToken bool   `json:"has_app_token"`
+}
