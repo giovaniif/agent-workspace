@@ -176,6 +176,24 @@ func (s *memStore) PutAutomationTrust(trust domain.AutomationTrust) {
 	s.snap.AutomationTrust = append(s.snap.AutomationTrust, trust)
 }
 
+func (s *memStore) PutMateThread(link domain.MateThread) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, x := range s.snap.MateThreads {
+		if x.Key() == link.Key() {
+			s.snap.MateThreads[i] = link
+			return
+		}
+	}
+	s.snap.MateThreads = append(s.snap.MateThreads, link)
+}
+
+func (s *memStore) mateThreads() []domain.MateThread {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]domain.MateThread(nil), s.snap.MateThreads...)
+}
+
 func (s *memStore) automationRuns() []domain.AutomationRun {
 	s.mu.Lock()
 	defer s.mu.Unlock()
