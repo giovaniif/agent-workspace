@@ -128,6 +128,14 @@ struct MatesTests {
         #expect(caller.methods().last == "approval.list")
     }
 
+    @Test func aFailedDecisionLoadsTheApprovalsAgainAndKeepsTheError() async {
+        let (model, caller) = await loaded()
+        caller.replies["approval.decide"] = .failure(RPCError(code: "stale", message: "the approval expired"))
+        await model.decide("a1", approve: true)
+        #expect(caller.methods().last == "approval.list")
+        #expect(model.message == "the approval expired")
+    }
+
     @Test func aRowSaysItsStateItsGuardAndItsCurrentWork() {
         let thread = MateThread(mate: "helper", channel: "C1", threadTS: "1", sessionID: "s1", session: "add login", state: "running")
         let idle = MateThread(mate: "helper", channel: "C1", threadTS: "2", sessionID: "s2", state: "idle")

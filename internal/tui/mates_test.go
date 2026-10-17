@@ -1,6 +1,7 @@
 package tui_test
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -133,5 +134,18 @@ func TestMatesViewClosesWithEsc(t *testing.T) {
 	m = press(m, "esc")
 	if out := screen(m); strings.Contains(out, "APPROVALS") {
 		t.Fatalf("still open:\n%s", out)
+	}
+}
+
+func TestMatesViewLoadsTheApprovalsAgainAfterAFailedDecision(t *testing.T) {
+	m, f := matesModel(t, withMates(fixture(1, 0)))
+	f.err, f.failOn = errors.New("the approval expired"), rpc.MethodApprovalDecide
+	m = press(m, "j", "j")
+	m = pressCmd(m, key("y"))
+	if got := f.methods(); got[len(got)-1] != rpc.MethodApprovalList {
+		t.Fatalf("approvals not loaded again: %v", got)
+	}
+	if out := screen(m); !strings.Contains(out, "the approval expired") || !strings.Contains(out, "helper: merge") {
+		t.Fatalf("panel:\n%s", out)
 	}
 }
