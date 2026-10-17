@@ -67,6 +67,8 @@ func iso(e *env, args []string, r *result) {
 		isoDown(e, r)
 	case "seed":
 		isoSeed(e, args[1:], r)
+	case "crew":
+		isoCrew(e, args[1:], r)
 	default:
 		r.bad("unknown iso command "+args[0], "use up, down or seed")
 	}
@@ -254,6 +256,46 @@ func isoDown(e *env, r *result) {
 	stopIso(e, st)
 	r.set("stopped", true)
 	r.set("home", st.Home)
+}
+
+func isoCrew(e *env, args []string, r *result) {
+	var rest []string
+	for i, a := range args {
+		if a == "--" {
+			args, rest = args[:i], args[i+1:]
+			break
+		}
+	}
+	o, ok := parse(args, []string{"expect", "absent"}, nil, r)
+	if !ok {
+		return
+	}
+	rest = append(o.pos, rest...)
+	if len(rest) == 0 {
+		r.bad("iso crew needs crew arguments", "go run ./scripts/verify iso crew -- pr seed-session-1")
+		return
+	}
+	st, ok := needIso(e, r)
+	if !ok {
+		return
+	}
+	out, errs, code := e.sys.exec(cmd{dir: st.Home, env: st.Env, name: st.Bin, args: rest})
+	r.set("stdout", tail(out, 20000))
+	r.set("stderr", tail(errs, 4000))
+	r.set("exit", code)
+	if code != 0 {
+		r.fail("crew "+strings.Join(rest, " ")+" exited "+strconv.Itoa(code)+": "+strings.TrimSpace(tail(errs, 300)), "read "+filepath.Join(st.Home, "daemon.log"))
+	}
+	for _, want := range o.vals["expect"] {
+		if !strings.Contains(out, want) {
+			r.fail("the output has no "+strconv.Quote(want), "read stdout in the result")
+		}
+	}
+	for _, not := range o.vals["absent"] {
+		if strings.Contains(out, not) {
+			r.fail("the output has "+strconv.Quote(not), "read stdout in the result")
+		}
+	}
 }
 
 func isoSeed(e *env, args []string, r *result) {
