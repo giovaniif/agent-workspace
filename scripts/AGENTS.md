@@ -87,4 +87,17 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
     - In `web/src`, no raw colours outside `--token:` lines, and no `px` in `.ts` or `.tsx`.
   - `annotate --before b.png --after a.png [--crop x0,y0,x1,y1] [--box ...] [--caption-before t] [--caption-after t] --out f`: a before/after pair.
   - `assets push --dir <n> files...` writes to the orphan `pr-assets` branch with plumbing commands. It prints commit-pinned raw URLs. `assets check` fails when the branch adds an image.
-  - `selftest`: `go test ./scripts/verify/`. Its tests use a fake `sys` (no tmux, node or network) and real temporary repos.
+  - `selftest`: `go test ./scripts/verify/`.
+- **`land`** (`go run ./scripts/land check|verdict|merge|watch|ledger <pr>`): the land gate (ADR 0055). It uses the same JSON and exit codes as `verify`. It reads GitHub with `gh`.
+  - `check`: `landable` is true only with no blocker. The blockers are:
+    - a draft, a mergeable state that is not `clean`, open review threads (or an unknown thread state), changes requested
+    - no `PASS` or `PASS+NOTES` verdict for the current head
+    - a required check of the branch protection that is not green. When it cannot read the protection, every check blocks.
+    - self-or-CI changes: `.github/`, `.coderabbit*`, `scripts/land`, `scripts/verify`, `.claude/skills`, `scripts/tdd-check`, `scripts/mutate`, `scripts/lint-*`, `.golangci.yml`
+    - irreversible effects: destructive SQL in `internal/adapters/sqlite/migrations` (also split over lines), a removed or renamed migration, `.goreleaser.yaml`, `scripts/install.sh`, the release workflow, setup code (`cmd/crew/setup*`, the adapter `setup` files, `internal/adapters/onboard`), cleanup code (`internal/app/cleanup*`, `internal/domain/cleanup*`, a new `git worktree remove`), env files
+    - a file with no patch (fail closed), and no `.claude/skills/verify/SKILL.md`.
+  - `verdict <pr> --verdict PASS|PASS+NOTES|FAIL|HUMAN [--bundle dir] [--notes t] [--dry-run]`: posts `<!-- land:verdict v=1 sha=<head> verdict=<X> -->`. A `PASS` needs a bundle that `verify evidence verify` passes, for the PR head.
+  - `merge`: runs `check`, then follows `mode` in `scripts/land/config.json`. `off` does nothing. `shadow` (the default) only writes the ledger. `live` runs `gh pr merge --merge --match-head-commit <head>`.
+  - `watch`: reads the checks of the merge commit. A red check is a regression: open a revert PR and tell the owner. A revert never lands through the gate.
+  - `ledger [pr]`: the decisions. Each decision is one JSON comment on the open issue with the label `land-ledger`. `merge` makes that issue when there is none.
+  - Its tests are in `scripts/land`, with a fake `gh`. Its tests use a fake `sys` (no tmux, node or network) and real temporary repos.
