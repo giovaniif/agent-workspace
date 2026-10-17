@@ -280,6 +280,7 @@ public struct BrowserChrome: Sendable, Equatable {
     public var profiles: [BrowserProfile]
     public var links: [PortLink]
     public var banner: String?
+    public var headless: HeadlessFrame?
 
     public static let agentBanner = "An agent controls this tab"
 

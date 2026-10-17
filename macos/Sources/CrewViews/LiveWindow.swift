@@ -44,9 +44,12 @@ public struct LiveWindow: View {
     @State private var profiles = BrowserProfiles()
     @State private var profilePrompt: ProfilePrompt?
     @State private var profileName = ""
+    @State private var headless: HeadlessView
+    @State private var serverSend: ServerProfileSend
 #if canImport(WebKit)
     @State private var webViews = BrowserWebViews()
     @State private var cookieImport: BrowserProfile?
+    @State private var serverCookies: BrowserProfile?
     @State private var agentLink: Task<Void, Never>?
 #endif
     @Environment(\.controlActiveState) private var activeState
@@ -76,6 +79,8 @@ public struct LiveWindow: View {
         self.router = router
         _panes = State(initialValue: ShellNvim(caller: store))
         _commands = State(initialValue: SessionCommands(caller: store))
+        _headless = State(initialValue: HeadlessView(caller: store))
+        _serverSend = State(initialValue: ServerProfileSend(caller: store))
         self.attention = attention
 #if canImport(SwiftTerm)
         let hub = TerminalHub(endpoint: store.endpoint) { [store] cols, rows in
@@ -129,6 +134,9 @@ public struct LiveWindow: View {
             .sheet(item: $cookieImport) { profile in
                 CookieImportSheet(profile: profile, store: webViews.store(for: profile.id).httpCookieStore) { cookieImport = nil }
             }
+            .sheet(item: $serverCookies) { profile in
+                CookieImportSheet(profile: profile, store: webViews.store(for: profile.id).httpCookieStore, target: .server(serverSend)) { serverCookies = nil }
+            }
 #else
         let layered = content
 #endif
@@ -157,6 +165,7 @@ public struct LiveWindow: View {
         .onChange(of: keys.bound, initial: true) { terminals.views.bound = keys.bound }
 #endif
         .onAppear { store.start() }
+        .task(id: headlessKey) { await watchHeadless(headlessKey) }
         .onChange(of: store.state?.seq) {
             reconcile(filter: filter)
             newSession?.observe(store.state)
@@ -398,7 +407,25 @@ public struct LiveWindow: View {
     private func browserChrome() -> BrowserChrome? {
         guard panes.view == .browser, let id = nav.selected else { return nil }
         let links = store.state.map { BrowserLinks.ports(session: id, state: $0, host: browserHost) } ?? []
-        return BrowserChrome(page: browser.page(session: id), profile: profiles.profile(for: id), profiles: profiles.profiles, links: links)
+        var chrome = BrowserChrome(page: browser.page(session: id), profile: profiles.profile(for: id), profiles: profiles.profiles, links: links)
+        chrome.headless = headless.frame(for: id)
+        return chrome
+    }
+
+    private var headlessKey: String? {
+        guard panes.view == .browser, store.connection == .live else { return nil }
+        return nav.selected
+    }
+
+    private func watchHeadless(_ session: String?) async {
+        guard let session else {
+            headless.clear()
+            return
+        }
+        while !Task.isCancelled {
+            await headless.refresh(session: session)
+            try? await Task.sleep(for: HeadlessView.interval)
+        }
     }
 
 #if canImport(WebKit)
@@ -464,6 +491,10 @@ public struct LiveWindow: View {
         case .importCookies:
 #if canImport(WebKit)
             cookieImport = profiles.profile(for: id)
+#endif
+        case .sendToServer:
+#if canImport(WebKit)
+            serverCookies = profiles.profile(for: id)
 #endif
         case .takeOver:
             page.takeOver()

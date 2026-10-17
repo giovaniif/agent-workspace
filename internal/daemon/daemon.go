@@ -683,6 +683,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.browserCommand(req)
 	case rpc.MethodBrowserCookiesImport:
 		return d.browserCookiesImport(req), true
+	case rpc.MethodBrowserHeadlessView:
+		return d.browserHeadlessView(req), true
 	case rpc.MethodClientViewing:
 		return d.clientViewing(c, req)
 	default:
