@@ -129,6 +129,7 @@ type state struct {
 	sends           []domain.QueuedSend
 	inFlight        map[string]sendFlight
 	booting         map[string]bool
+	earlyHooks      map[string][]earlyHook
 	pasteSend       func(session domain.Session, q domain.QueuedSend)
 	pairing         domain.Pairing
 	devices         map[string]domain.Device
@@ -203,6 +204,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		pasting:         map[string]bool{},
 		inFlight:        map[string]sendFlight{},
 		booting:         map[string]bool{},
+		earlyHooks:      map[string][]earlyHook{},
 		mateThreads:     map[string]domain.MateThread{},
 		mateUsage:       map[string]domain.MateUsage{},
 		devices:         map[string]domain.Device{},
@@ -428,6 +430,7 @@ func (s *state) hook(h rpc.Hook, now time.Time) {
 	}
 	session, ok := domain.SessionOnPane(s.sessionList(), h.Pane)
 	if !ok {
+		s.holdEarlyHook(h, now)
 		return
 	}
 	s.noteHook(session.ID, kind, h.Payload, now)
@@ -682,6 +685,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return d.browserCommand(req)
 	case rpc.MethodBrowserCookiesImport:
 		return d.browserCookiesImport(req), true
+	case rpc.MethodBrowserHeadlessView:
+		return d.browserHeadlessView(req), true
 	case rpc.MethodClientViewing:
 		return d.clientViewing(c, req)
 	default:
