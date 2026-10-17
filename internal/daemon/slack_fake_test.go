@@ -18,6 +18,7 @@ type fakeSlackHub struct {
 	fail    string
 	replies []app.SlackMessage
 	names   map[string]string
+	users   map[string]string
 	seq     int
 }
 
@@ -59,8 +60,9 @@ func (m *fakeSlackMate) Run(ctx context.Context, handle func(app.SlackEvent), st
 	}
 	m.hub.mu.Lock()
 	m.handle = handle
+	user := m.hub.users[m.bot]
 	m.hub.mu.Unlock()
-	status(app.SlackStatus{State: domain.MateConnected})
+	status(app.SlackStatus{State: domain.MateConnected, User: user})
 	<-ctx.Done()
 	m.hub.mu.Lock()
 	m.stopped = true
@@ -122,6 +124,30 @@ func (h *fakeSlackHub) live(t *testing.T) *fakeSlackMate {
 	}
 	t.Fatal("no mate connected")
 	return nil
+}
+
+func (h *fakeSlackHub) liveBot(t *testing.T, bot string) *fakeSlackMate {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		h.mu.Lock()
+		for _, m := range h.mates {
+			if m.bot == bot && m.handle != nil && !m.stopped {
+				h.mu.Unlock()
+				return m
+			}
+		}
+		h.mu.Unlock()
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("no mate connected with %s", bot)
+	return nil
+}
+
+func (h *fakeSlackHub) postsOf(m *fakeSlackMate) []fakeSlackPost {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]fakeSlackPost(nil), m.posts...)
 }
 
 func (h *fakeSlackHub) send(m *fakeSlackMate, e app.SlackEvent) {
