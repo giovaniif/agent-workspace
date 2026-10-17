@@ -58,7 +58,7 @@ One agent for each PR, in its own worktree. Never babysit in a worktree that you
 - Removing a requested reviewer through the API can also remove team requests. Put them back.
 - An approval can stay on an older head. Always compare the review commit with the head.
 - Do not open draft PRs from a loop.
-- Do not merge. A merge needs `scripts/land merge` in live mode or an explicit "merge" from the owner for this PR. Approval for one PR never applies to another PR.
+- When the PR is ready, merge it with `go run ./scripts/land merge <pr>` (step 9 of the root `AGENTS.md`). Do not wait for the owner. The owner examines the merged PRs in the daily review (`go run ./scripts/land digest --since 24h`).
 - Stacked PRs: when the base PR merges, GitHub changes the base to `main`. Then update the branch.
 
 ## When ready

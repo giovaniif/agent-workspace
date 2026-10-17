@@ -19,7 +19,7 @@ We add a set of tools and docs. Each tool is a Go program under `scripts/`. It r
 | Verification CLI | `scripts/verify` | The only way that agents drive a running crew. Each command prints one JSON object. |
 | Feature map | `features/` | One Markdown file for each crew area, with recipes that the CLI runs. |
 | Evidence bundle | a folder that `verify evidence init` makes | The proofs of one PR claim, pinned to the base and head commits. |
-| Land gate | `scripts/land` | It decides if a PR can merge without a human. It starts in shadow mode. |
+| Land gate | `scripts/land` | It decides if a PR is ready, merges it, and writes the daily review. |
 | Verification skill | `.claude/skills/verify/SKILL.md` | How to start the isolated crew, drive it, prove a change and clean up. |
 | Babysit skill | `.claude/skills/babysit/SKILL.md` | How to get a PR to ready: CI, CodeRabbit, threads and the branch. |
 
@@ -67,12 +67,15 @@ The base is the merge-base of the head with `origin/main`. One checkout holds bo
 
 ### The land gate
 
-- `land check` is true only when no blocker is found. The blockers include a draft, red or missing required checks, open review threads, no verdict for the head, and a file with no patch (fail closed).
-- Irreversible effects block. These include SQL migrations that drop or rename, the release workflow, `.goreleaser.yaml`, `scripts/install.sh`, setup code that edits `~/.claude`, `~/.codex` or the nvim config, and cleanup code that removes worktrees.
-- Changes to CI or to the gate itself block: `.github/`, `.coderabbit*`, `scripts/land`, `scripts/verify` and `.claude/skills`.
+- `land check` follows step 9 of the root `AGENTS.md`. It is true only when the PR is ready: not a draft, the required checks are green, no review thread is open, the branch is up to date with `main`, and each file has a patch (fail closed). The owner does not approve each PR.
 - The required checks come from the branch protection of `main`: `build`, `tdd`, `mutate` and `CodeRabbit`.
-- The mode is in `scripts/land/config.json`. The default is `shadow`. In shadow mode, `land merge` only writes the ledger.
-- In live mode, `land merge` runs `gh pr merge --merge --match-head-commit <sha>`, because this repo merges with merge commits.
+- Other findings are flags. They do not block, and the ledger and the daily review show them:
+  - irreversible effects: SQL migrations that drop or rename, the release workflow, `.goreleaser.yaml`, `scripts/install.sh`, setup code that edits `~/.claude`, `~/.codex` or the nvim config, and cleanup code that removes worktrees
+  - changes to CI or to the gate: `.github/`, `.coderabbit*`, `scripts/land`, `scripts/verify` and `.claude/skills`
+  - no verdict for the head
+- `land check --strict` makes the flags block.
+- The mode is in `scripts/land/config.json`. The default is `live`: `land merge` runs `gh pr merge --merge --match-head-commit <sha>`, because this repo merges with merge commits. In `shadow` mode, `land merge` only writes the ledger.
+- `land digest --since 24h` prints each PR that merged in the period, with its flags, its watch result and any revert, as JSON and as a short Markdown summary. A daily agent posts it for the owner. This daily review replaces a review of each PR before the merge.
 
 ## Why
 
@@ -89,6 +92,6 @@ The base is the merge-base of the head with `origin/main`. One checkout holds bo
 
 ## Consequences
 
-- PRs that change `scripts/verify`, `scripts/land` or the skills always need a human merge.
+- PRs that change `scripts/verify`, `scripts/land` or the skills merge like other PRs. The daily review flags them.
 - The feature map must stay current. A maintenance loop runs its recipes and fixes drift.
 - Agents need `freeze`, `tmux`, Node 22.18+ and the Playwright Chromium. `verify doctor` reports each missing tool.
