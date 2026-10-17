@@ -279,6 +279,7 @@ public final class MatesModel {
 
     public func startSetup(_ name: String) async {
         claim = nil
+        setup = nil
         do {
             setup = try await caller.call("mate.setup", params: MateNameParams(name: name))
         } catch {

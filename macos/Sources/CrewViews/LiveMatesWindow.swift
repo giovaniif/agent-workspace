@@ -53,7 +53,7 @@ public struct LiveMatesWindow: View {
             }, cancel: { editing = nil })
         }
         .sheet(item: $connecting) { c in
-            MateConnectSheet(name: c.name, setup: model?.setup, claim: model?.claim, connect: { bot, app in
+            MateConnectSheet(name: c.name, setup: model?.setup, claim: model?.claim, message: model?.message, connect: { bot, app in
                 Task { await model?.connect(c.name, bot: bot, app: app) }
             }, done: { connecting = nil })
         }

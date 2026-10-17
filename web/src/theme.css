@@ -1434,6 +1434,12 @@ button.danger {
   gap: 6px;
 }
 
+.mate-threads a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .mate-threads li {
   display: flex;
   flex-wrap: wrap;

@@ -202,16 +202,18 @@ public struct MateConnectSheet: View {
     let name: String
     let setup: MateSetupLink?
     let claim: MateClaimCode?
+    let message: String?
     let connect: (String, String) -> Void
     let done: () -> Void
     @State private var bot = ""
     @State private var app = ""
     @Environment(\.openURL) private var openURL
 
-    public init(name: String, setup: MateSetupLink?, claim: MateClaimCode?, connect: @escaping (String, String) -> Void, done: @escaping () -> Void) {
+    public init(name: String, setup: MateSetupLink?, claim: MateClaimCode?, message: String? = nil, connect: @escaping (String, String) -> Void, done: @escaping () -> Void) {
         self.name = name
         self.setup = setup
         self.claim = claim
+        self.message = message
         self.connect = connect
         self.done = done
     }
@@ -231,6 +233,9 @@ public struct MateConnectSheet: View {
             } else {
                 SecureField("Bot token", text: $bot)
                 SecureField("App token", text: $app)
+            }
+            if let message {
+                Text(message).foregroundStyle(.orange)
             }
             HStack {
                 Spacer()
