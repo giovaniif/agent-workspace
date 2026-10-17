@@ -44,6 +44,8 @@ func (f *fakeGH) exec(c cmd) (string, string, int) {
 			}
 		}
 		return "{}", "", 0
+	case strings.HasPrefix(j, "pr list"):
+		return f.api["prlist"], "", 0
 	case strings.HasPrefix(j, "issue list"):
 		return `[{"number":900}]`, "", 0
 	case strings.HasPrefix(j, "api graphql"):
@@ -95,6 +97,16 @@ func runJSON(t *testing.T, e *env, args ...string) (map[string]any, int) {
 		t.Fatalf("no ok: %v", got)
 	}
 	return got, code
+}
+
+func flags(got map[string]any) string {
+	var b strings.Builder
+	list, _ := got["flags"].([]any)
+	for _, f := range list {
+		b.WriteString(f.(string))
+		b.WriteString("\n")
+	}
+	return b.String()
 }
 
 func blockers(got map[string]any) string {

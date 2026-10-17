@@ -100,10 +100,25 @@ func TestCheckBlockers(t *testing.T) {
 			g.api["repos/giovaniif/crew/pulls/7/files"] = `[{"filename":"internal/adapters/sqlite/migrations/0001_init.sql","status":"removed","patch":"-x"}]`
 		}, "irreversible"},
 	}
+	readiness := map[string]bool{"draft": true, "red check": true, "missing check": true, "unreadable protection": true, "open thread": true, "thread state unknown": true, "changes requested": true, "not clean": true}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := greenPR()
 			tt.edit(g)
+			if !readiness[tt.name] {
+				got, code := runJSON(t, testEnv(t, g, "shadow"), "check", "7")
+				if code != 0 || got["landable"] != true {
+					t.Fatalf("a flag blocks by default: exit %d:\n%s", code, blockers(got))
+				}
+				if !strings.Contains(flags(got), tt.want) {
+					t.Errorf("flags do not name %q:\n%s", tt.want, flags(got))
+				}
+				got, code = runJSON(t, testEnv(t, g, "shadow"), "check", "7", "--strict")
+				if code != 1 || !strings.Contains(blockers(got), tt.want) {
+					t.Errorf("--strict: exit %d:\n%s", code, blockers(got))
+				}
+				return
+			}
 			got, code := runJSON(t, testEnv(t, g, "shadow"), "check", "7")
 			if code != 1 || got["landable"] != false {
 				t.Fatalf("exit %d landable %v", code, got["landable"])
@@ -128,8 +143,8 @@ func TestCheckNeedsTheVerifySkill(t *testing.T) {
 	e := testEnv(t, greenPR(), "shadow")
 	_ = os.RemoveAll(filepath.Join(e.repo, ".claude"))
 	got, code := runJSON(t, e, "check", "7")
-	if code != 1 || !strings.Contains(blockers(got), "skill") {
-		t.Errorf("exit %d:\n%s", code, blockers(got))
+	if code != 0 || !strings.Contains(flags(got), "skill") {
+		t.Errorf("exit %d:\n%s", code, flags(got))
 	}
 }
 
@@ -195,7 +210,7 @@ func TestMergeLivePinsTheHeadAndUsesAMergeCommit(t *testing.T) {
 
 func TestMergeBlockedNeverMerges(t *testing.T) {
 	g := greenPR()
-	g.api["repos/giovaniif/crew/issues/7/comments"] = `[]`
+	g.api["graphql"] = strings.Replace(g.api["graphql"], `"isResolved":true`, `"isResolved":false`, 1)
 	got, code := runJSON(t, testEnv(t, g, "live"), "merge", "7")
 	if code != 1 || len(g.merged) != 0 || got["action"] != "blocked" || len(g.ledger) != 1 {
 		t.Errorf("exit %d merged %v action %v ledger %v", code, g.merged, got["action"], g.ledger)
@@ -226,6 +241,49 @@ func TestLedgerListsDecisions(t *testing.T) {
 	got, code := runJSON(t, testEnv(t, g, "shadow"), "ledger", "7")
 	if code != 0 || len(got["entries"].([]any)) != 1 {
 		t.Errorf("exit %d entries %v", code, got["entries"])
+	}
+}
+
+func TestMergeLiveRecordsFlagsForTheDailyReview(t *testing.T) {
+	g := greenPR()
+	g.api["repos/giovaniif/crew/pulls/7/files"] = `[{"filename":".goreleaser.yaml","status":"modified","patch":"+x"}]`
+	runJSON(t, testEnv(t, g, "live"), "merge", "7")
+	if len(g.merged) != 1 || len(g.ledger) != 1 || !strings.Contains(g.ledger[0], "goreleaser") {
+		t.Errorf("merged %v ledger %v", g.merged, g.ledger)
+	}
+}
+
+func TestDefaultModeFollowsTheRepoRule(t *testing.T) {
+	e := testEnv(t, greenPR(), "live")
+	_ = os.Remove(filepath.Join(e.repo, "scripts", "land", "config.json"))
+	got, _ := runJSON(t, e, "check", "7")
+	if got["mode"] != "live" {
+		t.Errorf("mode %v", got["mode"])
+	}
+}
+
+func TestDigestSummarizesMergedPRsWithTheirFlags(t *testing.T) {
+	g := greenPR()
+	g.api["prlist"] = `[{"number":7,"title":"fix: TEST thing","mergedAt":"2026-10-17T10:00:00Z","url":"https://example.invalid/7","additions":10,"deletions":2,"author":{"login":"bot"}},{"number":8,"title":"feat: TEST other","mergedAt":"2026-10-17T11:00:00Z","url":"https://example.invalid/8","additions":1,"deletions":0,"author":{"login":"bot"}}]`
+	g.api["repos/giovaniif/crew/issues/900/comments"] = `[{"body":"{\"pr\":\"7\",\"action\":\"landed\",\"flags\":[\"irreversible effect: .goreleaser.yaml\"]}"}]`
+	got, code := runJSON(t, testEnv(t, g, "live"), "digest", "--since", "24h")
+	if code != 0 {
+		t.Fatalf("exit %d:\n%s", code, blockers(got))
+	}
+	prs := got["prs"].([]any)
+	if len(prs) != 2 {
+		t.Fatalf("prs %v", prs)
+	}
+	first := prs[0].(map[string]any)
+	if len(first["flags"].([]any)) != 1 {
+		t.Errorf("flags of #7: %v", first["flags"])
+	}
+	md := got["markdown"].(string)
+	if !strings.Contains(md, "#7") || !strings.Contains(md, "goreleaser") || !strings.Contains(md, "#8") {
+		t.Errorf("markdown %q", md)
+	}
+	if _, code := runJSON(t, testEnv(t, g, "live"), "digest", "--since", "soon"); code != 2 {
+		t.Errorf("bad --since exit %d", code)
 	}
 }
 

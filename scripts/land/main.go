@@ -57,7 +57,17 @@ type problem struct {
 type result struct {
 	data     map[string]any
 	problems []problem
+	flags    []string
+	strict   bool
 	usage    bool
+}
+
+func (r *result) flag(msg, hint string) {
+	if r.strict {
+		r.fail(msg, hint)
+		return
+	}
+	r.flags = append(r.flags, msg)
 }
 
 func (r *result) fail(msg, hint string) { r.problems = append(r.problems, problem{msg, hint}) }
@@ -69,11 +79,15 @@ type config struct {
 	Repo string `json:"repo"`
 }
 
-const usage = "go run ./scripts/land check|verdict|merge|watch|ledger <pr>"
+const usage = "go run ./scripts/land check|verdict|merge|watch|ledger <pr>, or digest --since 24h"
 
 func run(args []string, e *env) int {
 	r := &result{data: map[string]any{}}
 	defer emit(e.out, r)
+	if len(args) >= 1 && args[0] == "digest" {
+		digest(gh{e: e, repo: loadConfig(e).Repo}, args[1:], r)
+		return code(r)
+	}
 	if len(args) < 2 && (len(args) != 1 || args[0] != "ledger") {
 		r.bad("land needs a command and a PR number", usage)
 		return code(r)
@@ -90,6 +104,15 @@ func run(args []string, e *env) int {
 		r.set("pr", pr)
 	}
 	g := gh{e: e, repo: cfg.Repo}
+	if args[0] == "check" || args[0] == "merge" {
+		for _, a := range args[2:] {
+			if a != "--strict" {
+				r.bad("unknown argument "+a, usage)
+				return code(r)
+			}
+			r.strict = true
+		}
+	}
 	switch args[0] {
 	case "check":
 		check(e, g, pr, r)
@@ -125,6 +148,10 @@ func emit(w io.Writer, r *result) {
 	if r.problems == nil {
 		r.problems = []problem{}
 	}
+	if r.flags == nil {
+		r.flags = []string{}
+	}
+	out["flags"] = r.flags
 	out["ok"] = len(r.problems) == 0
 	out["problems"] = r.problems
 	b, _ := json.MarshalIndent(out, "", "  ")
@@ -139,12 +166,12 @@ func emit(w io.Writer, r *result) {
 }
 
 func loadConfig(e *env) config {
-	c := config{Mode: "shadow", Repo: "giovaniif/crew"}
+	c := config{Mode: "live", Repo: "giovaniif/crew"}
 	if b, err := os.ReadFile(filepath.Join(e.repo, "scripts", "land", "config.json")); err == nil {
 		_ = json.Unmarshal(b, &c)
 	}
 	if c.Mode != "off" && c.Mode != "shadow" && c.Mode != "live" {
-		c.Mode = "shadow"
+		c.Mode = "live"
 	}
 	return c
 }
@@ -207,7 +234,7 @@ func check(e *env, g gh, pr string, r *result) bool {
 	checkThreads(g, pr, r)
 	checkFiles(g, pr, r)
 	if _, err := os.Stat(filepath.Join(e.repo, ".claude", "skills", "verify", "SKILL.md")); err != nil {
-		r.fail("no verification skill in this repo", "add .claude/skills/verify/SKILL.md")
+		r.flag("no verification skill in this repo", "add .claude/skills/verify/SKILL.md")
 	}
 	ok := len(r.problems) == 0
 	r.set("landable", ok)
@@ -231,11 +258,11 @@ func checkVerdict(g gh, pr, head string, r *result) {
 	r.set("verdict", v)
 	switch {
 	case v == "":
-		r.fail("no verifier verdict", "a fresh agent runs the verifier pass and go run ./scripts/land verdict")
+		r.flag("no verifier verdict", "a fresh agent runs the verifier pass and go run ./scripts/land verdict")
 	case sha != head:
-		r.fail("the verdict is for an older head "+sha, "run the verifier pass again on "+head)
+		r.flag("the verdict is for an older head "+sha, "run the verifier pass again on "+head)
 	case v != "PASS" && v != "PASS+NOTES":
-		r.fail("the verdict is "+v, "a human decides")
+		r.flag("the verdict is "+v, "a human decides")
 	}
 }
 
@@ -382,7 +409,7 @@ func checkFiles(g gh, pr string, r *result) {
 		for _, p := range paths {
 			for _, s := range selfOrCI {
 				if strings.HasPrefix(p, s) || strings.Contains(p, "/"+s) {
-					r.fail("self-or-CI change: "+p, "a human merges changes to CI, the gate and the skills")
+					r.flag("self-or-CI change: "+p, "a human merges changes to CI, the gate and the skills")
 					break
 				}
 			}
@@ -402,19 +429,19 @@ func checkFiles(g gh, pr string, r *result) {
 				hit = true
 			}
 			if hit {
-				r.fail("irreversible effect: "+p, "a revert cannot undo it; a human decides")
+				r.flag("irreversible effect: "+p, "a revert cannot undo it; a human decides")
 			}
 		}
 		if f.Patch == nil {
-			r.fail("no patch for "+f.Filename+" (fail closed)", "the diff was not scanned; a human decides")
+			r.flag("no patch for "+f.Filename+" (fail closed)", "the diff was not scanned; a human decides")
 			continue
 		}
 		added := addedText(*f.Patch)
 		if strings.HasPrefix(f.Filename, "internal/adapters/sqlite/migrations/") && destructiveSQL.MatchString(added) {
-			r.fail("irreversible effect: destructive SQL in "+f.Filename+": "+destructiveSQL.FindString(added), "a revert cannot undo a migration; a human decides")
+			r.flag("irreversible effect: destructive SQL in "+f.Filename+": "+destructiveSQL.FindString(added), "a revert cannot undo a migration; a human decides")
 		}
 		if strings.HasPrefix(f.Filename, "internal/adapters/git/") && !isTest(f.Filename) && strings.Contains(added, `"worktree", "remove"`) {
-			r.fail("irreversible effect: worktree removal in "+f.Filename, "cleanup code needs a human")
+			r.flag("irreversible effect: worktree removal in "+f.Filename, "cleanup code needs a human")
 		}
 	}
 	r.set("files", names)
@@ -520,7 +547,7 @@ func merge(e *env, g gh, cfg config, pr string, r *result) {
 	for _, p := range r.problems {
 		reasons = append(reasons, p.Msg)
 	}
-	entry := map[string]any{"pr": pr, "head": head, "mode": cfg.Mode, "action": action, "blockers": reasons, "at": time.Now().UTC().Format(time.RFC3339)}
+	entry := map[string]any{"pr": pr, "head": head, "mode": cfg.Mode, "action": action, "blockers": reasons, "flags": r.flags, "at": time.Now().UTC().Format(time.RFC3339)}
 	if err := ledgerWrite(g, entry); err != nil {
 		r.fail("cannot write the ledger: "+err.Error(), "check the land-ledger issue")
 	}
