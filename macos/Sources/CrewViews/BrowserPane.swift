@@ -1,6 +1,9 @@
 #if canImport(SwiftUI)
 import CrewKit
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 #if canImport(WebKit)
 import WebKit
 #endif
@@ -19,6 +22,7 @@ public enum BrowserAction: Equatable {
     case cloneProfile
     case makeDefault
     case importCookies
+    case sendToServer
     case takeOver
 }
 
@@ -28,6 +32,7 @@ struct BrowserPane: View {
     @Environment(\.colorScheme) private var scheme
     @State private var address = ""
     @State private var editing = false
+    @State private var serverTab = false
 #if canImport(WebKit)
     @Environment(\.crewBrowser) private var webViews
 #endif
@@ -73,7 +78,22 @@ struct BrowserPane: View {
                 .frame(maxWidth: 200)
                 .background(RoundedRectangle(cornerRadius: 5).fill(active ? theme(.base) : .clear))
                 .contentShape(Rectangle())
-                .onTapGesture { act(.select(tab.id)) }
+                .onTapGesture {
+                    serverTab = false
+                    act(.select(tab.id))
+                }
+            }
+            if chrome.headless != nil {
+                HStack(spacing: 6) {
+                    Image(systemName: "server.rack").font(.system(size: 10))
+                    Text("Server · read-only").font(.system(size: 12, weight: showsServer ? .semibold : .regular)).lineLimit(1)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: 5).fill(showsServer ? theme(.base) : .clear))
+                .contentShape(Rectangle())
+                .onTapGesture { serverTab = true }
+                .accessibilityLabel("Headless tab on the server")
             }
             Button { act(.open("")) } label: {
                 Image(systemName: "plus").font(.system(size: 11, weight: .semibold)).foregroundStyle(theme(.subtext))
@@ -119,6 +139,7 @@ struct BrowserPane: View {
                 Button("Clone this profile…") { act(.cloneProfile) }
                 Button("Make this profile the default") { act(.makeDefault) }
                 Button("Import cookies…") { act(.importCookies) }
+                Button("Send cookies to the server…") { act(.sendToServer) }
             } label: {
                 Label(chrome.profile, systemImage: "person.crop.circle").font(.system(size: 12))
             }
@@ -194,8 +215,30 @@ struct BrowserPane: View {
         return CGSize(width: CGFloat(size.width) * scale, height: CGFloat(size.height) * scale)
     }
 
+    private var showsServer: Bool {
+        serverTab && chrome.headless != nil
+    }
+
     @ViewBuilder
     private func page(_ theme: Theme) -> some View {
+#if canImport(AppKit)
+        if showsServer, let frame = chrome.headless, let image = NSImage(data: frame.png) {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(theme(.crust))
+                .accessibilityLabel("Screenshot of the headless tab")
+        } else {
+            localPage(theme)
+        }
+#else
+        localPage(theme)
+#endif
+    }
+
+    @ViewBuilder
+    private func localPage(_ theme: Theme) -> some View {
 #if canImport(WebKit)
         if let webViews, let tab = chrome.tabs.first(where: { $0.id == chrome.selected }), !tab.url.isEmpty {
             WebTab(views: webViews, tab: tab, device: chrome.device)

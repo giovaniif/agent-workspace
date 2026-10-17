@@ -375,6 +375,7 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
 - `headlessPool` keeps one `app.HeadlessTab` for each session, under its own mutex. It is not loop state. A command opens the tab if necessary, under the `max_headless` limit (`domain.AdmitHeadless`).
 - A reaper runs every 15 s (`WithHeadlessBrowser`). It stops the tabs of ended sessions and idle tabs (`domain.HeadlessToStop`). It never stops a tab while a command runs. When the daemon stops, it stops all tabs.
 - `browser.cookies.import` merges the cookies into `$CREW_HOME/browser/profiles/default/cookies.json` (0600) and sends them to each tab that runs. A new tab gets all kept cookies.
+- `browser.headless.view` takes a screenshot of a tab that runs. It does not start a tab and does not change the idle time of the tab, so the tab still stops when it is idle. The reaper does not stop the tab while the screenshot runs.
 - The automation `browser` is kept in memory when the run starts its session. After a daemon restart, that session uses `any`.
 
 ## Shell and nvim

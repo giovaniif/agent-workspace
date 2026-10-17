@@ -45,6 +45,13 @@ enum CookieReader {
         return HTTPCookie(properties: properties)
     }
 
+    static func record(_ cookie: HTTPCookie) -> CookieRecord {
+        CookieRecord(
+            name: cookie.name, value: cookie.value, domain: cookie.domain, path: cookie.path,
+            expires: cookie.expiresDate, secure: cookie.isSecure, httpOnly: cookie.isHTTPOnly
+        )
+    }
+
     @MainActor
     static func store(_ records: [CookieRecord], domains: Set<String>, into store: WKHTTPCookieStore) async {
         for old in await store.allCookies() where domains.contains(CookieImport.site(of: old.domain)) {
@@ -56,9 +63,15 @@ enum CookieReader {
     }
 }
 
+enum CookieSheetTarget {
+    case profile
+    case server(ServerProfileSend)
+}
+
 struct CookieImportSheet: View {
     let profile: BrowserProfile
     let store: WKHTTPCookieStore
+    var target: CookieSheetTarget = .profile
     let done: () -> Void
     @State private var sources: [CookieProfile] = []
     @State private var records: [CookieRecord] = []
@@ -68,9 +81,12 @@ struct CookieImportSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Import cookies into \(profile.name)").font(.headline)
-            Text("Cookies stay on this Mac. They never go to the server.").font(.system(size: 12)).foregroundStyle(.secondary)
+            Text(title).font(.headline)
+            Text(subtitle).font(.system(size: 12)).foregroundStyle(.secondary)
             HStack {
+                if case .server = target {
+                    Button("From \(profile.name)") { loadProfile() }
+                }
                 Menu("From a browser") {
                     ForEach(sources) { source in
                         Button(source.label) { load { try CookieReader.read(source) } }
@@ -94,6 +110,9 @@ struct CookieImportSheet: View {
                 }
                 .frame(minHeight: 180)
             }
+            if case let .server(send) = target, let status = send.status {
+                Text(status).font(.system(size: 12))
+            }
             if !imported.isEmpty {
                 Text("Imported: " + imported.map { "\($0.domain) \($0.count)" }.joined(separator: ", ")).font(.system(size: 12))
             }
@@ -103,14 +122,48 @@ struct CookieImportSheet: View {
             HStack {
                 Spacer()
                 Button("Close", action: done).keyboardShortcut(.cancelAction)
-                Button("Import") { importChosen() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(chosen.isEmpty)
+                switch target {
+                case .profile:
+                    Button("Import") { importChosen() }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(chosen.isEmpty)
+                case let .server(send):
+                    Button("Send to server") { sendChosen(send) }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(chosen.isEmpty || send.sending)
+                }
             }
         }
         .padding(20)
         .frame(width: 460)
         .onAppear { sources = CookieSources.profiles(home: FileManager.default.homeDirectoryForCurrentUser) }
+    }
+
+    private var title: String {
+        switch target {
+        case .profile: "Import cookies into \(profile.name)"
+        case .server: "Send cookies to the server"
+        }
+    }
+
+    private var subtitle: String {
+        switch target {
+        case .profile: "Cookies stay on this Mac. They never go to the server."
+        case .server: "Only the sites that you select go to the headless browser of the server. Other cookies stay on this Mac."
+        }
+    }
+
+    private func loadProfile() {
+        Task {
+            let cookies = await store.allCookies()
+            load { cookies.map(CookieReader.record) }
+        }
+    }
+
+    private func sendChosen(_ send: ServerProfileSend) {
+        let picked = records
+        let domains = chosen
+        Task { await send.send(picked, domains: domains) }
     }
 
     private func load(_ read: () throws -> [CookieRecord]) {
