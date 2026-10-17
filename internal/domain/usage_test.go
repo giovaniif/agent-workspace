@@ -34,6 +34,19 @@ func TestReportSetsModelEffortAndUsage(t *testing.T) {
 	}
 }
 
+func TestReportKeepsTheHighestTokenTotal(t *testing.T) {
+	s := Session{}.Report(StatusReport{Tokens: 900})
+	if s.Usage.Tokens != 900 {
+		t.Fatalf("tokens %d", s.Usage.Tokens)
+	}
+	if s = s.Report(StatusReport{}); s.Usage.Tokens != 900 {
+		t.Fatalf("a report with no tokens changed them to %d", s.Usage.Tokens)
+	}
+	if s = s.Report(StatusReport{Tokens: 1200}); s.Usage.Tokens != 1200 {
+		t.Fatalf("tokens %d", s.Usage.Tokens)
+	}
+}
+
 func TestReportKeepsWhatTheStatusLineDoesNotKnowYet(t *testing.T) {
 	s := Session{Model: "Opus", Effort: "high", Usage: Usage{ContextLeftPercent: 40, LimitUsedPercent: 30}, Limits: []RateLimit{{Window: "five_hour", UsedPercent: 30}}}
 	got := s.Report(StatusReport{})

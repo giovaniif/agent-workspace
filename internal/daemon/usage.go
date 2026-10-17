@@ -66,6 +66,9 @@ func withSnapshot(s domain.Session, snap codex.Snapshot) domain.Session {
 	if snap.ContextLeftPercent != codex.UnknownPercent {
 		s.Usage.ContextLeftPercent, s.Usage.HasContext = usage.ContextLeftPercent, true
 	}
+	if usage.Tokens > 0 {
+		s.Usage.Tokens = usage.Tokens
+	}
 	if len(snap.Limits) > 0 {
 		s.Usage.LimitUsedPercent = usage.LimitUsedPercent
 		limits := snap.RateLimits()

@@ -154,6 +154,7 @@ func (d *Daemon) startSession(p rpc.NewSessionParams, prompt string) (domain.Ses
 			s.queueFirstPrompt(started.Session, p.Prompt)
 			queued = true
 		}
+		s.replayEarlyHooks(started.Session.Pane, d.ws.now())
 		if ws, found := s.workspaces[in.ws.Root]; found {
 			ws.LastUsed = d.ws.now()
 			s.emit(WorkspaceChanged{Workspace: ws})

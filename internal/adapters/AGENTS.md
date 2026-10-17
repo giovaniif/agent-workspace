@@ -52,6 +52,7 @@ Implementations of the `app` ports. All exec, disk and network calls are here. g
   - It hands on `app_mention`, a `message` in a thread, a `message` in a direct message (`channel_type` `im`), and each action of `block_actions`. It ignores the messages of the mate itself, edits and other subtypes, and channel messages that are not in a thread.
   - It drops a retried envelope: the key is the `event_id`, else the envelope ID. It keeps the last 512 keys.
   - After `disconnect` or a closed socket, it connects again with a backoff (1 s, doubled, a maximum of 1 min).
+  - The `connected` status has `User`, the bot user ID from `auth.test`.
   - A token error from Slack (`invalid_auth`, `token_revoked` and similar) stops `Run` with `ErrToken`. Other errors retry. The status and the errors have the Slack method and error code, never a token.
   - `PostApproval` posts a message with a section and an actions block: Approve (`crew_approve`, primary) and Deny (`crew_deny`, danger). The value of each button is the approval ID. `UpdateMessage` sends `blocks=[]`, so an update removes the buttons.
   - Web API calls use the bot token: `chat.postMessage`, `chat.update`, `conversations.replies` and `users.info` (`UserName` gives the display name, else the real name, else the user name).

@@ -432,7 +432,7 @@ func TestCodexHookReportsModelAtOnceAndEffortAndUsageFromTheRollout(t *testing.T
 	}
 	second := next(t, sub.Diffs)
 	if second.Session == nil || second.Session.State != domain.StateDone || second.Session.Effort != "medium" ||
-		second.Session.Usage != (domain.Usage{ContextLeftPercent: 56, HasContext: true, LimitUsedPercent: 41}) {
+		second.Session.Usage != (domain.Usage{ContextLeftPercent: 56, HasContext: true, LimitUsedPercent: 41, Tokens: 140000}) {
 		t.Fatalf("second diff %+v", second.Session)
 	}
 }

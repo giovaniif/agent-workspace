@@ -31,6 +31,7 @@ type Snapshot struct {
 	Limits             []LimitWindow
 	LimitsAt           time.Time
 	TurnAt             time.Time
+	Tokens             int64
 }
 
 func (s Snapshot) RateLimits() []domain.RateLimit {
@@ -53,6 +54,7 @@ func (s Snapshot) Usage() domain.Usage {
 	return domain.Usage{
 		ContextLeftPercent: s.ContextLeftPercent,
 		LimitUsedPercent:   int(math.Round(highest)),
+		Tokens:             s.Tokens,
 	}
 }
 
@@ -87,6 +89,9 @@ type tokenInfo struct {
 	Last struct {
 		TotalTokens int `json:"total_tokens"`
 	} `json:"last_token_usage"`
+	Total struct {
+		TotalTokens int64 `json:"total_tokens"`
+	} `json:"total_token_usage"`
 	ContextWindow int `json:"model_context_window"`
 }
 
@@ -137,6 +142,9 @@ func orKeep(next, current string) string {
 }
 
 func (s *Snapshot) applyTokenCount(ev eventMsg, at time.Time) {
+	if ev.Info != nil && ev.Info.Total.TotalTokens > 0 {
+		s.Tokens = ev.Info.Total.TotalTokens
+	}
 	if ev.Info != nil && ev.Info.ContextWindow > 0 {
 		s.ContextLeftPercent = ContextLeftPercent(ev.Info.Last.TotalTokens, ev.Info.ContextWindow)
 	}

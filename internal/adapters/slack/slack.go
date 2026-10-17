@@ -269,7 +269,7 @@ func (c *Client) connect(ctx context.Context, handle func(app.SlackEvent), statu
 		switch env.Type {
 		case "hello":
 			connected = true
-			status(app.SlackStatus{State: domain.MateConnected})
+			status(app.SlackStatus{State: domain.MateConnected, User: c.selfUser})
 		case "disconnect":
 			_ = conn.Close(websocket.StatusNormalClosure, "")
 			return connected, nil
