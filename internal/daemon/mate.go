@@ -71,17 +71,27 @@ func parseMateLimits(text, path string) (domain.MateLimits, []string) {
 			problems = append(problems, fmt.Sprintf("%s: unknown key %s", path, key))
 		}
 	}
-	setInt := func(dst *int, v *int) {
-		if v != nil {
-			*dst = max(*v, 0)
+	set := func(key string, dst *int64, v *int64) {
+		switch {
+		case v == nil:
+		case *v < 0:
+			problems = append(problems, fmt.Sprintf("%s: mates.%s must be 0 or more", path, key))
+		default:
+			*dst = *v
 		}
 	}
-	setInt(&limits.HopLimit, doc.Mates.HopLimit)
-	setInt(&limits.TurnsPerHour, doc.Mates.TurnsPerHour)
-	setInt(&limits.DailyTurns, doc.Mates.DailyTurns)
-	if doc.Mates.DailyTokens != nil {
-		limits.DailyTokens = max(*doc.Mates.DailyTokens, 0)
+	setInt := func(key string, dst *int, v *int) {
+		if v == nil {
+			return
+		}
+		n, w := int64(*dst), int64(*v)
+		set(key, &n, &w)
+		*dst = int(n)
 	}
+	setInt("hop_limit", &limits.HopLimit, doc.Mates.HopLimit)
+	setInt("turns_per_hour", &limits.TurnsPerHour, doc.Mates.TurnsPerHour)
+	setInt("daily_turns", &limits.DailyTurns, doc.Mates.DailyTurns)
+	set("daily_tokens", &limits.DailyTokens, doc.Mates.DailyTokens)
 	limits.Stop = doc.Mates.Stop
 	return limits, problems
 }

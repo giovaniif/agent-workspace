@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-var askedWords = []struct {
+type askedWord struct {
 	kind ActionKind
 	re   *regexp.Regexp
-}{
+}
+
+var askedWords = []askedWord{
 	{ActionMerge, regexp.MustCompile(`(?i)\bmerge\b`)},
 	{ActionCreatePR, regexp.MustCompile(`(?i)\b(pr|pull request)\b`)},
 	{ActionPush, regexp.MustCompile(`(?i)\bpush\b`)},
@@ -19,14 +21,28 @@ var askedWords = []struct {
 	{ActionDeploy, regexp.MustCompile(`(?i)\bdeploy\b`)},
 }
 
+var (
+	askClause = regexp.MustCompile(`[.,;!?\n]+|\bbut\b`)
+	askNot    = regexp.MustCompile(`(?i)\b(not|don'?t|never|no)\b`)
+)
+
 func AskedActions(text string) []ActionKind {
 	var out []ActionKind
-	for _, w := range askedWords {
-		if w.re.MatchString(text) {
+	for _, clause := range askClause.Split(text, -1) {
+		for _, w := range askedWords {
+			loc := w.re.FindStringIndex(clause)
+			if loc == nil || askNot.MatchString(clause[:loc[0]]) || slices.Contains(out, w.kind) {
+				continue
+			}
 			out = append(out, w.kind)
 		}
 	}
+	slices.SortFunc(out, func(a, b ActionKind) int { return askedRank(a) - askedRank(b) })
 	return out
+}
+
+func askedRank(k ActionKind) int {
+	return slices.IndexFunc(askedWords, func(w askedWord) bool { return w.kind == k })
 }
 
 func DirectMateTurn(seat MateSeat, user, text string) MateSeat {

@@ -70,7 +70,8 @@ func (d *Daemon) mateAuthor(name, user string) (string, string, bool) {
 
 func (d *Daemon) mateThreadEvent(ctx context.Context, name string, client app.SlackMate, e app.SlackEvent) {
 	author, self, fromMate := d.mateAuthor(name, e.User)
-	if fromMate && e.Kind != app.SlackMention && !domain.MateMentions(e.Text, self) {
+	mentioned := e.Kind == app.SlackMention || domain.MateMentions(e.Text, self)
+	if fromMate && !mentioned {
 		return
 	}
 	m, limits, ok := d.findMate(name)
@@ -89,31 +90,31 @@ func (d *Daemon) mateThreadEvent(ctx context.Context, name string, client app.Sl
 		link, found = s.mateThreads[key]
 		session, has := s.sessions[link.SessionID]
 		live = found && has && !session.Ended
-		if !live && e.Kind != app.SlackMention {
+		if !live && !mentioned {
 			return
 		}
 		seat = s.turnSeat(domain.MateSeat{Name: name, Owner: m.Owner}, e, author, fromMate)
-		now := d.ws.now()
-		usage := s.mateUsage[name]
-		if stop = domain.MateGuard(limits, seat.Hops, usage, now); stop == domain.GuardNone {
-			s.mateUsage[name] = usage.AddTurn(now)
-		}
+		stop = domain.MateGuard(limits, seat.Hops, s.mateUsage[name], d.ws.now())
 	}) {
 		return
 	}
 	switch {
-	case !live && e.Kind != app.SlackMention:
+	case !live && !mentioned:
 		return
 	case stop != domain.GuardNone:
 		d.mateGuardPost(ctx, client, name, e, stop, limits)
 		return
 	}
 	d.mateGuardClear(name, e, fromMate)
+	ran := false
 	if live {
-		d.mateReply(ctx, client, link, e, seat)
-		return
+		ran = d.mateReply(ctx, client, link, e, seat)
+	} else {
+		ran = d.mateStart(ctx, m, client, e, seat)
 	}
-	d.mateStart(ctx, m, client, e, seat)
+	if ran {
+		d.query(func(s *state) { s.mateUsage[name] = s.mateUsage[name].AddTurn(d.ws.now()) })
+	}
 }
 
 func (s *state) turnSeat(base domain.MateSeat, e app.SlackEvent, author string, fromMate bool) domain.MateSeat {
@@ -140,13 +141,18 @@ func (d *Daemon) mateGuardPost(ctx context.Context, client app.SlackMate, name s
 	key := guardKey(name, e, stop)
 	d.slack.mu.Lock()
 	said := d.slack.guarded[key] == stop
-	d.slack.guarded[key] = stop
 	d.slack.mu.Unlock()
 	if said {
 		return
 	}
 	log.Printf("[mates] %s: a guard stopped a turn: %s", name, stop)
-	d.matePostError(ctx, client, e, domain.MateGuardText(stop, limits))
+	if _, err := client.PostMessage(ctx, e.Channel, e.ThreadTS, domain.MateGuardText(stop, limits)); err != nil {
+		log.Printf("[mates] %v", err)
+		return
+	}
+	d.slack.mu.Lock()
+	d.slack.guarded[key] = stop
+	d.slack.mu.Unlock()
 }
 
 func (d *Daemon) mateGuardClear(name string, e app.SlackEvent, fromMate bool) {
@@ -165,7 +171,7 @@ func (d *Daemon) userName(ctx context.Context, client app.SlackMate, user string
 	return user
 }
 
-func (d *Daemon) mateReply(ctx context.Context, client app.SlackMate, link domain.MateThread, e app.SlackEvent, seat domain.MateSeat) {
+func (d *Daemon) mateReply(ctx context.Context, client app.SlackMate, link domain.MateThread, e app.SlackEvent, seat domain.MateSeat) bool {
 	asker := d.userName(ctx, client, e.User)
 	if !d.query(func(s *state) {
 		session := s.sessions[link.SessionID]
@@ -176,12 +182,14 @@ func (d *Daemon) mateReply(ctx context.Context, client app.SlackMate, link domai
 		next := domain.NextMateSeat(*session.Mate, seat, s.mateBusy(session))
 		s.emit(MateTurn{SessionID: session.ID, User: next.Authority, Origin: next.Origin, Asked: next.Asked, Hops: next.Hops})
 	}) {
-		return
+		return false
 	}
 	resp, ok := d.sessionSend(rpc.Request{Method: rpc.MethodSessionSend, Params: mustJSON(rpc.SessionSendParams{Session: link.SessionID, Text: domain.MateReplyPrompt(asker, e.Text)})})
 	if ok && resp.Error != nil {
 		d.matePostError(ctx, client, e, "crew could not send your message to the session: "+resp.Error.Message)
+		return false
 	}
+	return ok
 }
 
 func (s *state) mateBusy(session domain.Session) bool {
@@ -199,16 +207,16 @@ func (s *state) mateBusy(session domain.Session) bool {
 	return false
 }
 
-func (d *Daemon) mateStart(ctx context.Context, m domain.Mate, client app.SlackMate, e app.SlackEvent, seat domain.MateSeat) {
+func (d *Daemon) mateStart(ctx context.Context, m domain.Mate, client app.SlackMate, e app.SlackEvent, seat domain.MateSeat) bool {
 	name := m.Name
 	var workspaces []domain.Workspace
 	if !d.query(func(s *state) { workspaces = sorted(s.workspaces) }) {
-		return
+		return false
 	}
 	ws, ok := domain.MateWorkspace(m, workspaces)
 	if !ok {
 		d.matePostError(ctx, client, e, fmt.Sprintf("%s has no repo to work in. The owner must add a registered single repo to its repos.", name))
-		return
+		return false
 	}
 	asker := d.userName(ctx, client, e.User)
 	prompt := domain.MateFirstPrompt(m, asker, d.threadLines(ctx, client, e, asker))
@@ -217,10 +225,10 @@ func (d *Daemon) mateStart(ctx context.Context, m domain.Mate, client app.SlackM
 	}, "")
 	switch {
 	case !ok:
-		return
+		return false
 	case rerr != nil:
 		d.matePostError(ctx, client, e, "crew could not start a session: "+rerr.Message)
-		return
+		return false
 	}
 	link := domain.MateThread{Team: e.Team, Channel: e.Channel, ThreadTS: e.ThreadTS, Mate: name, SessionID: session.ID}
 	if !d.query(func(s *state) {
@@ -231,12 +239,12 @@ func (d *Daemon) mateStart(ctx context.Context, m domain.Mate, client app.SlackM
 		}
 		s.putMateThread(link)
 	}) {
-		return
+		return false
 	}
 	ts, err := client.PostMessage(ctx, e.Channel, e.ThreadTS, mateStatusWorks)
 	if err != nil {
 		log.Printf("[mates] %s: %v", name, err)
-		return
+		return true
 	}
 	d.query(func(s *state) {
 		if cur, found := s.mateThreads[link.Key()]; found {
@@ -244,6 +252,7 @@ func (d *Daemon) mateStart(ctx context.Context, m domain.Mate, client app.SlackM
 			s.putMateThread(cur)
 		}
 	})
+	return true
 }
 
 func (s *state) putMateThread(t domain.MateThread) {
