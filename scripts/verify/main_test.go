@@ -15,10 +15,20 @@ func testEnv(t *testing.T) (*env, *fakeSys) {
 	e := &env{
 		sys:   fs,
 		repo:  t.TempDir(),
-		state: t.TempDir(),
+		state: shortTempDir(t),
 		now:   func() time.Time { return time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC) },
 	}
 	return e, fs
+}
+
+func shortTempDir(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("/tmp", "vfy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	return dir
 }
 
 func git(t *testing.T, dir string, args ...string) string {
