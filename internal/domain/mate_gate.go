@@ -37,6 +37,9 @@ type MateSeat struct {
 	Name      string
 	Owner     string
 	Authority string
+	Origin    string       `json:",omitempty"`
+	Asked     []ActionKind `json:",omitempty"`
+	Hops      int          `json:",omitempty"`
 }
 
 type ActionScope struct {

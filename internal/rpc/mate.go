@@ -16,15 +16,17 @@ const (
 type Mate = domain.Mate
 
 type MateList struct {
-	Mates    []Mate      `json:"mates"`
-	Problems []string    `json:"problems,omitempty"`
-	States   []MateState `json:"states,omitempty"`
+	Mates    []Mate            `json:"mates"`
+	Problems []string          `json:"problems,omitempty"`
+	States   []MateState       `json:"states,omitempty"`
+	Limits   domain.MateLimits `json:"limits"`
 }
 
 type MateState struct {
 	Name  string                `json:"name"`
 	State domain.MateConnection `json:"state"`
 	Error string                `json:"error,omitempty"`
+	Guard domain.MateGuardStop  `json:"guard,omitempty"`
 }
 
 type MateShowParams struct {

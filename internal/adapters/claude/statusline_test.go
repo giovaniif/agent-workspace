@@ -32,6 +32,7 @@ func TestParseStatusReadsModelEffortContextAndEveryLimit(t *testing.T) {
 		Effort:      "high",
 		ContextLeft: 94,
 		HasContext:  true,
+		Tokens:      56630,
 		Limits: []domain.RateLimit{
 			{Window: "five_hour", UsedPercent: 42, ResetsAt: 1790736600},
 			{Window: "seven_day", UsedPercent: 18, ResetsAt: 1791082800},
