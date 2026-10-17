@@ -102,6 +102,7 @@ Write all prose docs and new ADRs in ASD-STE100 Simplified Technical English. Us
 6. If a criterion is wrong or impossible, do not quietly drop it. Say so in the PR and on the issue.
 7. main is protected. Merge only through a PR with build, tdd and mutate green and the branch up to date with main.
 8. CodeRabbit reviews each PR and is a required check. Before you merge, fix or answer each finding and resolve all review threads.
+9. Merge your own PR when it is ready. Ready means: build, tdd, mutate and CodeRabbit are green, all review threads are resolved and the branch is up to date with main. Do not wait for the owner to approve. Merge with `gh pr merge --merge --match-head-commit <sha>`. The owner examines the merged PRs in a daily review.
 
 ## Repo hygiene
 
