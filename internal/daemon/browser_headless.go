@@ -375,3 +375,46 @@ func (d *Daemon) browserCookiesImport(req rpc.Request) *rpc.Response {
 	}
 	return result(req.ID, rpc.BrowserCookiesResult{Imported: len(p.Cookies), Total: total})
 }
+
+func (p *headlessPool) peek(session string) (*headlessEntry, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	e, ok := p.tabs[session]
+	if ok {
+		e.busy++
+	}
+	return e, ok
+}
+
+func (p *headlessPool) unpeek(e *headlessEntry) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	e.busy--
+}
+
+func (d *Daemon) browserHeadlessView(req rpc.Request) *rpc.Response {
+	var p rpc.BrowserHeadlessViewParams
+	if err := json.Unmarshal(req.Params, &p); err != nil {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "browser.headless.view params: "+err.Error())
+	}
+	if p.Session == "" {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "browser.headless.view needs a session")
+	}
+	e, ok := d.headless.peek(p.Session)
+	if !ok {
+		return result(req.ID, rpc.BrowserHeadlessView{})
+	}
+	defer d.headless.unpeek(e)
+	ctx, cancel := context.WithTimeout(d.ws.ctx, browserTimeout)
+	defer cancel()
+	out, err := e.tab.Run(ctx, "screenshot", json.RawMessage("{}"))
+	if err != nil {
+		return errorResponse(req.ID, rpc.CodeFailed, err.Error())
+	}
+	var view rpc.BrowserHeadlessView
+	if err := json.Unmarshal(out, &view); err != nil {
+		return errorResponse(req.ID, rpc.CodeFailed, "the headless screenshot: "+err.Error())
+	}
+	view.Live = true
+	return result(req.ID, view)
+}

@@ -149,6 +149,7 @@ Each RPC request and response contains the build (`version.String()`). The daemo
   - An unknown command, or no session and no known pane, is `bad_request`.
   - With no attached app and `[browser] fallback = "headless"`, or for a session of an automation with `browser = "headless"`, the daemon runs the command in a headless Chromium on the server ([ADR 0054](../../docs/adr/0054-headless-browser-fallback.md)). The result has the same shape. A full `max_headless` limit, or a Chromium that does not start, is `unavailable`.
   - `browser.cookies.import` (`{"cookies":[{"name","value","domain","path","expires","secure","httpOnly","sameSite"}]}` → `{"imported","total"}`) keeps the cookies for the headless browser. No cookies, or a cookie with no name or domain, is `bad_request`.
+  - `browser.headless.view` (`{"session"}` → `{"live","png","width","height"}`) gives a PNG screenshot (base64) of the headless tab of the session. It never starts a tab. When the session has no headless tab, the result is `{"live":false}`. No session is `bad_request`. The Mac app polls it to show the headless tab read-only.
 - Web Push (ADR 0046):
   - `push.key` (→ `{"public_key"}`).
   - `push.subscribe` (`{"device","endpoint","keys":{"p256dh","auth"}}` → `{}`). An unknown device is `not_found`. An endpoint that is not https, or keys that are not from a browser, are `bad_request`.
