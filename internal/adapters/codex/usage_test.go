@@ -33,7 +33,7 @@ func TestSnapshotTakesTheLatestModelEffortContextAndLimits(t *testing.T) {
 	if len(snap.Limits) != 2 || snap.Limits[0] != want[0] || snap.Limits[1] != want[1] {
 		t.Fatalf("limits %+v", snap.Limits)
 	}
-	if got := snap.Usage(); got != (domain.Usage{ContextLeftPercent: 56, LimitUsedPercent: 41}) {
+	if got := snap.Usage(); got != (domain.Usage{ContextLeftPercent: 56, LimitUsedPercent: 41, Tokens: 140000}) {
 		t.Fatalf("usage %+v", got)
 	}
 }
