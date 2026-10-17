@@ -114,6 +114,7 @@ func (d *Daemon) mateThreadEvent(ctx context.Context, name string, client app.Sl
 	}
 	if ran {
 		d.query(func(s *state) { s.mateUsage[name] = s.mateUsage[name].AddTurn(d.ws.now()) })
+		d.publishMates()
 	}
 }
 
@@ -256,8 +257,16 @@ func (d *Daemon) mateStart(ctx context.Context, m domain.Mate, client app.SlackM
 }
 
 func (s *state) putMateThread(t domain.MateThread) {
-	s.mateThreads[t.Key()] = t
-	s.store.PutMateThread(t)
+	s.emit(MateThreadChanged{Thread: t})
+}
+
+type MateThreadChanged struct{ Thread domain.MateThread }
+
+func (e MateThreadChanged) apply(s *state) rpc.Diff {
+	s.mateThreads[e.Thread.Key()] = e.Thread
+	s.store.PutMateThread(e.Thread)
+	link := e.Thread.Link()
+	return rpc.Diff{MateThread: &link}
 }
 
 func (d *Daemon) threadLines(ctx context.Context, client app.SlackMate, e app.SlackEvent, asker string) []domain.ThreadLine {

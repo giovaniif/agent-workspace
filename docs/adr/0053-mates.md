@@ -95,6 +95,8 @@ The rule: only the owner can order a dangerous action.
 - A Mates page in the PWA, the Mac app and the TUI shows each mate: its state (connected, paused, stopped by a guard), its current work and its threads.
 - The owner can pause or resume each mate, stop all mates at one time (the kill switch), edit the settings and act on pending approvals.
 - RPC methods: `mate.list`, `mate.add`, `mate.set`, `mate.remove`, `mate.pause`, `mate.resume`, `mate.stop_all`, `approval.list`, `approval.decide`. The CLI is `crew mate ...`.
+- The kill switch is `stop` in `[mates]` of `config.toml`. `mate.stop_all` writes or removes this key. The daemon keeps no other record of the stop. Thus a restart keeps the stop, and a hand edit of the file and the kill switch always agree.
+- `mate.pause` and `mate.resume` write `enabled` of the mate. A paused mate has no Slack connection.
 
 ## Consequences
 

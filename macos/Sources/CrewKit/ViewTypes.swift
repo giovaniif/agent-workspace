@@ -272,6 +272,7 @@ public struct ViewState: Codable, Sendable, Equatable {
     public var subagents: [Subagent]
     public var drafts: [ReviewDraft]
     public var reclaimable: Reclaimable?
+    public var mates: MateBoard?
 }
 
 public struct Reclaimable: Codable, Sendable, Equatable {
@@ -302,6 +303,7 @@ public struct ViewDiff: Codable, Sendable, Equatable {
     public var draft: ReviewDraft?
     public var comment: ReviewComment?
     public var reclaimable: Reclaimable?
+    public var mates: MateBoard?
 
     public init(seq: UInt64) {
         self.seq = seq
@@ -310,7 +312,7 @@ public struct ViewDiff: Codable, Sendable, Equatable {
     enum CodingKeys: String, CodingKey {
         case seq, removedWorkspace = "removed_workspace", removedWorktree = "removed_worktree"
         case removedSession = "removed_session", workspace, task, worktree, session, limits, sends
-        case event, subagent, draft, comment, reclaimable
+        case event, subagent, draft, comment, reclaimable, mates
         case removedProject = "removed_project", project
     }
 }

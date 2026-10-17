@@ -34,6 +34,37 @@
           "Command": "node"
         }
       ]
+    },
+    "mates": {
+      "stopped": false,
+      "mates": [
+        {
+          "name": "helper",
+          "state": "connected",
+          "work": [
+            "s1"
+          ],
+          "threads": [
+            {
+              "mate": "helper",
+              "team": "T1",
+              "channel": "C1",
+              "thread_ts": "1700.0001",
+              "session_id": "s1",
+              "url": "https://app.slack.com/client/T1/C1/thread/C1-1700.0001",
+              "session": "Add login",
+              "state": "running",
+              "ended": false
+            }
+          ]
+        },
+        {
+          "name": "webby",
+          "state": "paused",
+          "work": [],
+          "threads": []
+        }
+      ]
     }
   },
   {
@@ -334,5 +365,99 @@
   {
     "seq": 18,
     "removed_project": "/w/api"
+  },
+  {
+    "seq": 19,
+    "mates": {
+      "stopped": false,
+      "mates": [
+        {
+          "name": "helper",
+          "state": "connected",
+          "work": [
+            "s2",
+            "s1"
+          ],
+          "threads": [
+            {
+              "mate": "helper",
+              "team": "T1",
+              "channel": "C1",
+              "thread_ts": "1700.0002",
+              "session_id": "s2",
+              "url": "https://app.slack.com/client/T1/C1/thread/C1-1700.0002",
+              "session": "fix retry",
+              "state": "waiting",
+              "ended": false
+            },
+            {
+              "mate": "helper",
+              "team": "T1",
+              "channel": "C1",
+              "thread_ts": "1700.0001",
+              "session_id": "s1",
+              "url": "https://app.slack.com/client/T1/C1/thread/C1-1700.0001",
+              "session": "Add login",
+              "state": "running",
+              "ended": false
+            }
+          ]
+        },
+        {
+          "name": "webby",
+          "state": "paused",
+          "work": [],
+          "threads": []
+        }
+      ]
+    }
+  },
+  {
+    "seq": 20,
+    "mates": {
+      "stopped": true,
+      "mates": [
+        {
+          "name": "helper",
+          "state": "connected",
+          "guard": "stopped",
+          "work": [
+            "s2",
+            "s1"
+          ],
+          "threads": [
+            {
+              "mate": "helper",
+              "team": "T1",
+              "channel": "C1",
+              "thread_ts": "1700.0002",
+              "session_id": "s2",
+              "url": "https://app.slack.com/client/T1/C1/thread/C1-1700.0002",
+              "session": "fix retry",
+              "state": "waiting",
+              "ended": false
+            },
+            {
+              "mate": "helper",
+              "team": "T1",
+              "channel": "C1",
+              "thread_ts": "1700.0001",
+              "session_id": "s1",
+              "url": "https://app.slack.com/client/T1/C1/thread/C1-1700.0001",
+              "session": "Add login",
+              "state": "running",
+              "ended": false
+            }
+          ]
+        },
+        {
+          "name": "webby",
+          "state": "paused",
+          "guard": "stopped",
+          "work": [],
+          "threads": []
+        }
+      ]
+    }
   }
 ]

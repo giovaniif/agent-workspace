@@ -25,6 +25,24 @@ type Quota struct {
 	StaleAt time.Time `json:"stale_at"`
 }
 
+type MateThread struct {
+	domain.MateLink
+	Session string            `json:"session"`
+	State   domain.AgentState `json:"state"`
+	Ended   bool              `json:"ended"`
+}
+
+type Mate struct {
+	domain.MateStatus
+	Work    []string     `json:"work"`
+	Threads []MateThread `json:"threads"`
+}
+
+type Mates struct {
+	Stopped bool   `json:"stopped"`
+	Mates   []Mate `json:"mates"`
+}
+
 type State struct {
 	Seq        uint64              `json:"seq"`
 	Workspaces []domain.Workspace  `json:"workspaces"`
@@ -33,6 +51,7 @@ type State struct {
 	Sessions   []Session           `json:"sessions"`
 	Limits     []Quota             `json:"limits"`
 	Sends      []domain.QueuedSend `json:"sends"`
+	Mates      Mates               `json:"mates"`
 }
 
 type Diff struct {
@@ -46,6 +65,7 @@ type Diff struct {
 	Session          *Session             `json:"session,omitempty"`
 	Limits           *[]Quota             `json:"limits,omitempty"`
 	Sends            *[]domain.QueuedSend `json:"sends,omitempty"`
+	Mates            *Mates               `json:"mates,omitempty"`
 }
 
 type FailingCheck struct {
@@ -88,6 +108,7 @@ type NativeState struct {
 	Subagents   []domain.Subagent     `json:"subagents"`
 	Drafts      []domain.ReviewDraft  `json:"drafts"`
 	Reclaimable rpc.Reclaimable       `json:"reclaimable"`
+	Mates       Mates                 `json:"mates"`
 }
 
 type NativeDiff struct {
@@ -108,6 +129,7 @@ type NativeDiff struct {
 	Draft            *domain.ReviewDraft   `json:"draft,omitempty"`
 	Comment          *domain.ReviewComment `json:"comment,omitempty"`
 	Reclaimable      *rpc.Reclaimable      `json:"reclaimable,omitempty"`
+	Mates            *Mates                `json:"mates,omitempty"`
 }
 
 type derived struct {
@@ -128,6 +150,9 @@ type View struct {
 	events    map[string][]domain.SessionEvent
 	shown     map[string]derived
 	limits    []Quota
+	board     domain.MateBoard
+	threads   map[string]domain.MateLink
+	mates     Mates
 }
 
 func New(st rpc.State) (*View, *State) {
@@ -148,6 +173,7 @@ func New(st rpc.State) (*View, *State) {
 		Sessions:   sessions,
 		Limits:     native.Limits,
 		Sends:      native.Sends,
+		Mates:      native.Mates,
 	}
 }
 
@@ -163,6 +189,11 @@ func build(st rpc.State, native bool) (*View, *NativeState) {
 		sessions:  map[string]domain.Session{},
 		events:    map[string][]domain.SessionEvent{},
 		shown:     map[string]derived{},
+		threads:   map[string]domain.MateLink{},
+		board:     st.Mates,
+	}
+	for _, l := range st.MateThreads {
+		v.threads[linkKey(l)] = l
 	}
 	for _, t := range st.Tasks {
 		v.tasks[t.ID] = t
@@ -182,6 +213,7 @@ func build(st rpc.State, native bool) (*View, *NativeState) {
 		sessions = append(sessions, v.show(s, orders))
 	}
 	v.limits = v.quotas()
+	v.mates = v.deriveMates()
 	return v, &NativeState{
 		Seq:         st.Seq,
 		Workspaces:  orEmpty(st.Workspaces),
@@ -195,6 +227,7 @@ func build(st rpc.State, native bool) (*View, *NativeState) {
 		Subagents:   orEmpty(st.Subagents),
 		Drafts:      orEmpty(st.Drafts),
 		Reclaimable: st.Reclaimable,
+		Mates:       v.mates,
 	}
 }
 
@@ -238,11 +271,16 @@ func (v *View) ApplyNative(d rpc.Diff) []*NativeDiff {
 			out.Limits = &limits
 		}
 	}
+	changed := v.changedSessions(d, orders)
+	if mates := v.deriveMates(); !reflect.DeepEqual(mates, v.mates) {
+		v.mates = mates
+		out.Mates = &mates
+	}
 	var diffs []*NativeDiff
 	if out.keep() {
 		diffs = append(diffs, out)
 	}
-	return append(diffs, v.changedSessions(d, orders)...)
+	return append(diffs, changed...)
 }
 
 func (d *NativeDiff) phone() *Diff {
@@ -255,6 +293,7 @@ func (d *NativeDiff) phone() *Diff {
 		Task:             d.Task,
 		Limits:           d.Limits,
 		Sends:            d.Sends,
+		Mates:            d.Mates,
 	}
 	if d.Worktree != nil {
 		wt := withoutPorts(*d.Worktree)
@@ -278,6 +317,12 @@ func (v *View) remember(d rpc.Diff) {
 	}
 	if d.Event != nil {
 		v.addEvent(*d.Event)
+	}
+	if d.Mates != nil {
+		v.board = *d.Mates
+	}
+	if d.MateThread != nil {
+		v.threads[linkKey(*d.MateThread)] = *d.MateThread
 	}
 	if d.Session != nil {
 		v.addSession(*d.Session)
@@ -431,12 +476,12 @@ func (v *View) quotas() []Quota {
 
 func (d *Diff) keep() bool {
 	return d.RemovedWorkspace != "" || d.RemovedWorktree != "" || d.RemovedSession != "" ||
-		d.Workspace != nil || d.Task != nil || d.Worktree != nil || d.Session != nil || d.Sends != nil || d.Limits != nil
+		d.Workspace != nil || d.Task != nil || d.Worktree != nil || d.Session != nil || d.Sends != nil || d.Limits != nil || d.Mates != nil
 }
 
 func (d *NativeDiff) keep() bool {
 	return d.phone().keep() || d.Event != nil || d.Subagent != nil || d.Draft != nil || d.Comment != nil || d.Reclaimable != nil ||
-		d.Project != nil || d.RemovedProject != ""
+		d.Project != nil || d.RemovedProject != "" || d.Mates != nil
 }
 
 func withoutPorts(wt domain.Worktree) domain.Worktree {
@@ -449,4 +494,39 @@ func orEmpty[T any](xs []T) []T {
 		return []T{}
 	}
 	return xs
+}
+
+func linkKey(l domain.MateLink) string {
+	return domain.MateThreadKey(l.Team, l.Channel, l.ThreadTS, l.Mate)
+}
+
+func (v *View) deriveMates() Mates {
+	links := make([]domain.MateLink, 0, len(v.threads))
+	for _, l := range v.threads {
+		links = append(links, l)
+	}
+	sort.Slice(links, func(i, j int) bool {
+		a, b := links[i], links[j]
+		if a.ThreadTS != b.ThreadTS {
+			return a.ThreadTS > b.ThreadTS
+		}
+		return linkKey(a) < linkKey(b)
+	})
+	out := Mates{Stopped: v.board.Stopped, Mates: make([]Mate, 0, len(v.board.Mates))}
+	for _, st := range v.board.Mates {
+		m := Mate{MateStatus: st, Work: []string{}, Threads: []MateThread{}}
+		for _, l := range links {
+			if l.Mate != st.Name {
+				continue
+			}
+			s, ok := v.sessions[l.SessionID]
+			t := MateThread{MateLink: l, Session: v.shown[l.SessionID].name, State: s.State, Ended: !ok || s.Ended}
+			m.Threads = append(m.Threads, t)
+			if !t.Ended && domain.MateWorking(s.State) {
+				m.Work = append(m.Work, l.SessionID)
+			}
+		}
+		out.Mates = append(out.Mates, m)
+	}
+	return out
 }

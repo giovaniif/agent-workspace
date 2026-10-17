@@ -71,6 +71,14 @@ Unknown paths under `/api/` answer `not_found`.
 | `GET /api/v1/approvals` | yes | `approval.list` | → `[Approval]`, the pending approvals of mates, oldest first (`[]` when none) |
 | `POST /api/v1/approvals/{id}/approve` | yes | `approval.decide` | → the granted `Approval`; `stale` (409) when it is decided or expired, `not_found` for an unknown ID |
 | `POST /api/v1/approvals/{id}/deny` | yes | `approval.decide` | → the denied `Approval`; the same errors |
+| `GET /api/v1/mates` | yes | `mate.list` | → `{"mates","problems","states","limits"}`, the definitions of the mates (`[]` when none) |
+| `POST /api/v1/mates` | yes | `mate.set` | `{"mate"}` → the saved mate; adds a mate or changes its settings |
+| `POST /api/v1/mates/stop` | yes | `mate.stop_all` | `{"stop"}` → the limits; the kill switch for all mates |
+| `POST /api/v1/mates/{name}/pause` | yes | `mate.pause` | → the saved mate |
+| `POST /api/v1/mates/{name}/resume` | yes | `mate.resume` | → the saved mate |
+| `GET /api/v1/mates/{name}/setup` | yes | `mate.setup` | → `{"manifest","url"}`, the Slack app manifest and its link |
+| `POST /api/v1/mates/{name}/tokens` | yes | `mate.set_tokens` | `{"bot_token","app_token"}` → `{"name","has_bot_token","has_app_token"}`; the name comes from the path, and no response holds a token |
+| `POST /api/v1/mates/{name}/claim` | yes | `mate.claim` | → `{"name","code","expires_at"}`, the one-time owner code |
 
 - Auth is `Authorization: Bearer <token>`. Before the method runs, serve checks it with `device.check` on the connection of the request. Then it checks it against the set of revoked device IDs.
 - `pair` passes the address of the caller as `addr`. This is `RemoteAddr`. If the peer is a loopback or private address (the location of a proxy in front of serve), it is the last `X-Forwarded-For` entry, else `X-Real-IP`. serve ignores a forged header from a direct client.
@@ -103,8 +111,8 @@ The `/` fallback: `Handler(fallback)` mounts `fallback` at `/`. `Handler(nil)` s
 - The first client frame must be `{"token":"<device token>"}`, within 5 s (`Config.AuthTimeout`).
   - If the first frame is late, is not JSON or has no token, serve closes the socket with 4400 (`CloseBadHandshake`). The client tries again. A phone that wakes up, or a slow link, must not lose its pairing.
   - serve closes with 4401 only for a token that `device.check` refuses, or for a revoked device.
-- Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","sends"}}`. It sends one `{"diff":{...}}` for each change to these items.
-  - A diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `sends` (whole list), `removed_workspace`, `removed_worktree`, `removed_session`.
+- Then the server sends `{"state":{"seq","workspaces","tasks","worktrees","sessions","limits","sends","mates"}}`. It sends one `{"diff":{...}}` for each change to these items.
+  - A diff sets `seq` and one of `workspace`, `task`, `worktree`, `session`, `limits` (whole list), `sends` (whole list), `mates` (whole board, see [internal/view/](../view/AGENTS.md)), `removed_workspace`, `removed_worktree`, `removed_session`.
   - serve drops events, subagents, review drafts and comments, so `seq` has gaps. Worktrees come without `Ports`.
 - Each stream keeps a `view.View` ([internal/view/](../view/AGENTS.md)) of tasks, worktrees, sessions and their last `domain.SessionEventsKept` events. Thus serve sends a session as a `StreamSession`: the Go fields and these fields:
   - `name`: `domain.NameFor` with the PRs of its worktrees.

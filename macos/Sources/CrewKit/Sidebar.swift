@@ -38,6 +38,7 @@ public struct Sidebar: Sendable, Equatable {
         if let r = state.reclaimable, r.size > 0 || r.pending > 0 {
             parts.append(DiskTiles.measured(r.size, pending: r.pending) + " reclaimable")
         }
+        if state.mates?.stopped == true { parts.append("all mates stopped") }
         footer = parts.joined(separator: " · ")
     }
 

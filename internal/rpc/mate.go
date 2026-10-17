@@ -22,11 +22,27 @@ type MateList struct {
 	Limits   domain.MateLimits `json:"limits"`
 }
 
-type MateState struct {
-	Name  string                `json:"name"`
-	State domain.MateConnection `json:"state"`
-	Error string                `json:"error,omitempty"`
-	Guard domain.MateGuardStop  `json:"guard,omitempty"`
+type MateState = domain.MateStatus
+
+const (
+	MethodMatePause   = "mate.pause"
+	MethodMateResume  = "mate.resume"
+	MethodMateStopAll = "mate.stop_all"
+)
+
+type MateNameParams struct {
+	Name string `json:"name"`
+}
+
+const MethodMateSetup = "mate.setup"
+
+type MateSetup struct {
+	Manifest string `json:"manifest"`
+	URL      string `json:"url"`
+}
+
+type MateStopAllParams struct {
+	Stop bool `json:"stop"`
 }
 
 type MateShowParams struct {

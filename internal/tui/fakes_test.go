@@ -79,6 +79,7 @@ type fakeCaller struct {
 	failOn string
 	dirs   map[string][]domain.Child
 	autos  []domain.Automation
+	asks   []domain.Approval
 }
 
 func (f *fakeCaller) Call(_ context.Context, method string, params, out any) error {
@@ -94,6 +95,10 @@ func (f *fakeCaller) Call(_ context.Context, method string, params, out any) err
 			return &rpc.Error{Code: rpc.CodeNotFound, Message: "no such directory"}
 		}
 		*out.(*rpc.WorkspaceDirs) = rpc.WorkspaceDirs{Dirs: children}
+		return nil
+	}
+	if method == rpc.MethodApprovalList {
+		*out.(*[]domain.Approval) = f.asks
 		return nil
 	}
 	if method == rpc.MethodAutomationList {

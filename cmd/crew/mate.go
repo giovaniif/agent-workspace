@@ -13,7 +13,7 @@ import (
 	"github.com/giovaniif/crew/internal/rpc"
 )
 
-const mateUsage = "usage: crew mate list | show <name> | remove <name> | add <name> [--agent a] [--prompt p] [--no-open] | tokens <name> [--clear] | claim <name> | set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]"
+const mateUsage = "usage: crew mate list | show <name> | remove <name> | add <name> [--agent a] [--prompt p] [--no-open] | tokens <name> [--clear] | claim <name> | pause <name> | resume <name> | stop [--off] | set <name> [--agent a] [--prompt p] [--model m] [--effort e] [--repo r]... [--no-repos] [--owner id] [--enable|--disable]"
 
 func runMate(args []string, stdout, stderr io.Writer) int {
 	if !mateArgsOK(args) {
@@ -34,8 +34,10 @@ func mateArgsOK(args []string) bool {
 	switch args[0] {
 	case "list":
 		return len(args) == 1
-	case "show", "remove", "claim":
+	case "show", "remove", "claim", "pause", "resume":
 		return len(args) == 2
+	case "stop":
+		return len(args) == 1 || len(args) == 2 && args[1] == "--off"
 	case "set":
 		return len(args) >= 2
 	case "add":
@@ -121,6 +123,8 @@ func mateCommand(args []string, stdout io.Writer) error {
 		return mateAdd(ctx, c, stdMateIO(stdout), name, opts)
 	case "claim":
 		return mateClaim(ctx, c, stdout, args[1])
+	case "pause", "resume", "stop":
+		return mateControl(ctx, c, stdout, args)
 	case "tokens":
 		return mateTokens(ctx, c, stdMateIO(stdout), args[1], len(args) == 3)
 	case "show":
@@ -200,4 +204,29 @@ func printMate(w io.Writer, m domain.Mate) {
 	for _, line := range strings.Split(strings.TrimRight(m.Prompt, "\n"), "\n") {
 		fmt.Fprintf(w, "  %s\n", line)
 	}
+}
+
+func mateControl(ctx context.Context, c mateCaller, out io.Writer, args []string) error {
+	if args[0] == "stop" {
+		stop := len(args) == 1
+		if err := c.Call(ctx, rpc.MethodMateStopAll, rpc.MateStopAllParams{Stop: stop}, &domain.MateLimits{}); err != nil {
+			return err
+		}
+		if stop {
+			fmt.Fprintln(out, "stopped all mates; they start no new turns until crew mate stop --off")
+		} else {
+			fmt.Fprintln(out, "all mates can start turns again")
+		}
+		return nil
+	}
+	method, word := rpc.MethodMatePause, "paused"
+	if args[0] == "resume" {
+		method, word = rpc.MethodMateResume, "resumed"
+	}
+	var m domain.Mate
+	if err := c.Call(ctx, method, rpc.MateNameParams{Name: args[1]}, &m); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "%s %s\n", word, args[1])
+	return nil
 }

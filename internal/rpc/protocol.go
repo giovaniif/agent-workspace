@@ -516,6 +516,8 @@ type State struct {
 	Reclaimable Reclaimable           `json:"reclaimable"`
 	ShellTabs   []domain.ShellTab     `json:"shell_tabs,omitempty"`
 	ActiveTabs  map[string]string     `json:"active_tabs,omitempty"`
+	Mates       domain.MateBoard      `json:"mates"`
+	MateThreads []domain.MateLink     `json:"mate_threads"`
 }
 
 type Reclaimable struct {
@@ -544,6 +546,8 @@ type Diff struct {
 	ShellTab         *domain.ShellTab      `json:"shell_tab,omitempty"`
 	RemovedShellTab  string                `json:"removed_shell_tab,omitempty"`
 	ActiveTab        *ActiveTab            `json:"active_tab,omitempty"`
+	Mates            *domain.MateBoard     `json:"mates,omitempty"`
+	MateThread       *domain.MateLink      `json:"mate_thread,omitempty"`
 }
 
 func Home() (string, error) {

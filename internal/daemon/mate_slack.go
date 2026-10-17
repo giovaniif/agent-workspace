@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +35,7 @@ type slackWorkers struct {
 	shown   map[string]time.Time
 	users   map[string]string
 	guarded map[string]domain.MateGuardStop
+	limits  domain.MateLimits
 }
 
 type mateWorker struct {
@@ -76,6 +79,7 @@ func (d *Daemon) runMates(ctx context.Context) {
 	defer tick.Stop()
 	for {
 		d.syncMates(ctx)
+		d.publishMates()
 		select {
 		case <-ctx.Done():
 			d.slack.mu.Lock()
@@ -110,7 +114,8 @@ func (d *Daemon) syncMates(ctx context.Context) {
 	reader, _ := d.mateSecrets.(app.MateTokenReader)
 	states := map[string]rpc.MateState{}
 	want := map[string]mateTarget{}
-	for _, m := range d.loadMates(src).Mates {
+	list := d.loadMates(src)
+	for _, m := range list.Mates {
 		if !m.Enabled {
 			states[m.Name] = rpc.MateState{Name: m.Name, State: domain.MatePaused}
 			continue
@@ -147,6 +152,32 @@ func (d *Daemon) syncMates(ctx context.Context) {
 		go d.runMate(wctx, name, w)
 	}
 	d.slack.states = states
+	d.slack.limits = list.Limits
+}
+
+func (d *Daemon) publishMates() {
+	d.query(func(s *state) {
+		d.slack.mu.Lock()
+		states := slices.Collect(maps.Values(d.slack.states))
+		limits := d.slack.limits
+		d.slack.mu.Unlock()
+		board := domain.NewMateBoard(states, limits, s.mateUsage, d.ws.now())
+		if !reflect.DeepEqual(board, s.mateBoard) {
+			s.emit(MatesChanged{Board: board})
+		}
+	})
+}
+
+type MatesChanged struct{ Board domain.MateBoard }
+
+func (e MatesChanged) apply(s *state) rpc.Diff {
+	s.mateBoard = e.Board
+	board := s.mateBoardCopy()
+	return rpc.Diff{Mates: &board}
+}
+
+func (s *state) mateBoardCopy() domain.MateBoard {
+	return domain.MateBoard{Stopped: s.mateBoard.Stopped, Mates: append([]domain.MateStatus{}, s.mateBoard.Mates...)}
 }
 
 func (d *Daemon) runMate(ctx context.Context, name string, w *mateWorker) {
@@ -159,21 +190,23 @@ func (d *Daemon) runMate(ctx context.Context, name string, w *mateWorker) {
 	}
 	log.Printf("[mates] %s: slack stopped: %v", name, err)
 	d.slack.mu.Lock()
-	defer d.slack.mu.Unlock()
 	if d.slack.running[name] == w && d.slack.states[name].State != domain.MateError {
 		d.slack.states[name] = rpc.MateState{Name: name, State: domain.MateError, Error: err.Error()}
 	}
+	d.slack.mu.Unlock()
+	d.publishMates()
 }
 
 func (d *Daemon) setMateState(name string, w *mateWorker, s app.SlackStatus) {
 	d.slack.mu.Lock()
-	defer d.slack.mu.Unlock()
 	if d.slack.running[name] == w {
 		d.slack.states[name] = rpc.MateState{Name: name, State: s.State, Error: s.Error}
 		if s.User != "" {
 			d.slack.users[name] = s.User
 		}
 	}
+	d.slack.mu.Unlock()
+	d.publishMates()
 }
 
 func (d *Daemon) mateStates(mates []domain.Mate, limits domain.MateLimits) []rpc.MateState {

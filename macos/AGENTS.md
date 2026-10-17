@@ -70,6 +70,12 @@ The dry run occurs on a pull request that touches `macos/`, `.goreleaser.yaml` o
   - The detail has Overview (the definition) and Runs (history, Open session, Rerun). Run… (⌘R) opens `AutomationRunSheet` with a multi-line context field. A started run selects its session in the main window.
   - New… and Edit… open `AutomationEditSheet`. Save writes the global `config.toml` through `automation.save`. A repo automation has no Edit…: the detail shows its `.crew.toml`.
   - Test: `swift test --filter Automations`. Snapshots: `automations*.png`.
+- Mates (`Mates.swift`, views `MatesWindow`, `LiveMatesWindow`; ⇧⌘M, ADR 0053):
+  - `ViewState.mates` is the `mates` board of `view.subscribe` (`MateBoard`, `MateRow`, `MateThread`). The window draws it live. `MateRow.label` gives the state and the guard, and `currentWork` gives the threads in `work`.
+  - `MatesModel` (main actor, over `Caller`) calls `mate.list` and `approval.list`, `mate.pause`, `mate.resume`, `mate.stop_all` (the kill switch, with a confirmation), `mate.set` (Settings… and Add a mate…, from `MateDraft`), `mate.setup`, `mate.set_tokens`, `mate.claim` and `approval.decide`.
+  - After Add a mate…, `MateConnectSheet` shows the manifest link, takes the two tokens and shows the claim code.
+  - A thread opens its session in the main window or its Slack link. When all mates are stopped, the sidebar footer ends with "all mates stopped".
+  - Test: `swift test --filter 'Mates|ViewDecoding|LiveState|Sidebar'`.
 - New session (`NewSession.swift`, view `NewSessionSheet`):
   - ⌘N opens the sheet. The New button of the toolbar also opens it.
   - `NewSession.load(state:)` calls `session.options`. It gets the harnesses, their models and efforts, and the `[defaults.<harness>]` model and effort. The app cannot read a remote `config.toml`.

@@ -55,6 +55,11 @@ The left pane of the client layout runs `crew tui`, 48 columns wide. When the te
   - A daemon of the same build replaces the state. The TUI follows its diffs (`listen`, one command for each diff), and all ports in `Options` move to the new connection.
   - A `version_mismatch` stops the retries and shows `crew was upgraded`. With `Options.CanRestart` (only the main sidebar), `r` quits with `tui.ErrRestart`. `crew tui` then re-execs itself and gets the installed binary.
   - Popups (`--new-session`, `--setup`) do not dial again. Tests: `go test ./internal/tui/ -run 'Reconnect|Disconnected|AnotherBuild'` and `test/e2e/testdata/script/tui_reconnect.txtar`.
+- **Mates.** `C` opens the mates panel (`mates.go`). The board and the thread links come from `State.mates`, `mate_threads` and their diffs. The panel calls `approval.list` when it opens. See [ADR 0053](../../docs/adr/0053-mates.md).
+  - Each mate shows its state and the guard that holds it, and `working` when a thread session runs. The selected mate shows its threads.
+  - `j`/`k` move over the mates, then the approvals. `p` pauses or resumes the selected mate. `y` approves and `n` denies the selected approval, then the list loads again. `g` loads the approvals again.
+  - `X` is the kill switch: it asks (`y`), then calls `mate.stop_all`. When all mates are stopped, `X` starts them with no question. The sidebar then shows `■ all mates stopped` under the limits.
+  - Tests: `go test ./internal/tui/ -run Mates`.
 - Other keys: `n` new session (popup through `client.popup`, ADR 0037), `enter` focus, `x` then `y` end, `u` resume an ended session (a picker, most recently active first), `m` mute, `R` rename and pin, `A` unpin, `a` run an automation (pick it with `j`/`k`, `enter`, then type the context and `enter`), `P` projects, `r` review, `w` worktrees and disk, `t` shell, `T` shell popup, `s` focus the shell, `e` nvim, `S` setup walkthrough. `ctrl+\` (`tmux.FocusSidebarKey`) returns to the sidebar from an agent pane ([ADR 0025](../../docs/adr/0025-focus-return-key.md)).
 
 ## Config

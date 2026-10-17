@@ -69,7 +69,7 @@ struct ViewDecodingTests {
 
     @Test func decodesTheGoGoldenDiffs() throws {
         let diffs = try Goldens.diffs()
-        #expect(diffs.count == 12)
+        #expect(diffs.count == 14)
         #expect(diffs[0].worktree?.pr?.failing.first?.name == "test")
         #expect(diffs[1].session?.board.first?.blockers == ["checks failing"])
         #expect(diffs[1].session?.board.first?.failingChecks.first?.url == "https://ci/1")
@@ -78,6 +78,25 @@ struct ViewDecodingTests {
         #expect(diffs[7].removedSession == "s3")
         #expect(diffs[10].project == Project(root: "/w/web", name: "web", setup: ""))
         #expect(diffs[11].removedProject == "/w/api")
+        #expect(diffs[0].mates?.mates.first?.threads.first?.session == "Add login")
+        #expect(diffs[12].mates?.mates.first?.work == ["s2", "s1"])
+        #expect(diffs[13].mates?.stopped == true)
+        #expect(diffs[13].mates?.mates.map(\.hold) == ["stopped", "stopped"])
+    }
+
+    @Test func decodesTheMatesOfTheGoldenState() throws {
+        let mates = try #require(try Goldens.state().mates)
+        #expect(mates.stopped == false)
+        #expect(mates.mates.map(\.name) == ["helper", "webby"])
+        #expect(mates.mates[0].state == "connected")
+        #expect(mates.mates[0].work == ["s1"])
+        let thread = try #require(mates.mates[0].threads.first)
+        #expect(thread.sessionID == "s1")
+        #expect(thread.threadTS == "1700.0001")
+        #expect(thread.url == "https://app.slack.com/client/T1/C1/thread/C1-1700.0001")
+        #expect(thread.state == "running")
+        #expect(mates.mates[1].paused)
+        #expect(mates.mates[1].threads.isEmpty)
     }
 
     @Test func everyGoldenStateFieldRoundTrips() throws {

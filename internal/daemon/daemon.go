@@ -145,6 +145,7 @@ type state struct {
 	transcriptMoved func(sessionID, path string, gone bool)
 	mateThreads     map[string]domain.MateThread
 	mateUsage       map[string]domain.MateUsage
+	mateBoard       domain.MateBoard
 	matePost        func(link domain.MateThread, ev domain.SessionEvent)
 	approvalAsk     func(domain.Approval)
 }
@@ -600,7 +601,8 @@ func (d *Daemon) dispatch(c *conn, line []byte) (*rpc.Response, bool) {
 		return result(req.ID, d.sessionOptions()), true
 	case rpc.MethodConfigGet, rpc.MethodConfigSet:
 		return d.configMethod(req), true
-	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens, rpc.MethodMateClaim:
+	case rpc.MethodMateList, rpc.MethodMateShow, rpc.MethodMateSet, rpc.MethodMateRemove, rpc.MethodMateSetTokens, rpc.MethodMateClearTokens, rpc.MethodMateClaim,
+		rpc.MethodMatePause, rpc.MethodMateResume, rpc.MethodMateStopAll, rpc.MethodMateSetup:
 		return d.mateMethod(req), true
 	case rpc.MethodAutomationList, rpc.MethodAutomationShow:
 		return d.automationMethod(req), true
@@ -707,6 +709,8 @@ func (s *state) snapshot() rpc.State {
 		Reclaimable: s.reclaimable,
 		ShellTabs:   sorted(s.shellTabs),
 		ActiveTabs:  maps.Clone(s.activeTabs),
+		Mates:       s.mateBoardCopy(),
+		MateThreads: domain.MateLinks(slices.Collect(maps.Values(s.mateThreads))),
 	}
 }
 

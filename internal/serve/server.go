@@ -104,6 +104,14 @@ func (s *Server) routes() []route {
 		{"GET /api/v1/approvals", listApprovals},
 		{"POST /api/v1/approvals/{id}/approve", decideApproval(true)},
 		{"POST /api/v1/approvals/{id}/deny", decideApproval(false)},
+		{"GET /api/v1/mates", listMates},
+		{"POST /api/v1/mates", setMate},
+		{"POST /api/v1/mates/stop", stopMates},
+		{"POST /api/v1/mates/{name}/pause", mateByName(rpc.MethodMatePause)},
+		{"POST /api/v1/mates/{name}/resume", mateByName(rpc.MethodMateResume)},
+		{"GET /api/v1/mates/{name}/setup", mateSetup},
+		{"POST /api/v1/mates/{name}/tokens", setMateTokens},
+		{"POST /api/v1/mates/{name}/claim", claimMate},
 	}
 }
 

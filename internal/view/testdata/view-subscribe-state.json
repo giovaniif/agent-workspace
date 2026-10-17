@@ -196,5 +196,36 @@
   "reclaimable": {
     "size": 2048,
     "pending": 1
+  },
+  "mates": {
+    "stopped": false,
+    "mates": [
+      {
+        "name": "helper",
+        "state": "connected",
+        "work": [
+          "s1"
+        ],
+        "threads": [
+          {
+            "mate": "helper",
+            "team": "T1",
+            "channel": "C1",
+            "thread_ts": "1700.0001",
+            "session_id": "s1",
+            "url": "https://app.slack.com/client/T1/C1/thread/C1-1700.0001",
+            "session": "add login",
+            "state": "running",
+            "ended": false
+          }
+        ]
+      },
+      {
+        "name": "webby",
+        "state": "paused",
+        "work": [],
+        "threads": []
+      }
+    ]
   }
 }

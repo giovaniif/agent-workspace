@@ -97,6 +97,9 @@ type Model struct {
 	workspaces map[string]domain.Workspace
 	projects   map[string]domain.Project
 	proj       *projectsPanel
+	mp         *matesPanel
+	mateBoard  domain.MateBoard
+	mateLinks  map[string]domain.MateLink
 	shellTabs  map[string]domain.ShellTab
 	activeTabs map[string]string
 	tabNew     *tabChooser
@@ -278,6 +281,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.proj != nil {
 			return m.projectsKey(msg)
 		}
+		if m.mp != nil {
+			return m.matesKey(msg)
+		}
 		if m.renaming != nil {
 			return m.renameKey(msg)
 		}
@@ -311,6 +317,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case automationsMsg:
 		return m.automationsLoaded(msg), nil
+	case mateApprovalsMsg:
+		return m.approvalsLoaded(msg), nil
 	case sessionStartedMsg:
 		if m.opts.NewSessionOnly {
 			return m, m.showNewAndQuit(msg.session.ID)
@@ -347,6 +355,7 @@ func (m *Model) load(st rpc.State) {
 	for _, sh := range st.ShellTabs {
 		m.shellTabs[sh.ID] = sh
 	}
+	m.loadMates(st)
 	m.activeTabs = maps.Clone(st.ActiveTabs)
 	if m.activeTabs == nil {
 		m.activeTabs = map[string]string{}
@@ -388,6 +397,7 @@ func (m *Model) addEvent(ev domain.SessionEvent) {
 }
 
 func (m *Model) apply(d rpc.Diff) {
+	m.applyMates(d)
 	if d.Event != nil {
 		m.addEvent(*d.Event)
 	}
@@ -573,6 +583,10 @@ func (m Model) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "P":
 		if m.opts.Calls != nil {
 			return m.openProjects(), nil
+		}
+	case "C":
+		if m.opts.Calls != nil {
+			return m.openMates()
 		}
 	case "x":
 		if cur >= 0 && m.opts.Calls != nil {
