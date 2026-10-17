@@ -11,16 +11,27 @@ import (
 type MateTurn struct {
 	SessionID string
 	User      string
+	Origin    string
+	Asked     []domain.ActionKind
+	Hops      int
 }
 
 func (e MateTurn) apply(s *state) rpc.Diff {
 	session := s.sessions[e.SessionID]
 	seat := *session.Mate
-	seat.Authority = e.User
+	seat.Authority, seat.Origin, seat.Asked, seat.Hops = e.User, e.Origin, e.Asked, e.Hops
 	session.Mate = &seat
 	s.sessions[session.ID] = session
 	s.store.PutSession(session)
 	return rpc.Diff{Session: &session}
+}
+
+func (s *state) mateSpend(before, after domain.Session, now time.Time) {
+	if after.Mate == nil || after.Usage.Tokens <= before.Usage.Tokens {
+		return
+	}
+	name := after.Mate.Name
+	s.mateUsage[name] = s.mateUsage[name].AddTokens(after.Usage.Tokens-before.Usage.Tokens, now)
 }
 
 func (s *state) gateHook(h rpc.Hook, now time.Time) rpc.HookReply {
@@ -33,7 +44,7 @@ func (s *state) gateHook(h rpc.Hook, now time.Time) rpc.HookReply {
 	}
 	action := *h.Action
 	mine := s.sessionApprovals(session.ID)
-	decision := domain.Gate(session.Mate.Authority, session.Mate.Owner, action, mine, now)
+	decision := domain.Gate(domain.ChainAuthority(*session.Mate, action.Kind), session.Mate.Owner, action, mine, now)
 	if decision.Allow {
 		if decision.Use >= 0 {
 			used := mine[decision.Use]

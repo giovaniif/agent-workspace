@@ -47,9 +47,14 @@ type mateRig struct {
 
 func startMateRig(t *testing.T, store *memStore, extra ...daemon.Option) mateRig {
 	t.Helper()
+	return startMateRigWith(t, store, threadMates, extra...)
+}
+
+func startMateRigWith(t *testing.T, store *memStore, config string, extra ...daemon.Option) mateRig {
+	t.Helper()
 	home := t.TempDir()
 	path := filepath.Join(home, "config.toml")
-	if err := os.WriteFile(path, []byte(threadMates), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte(config), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	r := mateRig{hub: &fakeSlackHub{names: map[string]string{mateOwner: "Olivia", mateGuest: "Gus"}}, store: store, wts: &fakeWorktrees{}}

@@ -76,6 +76,7 @@ func (e SessionChanged) apply(s *state) rpc.Diff {
 		return rpc.Diff{RemovedSession: e.Session.ID}
 	}
 	s.sessionAutomationEvents(e.Session)
+	s.mateSpend(s.sessions[e.Session.ID], e.Session, time.Now())
 	s.sessions[e.Session.ID] = e.Session
 	s.store.PutSession(e.Session)
 	return rpc.Diff{Session: &e.Session}
@@ -143,6 +144,7 @@ type state struct {
 	orphanPanes     []app.PaneID
 	transcriptMoved func(sessionID, path string, gone bool)
 	mateThreads     map[string]domain.MateThread
+	mateUsage       map[string]domain.MateUsage
 	matePost        func(link domain.MateThread, ev domain.SessionEvent)
 	approvalAsk     func(domain.Approval)
 }
@@ -203,6 +205,7 @@ func New(store app.Store, pid int, opts ...Option) (*Daemon, error) {
 		booting:         map[string]bool{},
 		earlyHooks:      map[string][]earlyHook{},
 		mateThreads:     map[string]domain.MateThread{},
+		mateUsage:       map[string]domain.MateUsage{},
 		devices:         map[string]domain.Device{},
 		projects:        map[string]domain.Project{},
 		automationRuns:  map[string]domain.AutomationRun{},

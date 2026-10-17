@@ -98,6 +98,7 @@ type Usage struct {
 	ContextLeftPercent int
 	HasContext         bool
 	LimitUsedPercent   int
+	Tokens             int64 `json:",omitempty"`
 }
 
 type RateLimit struct {
@@ -111,6 +112,7 @@ type StatusReport struct {
 	Effort      string
 	ContextLeft int
 	HasContext  bool
+	Tokens      int64
 	Limits      []RateLimit
 	At          time.Time
 }
@@ -125,6 +127,9 @@ func (s Session) Report(r StatusReport) Session {
 	}
 	if r.HasContext {
 		s.Usage.ContextLeftPercent, s.Usage.HasContext = r.ContextLeft, true
+	}
+	if r.Tokens > 0 {
+		s.Usage.Tokens = r.Tokens
 	}
 	if len(r.Limits) > 0 {
 		s.Limits = r.Limits

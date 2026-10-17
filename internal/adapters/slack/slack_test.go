@@ -232,7 +232,7 @@ func TestRunConnectsAcksEachEnvelopeAndHandsOnTheEvents(t *testing.T) {
 			t.Errorf("event %d = %+v, want %+v", i, rec.events[i], want[i])
 		}
 	}
-	if len(rec.states) < 2 || rec.states[0].State != domain.MateConnecting || rec.states[1].State != domain.MateConnected {
+	if len(rec.states) < 2 || rec.states[0].State != domain.MateConnecting || rec.states[1].State != domain.MateConnected || rec.states[1].User != "UBOT00001" {
 		t.Errorf("states %+v", rec.states)
 	}
 	for _, call := range calls {
