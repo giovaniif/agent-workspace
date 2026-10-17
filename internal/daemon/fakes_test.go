@@ -1105,6 +1105,9 @@ func (t *fakeHeadlessTab) Run(_ context.Context, command string, args json.RawMe
 	if command == "eval" {
 		return nil, errors.New("ReferenceError: nope is not defined")
 	}
+	if command == "screenshot" {
+		return json.Marshal(map[string]any{"png": "iVBORw0KGgo=", "width": 1280, "height": 800})
+	}
 	return json.Marshal(map[string]string{"text": "headless " + command, "session": t.session})
 }
 

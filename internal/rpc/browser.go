@@ -41,6 +41,19 @@ type BrowserCookiesParams struct {
 	Cookies []domain.BrowserCookie `json:"cookies"`
 }
 
+const MethodBrowserHeadlessView = "browser.headless.view"
+
+type BrowserHeadlessViewParams struct {
+	Session string `json:"session"`
+}
+
+type BrowserHeadlessView struct {
+	Live   bool   `json:"live"`
+	PNG    string `json:"png,omitempty"`
+	Width  int    `json:"width,omitempty"`
+	Height int    `json:"height,omitempty"`
+}
+
 type BrowserCookiesResult struct {
 	Imported int `json:"imported"`
 	Total    int `json:"total"`
