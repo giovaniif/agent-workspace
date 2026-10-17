@@ -62,7 +62,7 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
   - Phone: `scripts/web-screenshot` with the fake API, light and dark (`phone-*.png`).
   - Mac: it downloads the `macos-snapshots` artifact of the newest green `ci` run on main with `gh` (or of `README_MAC_RUN`) and copies the main window, review, new session, automations, browser, disk, first-run and menu bar shots (`mac-*.png`). Without the artifact, the Mac shots stay as they are.
   - If `oxipng` is on `PATH`, it optimizes each PNG. It fails when a PNG is larger than `README_SHOT_LIMIT` (default 400 KB).
-- **`verify`** (`go run ./scripts/verify <command>`): the agent verification CLI (ADR [0055](../docs/adr/0055-agent-verification.md)). It is not in the `crew` binary. Agents use it with the skill in `.claude/skills/verify/SKILL.md`.
+- **`verify`** (`go run ./scripts/verify <command>`): the agent verification CLI (ADR [0055](../docs/adr/0055-agent-verification.md)). It is not in the `crew` binary. Agents (Claude Code and Codex) follow the skill in [.claude/skills/verify/SKILL.md](../.claude/skills/verify/SKILL.md).
   - Each command prints exactly one JSON object with `ok`, `problems` (`{msg, hint}`) and its data. The exit code is 0 for ok, 1 for a failure and 2 for a usage error.
   - Its state is in `VERIFY_HOME` (default `/tmp/crew-verify-$UID`).
   - `doctor`: the tools (go, git, tmux, node 22.18+, the Playwright Chromium, freeze), the branch, the machine load, TCP port 5199 and `/tmp`.

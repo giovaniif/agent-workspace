@@ -97,6 +97,7 @@ Write all prose docs and new ADRs in ASD-STE100 Simplified Technical English. Us
 2. Make a branch named `<issue-number>-<slug>`.
 3. For each behavior: commit a failing test, then commit the code that makes it pass, then refactor.
 4. Meet each acceptance criterion. Run the commands in the issue's **Validate** section and paste their output into the PR body.
+   For a change that a user can see, prove it on an isolated crew with the [verify skill](.claude/skills/verify/SKILL.md) (`go run ./scripts/verify`).
 5. Open one PR per issue with `Closes #<n>` in it. Start its title with a conventional prefix (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`). Use `test:` only for a test-only change (no production code). It skips the "must fail on base" rule.
    If a PR changes what the TUI draws, show screenshots of the new behavior in its body. Make them with `scripts/screenshot` from a neutral demo folder, never a real home or project. Push them to the `pr-assets` branch under `<issue-number>/`. Embed them by their `raw.githubusercontent.com` URL (see [scripts/](scripts/AGENTS.md)).
 6. If a criterion is wrong or impossible, do not quietly drop it. Say so in the PR and on the issue.
