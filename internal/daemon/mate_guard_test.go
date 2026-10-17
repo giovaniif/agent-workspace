@@ -228,3 +228,34 @@ func TestMateLimitsWithAnUnknownKeyIsAProblem(t *testing.T) {
 		t.Fatalf("problems %q", list.Problems)
 	}
 }
+
+func TestMateLimitsWithANegativeValueIsAProblemAndKeepsTheDefault(t *testing.T) {
+	p := startMatePair(t, "[mates]\nturns_per_hour = -1\n")
+	var list rpc.MateList
+	if err := p.c.Call(context.Background(), rpc.MethodMateList, nil, &list); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.Join(list.Problems, "\n"), "turns_per_hour") || list.Limits.TurnsPerHour != 20 {
+		t.Fatalf("problems %q limits %+v", list.Problems, list.Limits)
+	}
+}
+
+func TestMateThreadMessageThatMentionsAMateStartsATurn(t *testing.T) {
+	p := startMatePair(t, "")
+	p.hub.send(p.helper, mention(mateOwner, "<@U0BOTHELP1> talk to webby", "1700.0001"))
+	waitFor(t, func() bool { return p.linked(t, "helper") })
+	p.hub.send(p.webby, threadReply(app.SlackThreadMessage, helperUser, "<@U0BOTWEB01> your turn", "1700.0002"))
+	p.hub.send(p.webby, threadReply(app.SlackMention, helperUser, "<@U0BOTWEB01> your turn", "1700.0002"))
+	waitFor(t, func() bool { s := p.seatOf(t, "webby"); return s != nil && s.Hops == 1 })
+}
+
+func TestMateTurnThatDoesNotStartUsesNoTurnOfTheRateLimit(t *testing.T) {
+	r := startMateRigWith(t, &memStore{}, "[mates]\nturns_per_hour = 1\n"+threadMates)
+	m := r.connect(t, "webby")
+	r.hub.send(m, mention(mateGuest, "<@U0BOT0001> look", "1700.0001"))
+	r.hub.send(m, mention(mateGuest, "<@U0BOT0001> look again", "1700.0002"))
+	waitFor(t, func() bool { return guardPosts(r.posts(), "no repo") == 2 })
+	if n := guardPosts(r.posts(), "in one hour"); n != 0 {
+		t.Fatalf("%d rate messages", n)
+	}
+}

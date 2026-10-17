@@ -30,6 +30,10 @@ func TestAskedActions(t *testing.T) {
 		{"the emergency is over", nil},
 		{"the pressure is high", nil},
 		{"remove the dead code", nil},
+		{"do not merge this PR", nil},
+		{"Don't push yet. Deploy it", []ActionKind{ActionDeploy}},
+		{"never deploy on friday, but merge it", []ActionKind{ActionMerge}},
+		{"no push please", nil},
 	}
 	for _, c := range cases {
 		t.Run(c.text, func(t *testing.T) {
