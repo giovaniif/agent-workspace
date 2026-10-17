@@ -332,3 +332,54 @@ export async function listApprovals(a: Authed): Promise<Approval[]> {
 export function decideApproval(a: Authed, id: string, approve: boolean): Promise<Approval> {
   return authedRequest<Approval>(a, "/api/v1/approvals/" + encodeURIComponent(id) + (approve ? "/approve" : "/deny"), "POST");
 }
+
+export type Mate = {
+  name: string;
+  prompt: string;
+  agent: string;
+  model?: string;
+  effort?: string;
+  repos?: string[];
+  owner?: string;
+  enabled: boolean;
+};
+
+export type MateLimits = { hop_limit: number; turns_per_hour: number; daily_turns: number; daily_tokens: number; stop: boolean };
+
+export type MateList = { mates: Mate[]; problems?: string[]; limits: MateLimits };
+
+export type MateSetup = { manifest: string; url: string };
+
+export type MateClaim = { name: string; code: string; expires_at: string };
+
+function matePath(name: string, verb: string): string {
+  return "/api/v1/mates/" + encodeURIComponent(name) + "/" + verb;
+}
+
+export function listMates(a: Authed): Promise<MateList> {
+  return authedRequest<MateList>(a, "/api/v1/mates");
+}
+
+export function saveMate(a: Authed, mate: Mate): Promise<Mate> {
+  return authedRequest<Mate>(a, "/api/v1/mates", "POST", { mate });
+}
+
+export function pauseMate(a: Authed, name: string, pause: boolean): Promise<Mate> {
+  return authedRequest<Mate>(a, matePath(name, pause ? "pause" : "resume"), "POST");
+}
+
+export function stopAllMates(a: Authed, stop: boolean): Promise<MateLimits> {
+  return authedRequest<MateLimits>(a, "/api/v1/mates/stop", "POST", { stop });
+}
+
+export function mateSetup(a: Authed, name: string): Promise<MateSetup> {
+  return authedRequest<MateSetup>(a, matePath(name, "setup"));
+}
+
+export function setMateTokens(a: Authed, name: string, bot: string, app: string): Promise<unknown> {
+  return authedRequest<unknown>(a, matePath(name, "tokens"), "POST", { bot_token: bot, app_token: app });
+}
+
+export function claimMate(a: Authed, name: string): Promise<MateClaim> {
+  return authedRequest<MateClaim>(a, matePath(name, "claim"), "POST");
+}

@@ -90,6 +90,28 @@ export function fakeStreamState(now = Date.now()) {
       { id: "m1", session: "s3", text: "then add a test for the backoff", queued_at: ago(2) },
       { id: "m2", session: "s3", text: "and update the README", queued_at: ago(1) },
     ],
+    mates: fakeMates(process.env.CREW_FAKE_MATES === "stopped"),
+  };
+}
+
+function fakeMates(stopped: boolean) {
+  const held = stopped ? { guard: "stopped" } : {};
+  return {
+    stopped,
+    mates: [
+      {
+        name: "helper",
+        state: "connected",
+        ...held,
+        work: ["s3"],
+        threads: [
+          { mate: "helper", team: "T1", channel: "C1", thread_ts: "1700.0002", session_id: "s3", url: "https://app.slack.com/client/T1/C1/thread/C1-1700.0002", session: "add retries", state: "running", ended: false },
+          { mate: "helper", team: "T1", channel: "C1", thread_ts: "1700.0001", session_id: "s5", url: "https://app.slack.com/client/T1/C1/thread/C1-1700.0001", session: "bump deps", state: "done", ended: false },
+        ],
+      },
+      { name: "reviewer", state: "connected", guard: stopped ? "stopped" : "rate_limit", work: [], threads: [] },
+      { name: "webby", state: "paused", ...held, work: [], threads: [] },
+    ],
   };
 }
 
@@ -288,6 +310,17 @@ export function fakeApi(build = "v0.12.0+demo"): Plugin {
               { name: "deps", agent: "codex", prompt: "Update the deps.", schedule: "weekly mon 09:00", enabled: false, source: "/home/me/.crew/config.toml" },
               { name: "audit", agent: "claude", prompt: "Audit the api.", enabled: true, source: "/home/me/api/.crew.toml" },
             ],
+          });
+          return;
+        }
+        if (req.method === "GET" && path === "/api/v1/mates") {
+          send(res, 200, {
+            mates: [
+              { name: "helper", prompt: "You help with the api.", agent: "claude", repos: ["api"], enabled: true },
+              { name: "reviewer", prompt: "You review PRs.", agent: "claude", enabled: true },
+              { name: "webby", prompt: "You help with the web.", agent: "codex", enabled: false },
+            ],
+            limits: { hop_limit: 5, turns_per_hour: 20, daily_turns: 100, daily_tokens: 0, stop: false },
           });
           return;
         }

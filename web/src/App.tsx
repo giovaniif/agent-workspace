@@ -6,6 +6,7 @@ import { disablePush, noPush, type PushEnv } from "./push";
 import { parseRoute } from "./route";
 import { Approvals } from "./screens/Approvals";
 import { Automations } from "./screens/Automations";
+import { Mates } from "./screens/Mates";
 import { Install } from "./screens/Install";
 import { NewSession } from "./screens/NewSession";
 import { Pair } from "./screens/Pair";
@@ -34,7 +35,7 @@ export type PageVisibility = {
   onChange: (listener: () => void) => () => void;
 };
 
-type Tab = "sessions" | "approvals" | "automations" | "settings";
+type Tab = "sessions" | "mates" | "approvals" | "automations" | "settings";
 
 function Tabs({ current }: { current: Tab }) {
   const mark = (tab: Tab) => (current === tab ? "page" : undefined);
@@ -42,6 +43,9 @@ function Tabs({ current }: { current: Tab }) {
     <nav className="tabs" aria-label="Screens">
       <a href="#/" aria-current={mark("sessions")}>
         Sessions
+      </a>
+      <a href="#/mates" aria-current={mark("mates")}>
+        Mates
       </a>
       <a href="#/approvals" aria-current={mark("approvals")}>
         Approvals
@@ -110,6 +114,14 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
       </>
     );
   }
+  if (hash === "#/mates") {
+    return (
+      <>
+        <Mates api={api} now={now} board={snapshot.state?.mates} />
+        <Tabs current="mates" />
+      </>
+    );
+  }
   if (hash === "#/approvals") {
     return (
       <>
@@ -135,6 +147,11 @@ function Connected({ env, auth, onUnauthorized, onSignOut }: ConnectedProps) {
   }
   return (
     <>
+      {snapshot.state?.mates?.stopped && (
+        <a className="mates-stopped" role="status" href="#/mates">
+          All mates are stopped
+        </a>
+      )}
       <SessionList host={env.host} snapshot={snapshot} now={now} onRetry={retry} />
       <Tabs current="sessions" />
     </>

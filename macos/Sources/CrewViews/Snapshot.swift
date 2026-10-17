@@ -17,6 +17,10 @@ public enum Snapshot {
         renderView(AutomationsWindow(scene: scene), size: size, dark: dark)
     }
 
+    public static func render(mates scene: MatesScene, size: CGSize, dark: Bool) -> NSBitmapImageRep {
+        renderView(MatesWindow(scene: scene), size: size, dark: dark)
+    }
+
     public static func renderAutomationRun(_ automation: Automation, size: CGSize, dark: Bool) -> NSBitmapImageRep {
         renderView(AutomationRunSheet(automation: automation, run: { _, _ in }, cancel: {}), size: size, dark: dark)
     }

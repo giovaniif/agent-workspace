@@ -63,7 +63,7 @@ function Card({ api, approval, now }: { api: Authed; approval: Approval; now: nu
   );
 }
 
-export function Approvals({ api, now }: { api: Authed; now: number }) {
+export function ApprovalList({ api, now }: { api: Authed; now: number }) {
   const [list, setList] = useState<Approval[] | null>(null);
   const [error, setError] = useState("");
 
@@ -78,17 +78,25 @@ export function Approvals({ api, now }: { api: Authed; now: number }) {
   }, [api]);
 
   return (
-    <main className="screen approvals">
-      <h1>Approvals</h1>
-      <p className="muted">A mate asks here before a dangerous action that a person who is not the owner started.</p>
+    <>
       {error && <p role="alert">{error}</p>}
       {list === null && !error && <p>Loading…</p>}
       {list !== null && list.length === 0 && <p>No approvals wait for you.</p>}
-      <ul>
+      <ul className="approval-list">
         {(list ?? []).map((a) => (
           <Card key={a.ID} api={api} approval={a} now={now} />
         ))}
       </ul>
+    </>
+  );
+}
+
+export function Approvals({ api, now }: { api: Authed; now: number }) {
+  return (
+    <main className="screen approvals">
+      <h1>Approvals</h1>
+      <p className="muted">A mate asks here before a dangerous action that a person who is not the owner started.</p>
+      <ApprovalList api={api} now={now} />
     </main>
   );
 }

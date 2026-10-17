@@ -108,6 +108,29 @@ export type QueuedSend = {
   queued_at: string;
 };
 
+export type MateThread = {
+  mate: string;
+  team: string;
+  channel: string;
+  thread_ts: string;
+  session_id: string;
+  url: string;
+  session: string;
+  state: AgentState;
+  ended: boolean;
+};
+
+export type MateRow = {
+  name: string;
+  state: "connecting" | "connected" | "error" | "paused" | "no_tokens" | (string & {});
+  error?: string;
+  guard?: string;
+  work: string[];
+  threads: MateThread[];
+};
+
+export type Mates = { stopped: boolean; mates: MateRow[] };
+
 export type StreamState = {
   seq: number;
   workspaces: Workspace[];
@@ -116,6 +139,7 @@ export type StreamState = {
   sessions: Session[];
   limits: Quota[];
   sends: QueuedSend[];
+  mates?: Mates;
 };
 
 export type StreamDiff = {
@@ -129,6 +153,7 @@ export type StreamDiff = {
   session?: Session;
   limits?: Quota[];
   sends?: QueuedSend[];
+  mates?: Mates;
 };
 
 export type Message = {
@@ -225,6 +250,7 @@ export function applyDiff(state: StreamState, diff: StreamDiff): StreamState {
     sessions,
     limits: diff.limits ?? state.limits,
     sends: diff.sends ?? state.sends,
+    mates: diff.mates ?? state.mates,
   };
 }
 

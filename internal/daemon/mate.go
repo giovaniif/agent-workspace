@@ -138,6 +138,12 @@ func (d *Daemon) mateMethod(req rpc.Request) *rpc.Response {
 		return d.mateTokens(req)
 	case rpc.MethodMateClaim:
 		return d.mateClaim(req)
+	case rpc.MethodMatePause, rpc.MethodMateResume:
+		defer d.kickMates()
+		return d.mateEnable(req, req.Method == rpc.MethodMateResume)
+	case rpc.MethodMateStopAll:
+		defer d.kickMates()
+		return d.mateStopAll(req)
 	}
 	src, err := readConfig(d.cfg.path)
 	if err != nil {
@@ -150,12 +156,17 @@ func (d *Daemon) mateMethod(req rpc.Request) *rpc.Response {
 	}
 	var p rpc.MateShowParams
 	if err := json.Unmarshal(req.Params, &p); err != nil || strings.TrimSpace(p.Name) == "" {
-		return errorResponse(req.ID, rpc.CodeBadRequest, "mate.show needs a name")
+		return errorResponse(req.ID, rpc.CodeBadRequest, req.Method+" needs a name")
 	}
 	for _, m := range list.Mates {
-		if m.Name == p.Name {
-			return result(req.ID, m)
+		if m.Name != p.Name {
+			continue
 		}
+		if req.Method == rpc.MethodMateSetup {
+			manifest := domain.MateManifest(m)
+			return result(req.ID, rpc.MateSetup{Manifest: manifest, URL: domain.MateManifestURL(manifest)})
+		}
+		return result(req.ID, m)
 	}
 	return errorResponse(req.ID, rpc.CodeNotFound, fmt.Sprintf("no mate %q", p.Name))
 }
@@ -241,4 +252,52 @@ func (d *Daemon) mateRemove(req rpc.Request) *rpc.Response {
 		}
 	}
 	return result(req.ID, *gone)
+}
+
+func (d *Daemon) mateEnable(req rpc.Request, enabled bool) *rpc.Response {
+	var p rpc.MateNameParams
+	if err := json.Unmarshal(req.Params, &p); err != nil || strings.TrimSpace(p.Name) == "" {
+		return errorResponse(req.ID, rpc.CodeBadRequest, req.Method+" needs a name")
+	}
+	src, failed := d.editableConfig(req.ID)
+	if failed != nil {
+		return failed
+	}
+	parsed, _ := parseMates(src, d.cfg.path)
+	for _, m := range parsed {
+		if m.Name != p.Name {
+			continue
+		}
+		m.Enabled = enabled
+		if next := domain.SetMateBlock(src, m); next != src {
+			if err := d.replaceConfig(src, next); err != nil {
+				return errorResponse(req.ID, rpc.CodeFailed, err.Error())
+			}
+		}
+		return result(req.ID, m)
+	}
+	return errorResponse(req.ID, rpc.CodeNotFound, fmt.Sprintf("no mate %q", p.Name))
+}
+
+func (d *Daemon) mateStopAll(req rpc.Request) *rpc.Response {
+	var p rpc.MateStopAllParams
+	if err := json.Unmarshal(req.Params, &p); err != nil {
+		return errorResponse(req.ID, rpc.CodeBadRequest, "mate.stop_all params: "+err.Error())
+	}
+	src, failed := d.editableConfig(req.ID)
+	if failed != nil {
+		return failed
+	}
+	literal := ""
+	if p.Stop {
+		literal = "true"
+	}
+	next := domain.SetTOMLValue(src, "mates.stop", literal)
+	if next != src {
+		if err := d.replaceConfig(src, next); err != nil {
+			return errorResponse(req.ID, rpc.CodeFailed, err.Error())
+		}
+	}
+	limits, _ := parseMateLimits(next, d.cfg.path)
+	return result(req.ID, limits)
 }

@@ -235,6 +235,10 @@ func (m Model) body() ([]string, int, []string) {
 	if m.proj != nil {
 		return m.projectPanelLines(), m.projectPanelSelRow(), nil
 	}
+	if m.mp != nil {
+		lines, sel := m.matePanelLines()
+		return lines, sel, nil
+	}
 	if m.tabNew != nil {
 		return m.tabChooserLines(), 3 + m.tabNew.row, nil
 	}
@@ -375,6 +379,7 @@ func (m Model) helpLines() []string {
 		{"n", "new session"},
 		{"a", "run an automation with context"},
 		{"P", "projects: open, add, remove"},
+		{"C", "mates: pause, stop all, approvals"},
 		{"S", "set up Claude, Codex and nvim"},
 		{"x", "end session"},
 		{"u", "resume ended"},

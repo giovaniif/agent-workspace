@@ -149,6 +149,9 @@ func (m *Model) use(d Daemon) {
 
 func (m Model) banner() []string {
 	if !m.disconnected {
+		if m.mateBoard.Stopped {
+			return []string{m.line(false, []piece{{m.styles.need, " ■ all mates stopped"}}, []piece{{m.styles.dim, "C mates "}})}
+		}
 		return nil
 	}
 	title, hint := "daemon disconnected", "q quit"

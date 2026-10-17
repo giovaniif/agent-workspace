@@ -350,6 +350,18 @@ struct CrewApp: App {
             }
         }
         .keyboardShortcut("a", modifiers: [.command, .shift])
+        Window("Mates", id: "mates") {
+            if Launch.demo {
+                MatesWindow(scene: .seeded()).frame(minWidth: 720, minHeight: 480)
+            } else if let store = launcher.store {
+                LiveMatesWindow(store: store, router: router)
+            } else {
+                MatesWindow(scene: MatesScene())
+                    .frame(minWidth: 720, minHeight: 480)
+                    .task { await launcher.load() }
+            }
+        }
+        .keyboardShortcut("m", modifiers: [.command, .shift])
         Settings {
             LiveSettings(
                 store: launcher.settings, server: launcher.server, serverName: launcher.current?.name ?? "This Mac",
