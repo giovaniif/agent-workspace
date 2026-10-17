@@ -37,6 +37,7 @@ type SlackMessage struct {
 type SlackStatus struct {
 	State domain.MateConnection
 	Error string
+	User  string
 }
 
 type SlackMate interface {

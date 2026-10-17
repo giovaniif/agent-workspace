@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,8 @@ type slackWorkers struct {
 	seen    []string
 	threads sync.Mutex
 	shown   map[string]time.Time
+	users   map[string]string
+	guarded map[string]domain.MateGuardStop
 }
 
 type mateWorker struct {
@@ -51,6 +54,8 @@ func WithSlack(connect app.SlackConnector, every time.Duration) Option {
 		d.slack.running = map[string]*mateWorker{}
 		d.slack.claims = map[string]domain.MateClaim{}
 		d.slack.shown = map[string]time.Time{}
+		d.slack.users = map[string]string{}
+		d.slack.guarded = map[string]domain.MateGuardStop{}
 		d.st.matePost = d.queueMatePost
 		d.st.approvalAsk = func(a domain.Approval) { go d.askApproval(a) }
 	}
@@ -127,6 +132,7 @@ func (d *Daemon) syncMates(ctx context.Context) {
 		if t, ok := want[name]; !ok || t.print != w.print {
 			w.cancel()
 			delete(d.slack.running, name)
+			delete(d.slack.users, name)
 		}
 	}
 	for name, t := range want {
@@ -164,18 +170,25 @@ func (d *Daemon) setMateState(name string, w *mateWorker, s app.SlackStatus) {
 	defer d.slack.mu.Unlock()
 	if d.slack.running[name] == w {
 		d.slack.states[name] = rpc.MateState{Name: name, State: s.State, Error: s.Error}
+		if s.User != "" {
+			d.slack.users[name] = s.User
+		}
 	}
 }
 
-func (d *Daemon) mateStates(mates []domain.Mate) []rpc.MateState {
+func (d *Daemon) mateStates(mates []domain.Mate, limits domain.MateLimits) []rpc.MateState {
 	if d.slack.connect == nil {
 		return nil
 	}
+	usage := map[string]domain.MateUsage{}
+	d.query(func(s *state) { maps.Copy(usage, s.mateUsage) })
+	now := d.ws.now()
 	d.slack.mu.Lock()
 	defer d.slack.mu.Unlock()
 	var out []rpc.MateState
 	for _, m := range mates {
 		if s, ok := d.slack.states[m.Name]; ok {
+			s.Guard = domain.MateGuard(limits, 0, usage[m.Name], now)
 			out = append(out, s)
 		}
 	}
