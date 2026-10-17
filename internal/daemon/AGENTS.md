@@ -317,13 +317,26 @@ Tests have names `*Cleanup*`: `go test ./internal/domain/... -run Cleanup` and `
   - The worker logs other failures (by host, never the endpoint URL) and does not try them again.
   - A full queue drops the push.
 
+## Mate to mate and loop guards
+
+`go test ./internal/domain/ ./internal/daemon/ -run 'Mate|Chain|Guard'`. See [ADR 0053](../../docs/adr/0053-mates.md).
+
+- The adapter gives the bot user ID of each mate in its `connected` status. The worker keeps it for each running mate. An event from the bot user of a different mate on this daemon is from a mate. A mate on a different crew server counts as a person.
+- A thread message from a mate that does not mention this mate (`<@bot user>`) does nothing. Thus status messages and results of a mate do not start turns.
+- Each mention or reply gets a seat: `domain.DirectMateTurn` for a person, `domain.ChainMateTurn` for a mate (from the seat of the session of that mate in the same thread). The seat goes to the new session or, through `MateTurn`, to the live session.
+- `[mates]` in `config.toml` has the limits: `hop_limit` (default 5), `turns_per_hour` (default 20), `daily_turns` (default 100), `daily_tokens` (default 0, no limit) and `stop` (the global stop). 0 turns a limit off. An unknown key is a problem in `mate.list`. `mate.list` returns them as `limits`.
+- Before each turn, the worker calls `domain.MateGuard` with the hops of the seat and `state.mateUsage` of the mate. A turn that runs adds one turn. The tokens come from the status line (Claude, input plus output tokens) and the rollout (Codex, `total_token_usage`) in `Usage.Tokens`. Each increase of a mate session adds to the mate.
+- When a guard stops a turn, the mate posts `domain.MateGuardText` in the thread one time. It does not post again for the same stop in that thread (the hop limit: for any mate in the thread) until a turn runs. A person who posts clears the hop stop.
+- `mate.list` gives `guard` for each state: the stop that a new turn of a person gets now (`stopped`, `rate_limit`, `daily_turns`, `daily_tokens`, or none). The hop limit is for each thread, so it is not in it.
+- `state.mateUsage` is in memory. A restart sets the counts to zero.
+
 ## Mate gate
 
 `go test ./internal/daemon/ -run Mate`. See [ADR 0053](../../docs/adr/0053-mates.md) and the rules in [internal/domain/](../domain/AGENTS.md).
 
 - A mate session has `Session.Mate` (`Name`, `Owner`, `Authority`). Other sessions have none, and the gate does not apply to them.
-- `MateTurn{SessionID, User}` sets `Authority` to the Slack user ID of the event that started the turn. The Slack worker posts it. Text in the thread never sets it. On a session that is not a mate, it does nothing.
-- For each `PreToolUse` hook of a mate session, the loop uses the `action` of the hook if it is dangerous. Else it classifies the call again with `Session.Dir` as the root. Then it calls `domain.Gate`.
+- `MateTurn{SessionID, User, Origin, Asked, Hops}` sets the seat from the Slack event that started the turn. The Slack worker posts it. Text in the thread never sets the authority. On a session that is not a mate, it does nothing.
+- For each `PreToolUse` hook of a mate session, the loop uses the `action` of the hook if it is dangerous. Else it classifies the call again with `Session.Dir` as the root. Then it calls `domain.Gate` with `domain.ChainAuthority(seat, kind)`.
   - If the gate allows the action, the reply is empty. The gate marks a granted approval that it used as `used`.
   - If the gate stops the action, the reply has the deny output, and the daemon records one pending `domain.Approval` (the same pending action is not added two times).
 - `approval.list` returns the pending approvals that did not expire (`domain.OpenApprovals`).
