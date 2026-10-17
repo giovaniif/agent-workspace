@@ -104,6 +104,15 @@ struct MatesTests {
         #expect(draft.mate == model.definition("helper"))
     }
 
+    @Test func aFailedSetupDoesNotKeepTheLinkOfTheLastMate() async {
+        let (model, caller) = await loaded()
+        caller.replies["mate.setup"] = .success(setupReply)
+        await model.startSetup("helper")
+        caller.replies["mate.setup"] = .failure(RPCError(code: "not_found", message: "no mate \"other\""))
+        await model.startSetup("other")
+        #expect(model.setup == nil)
+    }
+
     @Test func connectSavesTheTokensThenMakesAClaimCode() async {
         let (model, caller) = await loaded()
         caller.replies["mate.setup"] = .success(setupReply)
