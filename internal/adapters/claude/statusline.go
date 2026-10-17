@@ -23,6 +23,8 @@ type statusInput struct {
 	} `json:"effort"`
 	ContextWindow struct {
 		RemainingPercentage *float64 `json:"remaining_percentage"`
+		TotalInputTokens    int64    `json:"total_input_tokens"`
+		TotalOutputTokens   int64    `json:"total_output_tokens"`
 	} `json:"context_window"`
 	RateLimits map[string]struct {
 		UsedPercentage *float64 `json:"used_percentage"`
@@ -35,7 +37,8 @@ func ParseStatus(b []byte) (domain.StatusReport, error) {
 	if err := json.Unmarshal(b, &in); err != nil {
 		return domain.StatusReport{}, err
 	}
-	r := domain.StatusReport{Model: shortModel(in.Model.ID, in.Model.DisplayName), Effort: in.Effort.Level}
+	r := domain.StatusReport{Model: shortModel(in.Model.ID, in.Model.DisplayName), Effort: in.Effort.Level,
+		Tokens: in.ContextWindow.TotalInputTokens + in.ContextWindow.TotalOutputTokens}
 	if p := in.ContextWindow.RemainingPercentage; p != nil {
 		r.ContextLeft, r.HasContext = percent(*p), true
 	}
