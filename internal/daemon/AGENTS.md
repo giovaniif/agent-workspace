@@ -82,7 +82,8 @@ See [ADR 0015](../../docs/adr/0015-session-lifecycle.md).
 - **First prompt.** `session.new` takes an optional `prompt`.
   - A fresh session is `idle` when its pane exists, but the harness is still booting. Thus the daemon queues the text in `State.Sends` and holds it (`state.booting`).
   - The hold stays until the first `SessionStart` or `UserPromptSubmit` hook of the harness. Both Claude and Codex install `SessionStart`. Then the text goes out through the normal `session.send` path.
-  - If no such hook arrives in 15 s (`WithFirstPromptGrace`), the daemon removes the hold. This occurs when hooks are missing, or when the hook arrived before the commit.
+  - A hook can arrive after the pane starts but before `session.new` commits the session. The daemon keeps a hook for an unknown pane for 30 s (`state.earlyHooks`, a maximum of 16 for each pane and of 64 panes). When it must keep a hook for a 65th pane, it first removes the expired panes, and then the pane with the oldest hook. When `session.new` commits the session on that pane, the daemon applies the kept hooks again.
+  - If no such hook arrives in 15 s (`WithFirstPromptGrace`), the daemon removes the hold. This occurs when hooks are missing.
   - If the session ends first, the daemon drops the text.
   - Tests: `go test ./internal/daemon/ -run NewSessionPrompt`.
 - **Budget.** `session.new` and `session.focus`, without the setup recipe, must finish in < 1 s. The `NewSession` integration test checks it (`go test -tags integration -run NewSession ./internal/daemon/`, with real temp repos, a fake harness script and its own tmux socket).
