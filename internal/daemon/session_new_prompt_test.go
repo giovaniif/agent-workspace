@@ -73,6 +73,27 @@ func TestNewSessionPromptIsPastedAfterTheGraceWhenNoHookArrives(t *testing.T) {
 	}
 }
 
+func TestNewSessionPromptIsPastedWhenTheSessionStartHookArrivesBeforeTheSessionIsRegistered(t *testing.T) {
+	r := startPromptRig(t, time.Hour)
+	r.host.creating, r.host.createGate = make(chan struct{}, 1), make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		_, err := newWithPrompt(t, r, "fix the build")
+		done <- err
+	}()
+	<-r.host.creating
+	hooker := r
+	hooker.c = dial(t, r.path)
+	startHook(t, hooker, "SessionStart")
+	close(r.host.createGate)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if typed := r.host.waitTyped(t, 2); !reflect.DeepEqual(typed, pastedOn7("fix the build")) {
+		t.Fatalf("typed %q", typed)
+	}
+}
+
 func TestNewSessionPromptBlankOrAbsentQueuesNothing(t *testing.T) {
 	r := startPromptRig(t, 20*time.Millisecond)
 	if _, err := newWithPrompt(t, r, "   "); err != nil {
