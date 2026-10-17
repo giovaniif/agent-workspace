@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   type Authed,
   type Mate,
@@ -341,17 +341,28 @@ export function Mates({ api, now, board }: { api: Authed; now: number; board?: M
   const [problems, setProblems] = useState<string[]>([]);
   const [error, setError] = useState("");
 
+  const seq = useRef(0);
+
   const load = useCallback(() => {
+    const mine = ++seq.current;
     listMates(api)
       .then((out) => {
+        if (seq.current !== mine) {
+          return;
+        }
         setDefs(out.mates ?? []);
         setProblems(out.problems ?? []);
         setError("");
       })
-      .catch((err) => setError(message(err)));
+      .catch((err) => seq.current === mine && setError(message(err)));
   }, [api]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load();
+    return () => {
+      seq.current++;
+    };
+  }, [load]);
 
   const rows = board?.mates ?? [];
   return (

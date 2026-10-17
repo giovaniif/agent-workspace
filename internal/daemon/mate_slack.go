@@ -156,11 +156,11 @@ func (d *Daemon) syncMates(ctx context.Context) {
 }
 
 func (d *Daemon) publishMates() {
-	d.slack.mu.Lock()
-	states := slices.Collect(maps.Values(d.slack.states))
-	limits := d.slack.limits
-	d.slack.mu.Unlock()
 	d.query(func(s *state) {
+		d.slack.mu.Lock()
+		states := slices.Collect(maps.Values(d.slack.states))
+		limits := d.slack.limits
+		d.slack.mu.Unlock()
 		board := domain.NewMateBoard(states, limits, s.mateUsage, d.ws.now())
 		if !reflect.DeepEqual(board, s.mateBoard) {
 			s.emit(MatesChanged{Board: board})

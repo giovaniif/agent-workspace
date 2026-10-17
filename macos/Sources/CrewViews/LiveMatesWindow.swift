@@ -43,9 +43,10 @@ public struct LiveMatesWindow: View {
         }
         .sheet(item: $editing) { edit in
             MateEditSheet(draft: edit.draft, isNew: edit.isNew, save: { draft in
-                editing = nil
                 Task {
-                    if await model?.save(draft) == true, edit.isNew {
+                    guard await model?.save(draft) == true else { return }
+                    editing = nil
+                    if edit.isNew {
                         await begin(draft.mate.name)
                     }
                 }

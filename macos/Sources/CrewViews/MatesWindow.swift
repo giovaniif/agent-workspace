@@ -190,7 +190,7 @@ public struct MateEditSheet: View {
                 Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
                 Button(isNew ? "Add mate" : "Save") { save(draft) }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(draft.name.isEmpty || draft.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(draft.name.trimmingCharacters(in: .whitespaces).isEmpty || draft.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(16)

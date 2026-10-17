@@ -87,13 +87,19 @@ func (m Model) decideApproval(id string, approve bool) tea.Cmd {
 		return nil
 	}
 	refresh := m.fetchApprovals()
+	kept := m.mp.approvals
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 		defer cancel()
-		if err := c.Call(ctx, rpc.MethodApprovalDecide, rpc.ApprovalDecideParams{ID: id, Approve: approve}, nil); err != nil {
-			return mateApprovalsMsg{err: err}
+		err := c.Call(ctx, rpc.MethodApprovalDecide, rpc.ApprovalDecideParams{ID: id, Approve: approve}, nil)
+		out := refresh().(mateApprovalsMsg)
+		if out.err != nil {
+			out.list = kept
 		}
-		return refresh()
+		if err != nil {
+			out.err = err
+		}
+		return out
 	}
 }
 

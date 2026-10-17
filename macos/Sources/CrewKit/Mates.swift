@@ -301,8 +301,10 @@ public final class MatesModel {
     }
 
     public func decide(_ id: String, approve: Bool) async {
-        guard await run("approval.decide", ApprovalDecideParams(id: id, approve: approve)) else { return }
+        let ok = await run("approval.decide", ApprovalDecideParams(id: id, approve: approve))
+        let failure = message
         await load()
+        if !ok { message = failure }
     }
 
     @discardableResult
