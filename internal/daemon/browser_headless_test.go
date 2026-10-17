@@ -288,3 +288,69 @@ func TestAHeadlessBrowserThatRefusesImportedCookiesStopsAndTheNextOneGetsThem(t 
 		t.Fatalf("new browser cookies %q", names)
 	}
 }
+
+func headlessView(c *rpc.Client, session string) (rpc.BrowserHeadlessView, error) {
+	var out rpc.BrowserHeadlessView
+	err := c.Call(context.Background(), rpc.MethodBrowserHeadlessView, rpc.BrowserHeadlessViewParams{Session: session}, &out)
+	return out, err
+}
+
+func TestTheHeadlessViewOfASessionWithNoHeadlessTabIsNotLiveAndStartsNoBrowser(t *testing.T) {
+	r := startHeadless(t, headlessOn, time.Hour)
+	got, err := headlessView(r.c, "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Live || got.PNG != "" {
+		t.Fatalf("view %+v", got)
+	}
+	if r.b.openCount() != 0 {
+		t.Fatal("the view started a headless browser")
+	}
+}
+
+func TestTheHeadlessViewShowsAScreenshotOfTheRunningTab(t *testing.T) {
+	r := startHeadless(t, headlessOn, time.Hour)
+	if _, err := browserCommand(r.c, rpc.BrowserCommandParams{Session: "s1", Command: "goto", Args: map[string]any{"url": "http://devbox:3000/"}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := headlessView(r.c, "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := rpc.BrowserHeadlessView{Live: true, PNG: "iVBORw0KGgo=", Width: 1280, Height: 800}
+	if got != want {
+		t.Fatalf("view %+v, want %+v", got, want)
+	}
+	if r.b.openCount() != 1 {
+		t.Fatalf("opened %d browsers", r.b.openCount())
+	}
+}
+
+func TestTheHeadlessViewDoesNotKeepAnIdleTabAlive(t *testing.T) {
+	r := startHeadless(t, headlessOn+"idle = \"80ms\"\n", 10*time.Millisecond)
+	r.d.Post(daemon.SessionChanged{Session: domain.Session{ID: "s1", Harness: domain.HarnessClaude, State: domain.StateRunning}})
+	if _, err := browserCommand(r.c, rpc.BrowserCommandParams{Session: "s1", Command: "snapshot"}); err != nil {
+		t.Fatal(err)
+	}
+	tab := r.b.tab("s1")
+	stop := time.After(2 * time.Second)
+	for !tab.isClosed() {
+		select {
+		case <-stop:
+			t.Fatal("the view kept the idle tab alive")
+		default:
+		}
+		if _, err := headlessView(r.c, "s1"); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func TestTheHeadlessViewNeedsASession(t *testing.T) {
+	r := startHeadless(t, headlessOn, time.Hour)
+	if _, err := headlessView(r.c, ""); errCode(err) != rpc.CodeBadRequest {
+		t.Fatalf("got %v", err)
+	}
+}
