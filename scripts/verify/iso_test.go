@@ -152,6 +152,31 @@ func TestIsoDownStopsEverythingAndRemovesTheHome(t *testing.T) {
 	}
 }
 
+func TestIsoCrewRunsTheIsolatedBinaryAndChecksItsOutput(t *testing.T) {
+	e, fs := testEnv(t)
+	isoReady(fs)
+	runJSON(t, e, "iso", "up")
+	fs.handlers["crew pr"] = func(c cmd) (string, string, int) {
+		if envOf(c)["CREW_HOME"] == "" {
+			t.Error("no isolated env")
+		}
+		return "PR #40 checks failing\n", "", 0
+	}
+	got := mustOK(t, e, "iso", "crew", "--expect", "checks failing", "--", "pr", "seed-session-1")
+	if !strings.Contains(got["stdout"].(string), "PR #40") {
+		t.Errorf("stdout %v", got["stdout"])
+	}
+	got, code := runJSON(t, e, "iso", "crew", "--expect", "TEST-nothing", "--", "pr", "seed-session-1")
+	if code != 1 || !strings.Contains(problemText(got), "TEST-nothing") {
+		t.Errorf("exit %d: %s", code, problemText(got))
+	}
+	fs.handlers["crew pr"] = func(c cmd) (string, string, int) { return "", "boom", 3 }
+	got, code = runJSON(t, e, "iso", "crew", "--", "pr", "x")
+	if code != 1 || got["exit"] != float64(3) {
+		t.Errorf("exit %d: %v", code, got["exit"])
+	}
+}
+
 func TestIsoUpFailsCleanlyWhenPairingFails(t *testing.T) {
 	e, fs := testEnv(t)
 	isoReady(fs)
