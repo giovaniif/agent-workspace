@@ -55,7 +55,7 @@ struct ViewStoreTests {
         """)
         let store = ViewStore(endpoint: .local(binary: crew), build: "v1", environment: bin.environment)
         store.start()
-        await eventually { store.state?.seq == 18 && store.state?.projects.map(\.root) == ["/w/web"] }
+        await eventually { store.state?.seq == 20 && store.state?.mates?.stopped == true }
         #expect(store.connection == .live)
         #expect(store.state?.sessions.map(\.id) == ["s1", "s2"])
         let request = try #require(try JSONSerialization.jsonObject(with: Data(bin.read("request").utf8)) as? [String: Any])

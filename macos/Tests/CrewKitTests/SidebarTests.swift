@@ -76,6 +76,14 @@ struct SidebarTests {
         #expect(Sidebar(state: state).footer == "1 session")
     }
 
+    @Test func theFooterSaysWhenAllMatesAreStopped() {
+        var state = Seed.state(sessions: [SeedSession(id: "s1", name: "a", state: "idle")])
+        state.mates = MateBoard(stopped: true, mates: [MateRow(name: "helper", state: "connected", hold: "stopped")])
+        #expect(Sidebar(state: state).footer == "1 session · all mates stopped")
+        state.mates = MateBoard(stopped: false)
+        #expect(Sidebar(state: state).footer == "1 session")
+    }
+
     @Test func theFilterMatchesNameAndWhereIgnoringCase() {
         let state = Seed.state(sessions: [
             SeedSession(id: "s1", name: "Fix login", state: "idle", where: "api@feat"),

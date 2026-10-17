@@ -66,6 +66,13 @@ func nativeFixture() rpc.State {
 			{SessionID: "s1", ID: "a1", Type: "Explore", State: domain.SubagentRunning, StartedAt: t0},
 		},
 		Reclaimable: rpc.Reclaimable{Size: 2048, Pending: 1},
+		Mates: domain.MateBoard{Mates: []domain.MateStatus{
+			{Name: "helper", State: domain.MateConnected},
+			{Name: "webby", State: domain.MatePaused},
+		}},
+		MateThreads: []domain.MateLink{
+			{Mate: "helper", Team: "T1", Channel: "C1", ThreadTS: "1700.0001", SessionID: "s1", URL: "https://app.slack.com/client/T1/C1/thread/C1-1700.0001"},
+		},
 	}
 }
 
@@ -89,6 +96,11 @@ func TestViewSubscribeDiffsGolden(t *testing.T) {
 		{Seq: 16, Reclaimable: &rpc.Reclaimable{Size: 4096}},
 		{Seq: 17, Project: &domain.Project{Root: "/w/web", Name: "web"}},
 		{Seq: 18, RemovedProject: "/w/api"},
+		{Seq: 19, MateThread: &domain.MateLink{Mate: "helper", Team: "T1", Channel: "C1", ThreadTS: "1700.0002", SessionID: "s2", URL: "https://app.slack.com/client/T1/C1/thread/C1-1700.0002"}},
+		{Seq: 20, Mates: &domain.MateBoard{Stopped: true, Mates: []domain.MateStatus{
+			{Name: "helper", State: domain.MateConnected, Guard: domain.GuardStopped},
+			{Name: "webby", State: domain.MatePaused, Guard: domain.GuardStopped},
+		}}},
 	} {
 		out = append(out, v.ApplyNative(d)...)
 	}
@@ -169,5 +181,55 @@ func TestViewForThePhoneDropsPortsAndOrder(t *testing.T) {
 		if bytes.Contains(b, []byte(key)) {
 			t.Fatalf("phone state has %s: %s", key, b)
 		}
+	}
+}
+
+func TestViewMatesShowEachMateWithItsThreadsAndCurrentWork(t *testing.T) {
+	_, state := view.NewNative(nativeFixture())
+	if len(state.Mates.Mates) != 2 || state.Mates.Stopped {
+		t.Fatalf("mates %+v", state.Mates)
+	}
+	helper := state.Mates.Mates[0]
+	if helper.Name != "helper" || len(helper.Threads) != 1 || helper.Threads[0].Session != "add login" || helper.Threads[0].State != domain.StateRunning {
+		t.Fatalf("helper %+v", helper)
+	}
+	if len(helper.Work) != 1 || helper.Work[0] != "s1" {
+		t.Fatalf("work %v", helper.Work)
+	}
+	if webby := state.Mates.Mates[1]; len(webby.Threads) != 0 || len(webby.Work) != 0 || webby.State != domain.MatePaused {
+		t.Fatalf("webby %+v", webby)
+	}
+}
+
+func TestViewMatesChangeWhenAThreadSessionStops(t *testing.T) {
+	v, _ := view.NewNative(nativeFixture())
+	idle := domain.Session{ID: "s1", TaskID: "t1", Harness: domain.HarnessClaude, State: domain.StateIdle, WorktreeIDs: []string{"w1"}}
+	var mates *view.Mates
+	for _, d := range v.ApplyNative(rpc.Diff{Seq: 11, Session: &idle}) {
+		if d.Mates != nil {
+			mates = d.Mates
+		}
+	}
+	if mates == nil || len(mates.Mates[0].Work) != 0 || mates.Mates[0].Threads[0].State != domain.StateIdle {
+		t.Fatalf("mates %+v", mates)
+	}
+	for _, d := range v.ApplyNative(rpc.Diff{Seq: 12, Session: &idle}) {
+		if d.Mates != nil {
+			t.Fatalf("mates sent again with no change: %+v", d.Mates)
+		}
+	}
+}
+
+func TestViewForThePhoneHasTheKillSwitch(t *testing.T) {
+	v, state := view.New(nativeFixture())
+	if state.Mates.Stopped || len(state.Mates.Mates) != 2 {
+		t.Fatalf("phone mates %+v", state.Mates)
+	}
+	var stopped bool
+	for _, d := range v.Apply(rpc.Diff{Seq: 11, Mates: &domain.MateBoard{Stopped: true, Mates: []domain.MateStatus{{Name: "helper", Guard: domain.GuardStopped}}}}) {
+		stopped = stopped || (d.Mates != nil && d.Mates.Stopped)
+	}
+	if !stopped {
+		t.Fatal("the phone got no stopped mates diff")
 	}
 }

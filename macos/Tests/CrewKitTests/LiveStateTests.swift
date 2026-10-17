@@ -8,7 +8,9 @@ struct LiveStateTests {
         for diff in try Goldens.diffs() {
             state.apply(diff)
         }
-        #expect(state.seq == 18)
+        #expect(state.seq == 20)
+        #expect(state.mates?.stopped == true)
+        #expect(state.mates?.mates.first?.threads.map(\.sessionID) == ["s2", "s1"])
         #expect(state.projects.map(\.root) == ["/w/web"])
         #expect(state.reclaimable == Reclaimable(size: 4096, pending: 0))
         #expect(state.sessions.map(\.id) == ["s1", "s2"])

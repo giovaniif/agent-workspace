@@ -74,6 +74,18 @@ struct SnapshotTests {
         _ = try save("automations-run-sheet", Snapshot.renderAutomationRun(automation, size: sheet, dark: false), size: sheet)
     }
 
+    @Test func theMatesWindowShowsEachMateAndTheKillSwitch() throws {
+        _ = try save("mates", Snapshot.render(mates: .seeded(), size: Self.size, dark: false), size: Self.size)
+        var stopped = MatesScene.seeded()
+        stopped.board.stopped = true
+        stopped.board.mates = stopped.board.mates.map { row in
+            var r = row
+            r.hold = "stopped"
+            return r
+        }
+        _ = try save("mates-stopped-mocha", Snapshot.render(mates: stopped, size: Self.size, dark: true), size: Self.size)
+    }
+
     @Test func theDiskWindowMarksDirtyAndMergedWorktrees() throws {
         let rep = try shootDisk("disk-worktrees", .seeded())
         #expect(pixels(rep, near: Palette.latte.hex(.peach)) > 20)
