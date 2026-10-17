@@ -64,11 +64,11 @@ func MateMentions(text, user string) bool {
 }
 
 type MateLimits struct {
-	HopLimit     int
-	TurnsPerHour int
-	DailyTurns   int
-	DailyTokens  int64
-	Stop         bool
+	HopLimit     int   `json:"hop_limit"`
+	TurnsPerHour int   `json:"turns_per_hour"`
+	DailyTurns   int   `json:"daily_turns"`
+	DailyTokens  int64 `json:"daily_tokens"`
+	Stop         bool  `json:"stop"`
 }
 
 func DefaultMateLimits() MateLimits {

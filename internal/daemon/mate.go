@@ -48,6 +48,44 @@ func parseMates(text, path string) ([]domain.Mate, []string) {
 	return mates, problems
 }
 
+type mateLimitsDoc struct {
+	HopLimit     *int   `toml:"hop_limit"`
+	TurnsPerHour *int   `toml:"turns_per_hour"`
+	DailyTurns   *int   `toml:"daily_turns"`
+	DailyTokens  *int64 `toml:"daily_tokens"`
+	Stop         bool   `toml:"stop"`
+}
+
+func parseMateLimits(text, path string) (domain.MateLimits, []string) {
+	limits := domain.DefaultMateLimits()
+	var doc struct {
+		Mates mateLimitsDoc `toml:"mates"`
+	}
+	meta, err := toml.Decode(text, &doc)
+	if err != nil {
+		return limits, nil
+	}
+	var problems []string
+	for _, key := range meta.Undecoded() {
+		if len(key) > 1 && key[0] == "mates" {
+			problems = append(problems, fmt.Sprintf("%s: unknown key %s", path, key))
+		}
+	}
+	setInt := func(dst *int, v *int) {
+		if v != nil {
+			*dst = max(*v, 0)
+		}
+	}
+	setInt(&limits.HopLimit, doc.Mates.HopLimit)
+	setInt(&limits.TurnsPerHour, doc.Mates.TurnsPerHour)
+	setInt(&limits.DailyTurns, doc.Mates.DailyTurns)
+	if doc.Mates.DailyTokens != nil {
+		limits.DailyTokens = max(*doc.Mates.DailyTokens, 0)
+	}
+	limits.Stop = doc.Mates.Stop
+	return limits, problems
+}
+
 func (d *Daemon) registeredWorkspaces() []domain.Workspace {
 	var out []domain.Workspace
 	d.query(func(s *state) {
@@ -62,7 +100,9 @@ func (d *Daemon) loadMates(src string) rpc.MateList {
 	list := rpc.MateList{Mates: []domain.Mate{}}
 	parsed, problems := parseMates(src, d.cfg.path)
 	valid, invalid := domain.CheckMates(parsed, d.registeredWorkspaces())
-	list.Problems = problems
+	limits, limitProblems := parseMateLimits(src, d.cfg.path)
+	list.Limits = limits
+	list.Problems = append(problems, limitProblems...)
 	for _, err := range invalid {
 		list.Problems = append(list.Problems, fmt.Sprintf("%s: %v", d.cfg.path, err))
 	}
@@ -95,7 +135,7 @@ func (d *Daemon) mateMethod(req rpc.Request) *rpc.Response {
 	}
 	list := d.loadMates(src)
 	if req.Method == rpc.MethodMateList {
-		list.States = d.mateStates(list.Mates)
+		list.States = d.mateStates(list.Mates, list.Limits)
 		return result(req.ID, list)
 	}
 	var p rpc.MateShowParams
