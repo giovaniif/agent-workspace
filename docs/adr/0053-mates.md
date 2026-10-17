@@ -87,7 +87,7 @@ The rule: only the owner can order a dangerous action.
 - A mate can mention a different mate in a thread. The second mate gets a turn as if a person asked it, with the first mate as the author.
 - Owner authority goes through a chain of mates only when the chain starts from a direct request of the owner in that thread, and only for the action that the owner asked for. For other actions the authority is not the owner. Thus a mate cannot get owner authority from a different mate's text.
 - Loop guards: a hop limit for each thread (default 5), a rate limit for each mate (default 20 turns each hour), a daily usage budget for each mate (turns and tokens) and a global stop. When a guard stops a turn, the mate posts one message that tells why.
-- The daemon knows the action that the owner asked for from the words of the owner's message (merge, PR, push, delete a branch, deploy). The text of the owner is a Slack fact of the owner, so this is not text from a different person. A mate's text never adds an action.
+- The daemon knows the action that the owner asked for from the words of the owner's message (merge, PR, push, delete a branch, deploy). The text of the owner is a Slack fact of the owner, so this is not text from a different person. A mate's text never adds an action. The authority is for the kind of action (for example a merge), not for one target (for example one PR).
 - The limits are in `[mates]` of `config.toml`: `hop_limit`, `turns_per_hour`, `daily_turns` (default 100), `daily_tokens` (default 0, no limit) and `stop`. The token count comes from the status line of Claude and the rollout of Codex. The counts are in memory, so a restart sets them to zero.
 
 ### Control
