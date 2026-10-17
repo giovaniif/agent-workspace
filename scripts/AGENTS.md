@@ -62,3 +62,29 @@ Repo tooling. The repo-wide rules are in the [root AGENTS.md](../AGENTS.md).
   - Phone: `scripts/web-screenshot` with the fake API, light and dark (`phone-*.png`).
   - Mac: it downloads the `macos-snapshots` artifact of the newest green `ci` run on main with `gh` (or of `README_MAC_RUN`) and copies the main window, review, new session, automations, browser, disk, first-run and menu bar shots (`mac-*.png`). Without the artifact, the Mac shots stay as they are.
   - If `oxipng` is on `PATH`, it optimizes each PNG. It fails when a PNG is larger than `README_SHOT_LIMIT` (default 400 KB).
+- **`verify`** (`go run ./scripts/verify <command>`): the agent verification CLI (ADR [0055](../docs/adr/0055-agent-verification.md)). It is not in the `crew` binary. Agents use it with the skill in `.claude/skills/verify/SKILL.md`.
+  - Each command prints exactly one JSON object with `ok`, `problems` (`{msg, hint}`) and its data. The exit code is 0 for ok, 1 for a failure and 2 for a usage error.
+  - Its state is in `VERIFY_HOME` (default `/tmp/crew-verify-$UID`).
+  - `doctor`: the tools (go, git, tmux, node 22.18+, the Playwright Chromium, freeze), the branch, the machine load, TCP port 5199 and `/tmp`.
+  - `iso up|down|seed [--sessions n] [--codex]`: an isolated crew.
+    - It has a `CREW_HOME` under `/tmp`, its own tmux socket, its own TCP ports and a temporary `HOME`.
+    - The e2e fakes (`claude`, `codex`, `gh`, `terminal-notifier`, `osascript`) are first on `PATH`. Slack, ntfy and GitHub tokens are blank.
+    - `up` starts `crew serve` and the Vite dev server (`CREW_API`). It pairs the device `TEST-verify` with `crew remote pair` and `POST /api/v1/pair`. It never prints the token.
+  - `tui shot [--out f] [--size COLSxROWS]` and `tui drive --steps '<json>' [--restart]`: `crew tui` on the tmux server `<iso socket>-tui`.
+    - Steps: `keys`, `type`, `wait` (ms), `expect` and `absent` (with `timeout` in ms), `shot`. It renders with `freeze`.
+    - On a failure, it writes the pane to `failure.txt`.
+  - `web shot <route> [--viewport mobile|desktop|both]` and `web drive <route> --steps '<json>'`: `web/scripts/verify-drive.ts` with the Playwright of `web/`.
+    - Steps: `goto`, `click`, `fill` (with `value`), `press`, `wait`, `expect` (`absent`), `shot`, `aria`, `eval`.
+    - A locator has one of `role`+`name`, `testId`, `label`, `placeholder` or `text`. It acts on the first visible match.
+    - The viewports are 390x844 and 1440x900 at 2x. It refuses a shot of a different size.
+    - It waits until no `/api/` request runs for 700 ms. Console errors, page errors and failed API calls fail the command.
+    - `--fake` uses the fake API with no `iso`. `--video` records each viewport (mp4 when `ffmpeg` is on `PATH`).
+  - `mac evidence --run <id> | --pr <n>`: the macOS jobs of a `ci` run and its `macos-snapshots` artifact, with hashes. A failed macOS job fails the command.
+  - `map status` and `map run <area> [--recipe <label>]`: the recipes in `features/`.
+  - `evidence init|add|verify <dir>`: the evidence bundle and the proof bar of ADR 0055. `add` refuses a proof when the checkout is not at the ref of the proof.
+  - `design-check [--base ref] [--diff file]`: added lines only.
+    - In `internal/`, no `lipgloss.Color("...")` outside `internal/tui/theme.go`.
+    - In `web/src`, no raw colours outside `--token:` lines, and no `px` in `.ts` or `.tsx`.
+  - `annotate --before b.png --after a.png [--crop x0,y0,x1,y1] [--box ...] [--caption-before t] [--caption-after t] --out f`: a before/after pair.
+  - `assets push --dir <n> files...` writes to the orphan `pr-assets` branch with plumbing commands. It prints commit-pinned raw URLs. `assets check` fails when the branch adds an image.
+  - `selftest`: `go test ./scripts/verify/`. Its tests use a fake `sys` (no tmux, node or network) and real temporary repos.
